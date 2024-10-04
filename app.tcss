@@ -1,0 +1,11 @@
+TorrentItem {
+    layout: vertical;
+    background: $boost;
+    margin: 1;
+    min-width: 50;
+    padding: 1;
+}
+
+TorrentItem.selected {
+    background: green
+}
