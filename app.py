@@ -55,7 +55,7 @@ class MainApp(App):
 
     def __init__(self):
         super().__init__()
-        self.selected = None
+        self.selected_id = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -69,10 +69,10 @@ class MainApp(App):
         items = self.query(TorrentItem)
 
         if items:
-            if self.selected is None:
+            if self.selected_id is None:
                 item = items[-1]
                 item.selected = True
-                self.selected = item
+                self.selected_id = item.torrent.id
                 self.query_one("#torrents").scroll_to_widget(item)
             else:
                 select_next = False
@@ -80,13 +80,13 @@ class MainApp(App):
                 for i, item in enumerate(reversed(items)):
                     if select_next:
                         item.selected = True
-                        self.selected = item
+                        self.selected_id = item.torrent.id
                         self.query_one("#torrents").scroll_to_widget(item)
                         break
                     else:
                         if item.selected and i != len(items) - 1:
                             item.selected = False
-                            self.selected = None
+                            self.selected_id = None
                             select_next = True
 
     def action_scroll_down(self) -> None:
@@ -95,23 +95,23 @@ class MainApp(App):
         items = self.query(TorrentItem)
 
         if items:
-            if self.selected is None:
+            if self.selected_id is None:
                 item = items[0]
                 item.selected = True
-                self.selected = item
+                self.selected_id = item.torrent.id
             else:
                 select_next = False
 
                 for i, item in enumerate(items):
                     if select_next:
                         item.selected = True
-                        self.selected = item
+                        self.selected_id = item.torrent.id
                         self.query_one("#torrents").scroll_to_widget(item)
                         break
                     else:
                         if item.selected and i != len(items) - 1:
                             item.selected = False
-                            self.selected = None
+                            self.selected_id = None
                             select_next = True
 
     def on_mount(self) -> None:
@@ -122,12 +122,24 @@ class MainApp(App):
         client = Client()
         torrents = client.get_torrents()
 
+        old_selected_id = self.selected_id
         self.query_one("#torrents").remove_children()
-        self.selected = None
+        self.selected_id = None
+        selected_item = None
 
         for t in torrents:
             item = TorrentItem(t)
+
+            if item.torrent.id == old_selected_id:
+                item.selected = True
+                self.selected_id = item.torrent.id
+                old_selected_id = None
+
             self.query_one("#torrents").mount(item)
+
+        if selected_item:
+            self.query_one("#torrents").scroll_to_widget(selected_item)
+
 
     def lg(self, value) -> None:
         #self.query_one(RichLog).write(value)
