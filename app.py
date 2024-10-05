@@ -1,4 +1,5 @@
 from transmission_rpc import Client
+import random
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -115,31 +116,49 @@ class MainApp(App):
                             select_next = True
 
     def on_mount(self) -> None:
-        self.update_torrents()
-        self.set_interval(5, self.update_torrents)
+        self.create_pane()
+        self.set_interval(5, self.update_pane)
 
-    def update_torrents(self) -> None:
-        client = Client()
-        torrents = client.get_torrents()
+    def create_pane(self, torrents=None) -> None:
+        if torrents is None:
+            torrents = self.load_torrents()
 
-        old_selected_id = self.selected_id
-        self.query_one("#torrents").remove_children()
+        torrents_pane = self.query_one("#torrents")
+        torrents_pane.remove_children()
+
         self.selected_id = None
-        selected_item = None
 
         for t in torrents:
             item = TorrentItem(t)
+            torrents_pane.mount(item)
 
-            if item.torrent.id == old_selected_id:
-                item.selected = True
-                self.selected_id = item.torrent.id
-                old_selected_id = None
+    def update_pane(self) -> None:
+        torrents = self.load_torrents()
 
-            self.query_one("#torrents").mount(item)
+        if self.is_equal_to_pane(torrents):
+            items = self.query_one("#torrents").children
 
-        if selected_item:
-            self.query_one("#torrents").scroll_to_widget(selected_item)
+            # TODO: update item details
+            for i, torrent in enumerate(torrents):
+                items[i].item_name = items[i].item_name + "+"
+        else:
+            self.create_pane(torrents)
 
+    def is_equal_to_pane(self, torrents) -> bool:
+        items = self.query_one("#torrents").children
+
+        if len(torrents) != len(items):
+            return False
+
+        for i, torrent in enumerate(torrents):
+            if torrent.id != items[i].torrent.id:
+                return False
+
+        return True
+
+    def load_torrents(self):
+        client = Client()
+        return client.get_torrents()
 
     def lg(self, value) -> None:
         #self.query_one(RichLog).write(value)
