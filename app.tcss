@@ -9,3 +9,11 @@ TorrentItem {
 TorrentItem.selected {
     background: green
 }
+
+StatusLine {
+    layout: grid;
+    grid-size: 6;
+    grid-columns: auto 1fr auto auto auto auto;
+    background: grey;
+    height: 1;
+}

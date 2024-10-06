@@ -1,11 +1,16 @@
 from transmission_rpc import Client
 
-from textual.app import App, ComposeResult
+from textual.app import App, ComposeResult, RenderResult
 from textual.binding import Binding
 from textual.containers import ScrollableContainer
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Footer, Header, Static, Label, RichLog
+
+class TransmissionSession:
+    def __init__(self, session_stats, torrents):
+        self.session_stats = session_stats
+        self.torrents = torrents
 
 class TorrentItem(Static):
     """Torrent item in main list"""
@@ -54,6 +59,38 @@ class TorrentItem(Static):
             num /= 1024.0
         return f"{num:.1f}Yi{suffix}"
 
+class StatusLine(Widget):
+    def compose(self) -> ComposeResult:
+        yield Static("Status", classes="box")
+        yield Static("", classes="box")
+        yield Static(" ↑ ", classes="box")
+        yield StatusLineSpeed()
+        yield Static(" ↓ ", classes="box")
+        yield StatusLineSpeed()
+
+    def update(self, upload_speed, download_speed) -> None:
+        # TODO: use widget id's
+        upload = self.query(StatusLineSpeed).first()
+        upload.speed = upload_speed
+
+        download = self.query(StatusLineSpeed).last()
+        download.speed = download_speed
+
+class StatusLineSpeed(Widget):
+
+    speed = reactive(0)
+
+    def render(self) -> str:
+        return self.print_speed(self.speed)
+
+    def print_speed(self, num, suffix="B"):
+        # TODO: merge size formatter methods
+        for unit in ("", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"):
+            if abs(num) < 1024.0:
+                return f"{num:3.1f} {unit}{suffix}"
+            num /= 1024.0
+        return f"{num:.1f}Yi{suffix}"
+
 class MainApp(App):
     CSS_PATH = "app.tcss"
 
@@ -68,9 +105,9 @@ class MainApp(App):
 
     def compose(self) -> ComposeResult:
         yield Header()
-        yield Footer()
         yield ScrollableContainer(id = "torrents")
-        #yield RichLog()
+        yield StatusLine()
+        # yield RichLog()
 
     def action_scroll_up(self) -> None:
         self.lg("UP")
@@ -127,31 +164,43 @@ class MainApp(App):
         self.create_pane()
         self.set_interval(5, self.update_pane)
 
-    def create_pane(self, torrents=None) -> None:
-        if torrents is None:
-            torrents = self.load_torrents()
+    def create_pane(self, session=None) -> None:
+        if session is None:
+            session = self.load_session()
 
         torrents_pane = self.query_one("#torrents")
         torrents_pane.remove_children()
 
         self.selected_id = None
 
-        for t in torrents:
+        for t in session.torrents:
             item = TorrentItem(t)
             torrents_pane.mount(item)
 
         self.query_one("#torrents").scroll_home()
 
-    def update_pane(self) -> None:
-        torrents = self.load_torrents()
+        self.update_status_line(session.session_stats)
 
-        if self.is_equal_to_pane(torrents):
+    def update_pane(self) -> None:
+        session = self.load_session()
+
+        if self.is_equal_to_pane(session.torrents):
             items = self.query_one("#torrents").children
 
-            for i, torrent in enumerate(torrents):
+            for i, torrent in enumerate(session.torrents):
                 items[i].update(torrent)
+
+            self.update_status_line(session.session_stats)
         else:
-            self.create_pane(torrents)
+            self.create_pane(session)
+
+    def update_status_line(self, session_stats) -> None:
+        status_line = self.query_one(StatusLine)
+
+        status_line.update(
+                session_stats.upload_speed,
+                session_stats.download_speed
+                )
 
     def is_equal_to_pane(self, torrents) -> bool:
         items = self.query_one("#torrents").children
@@ -165,12 +214,18 @@ class MainApp(App):
 
         return True
 
-    def load_torrents(self):
+    def load_session(self):
         client = Client()
-        return client.get_torrents()
+
+        stats = TransmissionSession(
+                session_stats = client.session_stats(),
+                torrents =  client.get_torrents()
+        )
+
+        return stats
 
     def lg(self, value) -> None:
-        #self.query_one(RichLog).write(value)
+        # self.query_one(RichLog).write(value)
         pass
 
 if __name__ == "__main__":
