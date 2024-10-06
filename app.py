@@ -1,5 +1,4 @@
 from transmission_rpc import Client
-import random
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -11,15 +10,24 @@ from textual.widgets import Footer, Header, Static, Label, RichLog
 class TorrentItem(Static):
     """Torrent item in main list"""
 
-    item_name = reactive(None, recompose=True)
     selected = reactive(False, recompose=True)
+
+    t_id = reactive(None, recompose=True)
+    t_name = reactive(None, recompose=True)
+    t_status = reactive(None, recompose=True)
+    t_size_total = reactive(None, recompose=True)
+    t_size_left = reactive(None, recompose=True)
 
     def __init__(self, torrent):
         super().__init__()
+        self.update(torrent)
 
-        self.torrent = torrent
-
-        self.item_name = self.torrent.name
+    def update(self, torrent) -> None:
+        self.t_id = torrent.id
+        self.t_name = torrent.name
+        self.t_status = torrent.status
+        self.t_size_total = torrent.total_size
+        self.t_size_left = torrent.left_until_done
 
     def compose(self) -> ComposeResult:
         if self.selected:
@@ -27,17 +35,17 @@ class TorrentItem(Static):
         else:
             self.remove_class("selected")
 
-        yield Label(self.item_name)
+        yield Label(self.t_name)
 
-        size_total = self.print_size(self.torrent.total_size)
+        size_total = self.print_size(self.t_size_total)
 
-        if self.torrent.left_until_done > 0:
-            size_current = self.print_size(self.torrent.total_size - self.torrent.left_until_done)
+        if self.t_size_left > 0:
+            size_current = self.print_size(self.t_size_total - self.t_size_left)
             yield Label(size_current + " / " + size_total)
         else:
             yield Label(size_total)
 
-        yield Label(str(self.torrent.status))
+        yield Label(str(self.t_status))
 
     def print_size(self, num, suffix="B"):
         for unit in ("", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"):
@@ -73,7 +81,7 @@ class MainApp(App):
             if self.selected_id is None:
                 item = items[-1]
                 item.selected = True
-                self.selected_id = item.torrent.id
+                self.selected_id = item.t_id
                 self.query_one("#torrents").scroll_to_widget(item)
             else:
                 select_next = False
@@ -81,7 +89,7 @@ class MainApp(App):
                 for i, item in enumerate(reversed(items)):
                     if select_next:
                         item.selected = True
-                        self.selected_id = item.torrent.id
+                        self.selected_id = item.t_id
                         self.query_one("#torrents").scroll_to_widget(item)
                         break
                     else:
@@ -99,14 +107,14 @@ class MainApp(App):
             if self.selected_id is None:
                 item = items[0]
                 item.selected = True
-                self.selected_id = item.torrent.id
+                self.selected_id = item.t_id
             else:
                 select_next = False
 
                 for i, item in enumerate(items):
                     if select_next:
                         item.selected = True
-                        self.selected_id = item.torrent.id
+                        self.selected_id = item.t_id
                         self.query_one("#torrents").scroll_to_widget(item)
                         break
                     else:
@@ -132,15 +140,16 @@ class MainApp(App):
             item = TorrentItem(t)
             torrents_pane.mount(item)
 
+        self.query_one("#torrents").scroll_home()
+
     def update_pane(self) -> None:
         torrents = self.load_torrents()
 
         if self.is_equal_to_pane(torrents):
             items = self.query_one("#torrents").children
 
-            # TODO: update item details
             for i, torrent in enumerate(torrents):
-                items[i].item_name = items[i].item_name + "+"
+                items[i].update(torrent)
         else:
             self.create_pane(torrents)
 
@@ -151,7 +160,7 @@ class MainApp(App):
             return False
 
         for i, torrent in enumerate(torrents):
-            if torrent.id != items[i].torrent.id:
+            if torrent.id != items[i].t_id:
                 return False
 
         return True
