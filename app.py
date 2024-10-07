@@ -7,7 +7,11 @@ from textual.containers import ScrollableContainer
 from textual.message import Message
 from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import Footer, Header, Static, Label
+from textual.widgets import Footer, Header, Static, Label, Button
+from textual.screen import ModalScreen, Screen
+from textual.containers import Grid
+from textual.containers import Horizontal, Vertical
+from textual.events import ScreenSuspend, ScreenResume
 
 class TransmissionSession:
     def __init__(self, session, session_stats, torrents):
@@ -19,6 +23,25 @@ class SessionUpdate(Message):
     def __init__(self, session):
         self.session = session
         super().__init__()
+
+class RemoveTorrentScreen(ModalScreen[bool]):
+    BINDINGS = [
+            Binding("y", "confirm", "Yes", priority=True),
+            Binding("n", "close", "Cancel", priority=True),
+            ]
+
+    def compose(self) -> ComposeResult:
+        yield Grid(
+            Label("Confirmation"),
+            Label("Are you sure you want to remove torrent? Y/N"),
+            id="dialog",
+        )
+
+    def action_confirm(self) -> None:
+        self.dismiss(True)
+
+    def action_close(self) -> None:
+        self.dismiss(False)
 
 class TorrentItem(Static):
     """Torrent item in main list"""
@@ -131,6 +154,7 @@ class MainApp(App):
     BINDINGS = [
             Binding("up", "scroll_up", "UP", priority=True),
             Binding("down", "scroll_down", "DOWN", priority=True),
+            Binding("r", "remove_torrent", "Remove torrent", priority=True),
             ]
 
     def __init__(self):
@@ -145,6 +169,23 @@ class MainApp(App):
     def on_mount(self) -> None:
         self.load_session()
         self.set_interval(5, self.load_session)
+
+    def action_remove_torrent(self) -> None:
+        if self.selected_id:
+
+            def check_quit(confirmed: bool | None) -> None:
+                if confirmed:
+                    client = Client()
+                    client.remove_torrent(self.selected_id)
+
+                    items = self.query(TorrentItem)
+
+                    for item in items:
+                        if item.t_id == self.selected_id:
+                            item.remove()
+                            self.selected_id = None
+
+            self.push_screen(RemoveTorrentScreen(), check_quit)
 
     def action_scroll_up(self) -> None:
         items = self.query(TorrentItem)
@@ -242,8 +283,11 @@ class MainApp(App):
         self.log(f'Load session_stats from Transmission: {vars(session.session_stats)}')
         self.log(f'Load {len(session.torrents)} torrents from Transmission')
 
-        self.post_message(SessionUpdate(session))
-        self.query_one(StatusLine).post_message(SessionUpdate(session))
+        status_line = self.query(StatusLine)
+
+        if len(status_line) > 0:
+            self.post_message(SessionUpdate(session))
+            self.query_one(StatusLine).post_message(SessionUpdate(session))
 
 if __name__ == "__main__":
     app = MainApp()

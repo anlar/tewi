@@ -17,3 +17,17 @@ StatusLine {
     background: grey;
     height: 1;
 }
+
+RemoveTorrentScreen {
+    align: center middle;
+}
+
+#dialog {
+    grid-size: 1 2;
+    grid-gutter: 1 2;
+    padding: 0 1;
+    width: 60;
+    height: auto;
+    border: thick $background 80%;
+    background: $surface;
+}
