@@ -8,7 +8,8 @@ from textual.widget import Widget
 from textual.widgets import Footer, Header, Static, Label
 
 class TransmissionSession:
-    def __init__(self, session_stats, torrents):
+    def __init__(self, session, session_stats, torrents):
+        self.session = session
         self.session_stats = session_stats
         self.torrents = torrents
 
@@ -61,15 +62,19 @@ class TorrentItem(Static):
 
 class StatusLine(Widget):
     def compose(self) -> ComposeResult:
-        yield Static("Status", classes="box")
+        yield StatusLineSession()
         yield Static("", classes="box")
         yield Static(" ↑ ", classes="box")
         yield StatusLineSpeed()
         yield Static(" ↓ ", classes="box")
         yield StatusLineSpeed()
 
-    def update(self, upload_speed, download_speed) -> None:
+    def update(self, version, torrent_count, upload_speed, download_speed) -> None:
         # TODO: use widget id's
+        session = self.query_one(StatusLineSession)
+        session.version = version
+        session.torrent_count = torrent_count
+
         upload = self.query(StatusLineSpeed).first()
         upload.speed = upload_speed
 
@@ -90,6 +95,13 @@ class StatusLineSpeed(Widget):
                 return f"{num:3.1f} {unit}{suffix}"
             num /= 1024.0
         return f"{num:.1f}Yi{suffix}"
+
+class StatusLineSession(Widget):
+    version = reactive('')
+    torrent_count = reactive(0)
+
+    def render(self) -> str:
+        return f'Transmission {self.version} | Torrents: {self.torrent_count}'
 
 class MainApp(App):
     CSS_PATH = "app.tcss"
@@ -174,7 +186,7 @@ class MainApp(App):
 
         self.query_one("#torrents").scroll_home()
 
-        self.update_status_line(session.session_stats)
+        self.update_status_line(session.session, session.session_stats)
 
     def update_pane(self) -> None:
         session = self.load_session()
@@ -185,14 +197,16 @@ class MainApp(App):
             for i, torrent in enumerate(session.torrents):
                 items[i].update(torrent)
 
-            self.update_status_line(session.session_stats)
+            self.update_status_line(session.session, session.session_stats)
         else:
             self.create_pane(session)
 
-    def update_status_line(self, session_stats) -> None:
+    def update_status_line(self, session, session_stats) -> None:
         status_line = self.query_one(StatusLine)
 
         status_line.update(
+                session.version,
+                session_stats.torrent_count,
                 session_stats.upload_speed,
                 session_stats.download_speed
                 )
@@ -213,10 +227,12 @@ class MainApp(App):
         client = Client()
 
         stats = TransmissionSession(
+                session = client.get_session(),
                 session_stats = client.session_stats(),
                 torrents =  client.get_torrents()
         )
 
+        self.log(f'Load session from Transmission: {vars(stats.session)}')
         self.log(f'Load session_stats from Transmission: {vars(stats.session_stats)}')
         self.log(f'Load {len(stats.torrents)} torrents from Transmission')
 
