@@ -1,8 +1,10 @@
 from transmission_rpc import Client
 
+from textual import on
 from textual.app import App, ComposeResult, RenderResult
 from textual.binding import Binding
 from textual.containers import ScrollableContainer
+from textual.message import Message
 from textual.reactive import reactive
 from textual.widget import Widget
 from textual.widgets import Footer, Header, Static, Label
@@ -12,6 +14,11 @@ class TransmissionSession:
         self.session = session
         self.session_stats = session_stats
         self.torrents = torrents
+
+class SessionUpdate(Message):
+    def __init__(self, session):
+        self.session = session
+        super().__init__()
 
 class TorrentItem(Static):
     """Torrent item in main list"""
@@ -61,6 +68,7 @@ class TorrentItem(Static):
         return f"{num:.1f}Yi{suffix}"
 
 class StatusLine(Widget):
+
     def compose(self) -> ComposeResult:
         yield StatusLineSession()
         yield Static("")
@@ -69,7 +77,21 @@ class StatusLine(Widget):
         yield Static(" ↓ ")
         yield StatusLineSpeed(id = "download")
 
-    def update(self, version, torrent_count, upload_speed, download_speed) -> None:
+    @on(SessionUpdate)
+    def handle_session_update(self, message: SessionUpdate):
+        session = message.session.session
+        session_stats = message.session.session_stats
+
+        self.update(
+                session.version,
+                session_stats.torrent_count,
+                session_stats.upload_speed,
+                session_stats.download_speed
+                )
+
+    def update(self, version, torrent_count,
+               upload_speed, download_speed) -> None:
+
         session = self.query_one(StatusLineSession)
         session.version = version
         session.torrent_count = torrent_count
@@ -96,6 +118,7 @@ class StatusLineSpeed(Widget):
         return f"{num:.1f}Yi{suffix}"
 
 class StatusLineSession(Widget):
+
     version = reactive('')
     torrent_count = reactive(0)
 
@@ -118,6 +141,10 @@ class MainApp(App):
         yield Header()
         yield ScrollableContainer(id = "torrents")
         yield StatusLine()
+
+    def on_mount(self) -> None:
+        self.load_session()
+        self.set_interval(5, self.load_session)
 
     def action_scroll_up(self) -> None:
         items = self.query(TorrentItem)
@@ -166,14 +193,19 @@ class MainApp(App):
                             self.selected_id = None
                             select_next = True
 
-    def on_mount(self) -> None:
-        self.create_pane()
-        self.set_interval(5, self.update_pane)
+    @on(SessionUpdate)
+    def handle_session_update(self, message: SessionUpdate):
+        session = message.session
 
-    def create_pane(self, session=None) -> None:
-        if session is None:
-            session = self.load_session()
+        if self.is_equal_to_pane(session.torrents):
+            items = self.query_one("#torrents").children
 
+            for i, torrent in enumerate(session.torrents):
+                items[i].update(torrent)
+        else:
+            self.create_pane(session)
+
+    def create_pane(self, session) -> None:
         torrents_pane = self.query_one("#torrents")
         torrents_pane.remove_children()
 
@@ -184,31 +216,6 @@ class MainApp(App):
             torrents_pane.mount(item)
 
         self.query_one("#torrents").scroll_home()
-
-        self.update_status_line(session.session, session.session_stats)
-
-    def update_pane(self) -> None:
-        session = self.load_session()
-
-        if self.is_equal_to_pane(session.torrents):
-            items = self.query_one("#torrents").children
-
-            for i, torrent in enumerate(session.torrents):
-                items[i].update(torrent)
-
-            self.update_status_line(session.session, session.session_stats)
-        else:
-            self.create_pane(session)
-
-    def update_status_line(self, session, session_stats) -> None:
-        status_line = self.query_one(StatusLine)
-
-        status_line.update(
-                session.version,
-                session_stats.torrent_count,
-                session_stats.upload_speed,
-                session_stats.download_speed
-                )
 
     def is_equal_to_pane(self, torrents) -> bool:
         items = self.query_one("#torrents").children
@@ -222,21 +229,23 @@ class MainApp(App):
 
         return True
 
-    def load_session(self):
+    def load_session(self) -> None:
         client = Client()
 
-        stats = TransmissionSession(
+        session = TransmissionSession(
                 session = client.get_session(),
                 session_stats = client.session_stats(),
                 torrents =  client.get_torrents()
         )
 
-        self.log(f'Load session from Transmission: {vars(stats.session)}')
-        self.log(f'Load session_stats from Transmission: {vars(stats.session_stats)}')
-        self.log(f'Load {len(stats.torrents)} torrents from Transmission')
+        self.log(f'Load session from Transmission: {vars(session.session)}')
+        self.log(f'Load session_stats from Transmission: {vars(session.session_stats)}')
+        self.log(f'Load {len(session.torrents)} torrents from Transmission')
 
-        return stats
+        self.post_message(SessionUpdate(session))
+        self.query_one(StatusLine).post_message(SessionUpdate(session))
 
 if __name__ == "__main__":
     app = MainApp()
     app.run()
+
