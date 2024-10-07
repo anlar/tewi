@@ -160,6 +160,7 @@ class MainApp(App):
             Binding("k,up", "scroll_up", "UP", priority=True),
             Binding("j,down", "scroll_down", "DOWN", priority=True),
             Binding("r", "remove_torrent", "Remove torrent", priority=True),
+            Binding("t", "trash_torrent", "Trash torrent", priority=True),
             ]
 
     def __init__(self):
@@ -176,12 +177,19 @@ class MainApp(App):
         self.set_interval(5, self.load_session)
 
     def action_remove_torrent(self) -> None:
+        self.remove_torrent(False)
+
+    def action_trash_torrent(self) -> None:
+        self.remove_torrent(True)
+
+    def remove_torrent(self, delete_data: bool) -> None:
         if self.selected_item:
 
             def check_quit(confirmed: bool | None) -> None:
                 if confirmed:
                     client = Client()
-                    client.remove_torrent(self.selected_item.t_id)
+                    client.remove_torrent(self.selected_item.t_id,
+                                          delete_data = delete_data)
 
                     prev = self.selected_item.prev
                     next = self.selected_item.next
@@ -206,7 +214,14 @@ class MainApp(App):
                         self.selected_item = new_selected
                         self.query_one("#torrents").scroll_to_widget(self.selected_item)
 
-            self.push_screen(ConfirmationDialog("Remove torrent from list?"), check_quit)
+            if delete_data:
+                self.push_screen(
+                        ConfirmationDialog("Remove torrent from list and delete data?"),
+                        check_quit)
+            else:
+                self.push_screen(
+                        ConfirmationDialog("Remove torrent from list?"),
+                        check_quit)
 
     def action_scroll_up(self) -> None:
         items = self.query(TorrentItem)
