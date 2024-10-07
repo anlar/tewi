@@ -18,7 +18,7 @@ StatusLine {
     height: 1;
 }
 
-RemoveTorrentScreen {
+ConfirmationDialog {
     align: center middle;
 }
 

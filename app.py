@@ -22,16 +22,20 @@ class SessionUpdate(Message):
         self.session = session
         super().__init__()
 
-class RemoveTorrentScreen(ModalScreen[bool]):
+class ConfirmationDialog(ModalScreen[bool]):
     BINDINGS = [
             Binding("y", "confirm", "Yes", priority=True),
             Binding("n", "close", "Cancel", priority=True),
             ]
 
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__()
+
     def compose(self) -> ComposeResult:
         yield Grid(
             Label("Confirmation"),
-            Label("Are you sure you want to remove torrent? Y/N"),
+            Label(f'{self.message} Y/N'),
             id="dialog",
         )
 
@@ -202,7 +206,7 @@ class MainApp(App):
                         self.selected_item = new_selected
                         self.query_one("#torrents").scroll_to_widget(self.selected_item)
 
-            self.push_screen(RemoveTorrentScreen(), check_quit)
+            self.push_screen(ConfirmationDialog("Remove torrent from list?"), check_quit)
 
     def action_scroll_up(self) -> None:
         items = self.query(TorrentItem)
