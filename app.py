@@ -63,22 +63,21 @@ class TorrentItem(Static):
 class StatusLine(Widget):
     def compose(self) -> ComposeResult:
         yield StatusLineSession()
-        yield Static("", classes="box")
-        yield Static(" ↑ ", classes="box")
-        yield StatusLineSpeed()
-        yield Static(" ↓ ", classes="box")
-        yield StatusLineSpeed()
+        yield Static("")
+        yield Static(" ↑ ")
+        yield StatusLineSpeed(id = "upload")
+        yield Static(" ↓ ")
+        yield StatusLineSpeed(id = "download")
 
     def update(self, version, torrent_count, upload_speed, download_speed) -> None:
-        # TODO: use widget id's
         session = self.query_one(StatusLineSession)
         session.version = version
         session.torrent_count = torrent_count
 
-        upload = self.query(StatusLineSpeed).first()
+        upload = self.query_one("#upload")
         upload.speed = upload_speed
 
-        download = self.query(StatusLineSpeed).last()
+        download = self.query_one("#download")
         download.speed = download_speed
 
 class StatusLineSpeed(Widget):
