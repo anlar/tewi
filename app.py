@@ -153,8 +153,8 @@ class MainApp(App):
     CSS_PATH = "app.tcss"
 
     BINDINGS = [
-            Binding("up", "scroll_up", "UP", priority=True),
-            Binding("down", "scroll_down", "DOWN", priority=True),
+            Binding("k,up", "scroll_up", "UP", priority=True),
+            Binding("j,down", "scroll_down", "DOWN", priority=True),
             Binding("r", "remove_torrent", "Remove torrent", priority=True),
             ]
 
