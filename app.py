@@ -3,15 +3,13 @@ from transmission_rpc import Client
 from textual import on
 from textual.app import App, ComposeResult, RenderResult
 from textual.binding import Binding
-from textual.containers import ScrollableContainer
+from textual.containers import Grid, Horizontal, Vertical, ScrollableContainer
+from textual.events import ScreenSuspend, ScreenResume
 from textual.message import Message
 from textual.reactive import reactive
+from textual.screen import ModalScreen, Screen
 from textual.widget import Widget
 from textual.widgets import Footer, Header, Static, Label, Button
-from textual.screen import ModalScreen, Screen
-from textual.containers import Grid
-from textual.containers import Horizontal, Vertical
-from textual.events import ScreenSuspend, ScreenResume
 
 class TransmissionSession:
     def __init__(self, session, session_stats, torrents):
@@ -53,6 +51,9 @@ class TorrentItem(Static):
     t_status = reactive(None, recompose=True)
     t_size_total = reactive(None, recompose=True)
     t_size_left = reactive(None, recompose=True)
+
+    next = None
+    prev = None
 
     def __init__(self, torrent):
         super().__init__()
@@ -159,7 +160,7 @@ class MainApp(App):
 
     def __init__(self):
         super().__init__()
-        self.selected_id = None
+        self.selected_item = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -171,19 +172,35 @@ class MainApp(App):
         self.set_interval(5, self.load_session)
 
     def action_remove_torrent(self) -> None:
-        if self.selected_id:
+        if self.selected_item:
 
             def check_quit(confirmed: bool | None) -> None:
                 if confirmed:
                     client = Client()
-                    client.remove_torrent(self.selected_id)
+                    client.remove_torrent(self.selected_item.t_id)
 
-                    items = self.query(TorrentItem)
+                    prev = self.selected_item.prev
+                    next = self.selected_item.next
 
-                    for item in items:
-                        if item.t_id == self.selected_id:
-                            item.remove()
-                            self.selected_id = None
+                    self.selected_item.remove()
+                    self.selected_item = None
+
+                    if next:
+                        next.prev = prev
+
+                    if prev:
+                        prev.next = next
+
+                    new_selected = None
+                    if next:
+                        new_selected = next
+                    elif prev:
+                        new_selected = prev
+
+                    if new_selected:
+                        new_selected.selected = True
+                        self.selected_item = new_selected
+                        self.query_one("#torrents").scroll_to_widget(self.selected_item)
 
             self.push_screen(RemoveTorrentScreen(), check_quit)
 
@@ -191,48 +208,32 @@ class MainApp(App):
         items = self.query(TorrentItem)
 
         if items:
-            if self.selected_id is None:
+            if self.selected_item is None:
                 item = items[-1]
                 item.selected = True
-                self.selected_id = item.t_id
-                self.query_one("#torrents").scroll_to_widget(item)
+                self.selected_item = item
+                self.query_one("#torrents").scroll_to_widget(self.selected_item)
             else:
-                select_next = False
-
-                for i, item in enumerate(reversed(items)):
-                    if select_next:
-                        item.selected = True
-                        self.selected_id = item.t_id
-                        self.query_one("#torrents").scroll_to_widget(item)
-                        break
-                    else:
-                        if item.selected and i != len(items) - 1:
-                            item.selected = False
-                            self.selected_id = None
-                            select_next = True
+                if self.selected_item.prev:
+                    self.selected_item.selected = False
+                    self.selected_item = self.selected_item.prev
+                    self.selected_item.selected = True
+                    self.query_one("#torrents").scroll_to_widget(self.selected_item)
 
     def action_scroll_down(self) -> None:
         items = self.query(TorrentItem)
 
         if items:
-            if self.selected_id is None:
+            if self.selected_item is None:
                 item = items[0]
                 item.selected = True
-                self.selected_id = item.t_id
+                self.selected_item = item
             else:
-                select_next = False
-
-                for i, item in enumerate(items):
-                    if select_next:
-                        item.selected = True
-                        self.selected_id = item.t_id
-                        self.query_one("#torrents").scroll_to_widget(item)
-                        break
-                    else:
-                        if item.selected and i != len(items) - 1:
-                            item.selected = False
-                            self.selected_id = None
-                            select_next = True
+                if self.selected_item.next:
+                    self.selected_item.selected = False
+                    self.selected_item = self.selected_item.next
+                    self.selected_item.selected = True
+                    self.query_one("#torrents").scroll_to_widget(self.selected_item)
 
     @on(SessionUpdate)
     def handle_session_update(self, message: SessionUpdate):
@@ -250,11 +251,19 @@ class MainApp(App):
         torrents_pane = self.query_one("#torrents")
         torrents_pane.remove_children()
 
-        self.selected_id = None
+        self.selected_item = None
 
+        prev = None
         for t in session.torrents:
             item = TorrentItem(t)
             torrents_pane.mount(item)
+
+            if prev:
+                prev.next = item
+                item.prev = prev
+                prev = item
+            else:
+                prev = item
 
         self.query_one("#torrents").scroll_home()
 
