@@ -5,7 +5,7 @@ from textual.binding import Binding
 from textual.containers import ScrollableContainer
 from textual.reactive import reactive
 from textual.widget import Widget
-from textual.widgets import Footer, Header, Static, Label, RichLog
+from textual.widgets import Footer, Header, Static, Label
 
 class TransmissionSession:
     def __init__(self, session_stats, torrents):
@@ -107,11 +107,8 @@ class MainApp(App):
         yield Header()
         yield ScrollableContainer(id = "torrents")
         yield StatusLine()
-        # yield RichLog()
 
     def action_scroll_up(self) -> None:
-        self.lg("UP")
-
         items = self.query(TorrentItem)
 
         if items:
@@ -136,8 +133,6 @@ class MainApp(App):
                             select_next = True
 
     def action_scroll_down(self) -> None:
-        self.lg("DOWN")
-
         items = self.query(TorrentItem)
 
         if items:
@@ -222,11 +217,10 @@ class MainApp(App):
                 torrents =  client.get_torrents()
         )
 
-        return stats
+        self.log(f'Load session_stats from Transmission: {vars(stats.session_stats)}')
+        self.log(f'Load {len(stats.torrents)} torrents from Transmission')
 
-    def lg(self, value) -> None:
-        # self.query_one(RichLog).write(value)
-        pass
+        return stats
 
 if __name__ == "__main__":
     app = MainApp()
