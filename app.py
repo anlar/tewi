@@ -48,7 +48,7 @@ class ConfirmationDialog(ModalScreen[bool]):
 class TorrentItem(Static):
     """Torrent item in main list"""
 
-    selected = reactive(False, recompose=True)
+    selected = reactive(False)
 
     t_id = reactive(None, recompose=True)
     t_name = reactive(None, recompose=True)
@@ -67,6 +67,12 @@ class TorrentItem(Static):
     def __init__(self, torrent):
         super().__init__()
         self.update(torrent)
+
+    def watch_selected(self, old_selected, new_selected):
+        if new_selected:
+            self.add_class("selected")
+        else:
+            self.remove_class("selected")
 
     def update(self, torrent) -> None:
         self.t_id = torrent.id
@@ -88,11 +94,6 @@ class TorrentItem(Static):
         self.t_priority = torrent.priority
 
     def compose(self) -> ComposeResult:
-        if self.selected:
-            self.add_class("selected")
-        else:
-            self.remove_class("selected")
-
         with Grid(id="torrent-item-name"):
             yield Label(self.t_name)
             yield Static("")
