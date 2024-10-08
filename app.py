@@ -103,7 +103,8 @@ class TorrentItem(Static):
             yield Label(size_total)
 
         yield Label(str(self.t_status))
-        yield ProgressBar(total=1.0).data_bind(progress=TorrentItem.t_progress)
+        yield (ProgressBar(total = 1.0, show_eta = False)
+               .data_bind(progress = TorrentItem.t_progress))
 
     def print_size(self, num, suffix="B"):
         for unit in ("", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"):
