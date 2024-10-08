@@ -45,21 +45,29 @@ class ConfirmationDialog(ModalScreen[bool]):
     def action_close(self) -> None:
         self.dismiss(False)
 
+class ReactiveLabel(Label):
+    name = reactive("")
+
+    def render(self):
+        return self.name
+
 class TorrentItem(Static):
     """Torrent item in main list"""
 
     selected = reactive(False)
 
-    t_id = reactive(None, recompose=True)
-    t_name = reactive(None, recompose=True)
-    t_status = reactive(None, recompose=True)
-    t_size_total = reactive(None, recompose=True)
-    t_size_left = reactive(None, recompose=True)
+    t_id = reactive(None)
+    t_name = reactive(None)
+    t_status = reactive(None)
+    t_size_total = reactive(None)
+    t_size_left = reactive(None)
 
     t_upload_speed = reactive(0)
     t_download_speed = reactive(0)
 
     t_progress = reactive(0)
+
+    t_stats = reactive("")
 
     next = None
     prev = None
@@ -93,15 +101,9 @@ class TorrentItem(Static):
         self.t_ratio = torrent.ratio
         self.t_priority = torrent.priority
 
-    def compose(self) -> ComposeResult:
-        with Grid(id="torrent-item-name"):
-            yield Label(self.t_name)
-            yield Static("")
-            yield Static(" ↑ ")
-            yield StatusLineSpeed().data_bind(speed=TorrentItem.t_upload_speed)
-            yield Static(" ↓ ")
-            yield StatusLineSpeed().data_bind(speed=TorrentItem.t_download_speed)
+        self.t_stats = self.print_stats()
 
+    def print_stats(self) -> str:
         size_total = self.print_size(self.t_size_total)
 
         size_label = None
@@ -112,7 +114,19 @@ class TorrentItem(Static):
         else:
             size_label = size_total
 
-        yield Label(f'{size_label} | Status: {str(self.t_status)} | Ratio: {self.t_ratio} | Priority: {self.t_priority} | Seeders: {str(self.t_seeders)} | Leechers: {str(self.t_leechers)} | ETA: {self.t_eta}')
+        return f'{size_label} | Status: {str(self.t_status)} | Ratio: {self.t_ratio} | Priority: {self.t_priority} | Seeders: {str(self.t_seeders)} | Leechers: {str(self.t_leechers)} | ETA: {self.t_eta}'
+
+    def compose(self) -> ComposeResult:
+        with Grid(id="torrent-item-name"):
+            yield Label(self.t_name)
+            yield Static("")
+            yield Static(" ↑ ")
+            yield StatusLineSpeed().data_bind(speed=TorrentItem.t_upload_speed)
+            yield Static(" ↓ ")
+            yield StatusLineSpeed().data_bind(speed=TorrentItem.t_download_speed)
+
+        yield ReactiveLabel(self.t_stats).data_bind(name=TorrentItem.t_stats)
+
         yield (ProgressBar(total = 1.0, show_eta = False)
                .data_bind(progress = TorrentItem.t_progress))
 
