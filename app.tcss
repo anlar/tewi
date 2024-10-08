@@ -1,3 +1,7 @@
+ScrollableContainer {
+    scrollbar-size-vertical: 1;
+}
+
 TorrentItem {
     layout: vertical;
     background: $boost;
