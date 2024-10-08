@@ -56,6 +56,9 @@ class TorrentItem(Static):
     t_size_total = reactive(None, recompose=True)
     t_size_left = reactive(None, recompose=True)
 
+    t_upload_speed = reactive(0)
+    t_download_speed = reactive(0)
+
     next = None
     prev = None
 
@@ -70,13 +73,22 @@ class TorrentItem(Static):
         self.t_size_total = torrent.total_size
         self.t_size_left = torrent.left_until_done
 
+        self.t_upload_speed = torrent.rate_upload
+        self.t_download_speed = torrent.rate_download
+
     def compose(self) -> ComposeResult:
         if self.selected:
             self.add_class("selected")
         else:
             self.remove_class("selected")
 
-        yield Label(self.t_name)
+        with Grid(id="torrent-item-name"):
+            yield Label(self.t_name)
+            yield Static("")
+            yield Static(" ↑ ")
+            yield StatusLineSpeed().data_bind(speed=TorrentItem.t_upload_speed)
+            yield Static(" ↓ ")
+            yield StatusLineSpeed().data_bind(speed=TorrentItem.t_download_speed)
 
         size_total = self.print_size(self.t_size_total)
 
