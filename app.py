@@ -80,6 +80,13 @@ class TorrentItem(Static):
 
         self.t_progress = torrent.percent_done
 
+        self.t_eta = torrent.eta
+        self.t_peers_connected = torrent.peers_connected
+        self.t_leechers = torrent.peers_getting_from_us
+        self.t_seeders = torrent.peers_sending_to_us
+        self.t_ratio = torrent.ratio
+        self.t_priority = torrent.priority
+
     def compose(self) -> ComposeResult:
         if self.selected:
             self.add_class("selected")
@@ -96,13 +103,15 @@ class TorrentItem(Static):
 
         size_total = self.print_size(self.t_size_total)
 
+        size_label = None
+
         if self.t_size_left > 0:
             size_current = self.print_size(self.t_size_total - self.t_size_left)
-            yield Label(size_current + " / " + size_total)
+            size_label = size_current + " / " + size_total
         else:
-            yield Label(size_total)
+            size_label = size_total
 
-        yield Label(str(self.t_status))
+        yield Label(f'{size_label} | Status: {str(self.t_status)} | Ratio: {self.t_ratio} | Priority: {self.t_priority} | Seeders: {str(self.t_seeders)} | Leechers: {str(self.t_leechers)} | ETA: {self.t_eta}')
         yield (ProgressBar(total = 1.0, show_eta = False)
                .data_bind(progress = TorrentItem.t_progress))
 
