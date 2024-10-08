@@ -9,7 +9,7 @@ from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen, Screen
 from textual.widget import Widget
-from textual.widgets import Footer, Header, Static, Label, Button
+from textual.widgets import Footer, Header, Static, Label, Button, ProgressBar
 
 class TransmissionSession:
     def __init__(self, session, session_stats, torrents):
@@ -59,6 +59,8 @@ class TorrentItem(Static):
     t_upload_speed = reactive(0)
     t_download_speed = reactive(0)
 
+    t_progress = reactive(0)
+
     next = None
     prev = None
 
@@ -75,6 +77,8 @@ class TorrentItem(Static):
 
         self.t_upload_speed = torrent.rate_upload
         self.t_download_speed = torrent.rate_download
+
+        self.t_progress = torrent.percent_done
 
     def compose(self) -> ComposeResult:
         if self.selected:
@@ -99,6 +103,7 @@ class TorrentItem(Static):
             yield Label(size_total)
 
         yield Label(str(self.t_status))
+        yield ProgressBar(total=1.0).data_bind(progress=TorrentItem.t_progress)
 
     def print_size(self, num, suffix="B"):
         for unit in ("", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"):

@@ -40,3 +40,7 @@ ConfirmationDialog {
     border: round white 70%;
     background: $surface;
 }
+
+Bar {
+    width: 1fr
+}
