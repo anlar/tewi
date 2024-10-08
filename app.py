@@ -319,6 +319,8 @@ class MainApp(App):
                 torrents =  client.get_torrents()
         )
 
+        session.torrents.sort(key = lambda t: t.name.lower())
+
         self.log(f'Load session from Transmission: {vars(session.session)}')
         self.log(f'Load session_stats from Transmission: {vars(session.session_stats)}')
         self.log(f'Load {len(session.torrents)} torrents from Transmission')
