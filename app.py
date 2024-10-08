@@ -183,6 +183,9 @@ class MainApp(App):
 
     def __init__(self):
         super().__init__()
+
+        self.client = Client()
+
         self.selected_item = None
 
     def compose(self) -> ComposeResult:
@@ -205,8 +208,7 @@ class MainApp(App):
 
             def check_quit(confirmed: bool | None) -> None:
                 if confirmed:
-                    client = Client()
-                    client.remove_torrent(self.selected_item.t_id,
+                    self.client.remove_torrent(self.selected_item.t_id,
                                           delete_data = delete_data)
 
                     prev = self.selected_item.prev
@@ -317,12 +319,10 @@ class MainApp(App):
         return True
 
     def load_session(self) -> None:
-        client = Client()
-
         session = TransmissionSession(
-                session = client.get_session(),
-                session_stats = client.session_stats(),
-                torrents =  client.get_torrents()
+                session = self.client.get_session(),
+                session_stats = self.client.session_stats(),
+                torrents = self.client.get_torrents()
         )
 
         session.torrents.sort(key = lambda t: t.name.lower())
