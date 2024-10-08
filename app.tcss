@@ -1,9 +1,8 @@
 TorrentItem {
     layout: vertical;
     background: $boost;
-    margin: 1;
     min-width: 50;
-    padding: 1;
+    border: round white 70%
 }
 
 TorrentItem.selected {
@@ -28,6 +27,6 @@ ConfirmationDialog {
     padding: 0 1;
     width: 60;
     height: auto;
-    border: thick $background 80%;
+    border: round white 70%;
     background: $surface;
 }
