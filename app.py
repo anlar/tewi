@@ -169,9 +169,15 @@ class TorrentItem(Static):
 
 class StatusLine(Widget):
 
+    # recompose whole line to update speed block width
+    alt_speed_enabled = reactive(False, recompose = True)
+    alt_speed_up = reactive(0, recompose = True)
+    alt_speed_down = reactive(0, recompose = True)
+
     def compose(self) -> ComposeResult:
         yield StatusLineSession()
         yield Static("")
+        yield Static(self.get_alt_speed_label())
         yield Static(" ↑ ")
         yield SpeedIndicator(id = "upload")
         yield Static(" ↓ ")
@@ -184,12 +190,24 @@ class StatusLine(Widget):
 
         self.update(
                 session.version,
+                session.alt_speed_enabled,
+                session.alt_speed_up,
+                session.alt_speed_down,
                 session_stats.torrent_count,
                 session_stats.upload_speed,
                 session_stats.download_speed
                 )
 
-    def update(self, version, torrent_count,
+    def get_alt_speed_label(self):
+        # alt speed always in KB
+        if self.alt_speed_enabled:
+            return f'[ Alt. Speed : ↑ {self.alt_speed_up} KB ↓ {self.alt_speed_down} KB ]'
+        else:
+            return ''
+
+    def update(self, version,
+               alt_speed_enabled, alt_speed_up, alt_speed_down,
+               torrent_count,
                upload_speed, download_speed) -> None:
 
         session = self.query_one(StatusLineSession)
@@ -201,6 +219,10 @@ class StatusLine(Widget):
 
         download = self.query_one("#download")
         download.speed = download_speed
+
+        self.alt_speed_enabled = alt_speed_enabled
+        self.alt_speed_up = alt_speed_up
+        self.alt_speed_down = alt_speed_down
 
 class SpeedIndicator(Widget):
 
@@ -417,4 +439,3 @@ class MainApp(App):
 if __name__ == "__main__":
     app = MainApp()
     app.run()
-
