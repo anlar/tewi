@@ -4,7 +4,7 @@ import textwrap
 from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Grid, ScrollableContainer
+from textual.containers import Grid, ScrollableContainer, Horizontal
 from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
@@ -271,12 +271,23 @@ class MainApp(App):
     def __init__(self):
         super().__init__()
 
-        self.client = Client()
+        self.tewi_version = 'DEV'
+
+        self.c_host = 'localhost'
+        self.c_port = '9091'
+
+        self.client = Client(host = self.c_host, port = self.c_port)
+        self.transmission_version = self.client.get_session().version
 
         self.selected_item = None
 
     def compose(self) -> ComposeResult:
-        yield Header()
+        with Horizontal(id = "top-pane"):
+            yield Static(f'Tewi {self.tewi_version}', classes = 'top-pane-column')
+            yield Static('»»»', classes = 'top-pane-column top-pane-column-delimiter')
+            yield Static(f'Transmission {self.transmission_version}', classes = 'top-pane-column')
+            yield Static('»»»', classes = 'top-pane-column top-pane-column-delimiter')
+            yield Static(f'{self.c_host}:{self.c_port}', classes = 'top-pane-column')
         yield ScrollableContainer(id = "torrents")
         yield StatusLine()
 

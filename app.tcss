@@ -1,3 +1,17 @@
+#top-pane {
+    height: auto;
+    background: $accent-darken-1;
+}
+
+.top-pane-column {
+    width: auto;
+    padding: 0 1;
+}
+
+.top-pane-column-delimiter {
+    text-opacity: 75%;
+}
+
 ScrollableContainer {
     scrollbar-size-vertical: 1;
 }
