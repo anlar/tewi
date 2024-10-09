@@ -1,4 +1,5 @@
 from transmission_rpc import Client
+import textwrap
 
 from textual import on
 from textual.app import App, ComposeResult
@@ -27,12 +28,13 @@ class ConfirmationDialog(ModalScreen[bool]):
             Binding("n,escape", "close", "Cancel", priority=True),
             ]
 
-    def __init__(self, message: str) -> None:
+    def __init__(self, message: str, description: str = None) -> None:
         self.message = message
+        self.description = description
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        yield ConfirmationWidget(self.message)
+        yield ConfirmationWidget(self.message, self.description)
 
     def action_confirm(self) -> None:
         self.dismiss(True)
@@ -42,12 +44,18 @@ class ConfirmationDialog(ModalScreen[bool]):
 
 class ConfirmationWidget(Static):
 
-    def __init__(self, message: str) -> None:
+    def __init__(self, message: str, description: str = None) -> None:
         self.message = message
+        self.description = description
         super().__init__()
 
     def compose(self) -> ComposeResult:
         yield Label(self.message)
+
+        if self.description:
+            yield Label('') # empty space between message and description
+            for line in textwrap.wrap(self.description, 56):
+                yield Label(line)
 
     def on_mount(self):
         self.border_title = 'Confirmation'
@@ -301,11 +309,15 @@ class MainApp(App):
 
             if delete_data:
                 self.push_screen(
-                        ConfirmationDialog("Remove torrent from list and delete data?"),
+                        ConfirmationDialog(
+                            message = "Remove torrent and delete data?",
+                            description = "All data downloaded for this torrent will be deleted. Are you sure you want to remove it?"),
                         check_quit)
             else:
                 self.push_screen(
-                        ConfirmationDialog("Remove torrent from list?"),
+                        ConfirmationDialog(
+                            message = "Remove torrent?",
+                            description = "Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?"),
                         check_quit)
 
     def action_scroll_up(self) -> None:

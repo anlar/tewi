@@ -44,7 +44,7 @@ ConfirmationWidget {
     border-title-align: center;
     border: round $warning;
     height: auto;
-    width: 70;
+    width: 60;
     padding: 1;
 }
 
