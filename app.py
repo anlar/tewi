@@ -117,18 +117,18 @@ class TorrentItem(Static):
         return f'{size_label} | Status: {str(self.t_status)} | Ratio: {self.t_ratio} | Priority: {self.t_priority} | Seeders: {str(self.t_seeders)} | Leechers: {str(self.t_leechers)} | ETA: {self.t_eta}'
 
     def compose(self) -> ComposeResult:
-        with Grid(id="torrent-item-name"):
-            yield Label(self.t_name)
+        with Grid(id="torrent-item-head"):
+            yield Label(self.t_name, id = "torrent-item-head-name")
             yield Static("")
             yield Static(" ↑ ")
             yield SpeedIndicator().data_bind(speed=TorrentItem.t_upload_speed)
             yield Static(" ↓ ")
             yield SpeedIndicator().data_bind(speed=TorrentItem.t_download_speed)
 
-        yield ReactiveLabel(self.t_stats).data_bind(name=TorrentItem.t_stats)
-
-        yield (ProgressBar(total = 1.0, show_eta = False)
+        yield (ProgressBar(total = 1.0, show_percentage = False, show_eta = False)
                .data_bind(progress = TorrentItem.t_progress))
+
+        yield ReactiveLabel(self.t_stats, id = "torrent-item-stats").data_bind(name=TorrentItem.t_stats)
 
     def print_size(self, num, suffix = "B", size_bytes = 1000):
         r_unit = None

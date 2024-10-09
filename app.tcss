@@ -3,6 +3,7 @@ ScrollableContainer {
 }
 
 TorrentItem {
+    padding: 0 1;
     layout: vertical;
     background: $boost;
     min-width: 50;
@@ -13,10 +14,18 @@ TorrentItem.selected {
     background: green
 }
 
-#torrent-item-name {
+#torrent-item-head {
     height: auto;
     grid-size: 6;
     grid-columns: auto 1fr auto 9 auto 9;
+}
+
+#torrent-item-head-name {
+    text-style: bold;
+}
+
+#torrent-item-stats {
+    text-opacity: 75%;
 }
 
 StatusLine {
