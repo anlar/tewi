@@ -130,12 +130,26 @@ class TorrentItem(Static):
         yield (ProgressBar(total = 1.0, show_eta = False)
                .data_bind(progress = TorrentItem.t_progress))
 
-    def print_size(self, num, suffix="B"):
-        for unit in ("", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"):
-            if abs(num) < 1024.0:
-                return f"{num:3.1f} {unit}{suffix}"
-            num /= 1024.0
-        return f"{num:.1f}Yi{suffix}"
+    def print_size(self, num, suffix = "B", size_bytes = 1000):
+        r_unit = None
+        r_num = None
+
+        for unit in ("", "k", "M", "G", "T", "P", "E", "Z"):
+            if abs(num) < size_bytes:
+                r_unit = unit
+                r_num = num
+                break
+            num /= size_bytes
+
+        if not r_unit:
+            r_unit = 'Y'
+            r_num = num
+
+        round(r_num, 2)
+
+        r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
+
+        return f"{r_size} {r_unit}{suffix}"
 
 class StatusLine(Widget):
 
