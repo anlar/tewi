@@ -201,6 +201,7 @@ class MainApp(App):
     BINDINGS = [
             Binding("k,up", "scroll_up", "UP", priority=True),
             Binding("j,down", "scroll_down", "DOWN", priority=True),
+            Binding("p", "toggle_torrent", "Toggle torrent", priority=True),
             Binding("r", "remove_torrent", "Remove torrent", priority=True),
             Binding("t", "trash_torrent", "Trash torrent", priority=True),
             ]
@@ -220,6 +221,15 @@ class MainApp(App):
     def on_mount(self) -> None:
         self.load_session()
         self.set_interval(5, self.load_session)
+
+    def action_toggle_torrent(self) -> None:
+        if self.selected_item:
+            status = self.selected_item.t_status
+
+            if status == 'stopped':
+                self.client.start_torrent(self.selected_item.t_id)
+            else:
+                self.client.stop_torrent(self.selected_item.t_id)
 
     def action_remove_torrent(self) -> None:
         self.remove_torrent(False)
