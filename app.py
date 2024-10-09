@@ -121,9 +121,9 @@ class TorrentItem(Static):
             yield Label(self.t_name)
             yield Static("")
             yield Static(" ↑ ")
-            yield StatusLineSpeed().data_bind(speed=TorrentItem.t_upload_speed)
+            yield SpeedIndicator().data_bind(speed=TorrentItem.t_upload_speed)
             yield Static(" ↓ ")
-            yield StatusLineSpeed().data_bind(speed=TorrentItem.t_download_speed)
+            yield SpeedIndicator().data_bind(speed=TorrentItem.t_download_speed)
 
         yield ReactiveLabel(self.t_stats).data_bind(name=TorrentItem.t_stats)
 
@@ -157,9 +157,9 @@ class StatusLine(Widget):
         yield StatusLineSession()
         yield Static("")
         yield Static(" ↑ ")
-        yield StatusLineSpeed(id = "upload")
+        yield SpeedIndicator(id = "upload")
         yield Static(" ↓ ")
-        yield StatusLineSpeed(id = "download")
+        yield SpeedIndicator(id = "download")
 
     @on(SessionUpdate)
     def handle_session_update(self, message: SessionUpdate):
@@ -186,20 +186,28 @@ class StatusLine(Widget):
         download = self.query_one("#download")
         download.speed = download_speed
 
-class StatusLineSpeed(Widget):
+class SpeedIndicator(Widget):
 
     speed = reactive(0)
 
     def render(self) -> str:
         return self.print_speed(self.speed)
 
-    def print_speed(self, num, suffix="B"):
-        # TODO: merge size formatter methods
-        for unit in ("", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"):
-            if abs(num) < 1024.0:
-                return f"{num:3.1f} {unit}{suffix}"
-            num /= 1024.0
-        return f"{num:.1f}Yi{suffix}"
+    def print_speed(self, num, suffix = "B", speed_bytes = 1000) -> str:
+        r_unit = None
+        r_num = None
+
+        for i in (("", 0), ("K", 0), ("M", 2), ("G", 2), ("T", 2), ("P", 2), ("E", 2), ("Z", 2), ("Y", 2)):
+
+            if abs(num) < speed_bytes:
+                r_unit = i[0]
+                r_num = round(num, i[1])
+                break
+            num /= speed_bytes
+
+        r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
+
+        return f"{r_size} {r_unit}{suffix}"
 
 class StatusLineSession(Widget):
 

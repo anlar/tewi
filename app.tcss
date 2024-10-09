@@ -16,13 +16,13 @@ TorrentItem.selected {
 #torrent-item-name {
     height: auto;
     grid-size: 6;
-    grid-columns: auto 1fr auto 10 auto 10;
+    grid-columns: auto 1fr auto 9 auto 9;
 }
 
 StatusLine {
     layout: grid;
     grid-size: 6;
-    grid-columns: auto 1fr auto 10 auto 12;
+    grid-columns: auto 1fr auto 9 auto 11;
     background: grey;
     height: 1;
 }
