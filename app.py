@@ -263,7 +263,8 @@ class MainApp(App):
             Binding("j,down", "scroll_down", "DOWN", priority=True),
             Binding("p", "toggle_torrent", "Toggle torrent", priority=True),
             Binding("r", "remove_torrent", "Remove torrent", priority=True),
-            Binding("t", "trash_torrent", "Trash torrent", priority=True),
+            Binding("R", "trash_torrent", "Trash torrent", priority=True),
+            Binding("t", "toggle_alt_speed", "Toggle alt speed", priority=True),
             Binding("q", "quit", "Quit", priority=True),
             ]
 
@@ -372,6 +373,10 @@ class MainApp(App):
                     self.selected_item = self.selected_item.w_next
                     self.selected_item.selected = True
                     self.query_one("#torrents").scroll_to_widget(self.selected_item)
+
+    def action_toggle_alt_speed(self) -> None:
+        alt_speed_enabled = self.client.get_session().alt_speed_enabled
+        self.client.set_session(alt_speed_enabled = not alt_speed_enabled)
 
     @on(SessionUpdate)
     def handle_session_update(self, message: SessionUpdate):
