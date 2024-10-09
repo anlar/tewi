@@ -40,14 +40,12 @@ ConfirmationDialog {
     align: center middle;
 }
 
-#dialog {
-    grid-size: 1 2;
-    grid-gutter: 1 2;
-    padding: 0 1;
-    width: 60;
+ConfirmationWidget {
+    border-title-align: center;
+    border: round $warning;
     height: auto;
-    border: round white 70%;
-    background: $surface;
+    width: 70;
+    padding: 1;
 }
 
 Bar {

@@ -24,7 +24,7 @@ class SessionUpdate(Message):
 class ConfirmationDialog(ModalScreen[bool]):
     BINDINGS = [
             Binding("y", "confirm", "Yes", priority=True),
-            Binding("n", "close", "Cancel", priority=True),
+            Binding("n,escape", "close", "Cancel", priority=True),
             ]
 
     def __init__(self, message: str) -> None:
@@ -32,17 +32,26 @@ class ConfirmationDialog(ModalScreen[bool]):
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        yield Grid(
-            Label("Confirmation"),
-            Label(f'{self.message} Y/N'),
-            id="dialog",
-        )
+        yield ConfirmationWidget(self.message)
 
     def action_confirm(self) -> None:
         self.dismiss(True)
 
     def action_close(self) -> None:
         self.dismiss(False)
+
+class ConfirmationWidget(Static):
+
+    def __init__(self, message: str) -> None:
+        self.message = message
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield Label(self.message)
+
+    def on_mount(self):
+        self.border_title = 'Confirmation'
+        self.border_subtitle = 'Y(es) / N(o)'
 
 class ReactiveLabel(Label):
     name = reactive("")
