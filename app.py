@@ -1,15 +1,14 @@
 from transmission_rpc import Client
 
 from textual import on
-from textual.app import App, ComposeResult, RenderResult
+from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Grid, Horizontal, Vertical, ScrollableContainer
-from textual.events import ScreenSuspend, ScreenResume
+from textual.containers import Grid, ScrollableContainer
 from textual.message import Message
 from textual.reactive import reactive
-from textual.screen import ModalScreen, Screen
+from textual.screen import ModalScreen
 from textual.widget import Widget
-from textual.widgets import Footer, Header, Static, Label, Button, ProgressBar
+from textual.widgets import Header, Static, Label, ProgressBar
 
 class TransmissionSession:
     def __init__(self, session, session_stats, torrents):
@@ -69,20 +68,20 @@ class TorrentItem(Static):
 
     t_stats = reactive("")
 
-    next = None
-    prev = None
+    w_next = None
+    w_prev = None
 
     def __init__(self, torrent):
         super().__init__()
-        self.update(torrent)
+        self.update_torrent(torrent)
 
-    def watch_selected(self, old_selected, new_selected):
+    def watch_selected(self, new_selected):
         if new_selected:
             self.add_class("selected")
         else:
             self.remove_class("selected")
 
-    def update(self, torrent) -> None:
+    def update_torrent(self, torrent) -> None:
         self.t_id = torrent.id
         self.t_name = torrent.name
         self.t_status = torrent.status
@@ -268,23 +267,23 @@ class MainApp(App):
                     self.client.remove_torrent(self.selected_item.t_id,
                                           delete_data = delete_data)
 
-                    prev = self.selected_item.prev
-                    next = self.selected_item.next
+                    w_prev = self.selected_item.w_prev
+                    w_next = self.selected_item.w_next
 
                     self.selected_item.remove()
                     self.selected_item = None
 
-                    if next:
-                        next.prev = prev
+                    if w_next:
+                        w_next.w_prev = w_prev
 
-                    if prev:
-                        prev.next = next
+                    if w_prev:
+                        w_prev.w_next = w_next
 
                     new_selected = None
-                    if next:
-                        new_selected = next
-                    elif prev:
-                        new_selected = prev
+                    if w_next:
+                        new_selected = w_next
+                    elif w_prev:
+                        new_selected = w_prev
 
                     if new_selected:
                         new_selected.selected = True
@@ -310,9 +309,9 @@ class MainApp(App):
                 self.selected_item = item
                 self.query_one("#torrents").scroll_to_widget(self.selected_item)
             else:
-                if self.selected_item.prev:
+                if self.selected_item.w_prev:
                     self.selected_item.selected = False
-                    self.selected_item = self.selected_item.prev
+                    self.selected_item = self.selected_item.w_prev
                     self.selected_item.selected = True
                     self.query_one("#torrents").scroll_to_widget(self.selected_item)
 
@@ -325,14 +324,11 @@ class MainApp(App):
                 item.selected = True
                 self.selected_item = item
             else:
-                if self.selected_item.next:
+                if self.selected_item.w_next:
                     self.selected_item.selected = False
-                    self.selected_item = self.selected_item.next
+                    self.selected_item = self.selected_item.w_next
                     self.selected_item.selected = True
                     self.query_one("#torrents").scroll_to_widget(self.selected_item)
-
-    def action_quit(self) -> None:
-        self.app.exit()
 
     @on(SessionUpdate)
     def handle_session_update(self, message: SessionUpdate):
@@ -342,7 +338,7 @@ class MainApp(App):
             items = self.query_one("#torrents").children
 
             for i, torrent in enumerate(session.torrents):
-                items[i].update(torrent)
+                items[i].update_torrent(torrent)
         else:
             self.create_pane(session)
 
@@ -352,17 +348,17 @@ class MainApp(App):
 
         self.selected_item = None
 
-        prev = None
+        w_prev = None
         for t in session.torrents:
             item = TorrentItem(t)
             torrents_pane.mount(item)
 
-            if prev:
-                prev.next = item
-                item.prev = prev
-                prev = item
+            if w_prev:
+                w_prev.w_next = item
+                item.w_prev = w_prev
+                w_prev = item
             else:
-                prev = item
+                w_prev = item
 
         self.query_one("#torrents").scroll_home()
 
