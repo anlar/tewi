@@ -226,6 +226,7 @@ class MainApp(App):
             Binding("p", "toggle_torrent", "Toggle torrent", priority=True),
             Binding("r", "remove_torrent", "Remove torrent", priority=True),
             Binding("t", "trash_torrent", "Trash torrent", priority=True),
+            Binding("q", "quit", "Quit", priority=True),
             ]
 
     def __init__(self):
@@ -329,6 +330,9 @@ class MainApp(App):
                     self.selected_item = self.selected_item.next
                     self.selected_item.selected = True
                     self.query_one("#torrents").scroll_to_widget(self.selected_item)
+
+    def action_quit(self) -> None:
+        self.app.exit()
 
     @on(SessionUpdate)
     def handle_session_update(self, message: SessionUpdate):
