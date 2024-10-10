@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import argparse
 import textwrap
 
@@ -479,7 +481,7 @@ class MainApp(App):
             self.post_message(SessionUpdate(session))
             self.query_one(StatusLine).post_message(SessionUpdate(session))
 
-if __name__ == "__main__":
+def cli():
     tewi_version = 'DEV'
 
     parser = argparse.ArgumentParser(
@@ -498,4 +500,7 @@ if __name__ == "__main__":
 
     app = MainApp(host=args.host, port=args.port, version=tewi_version)
     app.run()
+
+if __name__ == "__main__":
+    cli()
 
