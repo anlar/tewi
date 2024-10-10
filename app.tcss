@@ -23,13 +23,13 @@ ScrollableContainer {
 TorrentItem {
     padding: 0 1;
     layout: vertical;
-    background: $boost;
     min-width: 50;
-    border: round white 70%
+    border: round $primary 75%;
+    background: $background-lighten-1;
 }
 
 TorrentItem.selected {
-    background: green
+    background: $accent;
 }
 
 #torrent-item-head {
@@ -48,23 +48,23 @@ TorrentItem.selected {
 }
 
 Bar {
-    width: 1fr
+    width: 1fr;
 }
 
 .torrent-bar-stop > ProgressBar > Bar > .bar--bar {
-    color: grey;
+    color: $background-lighten-3;
 }
 
 .torrent-bar-stop > ProgressBar > Bar > .bar--complete {
-    color: grey;
+    color: $primary-background-lighten-3;
 }
 
 .torrent-bar-check > ProgressBar > Bar > .bar--bar {
-    color: violet;
+    color: $error-darken-1;
 }
 
 .torrent-bar-check > ProgressBar > Bar > .bar--complete {
-    color: violet;
+    color: $error-darken-1;
 }
 
 /* BOTTOM PANE */
