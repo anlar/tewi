@@ -61,11 +61,27 @@ TorrentItem.selected {
 
 StatusLine {
     layout: grid;
-    grid-size: 7;
-    grid-columns: auto 1fr auto auto 9 auto 11;
+    grid-size: 8;
+    grid-columns: auto 1fr auto auto auto 10 auto 13;
     background: $accent-darken-3;
     height: 1;
+}
+
+.bottom-pane-column {
     padding: 0 1;
+}
+
+.bottom-pane-arrow {
+    padding: 0 0 0 1;
+}
+
+.bottom-pane-column-delimiter {
+    text-opacity: 75%;
+    padding: 0 1;
+}
+
+.bottom-pane-alt {
+    color: $accent-lighten-3;
 }
 
 ConfirmationDialog {

@@ -188,18 +188,20 @@ class StatusLine(Widget):
     # recompose whole line to update blocks width
     r_stats = reactive('', recompose = True)
     r_alt_speed = reactive('', recompose = True)
+    r_alt_delimiter = reactive('', recompose = True)
 
     r_upload_speed = reactive('')
     r_download_speed = reactive('')
 
     def compose(self) -> ComposeResult:
-        yield ReactiveLabel(self.r_stats).data_bind(name=StatusLine.r_stats)
-        yield Static("")
-        yield ReactiveLabel(self.r_alt_speed).data_bind(name=StatusLine.r_alt_speed)
-        yield Static(" ↑ ")
-        yield SpeedIndicator().data_bind(speed=StatusLine.r_upload_speed)
-        yield Static(" ↓ ")
-        yield SpeedIndicator().data_bind(speed=StatusLine.r_download_speed)
+        yield ReactiveLabel(self.r_stats, classes="bottom-pane-column").data_bind(name=StatusLine.r_stats)
+        yield Static("", classes="bottom-pane-column")
+        yield ReactiveLabel(self.r_alt_speed, classes="bottom-pane-column bottom-pane-alt").data_bind(name=StatusLine.r_alt_speed)
+        yield ReactiveLabel('', classes="bottom-pane-column bottom-pane-column-delimiter").data_bind(name=StatusLine.r_alt_delimiter)
+        yield Static("↑", classes="bottom-pane-column bottom-pane-arrow")
+        yield SpeedIndicator(classes="bottom-pane-column").data_bind(speed=StatusLine.r_upload_speed)
+        yield Static("↓", classes="bottom-pane-column bottom-pane-arrow")
+        yield SpeedIndicator(classes="bottom-pane-column").data_bind(speed=StatusLine.r_download_speed)
 
     @on(SessionUpdate)
     def handle_session_update(self, message: SessionUpdate):
@@ -221,9 +223,11 @@ class StatusLine(Widget):
         alt_speed_down = session.alt_speed_down
 
         if alt_speed_enabled:
-            self.r_alt_speed = f'[ Alt. Speed : ↑ {alt_speed_up} KB ↓ {alt_speed_down} KB ]'
+            self.r_alt_speed = f'Speed Limits: ↑ {alt_speed_up} KB ↓ {alt_speed_down} KB'
+            self.r_alt_delimiter = '»»»'
         else:
             self.r_alt_speed = ''
+            self.r_alt_delimiter = ''
 
 class SpeedIndicator(Widget):
 
