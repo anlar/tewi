@@ -1,3 +1,4 @@
+import argparse
 import textwrap
 
 from transmission_rpc import Client
@@ -284,13 +285,13 @@ class MainApp(App):
             Binding("q", "quit", "Quit", priority=True),
             ]
 
-    def __init__(self):
+    def __init__(self, host: str, port: str, version: str):
         super().__init__()
 
-        self.tewi_version = 'DEV'
+        self.tewi_version = version
 
-        self.c_host = 'localhost'
-        self.c_port = '9091'
+        self.c_host = host
+        self.c_port = port
 
         self.client = Client(host = self.c_host, port = self.c_port)
         self.transmission_version = self.client.get_session().version
@@ -473,5 +474,22 @@ class MainApp(App):
             self.query_one(StatusLine).post_message(SessionUpdate(session))
 
 if __name__ == "__main__":
-    app = MainApp()
+    tewi_version = 'DEV'
+
+    parser = argparse.ArgumentParser(
+            prog='tewi',
+            description='Text-based interface for the Transmission BitTorrent daemon',
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument('--host', type=str, default='localhost',
+                        help='Transmission daemon host for connection')
+    parser.add_argument('--port', type=str, default='9091',
+                        help='Transmission daemon port for connection')
+    parser.add_argument('--version', action='version', version='%(prog)s ' + tewi_version,
+                        help='Show version and exit')
+
+    args = parser.parse_args()
+
+    app = MainApp(host=args.host, port=args.port, version=tewi_version)
     app.run()
+
