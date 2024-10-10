@@ -1,3 +1,5 @@
+/* TOP PANE */
+
 #top-pane {
     height: auto;
     background: $accent-darken-1;
@@ -11,6 +13,8 @@
 .top-pane-column-delimiter {
     text-opacity: 75%;
 }
+
+/* MIDDLE PANE */
 
 ScrollableContainer {
     scrollbar-size-vertical: 1;
@@ -43,6 +47,10 @@ TorrentItem.selected {
     width: 100%;
 }
 
+Bar {
+    width: 1fr
+}
+
 .torrent-bar-stop > ProgressBar > Bar > .bar--bar {
     color: grey;
 }
@@ -58,6 +66,8 @@ TorrentItem.selected {
 .torrent-bar-check > ProgressBar > Bar > .bar--complete {
     color: violet;
 }
+
+/* BOTTOM PANE */
 
 StatusLine {
     layout: grid;
@@ -84,6 +94,8 @@ StatusLine {
     color: $accent-lighten-3;
 }
 
+/* SCREEN: CONFIRMATION DIALOG */
+
 ConfirmationDialog {
     align: center middle;
 }
@@ -96,6 +108,3 @@ ConfirmationWidget {
     padding: 1;
 }
 
-Bar {
-    width: 1fr
-}
