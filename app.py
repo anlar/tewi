@@ -272,6 +272,8 @@ class StatusLineSession(Widget):
         return f'Transmission {self.version} | Torrents: {self.torrent_count}'
 
 class MainApp(App):
+    ENABLE_COMMAND_PALETTE = False
+
     CSS_PATH = "app.tcss"
 
     BINDINGS = [
