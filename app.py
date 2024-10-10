@@ -277,13 +277,19 @@ class MainApp(App):
     CSS_PATH = "app.tcss"
 
     BINDINGS = [
-            Binding("k,up", "scroll_up", "UP", priority=True),
-            Binding("j,down", "scroll_down", "DOWN", priority=True),
+            Binding("k,up", "scroll_up", "Move up", priority=True),
+            Binding("j,down", "scroll_down", "Move down", priority=True),
+
+            Binding("g", "jump_up", "Go to the first item", priority=True),
+            Binding("G", "jump_down", "Go to the last item", priority=True),
+
             Binding("p", "toggle_torrent", "Toggle torrent", priority=True),
             Binding("r", "remove_torrent", "Remove torrent", priority=True),
             Binding("R", "trash_torrent", "Trash torrent", priority=True),
             Binding("v", "verify_torrent", "Verify torrent", priority=True),
+
             Binding("t", "toggle_alt_speed", "Toggle alt speed", priority=True),
+
             Binding("q", "quit", "Quit", priority=True),
             ]
 
@@ -407,6 +413,23 @@ class MainApp(App):
                     self.selected_item = self.selected_item.w_next
                     self.selected_item.selected = True
                     self.query_one("#torrents").scroll_to_widget(self.selected_item)
+
+    def action_jump_up(self) -> None:
+        self.jump_to(lambda x : x[0])
+
+    def action_jump_down(self) -> None:
+        self.jump_to(lambda x : x[-1])
+
+    def jump_to(self, selector) -> None:
+        items = self.query(TorrentItem)
+
+        if items:
+            if self.selected_item:
+                self.selected_item.selected = False
+
+                self.selected_item = selector(items)
+                self.selected_item.selected = True
+                self.query_one("#torrents").scroll_to_widget(self.selected_item)
 
     def action_toggle_alt_speed(self) -> None:
         alt_speed_enabled = self.client.get_session().alt_speed_enabled
