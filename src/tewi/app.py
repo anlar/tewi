@@ -31,16 +31,19 @@ from textual.screen import ModalScreen
 from textual.widget import Widget
 from textual.widgets import Static, Label, ProgressBar
 
+
 class TransmissionSession:
     def __init__(self, session, session_stats, torrents):
         self.session = session
         self.session_stats = session_stats
         self.torrents = torrents
 
+
 class SessionUpdate(Message):
     def __init__(self, session):
         self.session = session
         super().__init__()
+
 
 class ConfirmationDialog(ModalScreen[bool]):
     BINDINGS = [
@@ -62,6 +65,7 @@ class ConfirmationDialog(ModalScreen[bool]):
     def action_close(self) -> None:
         self.dismiss(False)
 
+
 class ConfirmationWidget(Static):
 
     def __init__(self, message: str, description: str = None) -> None:
@@ -73,7 +77,8 @@ class ConfirmationWidget(Static):
         yield Label(self.message)
 
         if self.description:
-            yield Label('') # empty space between message and description
+            # empty space between message and description
+            yield Label('')
             for line in textwrap.wrap(self.description, 56):
                 yield Label(line)
 
@@ -81,11 +86,13 @@ class ConfirmationWidget(Static):
         self.border_title = 'Confirmation'
         self.border_subtitle = 'Y(es) / N(o)'
 
+
 class ReactiveLabel(Label):
     name = reactive("")
 
     def render(self):
         return self.name
+
 
 class TorrentItem(Static):
     """Torrent item in main list"""
@@ -168,19 +175,19 @@ class TorrentItem(Static):
 
     def compose(self) -> ComposeResult:
         with Grid(id="torrent-item-head"):
-            yield Label(self.t_name, id = "torrent-item-head-name")
+            yield Label(self.t_name, id="torrent-item-head-name")
             yield Static("")
             yield Static(" ↑ ")
             yield SpeedIndicator().data_bind(speed=TorrentItem.t_upload_speed)
             yield Static(" ↓ ")
             yield SpeedIndicator().data_bind(speed=TorrentItem.t_download_speed)
 
-        yield (ProgressBar(total = 1.0, show_percentage = False, show_eta = False)
-               .data_bind(progress = TorrentItem.t_progress))
+        yield (ProgressBar(total=1.0, show_percentage=False, show_eta=False)
+               .data_bind(progress=TorrentItem.t_progress))
 
-        yield ReactiveLabel(self.t_stats, id = "torrent-item-stats").data_bind(name=TorrentItem.t_stats)
+        yield ReactiveLabel(self.t_stats, id="torrent-item-stats").data_bind(name=TorrentItem.t_stats)
 
-    def print_size(self, num, suffix = "B", size_bytes = 1000):
+    def print_size(self, num, suffix="B", size_bytes=1000):
         r_unit = None
         r_num = None
 
@@ -201,12 +208,13 @@ class TorrentItem(Static):
 
         return f"{r_size} {r_unit}{suffix}"
 
+
 class StatusLine(Widget):
 
     # recompose whole line to update blocks width
-    r_stats = reactive('', recompose = True)
-    r_alt_speed = reactive('', recompose = True)
-    r_alt_delimiter = reactive('', recompose = True)
+    r_stats = reactive('', recompose=True)
+    r_alt_speed = reactive('', recompose=True)
+    r_alt_delimiter = reactive('', recompose=True)
 
     r_upload_speed = reactive('')
     r_download_speed = reactive('')
@@ -247,6 +255,7 @@ class StatusLine(Widget):
             self.r_alt_speed = ''
             self.r_alt_delimiter = ''
 
+
 class SpeedIndicator(Widget):
 
     speed = reactive(0)
@@ -254,7 +263,7 @@ class SpeedIndicator(Widget):
     def render(self) -> str:
         return self.print_speed(self.speed)
 
-    def print_speed(self, num, suffix = "B", speed_bytes = 1000) -> str:
+    def print_speed(self, num, suffix="B", speed_bytes=1000) -> str:
         r_unit = None
         r_num = None
 
@@ -269,6 +278,7 @@ class SpeedIndicator(Widget):
         r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
 
         return f"{r_size} {r_unit}{suffix}"
+
 
 class MainApp(App):
     ENABLE_COMMAND_PALETTE = False
@@ -300,19 +310,19 @@ class MainApp(App):
         self.c_host = host
         self.c_port = port
 
-        self.client = Client(host = self.c_host, port = self.c_port)
+        self.client = Client(host=self.c_host, port=self.c_port)
         self.transmission_version = self.client.get_session().version
 
         self.selected_item = None
 
     def compose(self) -> ComposeResult:
-        with Horizontal(id = "top-pane"):
-            yield Static(f'Tewi {self.tewi_version}', classes = 'top-pane-column')
-            yield Static('»»»', classes = 'top-pane-column top-pane-column-delimiter')
-            yield Static(f'Transmission {self.transmission_version}', classes = 'top-pane-column')
-            yield Static('»»»', classes = 'top-pane-column top-pane-column-delimiter')
-            yield Static(f'{self.c_host}:{self.c_port}', classes = 'top-pane-column')
-        yield ScrollableContainer(id = "torrents")
+        with Horizontal(id="top-pane"):
+            yield Static(f'Tewi {self.tewi_version}', classes='top-pane-column')
+            yield Static('»»»', classes='top-pane-column top-pane-column-delimiter')
+            yield Static(f'Transmission {self.transmission_version}', classes='top-pane-column')
+            yield Static('»»»', classes='top-pane-column top-pane-column-delimiter')
+            yield Static(f'{self.c_host}:{self.c_port}', classes='top-pane-column')
+        yield ScrollableContainer(id="torrents")
         yield StatusLine()
 
     def on_mount(self) -> None:
@@ -344,7 +354,7 @@ class MainApp(App):
             def check_quit(confirmed: bool | None) -> None:
                 if confirmed:
                     self.client.remove_torrent(self.selected_item.t_id,
-                                          delete_data = delete_data)
+                                               delete_data=delete_data)
 
                     w_prev = self.selected_item.w_prev
                     w_next = self.selected_item.w_next
@@ -372,14 +382,14 @@ class MainApp(App):
             if delete_data:
                 self.push_screen(
                         ConfirmationDialog(
-                            message = "Remove torrent and delete data?",
-                            description = "All data downloaded for this torrent will be deleted. Are you sure you want to remove it?"),
+                            message="Remove torrent and delete data?",
+                            description="All data downloaded for this torrent will be deleted. Are you sure you want to remove it?"),
                         check_quit)
             else:
                 self.push_screen(
                         ConfirmationDialog(
-                            message = "Remove torrent?",
-                            description = "Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?"),
+                            message="Remove torrent?",
+                            description="Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?"),
                         check_quit)
 
     def action_scroll_up(self) -> None:
@@ -414,10 +424,10 @@ class MainApp(App):
                     self.query_one("#torrents").scroll_to_widget(self.selected_item)
 
     def action_jump_up(self) -> None:
-        self.jump_to(lambda x : x[0])
+        self.jump_to(lambda x: x[0])
 
     def action_jump_down(self) -> None:
-        self.jump_to(lambda x : x[-1])
+        self.jump_to(lambda x: x[-1])
 
     def jump_to(self, selector) -> None:
         items = self.query(TorrentItem)
@@ -432,7 +442,7 @@ class MainApp(App):
 
     def action_toggle_alt_speed(self) -> None:
         alt_speed_enabled = self.client.get_session().alt_speed_enabled
-        self.client.set_session(alt_speed_enabled = not alt_speed_enabled)
+        self.client.set_session(alt_speed_enabled=not alt_speed_enabled)
 
     @on(SessionUpdate)
     def handle_session_update(self, message: SessionUpdate):
@@ -480,12 +490,12 @@ class MainApp(App):
 
     def load_session(self) -> None:
         session = TransmissionSession(
-                session = self.client.get_session(),
-                session_stats = self.client.session_stats(),
-                torrents = self.client.get_torrents()
+                session=self.client.get_session(),
+                session_stats=self.client.session_stats(),
+                torrents=self.client.get_torrents()
         )
 
-        session.torrents.sort(key = lambda t: t.name.lower())
+        session.torrents.sort(key=lambda t: t.name.lower())
 
         self.log(f'Load session from Transmission: {vars(session.session)}')
         self.log(f'Load session_stats from Transmission: {vars(session.session_stats)}')
@@ -496,6 +506,7 @@ class MainApp(App):
         if len(status_line) > 0:
             self.post_message(SessionUpdate(session))
             self.query_one(StatusLine).post_message(SessionUpdate(session))
+
 
 def cli():
     tewi_version = 'DEV'
@@ -517,6 +528,6 @@ def cli():
     app = MainApp(host=args.host, port=args.port, version=tewi_version)
     app.run()
 
+
 if __name__ == "__main__":
     cli()
-
