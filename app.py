@@ -185,60 +185,45 @@ class TorrentItem(Static):
 
 class StatusLine(Widget):
 
-    # recompose whole line to update speed block width
-    alt_speed_enabled = reactive(False, recompose = True)
-    alt_speed_up = reactive(0, recompose = True)
-    alt_speed_down = reactive(0, recompose = True)
+    # recompose whole line to update blocks width
+    r_stats = reactive('', recompose = True)
+    r_alt_speed = reactive('', recompose = True)
+
+    r_upload_speed = reactive('')
+    r_download_speed = reactive('')
 
     def compose(self) -> ComposeResult:
-        yield StatusLineSession()
+        yield ReactiveLabel(self.r_stats).data_bind(name=StatusLine.r_stats)
         yield Static("")
-        yield Static(self.get_alt_speed_label())
+        yield ReactiveLabel(self.r_alt_speed).data_bind(name=StatusLine.r_alt_speed)
         yield Static(" ↑ ")
-        yield SpeedIndicator(id = "upload")
+        yield SpeedIndicator().data_bind(speed=StatusLine.r_upload_speed)
         yield Static(" ↓ ")
-        yield SpeedIndicator(id = "download")
+        yield SpeedIndicator().data_bind(speed=StatusLine.r_download_speed)
 
     @on(SessionUpdate)
     def handle_session_update(self, message: SessionUpdate):
         session = message.session.session
         session_stats = message.session.session_stats
+        torrents = message.session.torrents
 
-        self.update(
-                session.version,
-                session.alt_speed_enabled,
-                session.alt_speed_up,
-                session.alt_speed_down,
-                session_stats.torrent_count,
-                session_stats.upload_speed,
-                session_stats.download_speed
-                )
+        torrents_down = len([x for x in torrents if x.status == 'downloading'])
+        torrents_seed = len([x for x in torrents if x.status == 'seeding'])
+        torrents_stop = len(torrents) - torrents_down - torrents_seed
 
-    def get_alt_speed_label(self):
-        # alt speed always in KB
-        if self.alt_speed_enabled:
-            return f'[ Alt. Speed : ↑ {self.alt_speed_up} KB ↓ {self.alt_speed_down} KB ]'
+        self.r_stats = f"Torrents: {len(torrents)} (Downloading: {torrents_down}, Seeding: {torrents_seed}, Paused: {torrents_stop})"
+
+        self.r_upload_speed = session_stats.upload_speed
+        self.r_download_speed = session_stats.download_speed
+
+        alt_speed_enabled = session.alt_speed_enabled
+        alt_speed_up = session.alt_speed_up
+        alt_speed_down = session.alt_speed_down
+
+        if alt_speed_enabled:
+            self.r_alt_speed = f'[ Alt. Speed : ↑ {alt_speed_up} KB ↓ {alt_speed_down} KB ]'
         else:
-            return ''
-
-    def update(self, version,
-               alt_speed_enabled, alt_speed_up, alt_speed_down,
-               torrent_count,
-               upload_speed, download_speed) -> None:
-
-        session = self.query_one(StatusLineSession)
-        session.version = version
-        session.torrent_count = torrent_count
-
-        upload = self.query_one("#upload")
-        upload.speed = upload_speed
-
-        download = self.query_one("#download")
-        download.speed = download_speed
-
-        self.alt_speed_enabled = alt_speed_enabled
-        self.alt_speed_up = alt_speed_up
-        self.alt_speed_down = alt_speed_down
+            self.r_alt_speed = ''
 
 class SpeedIndicator(Widget):
 
@@ -262,14 +247,6 @@ class SpeedIndicator(Widget):
         r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
 
         return f"{r_size} {r_unit}{suffix}"
-
-class StatusLineSession(Widget):
-
-    version = reactive('')
-    torrent_count = reactive(0)
-
-    def render(self) -> str:
-        return f'Transmission {self.version} | Torrents: {self.torrent_count}'
 
 class MainApp(App):
     ENABLE_COMMAND_PALETTE = False

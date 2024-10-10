@@ -63,8 +63,9 @@ StatusLine {
     layout: grid;
     grid-size: 7;
     grid-columns: auto 1fr auto auto 9 auto 11;
-    background: grey;
+    background: $accent-darken-3;
     height: 1;
+    padding: 0 1;
 }
 
 ConfirmationDialog {
