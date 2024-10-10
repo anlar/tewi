@@ -120,17 +120,19 @@ class TorrentItem(Static):
         self.t_stats = self.print_stats()
 
     def print_stats(self) -> str:
-        size_total = self.print_size(self.t_size_total)
+        result = None
 
-        size_label = None
+        size_total = self.print_size(self.t_size_total)
 
         if self.t_size_left > 0:
             size_current = self.print_size(self.t_size_total - self.t_size_left)
-            size_label = size_current + " / " + size_total
+            result = f"{size_current} / {size_total} ({self.t_progress:.2f}%)"
         else:
-            size_label = size_total
+            result = f"{size_total} (Ratio: {self.t_ratio:.2f})"
 
-        return f'{size_label} | Status: {str(self.t_status)} | Ratio: {self.t_ratio} | Priority: {self.t_priority} | Seeders: {str(self.t_seeders)} | Leechers: {str(self.t_leechers)} | ETA: {self.t_eta}'
+        result = result + f" | Status: {str(self.t_status)} | Seeders: {str(self.t_seeders)} | Leechers: {str(self.t_leechers)}"
+
+        return result
 
     def compose(self) -> ComposeResult:
         with Grid(id="torrent-item-head"):
