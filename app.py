@@ -1,5 +1,6 @@
-from transmission_rpc import Client
 import textwrap
+
+from transmission_rpc import Client
 
 from textual import on
 from textual.app import App, ComposeResult
@@ -9,7 +10,7 @@ from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
 from textual.widget import Widget
-from textual.widgets import Header, Static, Label, ProgressBar
+from textual.widgets import Static, Label, ProgressBar
 
 class TransmissionSession:
     def __init__(self, session, session_stats, torrents):
