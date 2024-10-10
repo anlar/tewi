@@ -40,6 +40,7 @@ TorrentItem.selected {
 
 #torrent-item-stats {
     text-opacity: 75%;
+    width: 100%;
 }
 
 .torrent-bar-stop > ProgressBar > Bar > .bar--bar {
