@@ -42,6 +42,22 @@ TorrentItem.selected {
     text-opacity: 75%;
 }
 
+.torrent-bar-stop > ProgressBar > Bar > .bar--bar {
+    color: grey;
+}
+
+.torrent-bar-stop > ProgressBar > Bar > .bar--complete {
+    color: grey;
+}
+
+.torrent-bar-check > ProgressBar > Bar > .bar--bar {
+    color: violet;
+}
+
+.torrent-bar-check > ProgressBar > Bar > .bar--complete {
+    color: violet;
+}
+
 StatusLine {
     layout: grid;
     grid-size: 7;

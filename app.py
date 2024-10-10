@@ -99,6 +99,18 @@ class TorrentItem(Static):
         else:
             self.remove_class("selected")
 
+    def watch_t_status(self, new_t_status):
+        # For all other statuses using default colors:
+        # - yellow - in progress
+        # - green - complete
+        self.remove_class("torrent-bar-stop", "torrent-bar-check")
+
+        match new_t_status:
+            case "stopped":
+                self.add_class("torrent-bar-stop")
+            case "check pending" | "checking":
+                self.add_class("torrent-bar-check")
+
     def update_torrent(self, torrent) -> None:
         self.t_id = torrent.id
         self.t_name = torrent.name
