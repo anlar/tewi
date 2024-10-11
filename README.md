@@ -15,20 +15,18 @@ Project description
 ### Built With
 
 * Python 3
-* Textual
-* transmission-rpc
+* [Textual](https://textual.textualize.io/)
+* [transmission-rpc](https://github.com/Trim21/transmission-rpc)
 
 ## Getting Started
 
-Instructions to install
-
 ### Prerequisites
 
-```
-# apt install pipx
-```
+Tewi requires Python 3.10+.
 
 ### Installation
+
+Recommended way to install is to use `pipx` or `pip`:
 
 ```
 $ pipx install tewi
@@ -40,7 +38,7 @@ CLI and hot-keys
 
 ## Contributing
 
-Instructions
+Feel free to open bug reports and send pull requests.
 
 ## License
 
