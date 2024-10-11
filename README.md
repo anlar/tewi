@@ -34,7 +34,20 @@ $ pipx install tewi
 
 ## Usage
 
-CLI and hot-keys
+Launch Tewi from command line:
+
+```
+$ tewi
+```
+
+By default it connects to Transmission daemon on http://localhost:9091. To change these settings
+you could specify your connection details:
+
+```
+$ tewi --host XXXX --port XXXX
+```
+
+Check other command line options using `tewi --help`.
 
 ## Contributing
 
