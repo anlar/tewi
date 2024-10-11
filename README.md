@@ -10,7 +10,7 @@
 
 ![Tewi Screen Shot](https://github.com/user-attachments/assets/7eb142fd-d834-4dcf-989d-530a3bf13121)
 
-Project description
+Tewi is a TUI (text user interface) interface for the Transmission BitTorrent daemon.
 
 ### Built With
 
