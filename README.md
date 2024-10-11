@@ -55,6 +55,16 @@ $ tewi --help
 
 View available hot-keys in Tewi by pressing `?` key.
 
+## Roadmap
+
+- [ ] Compact view mode for torrents (one torrent per line)
+- [ ] View torrent details in separate screen
+- [ ] Torrents filtering
+- [ ] Ability to change torrent sorting order
+- [ ] Display session details
+
+See the [open issues](https://github.com/anlar/tewi/issues) for a full list of proposed features (and known issues).
+
 ## Contributing
 
 Feel free to open bug reports and send pull requests.
