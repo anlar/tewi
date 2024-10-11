@@ -231,16 +231,12 @@ class TorrentItem(Static):
         r_unit = None
         r_num = None
 
-        for unit in ("", "k", "M", "G", "T", "P", "E", "Z"):
+        for unit in ("", "k", "M", "G", "T", "P", "E", "Z", "Y"):
             if abs(num) < size_bytes:
                 r_unit = unit
                 r_num = num
                 break
             num /= size_bytes
-
-        if not r_unit:
-            r_unit = 'Y'
-            r_num = num
 
         round(r_num, 2)
 
