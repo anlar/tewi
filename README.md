@@ -8,7 +8,7 @@
 
 ## About The Project
 
-[![Tewi Screen Shot][docs/images/tewi-screenshot]](https://github.com/anlar/tewi)
+[![Tewi Screen Shot][docs/images/tewi-screenshot.png]](https://github.com/anlar/tewi)
 
 Project description
 
