@@ -8,7 +8,7 @@
 
 ## About The Project
 
-![Textual splash image](https://raw.githubusercontent.com/anlar/tewi/master/docs/images/tewi-screenshot.png)
+![Textual splash image](https://raw.githubusercontent.com/anlar/tewi/refs/heads/readme/docs/images/tewi-screenshot.png)
 
 Project description
 
