@@ -29,7 +29,7 @@ from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
 from textual.widget import Widget
-from textual.widgets import Static, Label, ProgressBar
+from textual.widgets import Static, Label, ProgressBar, DataTable
 
 
 class TransmissionSession:
@@ -43,6 +43,46 @@ class SessionUpdate(Message):
     def __init__(self, session):
         self.session = session
         super().__init__()
+
+
+class HelpDialog(ModalScreen[bool]):
+    BINDINGS = [
+            Binding("q,escape", "close", "Cancel", priority=True),
+            ]
+
+    def __init__(self, bindings) -> None:
+        self.bindings = bindings
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield HelpWidget(self.bindings)
+
+    def action_close(self) -> None:
+        self.dismiss(False)
+
+
+class HelpWidget(Widget):
+
+    def __init__(self, bindings) -> None:
+        self.bindings = bindings
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            yield DataTable()
+
+    def on_mount(self) -> None:
+        self.border_title = 'Help'
+        self.border_subtitle = 'Q(uit)'
+
+        table = self.query_one(DataTable)
+        table.add_columns("Key", "Command")
+
+        for b in self.bindings:
+            table.add_row(b.key, b.description)
+
+        table.cursor_type = "none"
+        table.zebra_stripes = True
 
 
 class ConfirmationDialog(ModalScreen[bool]):
@@ -301,7 +341,8 @@ class MainApp(App):
 
             Binding("t", "toggle_alt_speed", "Toggle alt speed", priority=True),
 
-            Binding("q", "quit", "Quit", priority=True),
+            Binding("?", "help", "Help", priority=True),
+            Binding("q", "quit", "Quit"),
             ]
 
     r_session = reactive(None)
@@ -395,6 +436,9 @@ class MainApp(App):
                             message="Remove torrent?",
                             description="Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?"),
                         check_quit)
+
+    def action_help(self) -> None:
+        self.push_screen(HelpDialog(bindings=self.BINDINGS))
 
     def action_scroll_up(self) -> None:
         items = self.query(TorrentItem)

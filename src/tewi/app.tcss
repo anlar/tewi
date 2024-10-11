@@ -112,6 +112,22 @@ StatusLine {
     color: $accent-lighten-3;
 }
 
+/* SCREEN: HELP DIALOG */
+/* TODO: remove hard-coded height/width value */
+
+HelpDialog {
+    align: center middle;
+}
+
+HelpWidget {
+    height: 16;
+    width: 34;
+
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
 /* SCREEN: CONFIRMATION DIALOG */
 
 ConfirmationDialog {
