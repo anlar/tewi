@@ -367,6 +367,10 @@ class MainApp(App):
             yield Static(f'Transmission {self.transmission_version}', classes='top-pane-column')
             yield Static('»»»', classes='top-pane-column top-pane-column-delimiter')
             yield Static(f'{self.c_host}:{self.c_port}', classes='top-pane-column')
+            yield Static('', classes='top-pane-column top-pane-column-space')
+            yield Static('?: Help', classes='top-pane-column')
+            yield Static('', classes='top-pane-column')
+            yield Static('Q: Quit', classes='top-pane-column')
         yield ScrollableContainer(id="torrents")
         yield StatusLine().data_bind(r_session=MainApp.r_session)
 

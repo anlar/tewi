@@ -32,6 +32,10 @@
     text-opacity: 75%;
 }
 
+.top-pane-column-space {
+    width: 1fr;
+}
+
 /* MIDDLE PANE */
 
 ScrollableContainer {
