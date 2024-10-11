@@ -47,7 +47,13 @@ you could specify your connection details:
 $ tewi --host XXXX --port XXXX
 ```
 
-Check other command line options using `tewi --help`.
+Check other command line options using help command:
+
+```
+$ tewi --help
+```
+
+View available hot-keys in Tewi by pressing `?` key.
 
 ## Contributing
 
