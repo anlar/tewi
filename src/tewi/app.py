@@ -484,9 +484,9 @@ class MainApp(App):
             if self.selected_item:
                 self.selected_item.selected = False
 
-                self.selected_item = selector(items)
-                self.selected_item.selected = True
-                self.query_one("#torrents").scroll_to_widget(self.selected_item)
+            self.selected_item = selector(items)
+            self.selected_item.selected = True
+            self.query_one("#torrents").scroll_to_widget(self.selected_item)
 
     def action_toggle_alt_speed(self) -> None:
         alt_speed_enabled = self.client.get_session().alt_speed_enabled
