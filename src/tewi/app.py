@@ -25,7 +25,6 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Grid, ScrollableContainer, Horizontal
 from textual.css.query import NoMatches
-from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
 from textual.widget import Widget
@@ -37,12 +36,6 @@ class TransmissionSession:
         self.session = session
         self.session_stats = session_stats
         self.torrents = torrents
-
-
-class SessionUpdate(Message):
-    def __init__(self, session):
-        self.session = session
-        super().__init__()
 
 
 class HelpDialog(ModalScreen[bool]):
