@@ -21,10 +21,10 @@ import textwrap
 
 from transmission_rpc import Client
 
-from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Grid, ScrollableContainer, Horizontal
+from textual.css.query import NoMatches
 from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
@@ -211,6 +211,8 @@ class TorrentItem(Static):
 
 class StatusLine(Widget):
 
+    r_session = reactive(None)
+
     # recompose whole line to update blocks width
     r_stats = reactive('', recompose=True)
     r_alt_speed = reactive('', recompose=True)
@@ -229,31 +231,31 @@ class StatusLine(Widget):
         yield Static("↓", classes="bottom-pane-column bottom-pane-arrow")
         yield SpeedIndicator(classes="bottom-pane-column").data_bind(speed=StatusLine.r_download_speed)
 
-    @on(SessionUpdate)
-    def handle_session_update(self, message: SessionUpdate):
-        session = message.session.session
-        session_stats = message.session.session_stats
-        torrents = message.session.torrents
+    def watch_r_session(self, new_r_session):
+        if new_r_session:
+            session = new_r_session.session
+            session_stats = new_r_session.session_stats
+            torrents = new_r_session.torrents
 
-        torrents_down = len([x for x in torrents if x.status == 'downloading'])
-        torrents_seed = len([x for x in torrents if x.status == 'seeding'])
-        torrents_stop = len(torrents) - torrents_down - torrents_seed
+            torrents_down = len([x for x in torrents if x.status == 'downloading'])
+            torrents_seed = len([x for x in torrents if x.status == 'seeding'])
+            torrents_stop = len(torrents) - torrents_down - torrents_seed
 
-        self.r_stats = f"Torrents: {len(torrents)} (Downloading: {torrents_down}, Seeding: {torrents_seed}, Paused: {torrents_stop})"
+            self.r_stats = f"Torrents: {len(torrents)} (Downloading: {torrents_down}, Seeding: {torrents_seed}, Paused: {torrents_stop})"
 
-        self.r_upload_speed = session_stats.upload_speed
-        self.r_download_speed = session_stats.download_speed
+            self.r_upload_speed = session_stats.upload_speed
+            self.r_download_speed = session_stats.download_speed
 
-        alt_speed_enabled = session.alt_speed_enabled
-        alt_speed_up = session.alt_speed_up
-        alt_speed_down = session.alt_speed_down
+            alt_speed_enabled = session.alt_speed_enabled
+            alt_speed_up = session.alt_speed_up
+            alt_speed_down = session.alt_speed_down
 
-        if alt_speed_enabled:
-            self.r_alt_speed = f'Speed Limits: ↑ {alt_speed_up} KB ↓ {alt_speed_down} KB'
-            self.r_alt_delimiter = '»»»'
-        else:
-            self.r_alt_speed = ''
-            self.r_alt_delimiter = ''
+            if alt_speed_enabled:
+                self.r_alt_speed = f'Speed Limits: ↑ {alt_speed_up} KB ↓ {alt_speed_down} KB'
+                self.r_alt_delimiter = '»»»'
+            else:
+                self.r_alt_speed = ''
+                self.r_alt_delimiter = ''
 
 
 class SpeedIndicator(Widget):
@@ -302,6 +304,8 @@ class MainApp(App):
             Binding("q", "quit", "Quit", priority=True),
             ]
 
+    r_session = reactive(None)
+
     def __init__(self, host: str, port: str, version: str):
         super().__init__()
 
@@ -323,7 +327,7 @@ class MainApp(App):
             yield Static('»»»', classes='top-pane-column top-pane-column-delimiter')
             yield Static(f'{self.c_host}:{self.c_port}', classes='top-pane-column')
         yield ScrollableContainer(id="torrents")
-        yield StatusLine()
+        yield StatusLine().data_bind(r_session=MainApp.r_session)
 
     def on_mount(self) -> None:
         self.load_session()
@@ -444,17 +448,22 @@ class MainApp(App):
         alt_speed_enabled = self.client.get_session().alt_speed_enabled
         self.client.set_session(alt_speed_enabled=not alt_speed_enabled)
 
-    @on(SessionUpdate)
-    def handle_session_update(self, message: SessionUpdate):
-        session = message.session
+    def watch_r_session(self, new_r_session):
+        if new_r_session:
+            session = new_r_session
 
-        if self.is_equal_to_pane(session.torrents):
-            items = self.query_one("#torrents").children
+            # TODO: better handle for cases when updates came when
+            # main screen is on the background
+            try:
+                if self.is_equal_to_pane(session.torrents):
+                    items = self.query_one("#torrents").children
 
-            for i, torrent in enumerate(session.torrents):
-                items[i].update_torrent(torrent)
-        else:
-            self.create_pane(session)
+                    for i, torrent in enumerate(session.torrents):
+                        items[i].update_torrent(torrent)
+                else:
+                    self.create_pane(session)
+            except NoMatches:
+                pass
 
     def create_pane(self, session) -> None:
         torrents_pane = self.query_one("#torrents")
@@ -501,11 +510,7 @@ class MainApp(App):
         self.log(f'Load session_stats from Transmission: {vars(session.session_stats)}')
         self.log(f'Load {len(session.torrents)} torrents from Transmission')
 
-        status_line = self.query(StatusLine)
-
-        if len(status_line) > 0:
-            self.post_message(SessionUpdate(session))
-            self.query_one(StatusLine).post_message(SessionUpdate(session))
+        self.r_session = session
 
 
 def cli():
