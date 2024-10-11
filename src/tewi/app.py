@@ -558,7 +558,7 @@ class MainApp(App):
 
 
 def cli():
-    tewi_version = 'DEV'
+    tewi_version = '0.1.0'
 
     parser = argparse.ArgumentParser(
             prog='tewi',
