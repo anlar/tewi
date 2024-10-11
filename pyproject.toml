@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "tewi-transmission"
 version = "0.1.0"
 authors = [
-  { name="Anton Larionov", email="developer-email@test.com" },
+  { name="Anton Larionov", email="anton.larionov.dev@gmail.com" },
 ]
 description = "Text-based interface for the Transmission BitTorrent daemon"
 readme = "README.md"
