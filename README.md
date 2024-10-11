@@ -29,7 +29,7 @@ Tewi requires Python 3.10+.
 Recommended way to install is to use `pipx` or `pip`:
 
 ```
-$ pipx install tewi
+$ pipx install tewi-transmission
 ```
 
 ## Usage

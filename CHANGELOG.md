@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Removed
 
-## [0.1.0] - 2024-10-XX - Rabbit Sign
+## [0.1.0] - 2024-10-11 - Rabbit Sign
 
 ### Added
 

@@ -3,7 +3,7 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "tewi"
+name = "tewi-transmission"
 version = "0.1.0"
 authors = [
   { name="Anton Larionov", email="developer-email@test.com" },
