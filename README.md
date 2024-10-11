@@ -6,9 +6,9 @@
   </p>
 </div>
 
-## About The Project
+## About
 
-![Textual splash image](https://raw.githubusercontent.com/anlar/tewi/refs/heads/readme/docs/images/tewi-screenshot.png)
+![Tewi Screen Shot](https://github.com/user-attachments/assets/7eb142fd-d834-4dcf-989d-530a3bf13121)
 
 Project description
 
