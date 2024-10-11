@@ -14,7 +14,7 @@ Project description
 
 ### Built With
 
-* Python 3
+* [Python 3](https://www.python.org/)
 * [Textual](https://textual.textualize.io/)
 * [transmission-rpc](https://github.com/Trim21/transmission-rpc)
 
