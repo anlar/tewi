@@ -61,7 +61,6 @@ View available hot-keys in Tewi by pressing `?` key.
 - [ ] View torrent details in separate screen
 - [ ] Torrents filtering
 - [ ] Ability to change torrent sorting order
-- [ ] Display session details
 
 See the [open issues](https://github.com/anlar/tewi/issues) for a full list of proposed features (and known issues).
 

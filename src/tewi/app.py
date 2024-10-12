@@ -38,6 +38,114 @@ class TransmissionSession:
         self.torrents = torrents
 
 
+class StatisticsDialog(ModalScreen[bool]):
+    BINDINGS = [
+            Binding("q,escape", "close", "Cancel", priority=True),
+            ]
+
+    def __init__(self, session_stats) -> None:
+        self.session_stats = session_stats
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield StatisticsWidget(self.session_stats)
+
+    def action_close(self) -> None:
+        self.dismiss(False)
+
+
+class StatisticsWidget(Widget):
+
+    r_upload = reactive("")
+    r_download = reactive("")
+    r_ratio = reactive("")
+    r_time = reactive("")
+
+    r_total_upload = reactive("")
+    r_total_download = reactive("")
+    r_total_ratio = reactive("")
+    r_total_time = reactive("")
+    r_total_started = reactive("")
+
+    def __init__(self, session_stats) -> None:
+        self.session_stats = session_stats
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield Static("Current Session", classes="statistics-title")
+        yield Static("  Uploaded:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_upload)
+        yield Static("  Downloaded:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_download)
+        yield Static("  Ratio:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_ratio)
+        yield Static("  Running Time:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_time)
+        yield Static(" ", classes="statistics-title")
+        yield Static("Total", classes="statistics-title")
+        yield Static("  Uploaded:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_upload)
+        yield Static("  Downloaded:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_download)
+        yield Static("  Ratio:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_ratio)
+        yield Static("  Running Time:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_time)
+        yield Static("  Started:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_started)
+
+    def on_mount(self) -> None:
+        self.border_title = 'Statistics'
+        self.border_subtitle = 'Q(uit)'
+
+        # current stats
+
+        self.r_upload = print_size(self.session_stats.current_stats.uploaded_bytes)
+        self.r_download = print_size(self.session_stats.current_stats.downloaded_bytes)
+
+        self.r_ratio = self.print_ratio(self.session_stats.current_stats.uploaded_bytes,
+                                        self.session_stats.current_stats.downloaded_bytes)
+
+        self.r_time = self.print_time(self.session_stats.current_stats.seconds_active)
+
+        # cumulative stats
+
+        self.r_total_upload = print_size(self.session_stats.cumulative_stats.uploaded_bytes)
+        self.r_total_download = print_size(self.session_stats.cumulative_stats.downloaded_bytes)
+
+        self.r_total_ratio = self.print_ratio(self.session_stats.cumulative_stats.uploaded_bytes,
+                                              self.session_stats.cumulative_stats.downloaded_bytes)
+
+        self.r_total_time = self.print_time(self.session_stats.cumulative_stats.seconds_active)
+        self.r_total_started = f"{self.session_stats.cumulative_stats.session_count} times"
+
+    def print_ratio(self, uploaded, downloaded) -> str:
+        if downloaded == 0:
+            return "∞"
+
+        ratio = uploaded / downloaded
+
+        return f"{ratio:.2f}"
+
+    def print_time(self, seconds) -> str:
+        intervals = (
+                ('days', 86400),    # 60 * 60 * 24
+                ('hours', 3600),    # 60 * 60
+                ('minutes', 60),
+                ('seconds', 1),
+                )
+        result = []
+
+        for name, count in intervals:
+            value = seconds // count
+            if value:
+                seconds -= value * count
+                if value == 1:
+                    name = name.rstrip('s')
+                result.append("{} {}".format(value, name))
+        return ', '.join(result[:1])
+
+
 class HelpDialog(ModalScreen[bool]):
     BINDINGS = [
             Binding("q,escape", "close", "Cancel", priority=True),
@@ -194,10 +302,10 @@ class TorrentItem(Static):
     def print_stats(self) -> str:
         result = None
 
-        size_total = self.print_size(self.t_size_total)
+        size_total = print_size(self.t_size_total)
 
         if self.t_size_left > 0:
-            size_current = self.print_size(self.t_size_total - self.t_size_left)
+            size_current = print_size(self.t_size_total - self.t_size_left)
             result = f"{size_current} / {size_total} ({self.t_progress:.2f}%)"
         else:
             result = f"{size_total} (Ratio: {self.t_ratio:.2f})"
@@ -219,23 +327,6 @@ class TorrentItem(Static):
                .data_bind(progress=TorrentItem.t_progress))
 
         yield ReactiveLabel(self.t_stats, id="torrent-item-stats").data_bind(name=TorrentItem.t_stats)
-
-    def print_size(self, num, suffix="B", size_bytes=1000):
-        r_unit = None
-        r_num = None
-
-        for unit in ("", "k", "M", "G", "T", "P", "E", "Z", "Y"):
-            if abs(num) < size_bytes:
-                r_unit = unit
-                r_num = num
-                break
-            num /= size_bytes
-
-        round(r_num, 2)
-
-        r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
-
-        return f"{r_size} {r_unit}{suffix}"
 
 
 class StatusLine(Widget):
@@ -329,6 +420,8 @@ class MainApp(App):
             Binding("v", "verify_torrent", "Verify torrent", priority=True),
 
             Binding("t", "toggle_alt_speed", "Toggle alt speed", priority=True),
+
+            Binding("s", "show_statistics", "Show statistics", priority=True),
 
             Binding("?", "help", "Help", priority=True),
             Binding("q", "quit", "Quit"),
@@ -429,6 +522,9 @@ class MainApp(App):
                             message="Remove torrent?",
                             description="Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?"),
                         check_quit)
+
+    def action_show_statistics(self) -> None:
+        self.push_screen(StatisticsDialog(self.r_session.session_stats))
 
     def action_help(self) -> None:
         self.push_screen(HelpDialog(bindings=self.BINDINGS))
@@ -548,6 +644,24 @@ class MainApp(App):
         self.log(f'Load {len(session.torrents)} torrents from Transmission')
 
         self.r_session = session
+
+
+def print_size(num, suffix="B", size_bytes=1000):
+    r_unit = None
+    r_num = None
+
+    for unit in ("", "k", "M", "G", "T", "P", "E", "Z", "Y"):
+        if abs(num) < size_bytes:
+            r_unit = unit
+            r_num = num
+            break
+        num /= size_bytes
+
+    round(r_num, 2)
+
+    r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
+
+    return f"{r_size} {r_unit}{suffix}"
 
 
 def cli():

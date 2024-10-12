@@ -116,6 +116,29 @@ StatusLine {
     color: $accent-lighten-3;
 }
 
+/* SCREEN: STATISTICS DIALOG */
+
+StatisticsDialog {
+    align: center middle;
+}
+
+StatisticsWidget {
+    height: auto;
+    width: 40;
+
+    layout: grid;
+    grid-size: 2;
+
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
+.statistics-title {
+    text-style: bold;
+    column-span: 2;
+}
+
 /* SCREEN: HELP DIALOG */
 /* TODO: remove hard-coded height/width value */
 
@@ -124,7 +147,7 @@ HelpDialog {
 }
 
 HelpWidget {
-    height: 16;
+    height: 17;
     width: 34;
 
     border-title-align: center;
