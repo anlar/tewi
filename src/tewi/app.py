@@ -429,7 +429,10 @@ class MainApp(App):
 
     r_session = reactive(None)
 
-    def __init__(self, host: str, port: str, version: str):
+    def __init__(self, host: str, port: str,
+                 username: str, password: str,
+                 version: str):
+
         super().__init__()
 
         self.tewi_version = version
@@ -437,7 +440,8 @@ class MainApp(App):
         self.c_host = host
         self.c_port = port
 
-        self.client = Client(host=self.c_host, port=self.c_port)
+        self.client = Client(host=self.c_host, port=self.c_port,
+                             username=username, password=password)
         self.transmission_version = self.client.get_session().version
 
         self.selected_item = None
@@ -676,12 +680,18 @@ def cli():
                         help='Transmission daemon host for connection')
     parser.add_argument('--port', type=str, default='9091',
                         help='Transmission daemon port for connection')
+    parser.add_argument('--username', type=str,
+                        help='Transmission daemon username for connection')
+    parser.add_argument('--password', type=str,
+                        help='Transmission daemon password for connection')
     parser.add_argument('--version', action='version', version='%(prog)s ' + tewi_version,
                         help='Show version and exit')
 
     args = parser.parse_args()
 
-    app = MainApp(host=args.host, port=args.port, version=tewi_version)
+    app = MainApp(host=args.host, port=args.port,
+                  username=args.username, password=args.password,
+                  version=tewi_version)
     app.run()
 
 
