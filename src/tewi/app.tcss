@@ -147,7 +147,7 @@ HelpDialog {
 }
 
 HelpWidget {
-    height: 17;
+    height: 18;
     width: 34;
 
     border-title-align: center;

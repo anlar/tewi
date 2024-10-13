@@ -418,6 +418,7 @@ class MainApp(App):
             Binding("r", "remove_torrent", "Remove torrent", priority=True),
             Binding("R", "trash_torrent", "Trash torrent", priority=True),
             Binding("v", "verify_torrent", "Verify torrent", priority=True),
+            Binding("n", "reannounce_torrent", "Reannounce torrent", priority=True),
 
             Binding("t", "toggle_alt_speed", "Toggle alt speed", priority=True),
 
@@ -476,6 +477,10 @@ class MainApp(App):
     def action_verify_torrent(self) -> None:
         if self.selected_item:
             self.client.verify_torrent(self.selected_item.t_id)
+
+    def action_reannounce_torrent(self) -> None:
+        if self.selected_item:
+            self.client.reannounce_torrent(self.selected_item.t_id)
 
     def action_remove_torrent(self) -> None:
         self.remove_torrent(False)
