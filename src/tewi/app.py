@@ -110,10 +110,6 @@ class TorrentInfoWidget(Widget):
                     yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_date_active)
 
                     yield Static(" ", classes="info-overview-title")
-                    yield Static("Limits", classes="info-overview-title")
-                    yield Static(" ", classes="info-overview-title")
-
-                    yield Static(" ", classes="info-overview-title")
                     yield Static("Peers", classes="info-overview-title")
                     yield Static(" ", classes="info-overview-title")
 
@@ -150,7 +146,7 @@ class TorrentInfoWidget(Widget):
         if value:
             return value.strftime("%Y-%m-%d %H:%M:%S")
         else:
-            return ""
+            return "Never"
 
 
 class StatisticsDialog(ModalScreen[bool]):
