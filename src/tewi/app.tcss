@@ -174,3 +174,29 @@ ConfirmationWidget {
 Toast {
     width: 40;
 }
+
+/* TORRENT INFO */
+
+TorrentInfoWidget {
+    border: round $primary 75%;
+    background: $background-lighten-1;
+    height: 1fr;
+}
+
+.info-overview-title {
+    text-style: bold;
+    column-span: 2;
+}
+
+.info-overview-name {
+    text-align: right;
+}
+
+#info-overview {
+    height: auto;
+
+    layout: grid;
+    grid-size: 2;
+    grid-columns: 15 2fr;
+    grid-gutter: 0 1;
+}

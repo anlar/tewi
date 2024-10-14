@@ -18,6 +18,7 @@
 
 import argparse
 import textwrap
+from datetime import datetime
 
 from transmission_rpc import Client
 
@@ -28,7 +29,7 @@ from textual.css.query import NoMatches
 from textual.reactive import reactive
 from textual.screen import ModalScreen
 from textual.widget import Widget
-from textual.widgets import Static, Label, ProgressBar, DataTable
+from textual.widgets import Static, Label, ProgressBar, DataTable, ContentSwitcher, TabbedContent, TabPane
 
 
 class TransmissionSession:
@@ -36,6 +37,116 @@ class TransmissionSession:
         self.session = session
         self.session_stats = session_stats
         self.torrents = torrents
+
+
+class TorrentInfoWidget(Widget):
+    t_name = reactive(None)
+    t_hash = reactive(None)
+    t_id = reactive(None)
+    t_size = reactive(None)
+    t_files = reactive(None)
+    t_private = reactive(None)
+    t_comment = reactive(None)
+    t_creator = reactive(None)
+
+    t_status = reactive(None)
+    t_location = reactive(None)
+
+    t_date_added = reactive(None)
+    t_date_started = reactive(None)
+    t_date_completed = reactive(None)
+    t_date_active = reactive(None)
+
+    t_peers_active = reactive(None)
+    t_peers_up = reactive(None)
+    t_peers_down = reactive(None)
+
+    def compose(self) -> ComposeResult:
+        with TabbedContent():
+            with TabPane("Overview"):
+                with ScrollableContainer(id="info-overview"):
+                    yield Static("Details", classes="info-overview-title")
+                    yield Static(" ", classes="info-overview-title")
+
+                    yield Static("Name:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_name)
+                    yield Static("ID:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_id)
+                    yield Static("Hash:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_hash)
+
+                    yield Static("Size:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_size)
+                    yield Static("Files:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_files)
+                    yield Static("Private:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_private)
+
+                    yield Static("Comment:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_comment)
+                    yield Static("Creator:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_creator)
+
+                    yield Static(" ", classes="info-overview-title")
+                    yield Static("State", classes="info-overview-title")
+                    yield Static(" ", classes="info-overview-title")
+
+                    yield Static("Status:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_status)
+                    yield Static("Location:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_location)
+
+                    yield Static(" ", classes="info-overview-title")
+                    yield Static("Dates", classes="info-overview-title")
+                    yield Static(" ", classes="info-overview-title")
+
+                    yield Static("Added:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_date_added)
+                    yield Static("Started:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_date_started)
+                    yield Static("Completed:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_date_completed)
+                    yield Static("Last active:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_date_active)
+
+                    yield Static(" ", classes="info-overview-title")
+                    yield Static("Peers", classes="info-overview-title")
+                    yield Static(" ", classes="info-overview-title")
+
+                    yield Static("Active:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_peers_active)
+                    yield Static("Seeding:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_peers_up)
+                    yield Static("Downloading:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_peers_down)
+
+    def update_torrent(self, torrent):
+        self.t_id = str(torrent.id)
+        self.t_hash = torrent.hash_string
+        self.t_name = torrent.name
+        self.t_size = print_size(torrent.total_size)
+        self.t_files = str(len(torrent.get_files()))
+        self.t_private = "Yes" if torrent.is_private else "No"
+        self.t_comment = torrent.comment
+        self.t_creator = torrent.creator
+
+        self.t_status = torrent.status.title()
+        self.t_location = torrent.download_dir
+
+        self.t_date_added = self.print_datetime(torrent.added_date)
+        self.t_date_started = self.print_datetime(torrent.start_date)
+        self.t_date_completed = self.print_datetime(torrent.done_date)
+        self.t_date_active = self.print_datetime(torrent.activity_date)
+
+        self.t_peers_active = str(torrent.peers_connected)
+        self.t_peers_up = str(torrent.peers_sending_to_us)
+        self.t_peers_down = str(torrent.peers_getting_from_us)
+
+    def print_datetime(self, value: datetime) -> str:
+        if value:
+            return value.strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            return "Never"
 
 
 class StatisticsDialog(ModalScreen[bool]):
@@ -240,6 +351,8 @@ class TorrentItem(Static):
 
     selected = reactive(False)
 
+    torrent = reactive(None)
+
     t_id = reactive(None)
     t_name = reactive(None)
     t_status = reactive(None)
@@ -279,6 +392,8 @@ class TorrentItem(Static):
                 self.add_class("torrent-bar-check")
 
     def update_torrent(self, torrent) -> None:
+        self.torrent = torrent
+
         self.t_id = torrent.id
         self.t_name = torrent.name
         self.t_status = torrent.status
@@ -408,23 +523,28 @@ class MainApp(App):
     CSS_PATH = "app.tcss"
 
     BINDINGS = [
-            Binding("k,up", "scroll_up", "Move up", priority=True),
-            Binding("j,down", "scroll_down", "Move down", priority=True),
+            Binding("k,up", "scroll_up", "Move up"),
+            Binding("j,down", "scroll_down", "Move down"),
 
-            Binding("g", "jump_up", "Go to the first item", priority=True),
-            Binding("G", "jump_down", "Go to the last item", priority=True),
+            Binding("g", "jump_up", "Go to the first item"),
+            Binding("G", "jump_down", "Go to the last item"),
 
-            Binding("p", "toggle_torrent", "Toggle torrent", priority=True),
-            Binding("r", "remove_torrent", "Remove torrent", priority=True),
-            Binding("R", "trash_torrent", "Trash torrent", priority=True),
-            Binding("v", "verify_torrent", "Verify torrent", priority=True),
+            Binding("l", "view_torrent", "View torrent info"),
+            Binding("h", "view_torrents", "View torrents list"),
+            Binding("enter", "toggle_views", "Switch torrent list/info"),
+
+            Binding("p", "toggle_torrent", "Toggle torrent"),
+            Binding("r", "remove_torrent", "Remove torrent"),
+            Binding("R", "trash_torrent", "Trash torrent"),
+            Binding("v", "verify_torrent", "Verify torrent"),
             Binding("n", "reannounce_torrent", "Reannounce torrent"),
 
-            Binding("t", "toggle_alt_speed", "Toggle alt speed", priority=True),
+            Binding("t", "toggle_alt_speed", "Toggle alt speed"),
 
-            Binding("s", "show_statistics", "Show statistics", priority=True),
+            Binding("s", "show_statistics", "Show statistics"),
 
-            Binding("?", "help", "Help", priority=True),
+
+            Binding("?", "help", "Help"),
             Binding("q", "quit", "Quit"),
             ]
 
@@ -458,7 +578,12 @@ class MainApp(App):
             yield Static('?: Help', classes='top-pane-column')
             yield Static('', classes='top-pane-column')
             yield Static('Q: Quit', classes='top-pane-column')
-        yield ScrollableContainer(id="torrents")
+
+        with Horizontal():
+            with ContentSwitcher(initial="torrents"):
+                yield ScrollableContainer(id="torrents")
+                yield TorrentInfoWidget(id="torrent-info")
+
         yield StatusLine().data_bind(r_session=MainApp.r_session)
 
     def on_mount(self) -> None:
@@ -594,6 +719,26 @@ class MainApp(App):
             self.selected_item = selector(items)
             self.selected_item.selected = True
             self.query_one("#torrents").scroll_to_widget(self.selected_item)
+
+    def action_view_torrent(self):
+        if self.selected_item:
+            switcher = self.query_one(ContentSwitcher)
+            switcher.current = 'torrent-info'
+            self.query_one(TorrentInfoWidget).update_torrent(self.selected_item.torrent)
+
+    def action_view_torrents(self):
+        switcher = self.query_one(ContentSwitcher)
+        switcher.current = 'torrents'
+
+    def action_toggle_views(self):
+        if self.selected_item:
+            switcher = self.query_one(ContentSwitcher)
+
+            if switcher.current == 'torrents':
+                switcher.current = 'torrent-info'
+                self.query_one(TorrentInfoWidget).update_torrent(self.selected_item.torrent)
+            else:
+                switcher.current = 'torrents'
 
     def action_toggle_alt_speed(self) -> None:
         alt_speed_enabled = self.client.get_session().alt_speed_enabled
