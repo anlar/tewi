@@ -471,31 +471,38 @@ class MainApp(App):
 
             if status == 'stopped':
                 self.client.start_torrent(self.selected_item.t_id)
+                self.tewi_notify("Torrent started")
             else:
                 self.client.stop_torrent(self.selected_item.t_id)
+                self.tewi_notify("Torrent stopped")
 
     def action_verify_torrent(self) -> None:
         if self.selected_item:
             self.client.verify_torrent(self.selected_item.t_id)
+            self.tewi_notify("Torrent send to verification")
 
     def action_reannounce_torrent(self) -> None:
         if self.selected_item:
             self.client.reannounce_torrent(self.selected_item.t_id)
+            self.tewi_notify("Torrent reannounce started")
 
     def action_remove_torrent(self) -> None:
         self.remove_torrent(delete_data=False,
                             message="Remove torrent?",
-                            description="Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?")
+                            description="Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?",
+                            notification="Torrent removed")
 
     def action_trash_torrent(self) -> None:
         self.remove_torrent(delete_data=True,
                             message="Remove torrent and delete data?",
-                            description="All data downloaded for this torrent will be deleted. Are you sure you want to remove it?")
+                            description="All data downloaded for this torrent will be deleted. Are you sure you want to remove it?",
+                            notification="Torrent and its data removed")
 
     def remove_torrent(self,
                        delete_data: bool,
                        message: str,
-                       description: str) -> None:
+                       description: str,
+                       notification: str) -> None:
 
         if self.selected_item:
 
@@ -503,6 +510,8 @@ class MainApp(App):
                 if confirmed:
                     self.client.remove_torrent(self.selected_item.t_id,
                                                delete_data=delete_data)
+
+                    self.tewi_notify(notification)
 
                     w_prev = self.selected_item.w_prev
                     w_next = self.selected_item.w_next
@@ -590,6 +599,11 @@ class MainApp(App):
         alt_speed_enabled = self.client.get_session().alt_speed_enabled
         self.client.set_session(alt_speed_enabled=not alt_speed_enabled)
 
+        if alt_speed_enabled:
+            self.tewi_notify("Turtle Mode disabled")
+        else:
+            self.tewi_notify("Turtle Mode enabled")
+
     def watch_r_session(self, new_r_session):
         if new_r_session:
             session = new_r_session
@@ -653,6 +667,9 @@ class MainApp(App):
         self.log(f'Load {len(session.torrents)} torrents from Transmission')
 
         self.r_session = session
+
+    def tewi_notify(self, message: str) -> None:
+        self.notify(message=message, timeout=3)
 
 
 def print_size(num, suffix="B", size_bytes=1000):

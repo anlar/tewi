@@ -168,3 +168,9 @@ ConfirmationWidget {
     width: 60;
     padding: 1;
 }
+
+/* NOTIFICATIONS */
+
+Toast {
+    width: 40;
+}
