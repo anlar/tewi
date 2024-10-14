@@ -543,6 +543,7 @@ class MainApp(App):
 
             Binding("s", "show_statistics", "Show statistics"),
 
+            Binding("d", "toggle_dark", "Toggle dark mode"),
 
             Binding("?", "help", "Help"),
             Binding("q", "quit", "Quit"),

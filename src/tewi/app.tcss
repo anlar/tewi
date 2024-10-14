@@ -147,8 +147,8 @@ HelpDialog {
 }
 
 HelpWidget {
-    height: 18;
-    width: 34;
+    height: 22;
+    width: 39;
 
     border-title-align: center;
     border: round $warning;

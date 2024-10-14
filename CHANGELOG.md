@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI options to set username and password for daemon connection (`--username`, `--password`)
 - Action to reannounce torrent
 - Toast notifications for torrent actions
+- Action to toggle dark/light interface modes
 
 ### Changed
 
