@@ -39,39 +39,54 @@ class TransmissionSession:
 
 
 class TorrentInfoWidget(Widget):
-    name = reactive(None)
-    thash = reactive(None)
-    tid = reactive(None)
-    comment = reactive(None)
-    creator = reactive(None)
-    location = reactive(None)
+    t_name = reactive(None)
+    t_hash = reactive(None)
+    t_id = reactive(None)
+    t_size = reactive(None)
+    t_files = reactive(None)
+    t_private = reactive(None)
+    t_comment = reactive(None)
+    t_creator = reactive(None)
+    t_location = reactive(None)
 
     def compose(self) -> ComposeResult:
         with TabbedContent():
             with TabPane("Overview"):
                 with Container(id="info-overview"):
-                    yield Static("General", classes="info-overview-title")
+                    yield Static("Torrent details", classes="info-overview-title")
+                    yield Static(" ", classes="info-overview-title")
 
                     yield Static("Name:", classes="info-overview-name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.name)
-                    yield Static("Hash:", classes="info-overview-name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.thash)
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_name)
                     yield Static("ID:", classes="info-overview-name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.tid)
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_id)
+                    yield Static("Hash:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_hash)
+
+                    yield Static("Size:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_size)
+                    yield Static("Files:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_files)
+                    yield Static("Private:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_private)
+
                     yield Static("Comment:", classes="info-overview-name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.comment)
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_comment)
                     yield Static("Creator:", classes="info-overview-name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.creator)
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_creator)
                     yield Static("Location:", classes="info-overview-name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.location)
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_location)
 
     def update_torrent(self, torrent):
-        self.tid = str(torrent.id)
-        self.thash = torrent.hash_string
-        self.name = torrent.name
-        self.comment = torrent.comment
-        self.creator = torrent.creator
-        self.location = torrent.download_dir
+        self.t_id = str(torrent.id)
+        self.t_hash = torrent.hash_string
+        self.t_name = torrent.name
+        self.t_size = print_size(torrent.total_size)
+        self.t_files = str(len(torrent.get_files()))
+        self.t_private = "Yes" if torrent.is_private else "No"
+        self.t_comment = torrent.comment
+        self.t_creator = torrent.creator
+        self.t_location = torrent.download_dir
 
 
 class StatisticsDialog(ModalScreen[bool]):
