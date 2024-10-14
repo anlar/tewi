@@ -18,12 +18,13 @@
 
 import argparse
 import textwrap
+from datetime import datetime
 
 from transmission_rpc import Client
 
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Grid, ScrollableContainer, Horizontal, Container
+from textual.containers import Grid, ScrollableContainer, Horizontal
 from textual.css.query import NoMatches
 from textual.reactive import reactive
 from textual.screen import ModalScreen
@@ -47,13 +48,24 @@ class TorrentInfoWidget(Widget):
     t_private = reactive(None)
     t_comment = reactive(None)
     t_creator = reactive(None)
+
+    t_status = reactive(None)
     t_location = reactive(None)
+
+    t_date_added = reactive(None)
+    t_date_started = reactive(None)
+    t_date_completed = reactive(None)
+    t_date_active = reactive(None)
+
+    t_peers_active = reactive(None)
+    t_peers_up = reactive(None)
+    t_peers_down = reactive(None)
 
     def compose(self) -> ComposeResult:
         with TabbedContent():
             with TabPane("Overview"):
-                with Container(id="info-overview"):
-                    yield Static("Torrent details", classes="info-overview-title")
+                with ScrollableContainer(id="info-overview"):
+                    yield Static("Details", classes="info-overview-title")
                     yield Static(" ", classes="info-overview-title")
 
                     yield Static("Name:", classes="info-overview-name")
@@ -74,8 +86,43 @@ class TorrentInfoWidget(Widget):
                     yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_comment)
                     yield Static("Creator:", classes="info-overview-name")
                     yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_creator)
+
+                    yield Static(" ", classes="info-overview-title")
+                    yield Static("State", classes="info-overview-title")
+                    yield Static(" ", classes="info-overview-title")
+
+                    yield Static("Status:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_status)
                     yield Static("Location:", classes="info-overview-name")
                     yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_location)
+
+                    yield Static(" ", classes="info-overview-title")
+                    yield Static("Dates", classes="info-overview-title")
+                    yield Static(" ", classes="info-overview-title")
+
+                    yield Static("Added:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_date_added)
+                    yield Static("Started:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_date_started)
+                    yield Static("Completed:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_date_completed)
+                    yield Static("Last active:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_date_active)
+
+                    yield Static(" ", classes="info-overview-title")
+                    yield Static("Limits", classes="info-overview-title")
+                    yield Static(" ", classes="info-overview-title")
+
+                    yield Static(" ", classes="info-overview-title")
+                    yield Static("Peers", classes="info-overview-title")
+                    yield Static(" ", classes="info-overview-title")
+
+                    yield Static("Active:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_peers_active)
+                    yield Static("Seeding:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_peers_up)
+                    yield Static("Downloading:", classes="info-overview-name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoWidget.t_peers_down)
 
     def update_torrent(self, torrent):
         self.t_id = str(torrent.id)
@@ -86,7 +133,24 @@ class TorrentInfoWidget(Widget):
         self.t_private = "Yes" if torrent.is_private else "No"
         self.t_comment = torrent.comment
         self.t_creator = torrent.creator
+
+        self.t_status = torrent.status.title()
         self.t_location = torrent.download_dir
+
+        self.t_date_added = self.print_datetime(torrent.added_date)
+        self.t_date_started = self.print_datetime(torrent.start_date)
+        self.t_date_completed = self.print_datetime(torrent.done_date)
+        self.t_date_active = self.print_datetime(torrent.activity_date)
+
+        self.t_peers_active = str(torrent.peers_connected)
+        self.t_peers_up = str(torrent.peers_sending_to_us)
+        self.t_peers_down = str(torrent.peers_getting_from_us)
+
+    def print_datetime(self, value: datetime) -> str:
+        if value:
+            return value.strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            return ""
 
 
 class StatisticsDialog(ModalScreen[bool]):
