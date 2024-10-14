@@ -418,7 +418,7 @@ class MainApp(App):
             Binding("r", "remove_torrent", "Remove torrent", priority=True),
             Binding("R", "trash_torrent", "Trash torrent", priority=True),
             Binding("v", "verify_torrent", "Verify torrent", priority=True),
-            Binding("n", "reannounce_torrent", "Reannounce torrent", priority=True),
+            Binding("n", "reannounce_torrent", "Reannounce torrent"),
 
             Binding("t", "toggle_alt_speed", "Toggle alt speed", priority=True),
 
