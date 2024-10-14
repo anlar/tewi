@@ -483,12 +483,20 @@ class MainApp(App):
             self.client.reannounce_torrent(self.selected_item.t_id)
 
     def action_remove_torrent(self) -> None:
-        self.remove_torrent(False)
+        self.remove_torrent(delete_data=False,
+                            message="Remove torrent?",
+                            description="Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?")
 
     def action_trash_torrent(self) -> None:
-        self.remove_torrent(True)
+        self.remove_torrent(delete_data=True,
+                            message="Remove torrent and delete data?",
+                            description="All data downloaded for this torrent will be deleted. Are you sure you want to remove it?")
 
-    def remove_torrent(self, delete_data: bool) -> None:
+    def remove_torrent(self,
+                       delete_data: bool,
+                       message: str,
+                       description: str) -> None:
+
         if self.selected_item:
 
             def check_quit(confirmed: bool | None) -> None:
@@ -519,17 +527,9 @@ class MainApp(App):
                         self.selected_item = new_selected
                         self.query_one("#torrents").scroll_to_widget(self.selected_item)
 
-            if delete_data:
-                self.push_screen(
-                        ConfirmationDialog(
-                            message="Remove torrent and delete data?",
-                            description="All data downloaded for this torrent will be deleted. Are you sure you want to remove it?"),
-                        check_quit)
-            else:
-                self.push_screen(
-                        ConfirmationDialog(
-                            message="Remove torrent?",
-                            description="Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?"),
+            self.push_screen(
+                        ConfirmationDialog(message=message,
+                                           description=description),
                         check_quit)
 
     def action_show_statistics(self) -> None:
