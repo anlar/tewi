@@ -64,6 +64,29 @@ class Util:
 
         return f"{r_size} {r_unit}{suffix}"
 
+    def print_speed(num: int,
+                    print_secs: bool = False,
+                    suffix: str = "B",
+                    speed_bytes: int = 1000) -> str:
+
+        r_unit = None
+        r_num = None
+
+        for i in (("", 0), ("K", 0), ("M", 2), ("G", 2), ("T", 2), ("P", 2), ("E", 2), ("Z", 2), ("Y", 2)):
+
+            if abs(num) < speed_bytes:
+                r_unit = i[0]
+                r_num = round(num, i[1])
+                break
+            num /= speed_bytes
+
+        r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
+
+        if print_secs:
+            return f"{r_size} {r_unit}{suffix}/s"
+        else:
+            return f"{r_size} {r_unit}{suffix}"
+
 
 # Common UI components
 
@@ -82,25 +105,7 @@ class SpeedIndicator(Static):
     speed = reactive(0)
 
     def render(self) -> str:
-        return self.print_speed(self.speed)
-
-    def print_speed(self, num: int,
-                    suffix: str = "B", speed_bytes: int = 1000) -> str:
-
-        r_unit = None
-        r_num = None
-
-        for i in (("", 0), ("K", 0), ("M", 2), ("G", 2), ("T", 2), ("P", 2), ("E", 2), ("Z", 2), ("Y", 2)):
-
-            if abs(num) < speed_bytes:
-                r_unit = i[0]
-                r_num = round(num, i[1])
-                break
-            num /= speed_bytes
-
-        r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
-
-        return f"{r_size} {r_unit}{suffix}"
+        return Util.print_speed(self.speed)
 
 
 # Common screens
@@ -797,9 +802,18 @@ class TorrentInfoPanel(ScrollableContainer):
                 with Container():
                     yield DataTable(id='files')
 
+            with TabPane("Peers", id='tab-peers'):
+                with Container():
+                    yield DataTable(id='peers')
+
     def on_mount(self):
-        table = self.query_one(DataTable)
+        table = self.query_one("#files")
         table.add_columns("ID", "Size", "Done", "Selected", "Priority", "Name")
+        table.cursor_type = "none"
+        table.zebra_stripes = True
+
+        table = self.query_one("#peers")
+        table.add_columns("Encrypted", "Up", "Down", "Progress", "Status", "Address", "Client")
         table.cursor_type = "none"
         table.zebra_stripes = True
 
@@ -828,7 +842,7 @@ class TorrentInfoPanel(ScrollableContainer):
             self.t_peers_up = str(torrent.peers_sending_to_us)
             self.t_peers_down = str(torrent.peers_getting_from_us)
 
-            table = self.query_one(DataTable)
+            table = self.query_one("#files")
             table.clear()
 
             for f in self.r_torrent.get_files():
@@ -839,6 +853,19 @@ class TorrentInfoPanel(ScrollableContainer):
                               f.selected,
                               self.print_priority(f.priority),
                               f.name)
+
+            table = self.query_one("#peers")
+            table.clear()
+
+            for p in self.r_torrent.peers:
+                progress = p["progress"] * 100
+                table.add_row("Yes" if p["isEncrypted"] else "No",
+                              Util.print_speed(p["rateToClient"], True),
+                              Util.print_speed(p["rateToPeer"], True),
+                              f'{progress:.0f}%',
+                              p["flagStr"],
+                              p["address"],
+                              p["clientName"])
 
     def print_datetime(self, value: datetime) -> str:
         if value:
@@ -865,6 +892,8 @@ class TorrentInfoPanel(ScrollableContainer):
             self.post_message(self.TorrentViewClosed())
         elif active == 'tab-files':
             tabs.active = 'tab-overview'
+        elif active == 'tab-peers':
+            tabs.active = 'tab-files'
 
     def action_go_right(self):
         tabs = self.query_one(TabbedContent)
@@ -872,22 +901,32 @@ class TorrentInfoPanel(ScrollableContainer):
 
         if active == 'tab-overview':
             tabs.active = 'tab-files'
+        elif active == 'tab-files':
+            tabs.active = 'tab-peers'
 
     def action_scroll_up(self):
         if self.query_one(TabbedContent).active == 'tab-files':
             self.query_one("#files").scroll_up()
+        elif self.query_one(TabbedContent).active == 'tab-peers':
+            self.query_one("#peers").scroll_up()
 
     def action_scroll_down(self):
         if self.query_one(TabbedContent).active == 'tab-files':
             self.query_one("#files").scroll_down()
+        elif self.query_one(TabbedContent).active == 'tab-peers':
+            self.query_one("#peers").scroll_down()
 
     def action_scroll_top(self):
         if self.query_one(TabbedContent).active == 'tab-files':
             self.query_one("#files").action_scroll_top()
+        elif self.query_one(TabbedContent).active == 'tab-peers':
+            self.query_one("#peers").action_scroll_top()
 
     def action_scroll_bottom(self):
         if self.query_one(TabbedContent).active == 'tab-files':
             self.query_one("#files").action_scroll_bottom()
+        elif self.query_one(TabbedContent).active == 'tab-peers':
+            self.query_one("#peers").action_scroll_bottom()
 
 
 class MainApp(App):
