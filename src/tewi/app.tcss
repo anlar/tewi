@@ -36,3 +36,23 @@
     width: 1fr;
 }
 
+/* STATE PANEL */
+
+#state-panel {
+    grid-size: 8;
+    grid-columns: auto 1fr auto auto auto 10 auto 13;
+    height: 1;
+    background: $accent-darken-1;
+}
+
+#state-panel > .column {
+    padding: 0 1;
+}
+
+#state-panel > .delimiter {
+    text-opacity: 75%;
+}
+
+#state-panel > .alt-speed {
+    color: $accent-lighten-3;
+}
