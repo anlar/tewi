@@ -110,3 +110,30 @@ TorrentItem > ProgressBar > Bar {
 .torrent-bar-check > ProgressBar > Bar > .bar--complete {
     color: $error-darken-1;
 }
+
+/* TORRENT INFO PANEL */
+
+TorrentInfoPanel {
+    background: red;
+    border: round $primary 75%;
+    background: $background-lighten-1;
+    height: 1fr;
+}
+
+TorrentInfoPanel #overview {
+    height: auto;
+
+    layout: grid;
+    grid-size: 2;
+    grid-columns: 15 2fr;
+    grid-gutter: 0 1;
+}
+
+TorrentInfoPanel .title {
+    text-style: bold;
+    column-span: 2;
+}
+
+TorrentInfoPanel .name {
+    text-align: right;
+}

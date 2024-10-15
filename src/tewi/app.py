@@ -30,6 +30,8 @@ from textual.reactive import reactive
 from textual.screen import ModalScreen
 from textual.widget import Widget
 from textual.widgets import Static, Label, ProgressBar, DataTable, ContentSwitcher, TabbedContent, TabPane
+from textual.message import Message
+from textual import on
 
 
 class TransmissionData:
@@ -41,7 +43,7 @@ class TransmissionData:
 
 class ReactiveLabel(Label):
 
-    name = reactive(str | None)
+    name = reactive(None)
 
     def render(self):
         return self.name
@@ -162,6 +164,8 @@ class TorrentListPanel(ScrollableContainer):
 
             Binding("g", "move_top", "Go to the first item"),
             Binding("G", "move_bottom", "Go to the last item"),
+
+            Binding("enter,l", "view_info", "View torrent info"),
             ]
 
     r_tdata = reactive(None)
@@ -257,6 +261,14 @@ class TorrentListPanel(ScrollableContainer):
             self.selected_item.selected = True
             self.scroll_to_widget(self.selected_item)
 
+    class TorrentViewed(Message):
+        def __init__(self, torrent) -> None:
+            super().__init__()
+            self.torrent = torrent
+
+    def action_view_info(self):
+        if self.selected_item:
+            self.post_message(self.TorrentViewed(self.selected_item.torrent))
 
 class TorrentItem(Static):
     # TODO: refactor
@@ -355,6 +367,133 @@ class TorrentItem(Static):
         yield ReactiveLabel(self.t_stats, id="stats").data_bind(name=TorrentItem.t_stats)
 
 
+class TorrentInfoPanel(ScrollableContainer):
+
+    BINDINGS = [
+            Binding("h,enter", "view_list", "View torrent list"),
+            ]
+
+    r_torrent = reactive(None)
+
+    t_name = reactive(None)
+    t_hash = reactive(None)
+    t_id = reactive(None)
+    t_size = reactive(None)
+    t_files = reactive(None)
+    t_private = reactive(None)
+    t_comment = reactive(None)
+    t_creator = reactive(None)
+
+    t_status = reactive(None)
+    t_location = reactive(None)
+
+    t_date_added = reactive(None)
+    t_date_started = reactive(None)
+    t_date_completed = reactive(None)
+    t_date_active = reactive(None)
+
+    t_peers_active = reactive(None)
+    t_peers_up = reactive(None)
+    t_peers_down = reactive(None)
+
+    def compose(self) -> ComposeResult:
+        with TabbedContent():
+            with TabPane("Overview"):
+                with ScrollableContainer(id="overview"):
+                    yield Static("Details", classes="title")
+                    yield Static(" ", classes="title")
+
+                    yield Static("Name:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_name)
+                    yield Static("ID:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_id)
+                    yield Static("Hash:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_hash)
+
+                    yield Static("Size:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_size)
+                    yield Static("Files:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_files)
+                    yield Static("Private:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_private)
+
+                    yield Static("Comment:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_comment)
+                    yield Static("Creator:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_creator)
+
+                    yield Static(" ", classes="title")
+                    yield Static("State", classes="title")
+                    yield Static(" ", classes="title")
+
+                    yield Static("Status:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_status)
+                    yield Static("Location:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_location)
+
+                    yield Static(" ", classes="title")
+                    yield Static("Dates", classes="title")
+                    yield Static(" ", classes="title")
+
+                    yield Static("Added:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_date_added)
+                    yield Static("Started:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_date_started)
+                    yield Static("Completed:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_date_completed)
+                    yield Static("Last active:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_date_active)
+
+                    yield Static(" ", classes="title")
+                    yield Static("Peers", classes="title")
+                    yield Static(" ", classes="title")
+
+                    yield Static("Active:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_peers_active)
+                    yield Static("Seeding:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_peers_up)
+                    yield Static("Downloading:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_peers_down)
+
+
+    def watch_r_torrent(self, new_r_torrent):
+        if new_r_torrent:
+            torrent = new_r_torrent
+
+            self.t_id = str(torrent.id)
+            self.t_hash = torrent.hash_string
+            self.t_name = torrent.name
+            self.t_size = Util.print_size(torrent.total_size)
+            self.t_files = str(len(torrent.get_files()))
+            self.t_private = "Yes" if torrent.is_private else "No"
+            self.t_comment = torrent.comment
+            self.t_creator = torrent.creator
+
+            self.t_status = torrent.status.title()
+            self.t_location = torrent.download_dir
+
+            self.t_date_added = self.print_datetime(torrent.added_date)
+            self.t_date_started = self.print_datetime(torrent.start_date)
+            self.t_date_completed = self.print_datetime(torrent.done_date)
+            self.t_date_active = self.print_datetime(torrent.activity_date)
+
+            self.t_peers_active = str(torrent.peers_connected)
+            self.t_peers_up = str(torrent.peers_sending_to_us)
+            self.t_peers_down = str(torrent.peers_getting_from_us)
+
+    def print_datetime(self, value: datetime) -> str:
+        if value:
+            return value.strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            return "Never"
+
+    def action_view_list(self):
+        self.post_message(self.TorrentViewClosed())
+
+    class TorrentViewClosed(Message):
+        pass
+
+
 class MainApp(App):
 
     ENABLE_COMMAND_PALETTE = False
@@ -391,7 +530,7 @@ class MainApp(App):
             with ContentSwitcher(initial="torrent-list"):
                 yield TorrentListPanel(id="torrent-list").data_bind(
                         r_tdata=MainApp.r_tdata)
-                yield ScrollableContainer(id="torrent-info")
+                yield TorrentInfoPanel(id="torrent-info")
 
         yield StatePanel().data_bind(r_tdata=MainApp.r_tdata)
 
@@ -409,6 +548,15 @@ class MainApp(App):
         tdata.torrents.sort(key=lambda t: t.name.lower())
 
         self.r_tdata = tdata
+
+    @on(TorrentListPanel.TorrentViewed)
+    def handle_torrent_view(self, event: TorrentListPanel.TorrentViewed) -> None:
+        self.query_one(ContentSwitcher).current = "torrent-info"
+        self.query_one(TorrentInfoPanel).r_torrent = event.torrent
+
+    @on(TorrentInfoPanel.TorrentViewClosed)
+    def handle_torrent_list(self, event: TorrentInfoPanel.TorrentViewClosed) -> None:
+        self.query_one(ContentSwitcher).current = "torrent-list"
 
 
 class Util:
