@@ -184,3 +184,19 @@ StatisticsWidget > .title {
     text-style: bold;
     column-span: 2;
 }
+
+/* SCREEN: HELP DIALOG */
+/* TODO: remove hard-coded height/width value */
+
+HelpDialog {
+    align: center middle;
+}
+
+HelpWidget {
+    width: 41;
+    height: 25;
+
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}

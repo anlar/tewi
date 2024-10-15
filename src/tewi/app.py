@@ -100,7 +100,7 @@ class SpeedIndicator(Static):
         return f"{r_size} {r_unit}{suffix}"
 
 
-class ConfirmationDialog(ModalScreen[bool]):
+class ConfirmationDialog(ModalScreen):
 
     BINDINGS = [
             Binding("y", "confirm", "Yes"),
@@ -143,7 +143,54 @@ class ConfirmationWidget(Static):
         self.border_subtitle = 'Y(es) / N(o)'
 
 
-class StatisticsDialog(ModalScreen[bool]):
+class HelpDialog(ModalScreen):
+
+    BINDINGS = [
+            Binding("q,escape", "close", "Cancel", priority=True),
+            ]
+
+    def __init__(self, bindings) -> None:
+        self.bindings = bindings
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield HelpWidget(self.bindings)
+
+    def action_close(self) -> None:
+        self.dismiss(False)
+
+
+class HelpWidget(Static):
+
+    def __init__(self, bindings) -> None:
+        self.bindings = bindings
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        with Horizontal():
+            yield DataTable(cursor_type="none",
+                            zebra_stripes=True)
+
+    def on_mount(self) -> None:
+        self.border_title = 'Help'
+        self.border_subtitle = 'Q(uit)'
+
+        table = self.query_one(DataTable)
+        table.add_columns("Key", "Command")
+
+        for b in filter(lambda x: x.binding.show, self.bindings):
+            key = b.binding.key
+
+            if key == 'question_mark':
+                key = '?'
+
+            if len(key) > 1:
+                key = key.title()
+
+            table.add_row(key, b.binding.description)
+
+
+class StatisticsDialog(ModalScreen):
 
     BINDINGS = [
             Binding("q,escape", "close", "Cancel"),
@@ -781,7 +828,7 @@ class MainApp(App):
             Binding("s", "show_statistics", "Show statistics"),
 
             Binding("d", "toggle_dark", "Toggle dark mode", priority=True),
-
+            Binding("?", "help", "Snow help", priority=True),
             Binding("q", "quit", "Quit"),
             ]
 
@@ -841,6 +888,9 @@ class MainApp(App):
 
     def action_show_statistics(self) -> None:
         self.push_screen(StatisticsDialog(self.r_tdata.session_stats))
+
+    def action_help(self) -> None:
+        self.push_screen(HelpDialog(self.screen.active_bindings.values()))
 
     @on(TorrentListPanel.TorrentViewed)
     def handle_torrent_view(self, event: TorrentListPanel.TorrentViewed) -> None:
