@@ -155,6 +155,15 @@ class SpeedIndicator(Static):
 
 
 class TorrentListPanel(ScrollableContainer):
+
+    BINDINGS = [
+            Binding("k,up", "move_up", "Move up"),
+            Binding("j,down", "move_down", "Move down"),
+
+            Binding("g", "move_top", "Go to the first item"),
+            Binding("G", "move_bottom", "Go to the last item"),
+            ]
+
     r_tdata = reactive(None)
 
     def watch_r_tdata(self, new_r_tdata):
@@ -199,6 +208,54 @@ class TorrentListPanel(ScrollableContainer):
                 return False
 
         return True
+
+    def action_move_up(self) -> None:
+        items = self.children
+
+        if items:
+            if self.selected_item is None:
+                item = items[-1]
+                item.selected = True
+                self.selected_item = item
+                self.scroll_to_widget(self.selected_item)
+            else:
+                if self.selected_item.w_prev:
+                    self.selected_item.selected = False
+                    self.selected_item = self.selected_item.w_prev
+                    self.selected_item.selected = True
+                    self.scroll_to_widget(self.selected_item)
+
+    def action_move_down(self) -> None:
+        items = self.children
+
+        if items:
+            if self.selected_item is None:
+                item = items[0]
+                item.selected = True
+                self.selected_item = item
+            else:
+                if self.selected_item.w_next:
+                    self.selected_item.selected = False
+                    self.selected_item = self.selected_item.w_next
+                    self.selected_item.selected = True
+                    self.scroll_to_widget(self.selected_item)
+
+    def action_move_top(self) -> None:
+        self.move_to(lambda x: x[0])
+
+    def action_move_bottom(self) -> None:
+        self.move_to(lambda x: x[-1])
+
+    def move_to(self, selector) -> None:
+        items = self.children
+
+        if items:
+            if self.selected_item:
+                self.selected_item.selected = False
+
+            self.selected_item = selector(items)
+            self.selected_item.selected = True
+            self.scroll_to_widget(self.selected_item)
 
 
 class TorrentItem(Static):

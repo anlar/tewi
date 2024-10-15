@@ -72,6 +72,10 @@ TorrentItem {
     background: $background-lighten-1;
 }
 
+TorrentItem.selected {
+    background: $accent;
+}
+
 TorrentItem > #head {
     height: auto;
     grid-size: 6;
