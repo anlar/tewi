@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Action to reannounce torrent
 - Toast notifications for torrent actions
 - Action to toggle dark/light interface modes
+- View torrent files
 
 ### Changed
 

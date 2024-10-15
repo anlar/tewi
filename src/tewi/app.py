@@ -25,7 +25,7 @@ from transmission_rpc import Client
 from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Grid, ScrollableContainer, Horizontal
+from textual.containers import Grid, ScrollableContainer, Horizontal, Container
 from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
@@ -700,7 +700,15 @@ class TorrentInfoPanel(ScrollableContainer):
         pass
 
     BINDINGS = [
-            Binding("h,enter", "view_list", "View torrent list"),
+            Binding("enter", "view_list", "View torrent list"),
+            Binding("h", "go_left", "Go left"),
+            Binding("l", "go_right", "Go right"),
+
+            Binding("k,up", "scroll_up", "Scroll up"),
+            Binding("j,down", "scroll_down", "Scroll down"),
+
+            Binding("g", "scroll_top", "Scroll to the top"),
+            Binding("G", "scroll_bottom", "Scroll to the bottom"),
             ]
 
     r_torrent = reactive(None)
@@ -728,7 +736,7 @@ class TorrentInfoPanel(ScrollableContainer):
 
     def compose(self) -> ComposeResult:
         with TabbedContent():
-            with TabPane("Overview"):
+            with TabPane("Overview", id="tab-overview"):
                 with ScrollableContainer(id="overview"):
                     yield Static("Details", classes="title")
                     yield Static(" ", classes="title")
@@ -785,6 +793,16 @@ class TorrentInfoPanel(ScrollableContainer):
                     yield Static("Downloading:", classes="name")
                     yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_peers_down)
 
+            with TabPane("Files", id='tab-files'):
+                with Container():
+                    yield DataTable(id='files')
+
+    def on_mount(self):
+        table = self.query_one(DataTable)
+        table.add_columns("ID", "Size", "Done", "Selected", "Priority", "Name")
+        table.cursor_type = "none"
+        table.zebra_stripes = True
+
     def watch_r_torrent(self, new_r_torrent):
         if new_r_torrent:
             torrent = new_r_torrent
@@ -810,14 +828,66 @@ class TorrentInfoPanel(ScrollableContainer):
             self.t_peers_up = str(torrent.peers_sending_to_us)
             self.t_peers_down = str(torrent.peers_getting_from_us)
 
+            table = self.query_one(DataTable)
+            table.clear()
+
+            for f in self.r_torrent.get_files():
+                completion = f.completed / f.size
+                table.add_row(f.id,
+                              Util.print_size(f.size),
+                              f'{completion:.2f}%',
+                              f.selected,
+                              self.print_priority(f.priority),
+                              f.name)
+
     def print_datetime(self, value: datetime) -> str:
         if value:
             return value.strftime("%Y-%m-%d %H:%M:%S")
         else:
             return "Never"
 
+    def print_priority(self, priority) -> str:
+        if priority == -1:
+            return 'Low'
+        elif priority == 1:
+            return 'High'
+        else:
+            return 'Normal'
+
     def action_view_list(self):
         self.post_message(self.TorrentViewClosed())
+
+    def action_go_left(self):
+        tabs = self.query_one(TabbedContent)
+        active = tabs.active
+
+        if active == 'tab-overview':
+            self.post_message(self.TorrentViewClosed())
+        elif active == 'tab-files':
+            tabs.active = 'tab-overview'
+
+    def action_go_right(self):
+        tabs = self.query_one(TabbedContent)
+        active = tabs.active
+
+        if active == 'tab-overview':
+            tabs.active = 'tab-files'
+
+    def action_scroll_up(self):
+        if self.query_one(TabbedContent).active == 'tab-files':
+            self.query_one("#files").scroll_up()
+
+    def action_scroll_down(self):
+        if self.query_one(TabbedContent).active == 'tab-files':
+            self.query_one("#files").scroll_down()
+
+    def action_scroll_top(self):
+        if self.query_one(TabbedContent).active == 'tab-files':
+            self.query_one("#files").action_scroll_top()
+
+    def action_scroll_bottom(self):
+        if self.query_one(TabbedContent).active == 'tab-files':
+            self.query_one("#files").action_scroll_bottom()
 
 
 class MainApp(App):

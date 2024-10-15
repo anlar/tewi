@@ -16,6 +16,12 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+/* COMMON */
+
+* {
+    scrollbar-size-vertical: 1;
+}
+
 /* INFO PANEL */
 
 #info-panel {
@@ -62,10 +68,6 @@
 }
 
 /* TORRENT LIST PANEL */
-
-TorrentListPanel {
-    scrollbar-size-vertical: 1;
-}
 
 /* TORRENT LIST PANEL: TORRENT ITEM */
 
@@ -140,6 +142,10 @@ TorrentInfoPanel .title {
 
 TorrentInfoPanel .name {
     text-align: right;
+}
+
+#files {
+    width: auto;
 }
 
 /* NOTIFICATIONS */
