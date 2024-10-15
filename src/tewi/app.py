@@ -370,7 +370,10 @@ class StatePanel(Static):
             torrents_seed = len([x for x in torrents if x.status == 'seeding'])
             torrents_stop = len(torrents) - torrents_down - torrents_seed
 
-            self.r_stats = f"Torrents: {len(torrents)} (Downloading: {torrents_down}, Seeding: {torrents_seed}, Paused: {torrents_stop})"
+            self.r_stats = (f"Torrents: {len(torrents)} "
+                            f"(Downloading: {torrents_down}, "
+                            f"Seeding: {torrents_seed}, "
+                            f"Paused: {torrents_stop})")
 
             self.r_upload_speed = session_stats.upload_speed
             self.r_download_speed = session_stats.download_speed
@@ -522,13 +525,17 @@ class TorrentListPanel(ScrollableContainer):
     def action_remove_torrent(self) -> None:
         self.remove_torrent(delete_data=False,
                             message="Remove torrent?",
-                            description="Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?",
+                            description=("Once removed, continuing the "
+                                         "transfer will require the torrent file. "
+                                         "Are you sure you want to remove it?"),
                             notification="Torrent removed")
 
     def action_trash_torrent(self) -> None:
         self.remove_torrent(delete_data=True,
                             message="Remove torrent and delete data?",
-                            description="All data downloaded for this torrent will be deleted. Are you sure you want to remove it?",
+                            description=("All data downloaded for this torrent "
+                                         "will be deleted. Are you sure you "
+                                         "want to remove it?"),
                             notification="Torrent and its data removed")
 
     def remove_torrent(self,
@@ -666,7 +673,9 @@ class TorrentItem(Static):
         else:
             result = f"{size_total} (Ratio: {self.t_ratio:.2f})"
 
-        result = result + f" | Status: {str(self.t_status)} | Seeders: {str(self.t_seeders)} | Leechers: {str(self.t_leechers)}"
+        result = result + (f" | Status: {str(self.t_status)} | "
+                           f"Seeders: {str(self.t_seeders)} | "
+                           f"Leechers: {str(self.t_leechers)}")
 
         return result
 
