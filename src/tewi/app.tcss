@@ -161,3 +161,26 @@ ConfirmationWidget {
     width: 60;
     padding: 1;
 }
+
+/* SCREEN: STATISTICS DIALOG */
+
+StatisticsDialog {
+    align: center middle;
+}
+
+StatisticsWidget {
+    height: auto;
+    width: 40;
+
+    layout: grid;
+    grid-size: 2;
+
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
+StatisticsWidget > .title {
+    text-style: bold;
+    column-span: 2;
+}

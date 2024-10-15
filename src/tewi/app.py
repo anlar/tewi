@@ -143,6 +143,115 @@ class ConfirmationWidget(Static):
         self.border_subtitle = 'Y(es) / N(o)'
 
 
+class StatisticsDialog(ModalScreen[bool]):
+
+    BINDINGS = [
+            Binding("q,escape", "close", "Cancel"),
+            ]
+
+    def __init__(self, session_stats) -> None:
+        self.session_stats = session_stats
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield StatisticsWidget(self.session_stats)
+
+    def action_close(self) -> None:
+        self.dismiss(False)
+
+
+class StatisticsWidget(Static):
+
+    r_upload = reactive("")
+    r_download = reactive("")
+    r_ratio = reactive("")
+    r_time = reactive("")
+
+    r_total_upload = reactive("")
+    r_total_download = reactive("")
+    r_total_ratio = reactive("")
+    r_total_time = reactive("")
+    r_total_started = reactive("")
+
+    def __init__(self, session_stats) -> None:
+        self.session_stats = session_stats
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield Static("Current Session", classes="title")
+        yield Static("  Uploaded:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_upload)
+        yield Static("  Downloaded:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_download)
+        yield Static("  Ratio:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_ratio)
+        yield Static("  Running Time:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_time)
+        yield Static(" ", classes="title")
+        yield Static("Total", classes="title")
+        yield Static("  Uploaded:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_upload)
+        yield Static("  Downloaded:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_download)
+        yield Static("  Ratio:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_ratio)
+        yield Static("  Running Time:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_time)
+        yield Static("  Started:")
+        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_started)
+
+    def on_mount(self) -> None:
+        self.border_title = 'Statistics'
+        self.border_subtitle = 'Q(uit)'
+
+        # current stats
+
+        self.r_upload = Util.print_size(self.session_stats.current_stats.uploaded_bytes)
+        self.r_download = Util.print_size(self.session_stats.current_stats.downloaded_bytes)
+
+        self.r_ratio = self.print_ratio(self.session_stats.current_stats.uploaded_bytes,
+                                        self.session_stats.current_stats.downloaded_bytes)
+
+        self.r_time = self.print_time(self.session_stats.current_stats.seconds_active)
+
+        # cumulative stats
+
+        self.r_total_upload = Util.print_size(self.session_stats.cumulative_stats.uploaded_bytes)
+        self.r_total_download = Util.print_size(self.session_stats.cumulative_stats.downloaded_bytes)
+
+        self.r_total_ratio = self.print_ratio(self.session_stats.cumulative_stats.uploaded_bytes,
+                                              self.session_stats.cumulative_stats.downloaded_bytes)
+
+        self.r_total_time = self.print_time(self.session_stats.cumulative_stats.seconds_active)
+        self.r_total_started = f"{self.session_stats.cumulative_stats.session_count} times"
+
+    def print_ratio(self, uploaded, downloaded) -> str:
+        if downloaded == 0:
+            return "∞"
+
+        ratio = uploaded / downloaded
+
+        return f"{ratio:.2f}"
+
+    def print_time(self, seconds) -> str:
+        intervals = (
+                ('days', 86400),    # 60 * 60 * 24
+                ('hours', 3600),    # 60 * 60
+                ('minutes', 60),
+                ('seconds', 1),
+                )
+        result = []
+
+        for name, count in intervals:
+            value = seconds // count
+            if value:
+                seconds -= value * count
+                if value == 1:
+                    name = name.rstrip('s')
+                result.append("{} {}".format(value, name))
+        return ', '.join(result[:1])
+
+
 # Core UI panels
 
 class InfoPanel(Static):
@@ -668,6 +777,11 @@ class MainApp(App):
     CSS_PATH = "app.tcss"
 
     BINDINGS = [
+            Binding("t", "toggle_alt_speed", "Toggle alt speed"),
+            Binding("s", "show_statistics", "Show statistics"),
+
+            Binding("d", "toggle_dark", "Toggle dark mode", priority=True),
+
             Binding("q", "quit", "Quit"),
             ]
 
@@ -715,6 +829,18 @@ class MainApp(App):
         tdata.torrents.sort(key=lambda t: t.name.lower())
 
         self.r_tdata = tdata
+
+    def action_toggle_alt_speed(self) -> None:
+        alt_speed_enabled = self.client.get_session().alt_speed_enabled
+        self.client.set_session(alt_speed_enabled=not alt_speed_enabled)
+
+        if alt_speed_enabled:
+            self.post_message(MainApp.Notification("Turtle Mode disabled"))
+        else:
+            self.post_message(MainApp.Notification("Turtle Mode enabled"))
+
+    def action_show_statistics(self) -> None:
+        self.push_screen(StatisticsDialog(self.r_tdata.session_stats))
 
     @on(TorrentListPanel.TorrentViewed)
     def handle_torrent_view(self, event: TorrentListPanel.TorrentViewed) -> None:
