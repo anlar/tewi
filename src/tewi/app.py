@@ -104,7 +104,7 @@ class ConfirmationDialog(ModalScreen):
 
     BINDINGS = [
             Binding("y", "confirm", "Yes"),
-            Binding("n,escape", "close", "Cancel"),
+            Binding("n,x,escape", "close", "No"),
             ]
 
     def __init__(self, message: str, description: str = None) -> None:
@@ -140,13 +140,13 @@ class ConfirmationWidget(Static):
 
     def on_mount(self):
         self.border_title = 'Confirmation'
-        self.border_subtitle = 'Y(es) / N(o)'
+        self.border_subtitle = '[Y] Yes / [N] No'
 
 
 class HelpDialog(ModalScreen):
 
     BINDINGS = [
-            Binding("q,escape", "close", "Cancel", priority=True),
+            Binding("x,escape", "close", "Close"),
             ]
 
     def __init__(self, bindings) -> None:
@@ -173,7 +173,7 @@ class HelpWidget(Static):
 
     def on_mount(self) -> None:
         self.border_title = 'Help'
-        self.border_subtitle = 'Q(uit)'
+        self.border_subtitle = '[X] Close'
 
         table = self.query_one(DataTable)
         table.add_columns("Key", "Command")
@@ -193,7 +193,7 @@ class HelpWidget(Static):
 class StatisticsDialog(ModalScreen):
 
     BINDINGS = [
-            Binding("q,escape", "close", "Cancel"),
+            Binding("x,escape", "close", "Close"),
             ]
 
     def __init__(self, session_stats) -> None:
@@ -249,7 +249,7 @@ class StatisticsWidget(Static):
 
     def on_mount(self) -> None:
         self.border_title = 'Statistics'
-        self.border_subtitle = 'Q(uit)'
+        self.border_subtitle = '[X] Close'
 
         # current stats
 
@@ -828,8 +828,8 @@ class MainApp(App):
             Binding("s", "show_statistics", "Show statistics"),
 
             Binding("d", "toggle_dark", "Toggle dark mode", priority=True),
-            Binding("?", "help", "Snow help", priority=True),
-            Binding("q", "quit", "Quit"),
+            Binding("?", "help", "Snow help"),
+            Binding("q", "quit", "Quit", priority=True),
             ]
 
     r_tdata = reactive(None)
