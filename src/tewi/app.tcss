@@ -141,3 +141,23 @@ TorrentInfoPanel .title {
 TorrentInfoPanel .name {
     text-align: right;
 }
+
+/* NOTIFICATIONS */
+
+Toast {
+    width: 40;
+}
+
+/* SCREEN: CONFIRMATION DIALOG */
+
+ConfirmationDialog {
+    align: center middle;
+}
+
+ConfirmationWidget {
+    border-title-align: center;
+    border: round $warning;
+    height: auto;
+    width: 60;
+    padding: 1;
+}

@@ -22,17 +22,17 @@ from datetime import datetime
 
 from transmission_rpc import Client
 
+from textual import on
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Grid, ScrollableContainer, Horizontal
-from textual.css.query import NoMatches
+from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
-from textual.widget import Widget
 from textual.widgets import Static, Label, ProgressBar, DataTable, ContentSwitcher, TabbedContent, TabPane
-from textual.message import Message
-from textual import on
 
+
+# Common data
 
 class TransmissionData:
     def __init__(self, session, session_stats, torrents):
@@ -41,6 +41,29 @@ class TransmissionData:
         self.torrents = torrents
 
 
+# Common utils
+
+class Util:
+    def print_size(num: int, suffix="B", size_bytes=1000):
+        r_unit = None
+        r_num = None
+
+        for unit in ("", "k", "M", "G", "T", "P", "E", "Z", "Y"):
+            if abs(num) < size_bytes:
+                r_unit = unit
+                r_num = num
+                break
+            num /= size_bytes
+
+        round(r_num, 2)
+
+        r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
+
+        return f"{r_size} {r_unit}{suffix}"
+
+
+# Common UI components
+
 class ReactiveLabel(Label):
 
     name = reactive(None)
@@ -48,6 +71,79 @@ class ReactiveLabel(Label):
     def render(self):
         return self.name
 
+
+# Common torrent-related widgets
+
+class SpeedIndicator(Static):
+
+    speed = reactive(0)
+
+    def render(self) -> str:
+        return self.print_speed(self.speed)
+
+    def print_speed(self, num: int,
+                    suffix: str = "B", speed_bytes: int = 1000) -> str:
+
+        r_unit = None
+        r_num = None
+
+        for i in (("", 0), ("K", 0), ("M", 2), ("G", 2), ("T", 2), ("P", 2), ("E", 2), ("Z", 2), ("Y", 2)):
+
+            if abs(num) < speed_bytes:
+                r_unit = i[0]
+                r_num = round(num, i[1])
+                break
+            num /= speed_bytes
+
+        r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
+
+        return f"{r_size} {r_unit}{suffix}"
+
+
+class ConfirmationDialog(ModalScreen[bool]):
+
+    BINDINGS = [
+            Binding("y", "confirm", "Yes"),
+            Binding("n,escape", "close", "Cancel"),
+            ]
+
+    def __init__(self, message: str, description: str = None) -> None:
+        self.message = message
+        self.description = description
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield ConfirmationWidget(self.message, self.description)
+
+    def action_confirm(self) -> None:
+        self.dismiss(True)
+
+    def action_close(self) -> None:
+        self.dismiss(False)
+
+
+class ConfirmationWidget(Static):
+
+    def __init__(self, message: str, description: str = None) -> None:
+        self.message = message
+        self.description = description
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield Label(self.message)
+
+        if self.description:
+            # empty space between message and description
+            yield Label('')
+            for line in textwrap.wrap(self.description, 56):
+                yield Label(line)
+
+    def on_mount(self):
+        self.border_title = 'Confirmation'
+        self.border_subtitle = 'Y(es) / N(o)'
+
+
+# Core UI panels
 
 class InfoPanel(Static):
 
@@ -130,33 +226,12 @@ class StatePanel(Static):
                 self.r_alt_delimiter = ''
 
 
-class SpeedIndicator(Static):
-
-    speed = reactive(0)
-
-    def render(self) -> str:
-        return self.print_speed(self.speed)
-
-    def print_speed(self, num: int,
-                    suffix: str="B", speed_bytes: int=1000) -> str:
-
-        r_unit = None
-        r_num = None
-
-        for i in (("", 0), ("K", 0), ("M", 2), ("G", 2), ("T", 2), ("P", 2), ("E", 2), ("Z", 2), ("Y", 2)):
-
-            if abs(num) < speed_bytes:
-                r_unit = i[0]
-                r_num = round(num, i[1])
-                break
-            num /= speed_bytes
-
-        r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
-
-        return f"{r_size} {r_unit}{suffix}"
-
-
 class TorrentListPanel(ScrollableContainer):
+
+    class TorrentViewed(Message):
+        def __init__(self, torrent) -> None:
+            super().__init__()
+            self.torrent = torrent
 
     BINDINGS = [
             Binding("k,up", "move_up", "Move up"),
@@ -166,6 +241,12 @@ class TorrentListPanel(ScrollableContainer):
             Binding("G", "move_bottom", "Go to the last item"),
 
             Binding("enter,l", "view_info", "View torrent info"),
+
+            Binding("p", "toggle_torrent", "Toggle torrent"),
+            Binding("r", "remove_torrent", "Remove torrent"),
+            Binding("R", "trash_torrent", "Trash torrent"),
+            Binding("v", "verify_torrent", "Verify torrent"),
+            Binding("n", "reannounce_torrent", "Reannounce torrent"),
             ]
 
     r_tdata = reactive(None)
@@ -261,14 +342,89 @@ class TorrentListPanel(ScrollableContainer):
             self.selected_item.selected = True
             self.scroll_to_widget(self.selected_item)
 
-    class TorrentViewed(Message):
-        def __init__(self, torrent) -> None:
-            super().__init__()
-            self.torrent = torrent
-
     def action_view_info(self):
         if self.selected_item:
             self.post_message(self.TorrentViewed(self.selected_item.torrent))
+
+    def action_toggle_torrent(self) -> None:
+        if self.selected_item:
+            status = self.selected_item.t_status
+
+            if status == 'stopped':
+                self.client().start_torrent(self.selected_item.t_id)
+                self.post_message(MainApp.Notification("Torrent started"))
+            else:
+                self.client().stop_torrent(self.selected_item.t_id)
+                self.post_message(MainApp.Notification("Torrent stopped"))
+
+    def action_remove_torrent(self) -> None:
+        self.remove_torrent(delete_data=False,
+                            message="Remove torrent?",
+                            description="Once removed, continuing the transfer will require the torrent file. Are you sure you want to remove it?",
+                            notification="Torrent removed")
+
+    def action_trash_torrent(self) -> None:
+        self.remove_torrent(delete_data=True,
+                            message="Remove torrent and delete data?",
+                            description="All data downloaded for this torrent will be deleted. Are you sure you want to remove it?",
+                            notification="Torrent and its data removed")
+
+    def remove_torrent(self,
+                       delete_data: bool,
+                       message: str,
+                       description: str,
+                       notification: str) -> None:
+
+        if self.selected_item:
+
+            def check_quit(confirmed: bool | None) -> None:
+                if confirmed:
+                    self.client().remove_torrent(self.selected_item.t_id,
+                                                 delete_data=delete_data)
+
+                    w_prev = self.selected_item.w_prev
+                    w_next = self.selected_item.w_next
+
+                    self.selected_item.remove()
+                    self.selected_item = None
+
+                    if w_next:
+                        w_next.w_prev = w_prev
+
+                    if w_prev:
+                        w_prev.w_next = w_next
+
+                    new_selected = None
+                    if w_next:
+                        new_selected = w_next
+                    elif w_prev:
+                        new_selected = w_prev
+
+                    if new_selected:
+                        new_selected.selected = True
+                        self.selected_item = new_selected
+                        self.scroll_to_widget(self.selected_item)
+
+                    self.post_message(MainApp.Notification(notification))
+
+            self.post_message(MainApp.Confirm(message=message,
+                                              description=description,
+                                              check_quit=check_quit))
+
+    def action_verify_torrent(self) -> None:
+        if self.selected_item:
+            self.client().verify_torrent(self.selected_item.t_id)
+            self.post_message(MainApp.Notification("Torrent send to verification"))
+
+    def action_reannounce_torrent(self) -> None:
+        if self.selected_item:
+            self.client().reannounce_torrent(self.selected_item.t_id)
+            self.post_message(MainApp.Notification("Torrent reannounce started"))
+
+    def client(self):
+        # TODO: get client
+        return self.parent.parent.parent.parent.client
+
 
 class TorrentItem(Static):
     # TODO: refactor
@@ -455,7 +611,6 @@ class TorrentInfoPanel(ScrollableContainer):
                     yield Static("Downloading:", classes="name")
                     yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_peers_down)
 
-
     def watch_r_torrent(self, new_r_torrent):
         if new_r_torrent:
             torrent = new_r_torrent
@@ -495,6 +650,18 @@ class TorrentInfoPanel(ScrollableContainer):
 
 
 class MainApp(App):
+
+    class Notification(Message):
+        def __init__(self, message: str):
+            super().__init__()
+            self.message = message
+
+    class Confirm(Message):
+        def __init__(self, message, description, check_quit):
+            super().__init__()
+            self.message = message
+            self.description = description
+            self.check_quit = check_quit
 
     ENABLE_COMMAND_PALETTE = False
 
@@ -558,24 +725,16 @@ class MainApp(App):
     def handle_torrent_list(self, event: TorrentInfoPanel.TorrentViewClosed) -> None:
         self.query_one(ContentSwitcher).current = "torrent-list"
 
+    @on(Notification)
+    def handle_notification(self, event: Notification) -> None:
+        self.notify(message=event.message, timeout=3)
 
-class Util:
-    def print_size(num: int, suffix="B", size_bytes=1000):
-        r_unit = None
-        r_num = None
-
-        for unit in ("", "k", "M", "G", "T", "P", "E", "Z", "Y"):
-            if abs(num) < size_bytes:
-                r_unit = unit
-                r_num = num
-                break
-            num /= size_bytes
-
-        round(r_num, 2)
-
-        r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
-
-        return f"{r_size} {r_unit}{suffix}"
+    @on(Confirm)
+    def handle_confirm(self, event: Confirm) -> None:
+        self.push_screen(
+                    ConfirmationDialog(message=event.message,
+                                       description=event.description),
+                    event.check_quit)
 
 
 def cli():
