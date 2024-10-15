@@ -855,10 +855,10 @@ class TorrentInfoPanel(ScrollableContainer):
             table.clear()
 
             for f in self.r_torrent.get_files():
-                completion = f.completed / f.size
+                completion = (f.completed / f.size) * 100
                 table.add_row(f.id,
                               Util.print_size(f.size),
-                              f'{completion:.2f}%',
+                              f'{completion:.0f}%',
                               f.selected,
                               self.print_priority(f.priority),
                               f.name)
