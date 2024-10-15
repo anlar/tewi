@@ -154,6 +154,150 @@ class SpeedIndicator(Static):
         return f"{r_size} {r_unit}{suffix}"
 
 
+class TorrentListPanel(ScrollableContainer):
+    r_tdata = reactive(None)
+
+    def watch_r_tdata(self, new_r_tdata):
+        if new_r_tdata:
+            torrents = new_r_tdata.torrents
+
+            if self.is_equal_to_pane(torrents):
+                items = self.children
+
+                for i, torrent in enumerate(torrents):
+                    items[i].update_torrent(torrent)
+            else:
+                self.create_pane(torrents)
+
+    def create_pane(self, torrents) -> None:
+        self.remove_children()
+
+        self.selected_item = None
+
+        w_prev = None
+        for t in torrents:
+            item = TorrentItem(t)
+            self.mount(item)
+
+            if w_prev:
+                w_prev.w_next = item
+                item.w_prev = w_prev
+                w_prev = item
+            else:
+                w_prev = item
+
+        self.scroll_home()
+
+    def is_equal_to_pane(self, torrents) -> bool:
+        items = self.children
+
+        if len(torrents) != len(items):
+            return False
+
+        for i, torrent in enumerate(torrents):
+            if torrent.id != items[i].t_id:
+                return False
+
+        return True
+
+
+class TorrentItem(Static):
+    # TODO: refactor
+    selected = reactive(False)
+
+    torrent = reactive(None)
+
+    t_id = reactive(None)
+    t_name = reactive(None)
+    t_status = reactive(None)
+    t_size_total = reactive(None)
+    t_size_left = reactive(None)
+
+    t_upload_speed = reactive(0)
+    t_download_speed = reactive(0)
+
+    t_progress = reactive(0)
+
+    t_stats = reactive("")
+
+    w_next = None
+    w_prev = None
+
+    def __init__(self, torrent):
+        super().__init__()
+        self.update_torrent(torrent)
+
+    def watch_selected(self, new_selected):
+        if new_selected:
+            self.add_class("selected")
+        else:
+            self.remove_class("selected")
+
+    def watch_t_status(self, new_t_status):
+        # For all other statuses using default colors:
+        # - yellow - in progress
+        # - green - complete
+        self.remove_class("torrent-bar-stop", "torrent-bar-check")
+
+        match new_t_status:
+            case "stopped":
+                self.add_class("torrent-bar-stop")
+            case "check pending" | "checking":
+                self.add_class("torrent-bar-check")
+
+    def update_torrent(self, torrent) -> None:
+        self.torrent = torrent
+
+        self.t_id = torrent.id
+        self.t_name = torrent.name
+        self.t_status = torrent.status
+        self.t_size_total = torrent.total_size
+        self.t_size_left = torrent.left_until_done
+
+        self.t_upload_speed = torrent.rate_upload
+        self.t_download_speed = torrent.rate_download
+
+        self.t_progress = torrent.percent_done
+
+        self.t_eta = torrent.eta
+        self.t_peers_connected = torrent.peers_connected
+        self.t_leechers = torrent.peers_getting_from_us
+        self.t_seeders = torrent.peers_sending_to_us
+        self.t_ratio = torrent.ratio
+        self.t_priority = torrent.priority
+
+        self.t_stats = self.print_stats()
+
+    def print_stats(self) -> str:
+        result = None
+
+        size_total = Util.print_size(self.t_size_total)
+
+        if self.t_size_left > 0:
+            size_current = Util.print_size(self.t_size_total - self.t_size_left)
+            result = f"{size_current} / {size_total} ({self.t_progress:.2f}%)"
+        else:
+            result = f"{size_total} (Ratio: {self.t_ratio:.2f})"
+
+        result = result + f" | Status: {str(self.t_status)} | Seeders: {str(self.t_seeders)} | Leechers: {str(self.t_leechers)}"
+
+        return result
+
+    def compose(self) -> ComposeResult:
+        with Grid(id="head"):
+            yield Label(self.t_name, id="name")
+            yield Static("")
+            yield Static(" ↑ ")
+            yield SpeedIndicator().data_bind(speed=TorrentItem.t_upload_speed)
+            yield Static(" ↓ ")
+            yield SpeedIndicator().data_bind(speed=TorrentItem.t_download_speed)
+
+        yield (ProgressBar(total=1.0, show_percentage=False, show_eta=False)
+               .data_bind(progress=TorrentItem.t_progress))
+
+        yield ReactiveLabel(self.t_stats, id="stats").data_bind(name=TorrentItem.t_stats)
+
+
 class MainApp(App):
 
     ENABLE_COMMAND_PALETTE = False
@@ -187,8 +331,9 @@ class MainApp(App):
                         self.c_host, self.c_port)
 
         with Horizontal():
-            with ContentSwitcher(initial="main-panel"):
-                yield ScrollableContainer(id="torrent-list")
+            with ContentSwitcher(initial="torrent-list"):
+                yield TorrentListPanel(id="torrent-list").data_bind(
+                        r_tdata=MainApp.r_tdata)
                 yield ScrollableContainer(id="torrent-info")
 
         yield StatePanel().data_bind(r_tdata=MainApp.r_tdata)
@@ -206,11 +351,26 @@ class MainApp(App):
 
         tdata.torrents.sort(key=lambda t: t.name.lower())
 
-        self.log(f'Load session from Transmission: {vars(tdata.session)}')
-        self.log(f'Load session_stats from Transmission: {vars(tdata.session_stats)}')
-        self.log(f'Load {len(tdata.torrents)} torrents from Transmission')
-
         self.r_tdata = tdata
+
+
+class Util:
+    def print_size(num: int, suffix="B", size_bytes=1000):
+        r_unit = None
+        r_num = None
+
+        for unit in ("", "k", "M", "G", "T", "P", "E", "Z", "Y"):
+            if abs(num) < size_bytes:
+                r_unit = unit
+                r_num = num
+                break
+            num /= size_bytes
+
+        round(r_num, 2)
+
+        r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
+
+        return f"{r_size} {r_unit}{suffix}"
 
 
 def cli():

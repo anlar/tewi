@@ -56,3 +56,53 @@
 #state-panel > .alt-speed {
     color: $accent-lighten-3;
 }
+
+/* TORRENT LIST PANEL */
+
+TorrentListPanel {
+    scrollbar-size-vertical: 1;
+}
+
+/* TORRENT LIST PANEL: TORRENT ITEM */
+
+TorrentItem {
+    padding: 0 1;
+    layout: vertical;
+    border: round $primary 75%;
+    background: $background-lighten-1;
+}
+
+TorrentItem > #head {
+    height: auto;
+    grid-size: 6;
+    grid-columns: auto 1fr auto 9 auto 9;
+}
+
+TorrentItem > #head > #name {
+    text-style: bold;
+}
+
+TorrentItem > #stats {
+    text-opacity: 75%;
+    width: 100%;
+}
+
+TorrentItem > ProgressBar > Bar {
+    width: 1fr;
+}
+
+.torrent-bar-stop > ProgressBar > Bar > .bar--bar {
+    color: $background-lighten-3;
+}
+
+.torrent-bar-stop > ProgressBar > Bar > .bar--complete {
+    color: $primary-background-lighten-3;
+}
+
+.torrent-bar-check > ProgressBar > Bar > .bar--bar {
+    color: $error-darken-1;
+}
+
+.torrent-bar-check > ProgressBar > Bar > .bar--complete {
+    color: $error-darken-1;
+}
