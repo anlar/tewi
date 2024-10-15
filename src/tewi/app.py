@@ -128,7 +128,7 @@ class StatePanel(Static):
                 self.r_alt_delimiter = ''
 
 
-class SpeedIndicator(Widget):
+class SpeedIndicator(Static):
 
     speed = reactive(0)
 
