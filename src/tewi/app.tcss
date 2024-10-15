@@ -16,36 +16,62 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-/* TOP PANE */
+/* INFO PANEL */
 
-#top-pane {
+#info-panel {
     height: auto;
     background: $accent-darken-1;
 }
 
-.top-pane-column {
+#info-panel > .column {
     width: auto;
     padding: 0 1;
 }
 
-.top-pane-column-delimiter {
+#info-panel> .delimiter {
     text-opacity: 75%;
 }
 
-.top-pane-column-space {
+#info-panel> .space {
     width: 1fr;
 }
 
-/* MIDDLE PANE */
+/* STATE PANEL */
 
-ScrollableContainer {
+#state-panel {
+    grid-size: 8;
+    grid-columns: auto 1fr auto auto auto 10 auto 13;
+    height: 1;
+    background: $accent-darken-1;
+}
+
+#state-panel > .column {
+    padding: 0 1;
+}
+
+#state-panel > .arrow {
+    padding: 0 0 0 1;
+}
+
+#state-panel > .delimiter {
+    text-opacity: 75%;
+}
+
+#state-panel > .alt-speed {
+    color: $accent-lighten-3;
+}
+
+/* TORRENT LIST PANEL */
+
+TorrentListPanel {
     scrollbar-size-vertical: 1;
 }
+
+/* TORRENT LIST PANEL: TORRENT ITEM */
 
 TorrentItem {
     padding: 0 1;
     layout: vertical;
-    min-width: 50;
     border: round $primary 75%;
     background: $background-lighten-1;
 }
@@ -54,22 +80,22 @@ TorrentItem.selected {
     background: $accent;
 }
 
-#torrent-item-head {
+TorrentItem > #head {
     height: auto;
     grid-size: 6;
     grid-columns: auto 1fr auto 9 auto 9;
 }
 
-#torrent-item-head-name {
+TorrentItem > #head > #name {
     text-style: bold;
 }
 
-#torrent-item-stats {
+TorrentItem > #stats {
     text-opacity: 75%;
     width: 100%;
 }
 
-Bar {
+TorrentItem > ProgressBar > Bar {
     width: 1fr;
 }
 
@@ -89,31 +115,51 @@ Bar {
     color: $error-darken-1;
 }
 
-/* BOTTOM PANE */
+/* TORRENT INFO PANEL */
 
-StatusLine {
+TorrentInfoPanel {
+    background: red;
+    border: round $primary 75%;
+    background: $background-lighten-1;
+    height: 1fr;
+}
+
+TorrentInfoPanel #overview {
+    height: auto;
+
     layout: grid;
-    grid-size: 8;
-    grid-columns: auto 1fr auto auto auto 10 auto 13;
-    background: $accent-darken-3;
-    height: 1;
+    grid-size: 2;
+    grid-columns: 15 2fr;
+    grid-gutter: 0 1;
 }
 
-.bottom-pane-column {
-    padding: 0 1;
+TorrentInfoPanel .title {
+    text-style: bold;
+    column-span: 2;
 }
 
-.bottom-pane-arrow {
-    padding: 0 0 0 1;
+TorrentInfoPanel .name {
+    text-align: right;
 }
 
-.bottom-pane-column-delimiter {
-    text-opacity: 75%;
-    padding: 0 1;
+/* NOTIFICATIONS */
+
+Toast {
+    width: 40;
 }
 
-.bottom-pane-alt {
-    color: $accent-lighten-3;
+/* SCREEN: CONFIRMATION DIALOG */
+
+ConfirmationDialog {
+    align: center middle;
+}
+
+ConfirmationWidget {
+    border-title-align: center;
+    border: round $warning;
+    height: auto;
+    width: 60;
+    padding: 1;
 }
 
 /* SCREEN: STATISTICS DIALOG */
@@ -134,7 +180,7 @@ StatisticsWidget {
     padding: 1;
 }
 
-.statistics-title {
+StatisticsWidget > .title {
     text-style: bold;
     column-span: 2;
 }
@@ -147,56 +193,10 @@ HelpDialog {
 }
 
 HelpWidget {
-    height: 22;
-    width: 39;
+    width: 41;
+    height: 25;
 
     border-title-align: center;
     border: round $warning;
     padding: 1;
-}
-
-/* SCREEN: CONFIRMATION DIALOG */
-
-ConfirmationDialog {
-    align: center middle;
-}
-
-ConfirmationWidget {
-    border-title-align: center;
-    border: round $warning;
-    height: auto;
-    width: 60;
-    padding: 1;
-}
-
-/* NOTIFICATIONS */
-
-Toast {
-    width: 40;
-}
-
-/* TORRENT INFO */
-
-TorrentInfoWidget {
-    border: round $primary 75%;
-    background: $background-lighten-1;
-    height: 1fr;
-}
-
-.info-overview-title {
-    text-style: bold;
-    column-span: 2;
-}
-
-.info-overview-name {
-    text-align: right;
-}
-
-#info-overview {
-    height: auto;
-
-    layout: grid;
-    grid-size: 2;
-    grid-columns: 15 2fr;
-    grid-gutter: 0 1;
 }
