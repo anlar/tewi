@@ -96,10 +96,10 @@ class StatePanel(Static):
                     name=StatePanel.r_alt_speed)
             yield ReactiveLabel(classes="column delimiter").data_bind(
                     name=StatePanel.r_alt_delimiter)
-            yield Static("↑", classes="column")
+            yield Static("↑", classes="column arrow")
             yield SpeedIndicator(classes="column").data_bind(
                     speed=StatePanel.r_upload_speed)
-            yield Static("↓", classes="column")
+            yield Static("↓", classes="column arrow")
             yield SpeedIndicator(classes="column").data_bind(
                     speed=StatePanel.r_download_speed)
 

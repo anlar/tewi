@@ -49,6 +49,10 @@
     padding: 0 1;
 }
 
+#state-panel > .arrow {
+    padding: 0 0 0 1;
+}
+
 #state-panel > .delimiter {
     text-opacity: 75%;
 }
