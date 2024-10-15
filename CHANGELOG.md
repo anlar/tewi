@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- In help screen display only keys for current screen
+- Use <X> key to close dialogs
+
 ### Removed
 
 ## [0.1.0] - 2024-10-11 - Rabbit Sign
