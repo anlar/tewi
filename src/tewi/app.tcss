@@ -120,9 +120,7 @@ TorrentItem > ProgressBar > Bar {
 /* TORRENT INFO PANEL */
 
 TorrentInfoPanel {
-    background: red;
     border: round $primary 75%;
-    background: $background-lighten-1;
     height: 1fr;
 }
 

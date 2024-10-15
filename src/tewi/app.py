@@ -800,31 +800,31 @@ class TorrentInfoPanel(ScrollableContainer):
 
             with TabPane("Files", id='tab-files'):
                 with Container():
-                    yield DataTable(id='files')
+                    yield DataTable(id='files',
+                                    cursor_type="none",
+                                    zebra_stripes=True)
 
             with TabPane("Peers", id='tab-peers'):
                 with Container():
-                    yield DataTable(id='peers')
+                    yield DataTable(id='peers',
+                                    cursor_type="none",
+                                    zebra_stripes=True)
 
             with TabPane("Trackers", id='tab-trackers'):
                 with Container():
-                    yield DataTable(id='trackers')
+                    yield DataTable(id='trackers',
+                                    cursor_type="none",
+                                    zebra_stripes=True)
 
     def on_mount(self):
         table = self.query_one("#files")
         table.add_columns("ID", "Size", "Done", "Selected", "Priority", "Name")
-        table.cursor_type = "none"
-        table.zebra_stripes = True
 
         table = self.query_one("#peers")
         table.add_columns("Encrypted", "Up", "Down", "Progress", "Status", "Address", "Client")
-        table.cursor_type = "none"
-        table.zebra_stripes = True
 
         table = self.query_one("#trackers")
         table.add_columns("Host", "Tier", "Seeders", "Leechers", "Downloads")
-        table.cursor_type = "none"
-        table.zebra_stripes = True
 
     def watch_r_torrent(self, new_r_torrent):
         if new_r_torrent:
