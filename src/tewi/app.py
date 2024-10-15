@@ -806,6 +806,10 @@ class TorrentInfoPanel(ScrollableContainer):
                 with Container():
                     yield DataTable(id='peers')
 
+            with TabPane("Trackers", id='tab-trackers'):
+                with Container():
+                    yield DataTable(id='trackers')
+
     def on_mount(self):
         table = self.query_one("#files")
         table.add_columns("ID", "Size", "Done", "Selected", "Priority", "Name")
@@ -814,6 +818,11 @@ class TorrentInfoPanel(ScrollableContainer):
 
         table = self.query_one("#peers")
         table.add_columns("Encrypted", "Up", "Down", "Progress", "Status", "Address", "Client")
+        table.cursor_type = "none"
+        table.zebra_stripes = True
+
+        table = self.query_one("#trackers")
+        table.add_columns("Host", "Tier", "Seeders", "Leechers", "Downloads")
         table.cursor_type = "none"
         table.zebra_stripes = True
 
@@ -867,6 +876,22 @@ class TorrentInfoPanel(ScrollableContainer):
                               p["address"],
                               p["clientName"])
 
+            table = self.query_one("#trackers")
+            table.clear()
+
+            for t in self.r_torrent.tracker_stats:
+                table.add_row(t.host,
+                              t.tier,
+                              self.print_count(t.seeder_count),
+                              self.print_count(t.leecher_count),
+                              self.print_count(t.download_count))
+
+    def print_count(self, value: int) -> str:
+        if value == -1:
+            return "N/A"
+
+        return value
+
     def print_datetime(self, value: datetime) -> str:
         if value:
             return value.strftime("%Y-%m-%d %H:%M:%S")
@@ -894,6 +919,8 @@ class TorrentInfoPanel(ScrollableContainer):
             tabs.active = 'tab-overview'
         elif active == 'tab-peers':
             tabs.active = 'tab-files'
+        elif active == 'tab-trackers':
+            tabs.active = 'tab-peers'
 
     def action_go_right(self):
         tabs = self.query_one(TabbedContent)
@@ -903,30 +930,40 @@ class TorrentInfoPanel(ScrollableContainer):
             tabs.active = 'tab-files'
         elif active == 'tab-files':
             tabs.active = 'tab-peers'
+        elif active == 'tab-peers':
+            tabs.active = 'tab-trackers'
 
     def action_scroll_up(self):
         if self.query_one(TabbedContent).active == 'tab-files':
             self.query_one("#files").scroll_up()
         elif self.query_one(TabbedContent).active == 'tab-peers':
             self.query_one("#peers").scroll_up()
+        elif self.query_one(TabbedContent).active == 'tab-trackers':
+            self.query_one("#trackers").scroll_up()
 
     def action_scroll_down(self):
         if self.query_one(TabbedContent).active == 'tab-files':
             self.query_one("#files").scroll_down()
         elif self.query_one(TabbedContent).active == 'tab-peers':
             self.query_one("#peers").scroll_down()
+        elif self.query_one(TabbedContent).active == 'tab-trackers':
+            self.query_one("#trackers").scroll_up()
 
     def action_scroll_top(self):
         if self.query_one(TabbedContent).active == 'tab-files':
             self.query_one("#files").action_scroll_top()
         elif self.query_one(TabbedContent).active == 'tab-peers':
             self.query_one("#peers").action_scroll_top()
+        elif self.query_one(TabbedContent).active == 'tab-trackers':
+            self.query_one("#trackers").scroll_up()
 
     def action_scroll_bottom(self):
         if self.query_one(TabbedContent).active == 'tab-files':
             self.query_one("#files").action_scroll_bottom()
         elif self.query_one(TabbedContent).active == 'tab-peers':
             self.query_one("#peers").action_scroll_bottom()
+        elif self.query_one(TabbedContent).active == 'tab-trackers':
+            self.query_one("#trackers").scroll_up()
 
 
 class MainApp(App):
