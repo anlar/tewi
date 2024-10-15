@@ -44,7 +44,10 @@ class TransmissionData:
 # Common utils
 
 class Util:
-    def print_size(num: int, suffix="B", size_bytes=1000):
+
+    def print_size(num: int,
+                   suffix: str = "B", size_bytes: int = 1000):
+
         r_unit = None
         r_num = None
 
@@ -99,6 +102,8 @@ class SpeedIndicator(Static):
 
         return f"{r_size} {r_unit}{suffix}"
 
+
+# Common screens
 
 class ConfirmationDialog(ModalScreen):
 
@@ -385,6 +390,7 @@ class StatePanel(Static):
 class TorrentListPanel(ScrollableContainer):
 
     class TorrentViewed(Message):
+
         def __init__(self, torrent) -> None:
             super().__init__()
             self.torrent = torrent
@@ -681,6 +687,9 @@ class TorrentItem(Static):
 
 class TorrentInfoPanel(ScrollableContainer):
 
+    class TorrentViewClosed(Message):
+        pass
+
     BINDINGS = [
             Binding("h,enter", "view_list", "View torrent list"),
             ]
@@ -800,9 +809,6 @@ class TorrentInfoPanel(ScrollableContainer):
 
     def action_view_list(self):
         self.post_message(self.TorrentViewClosed())
-
-    class TorrentViewClosed(Message):
-        pass
 
 
 class MainApp(App):
