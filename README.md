@@ -10,6 +10,12 @@
 
 ![Tewi Screen Shot](docs/images/tewi-screenshot.png)
 
+<p align="center">
+  <img src="/docs/images/tewi-screenshot.png" width="200" />
+  <img src="/docs/images/tewi-screenshot.png" width="200" /> 
+  <img src="/docs/images/tewi-screenshot.png" width="200" />
+</p>
+
 Tewi is a TUI (text user interface) interface for the Transmission BitTorrent daemon.
 
 ### Built With
