@@ -417,9 +417,13 @@ class TorrentListPanel(ScrollableContainer):
             Binding("R", "trash_torrent", "Trash torrent"),
             Binding("v", "verify_torrent", "Verify torrent"),
             Binding("n", "reannounce_torrent", "Reannounce torrent"),
+
+            Binding("m", "toggle_view_mode", "Toggle torrents view mode"),
             ]
 
     r_tdata = reactive(None)
+
+    selected_item = None
 
     def __init__(self, id: str, view_mode: str):
         self.view_mode = view_mode
@@ -438,6 +442,11 @@ class TorrentListPanel(ScrollableContainer):
                 self.create_pane(torrents)
 
     def create_pane(self, torrents) -> None:
+        if self.selected_item:
+            prev_selected_id = self.selected_item.torrent.id
+        else:
+            prev_selected_id = None
+
         self.remove_children()
 
         self.selected_item = None
@@ -458,7 +467,14 @@ class TorrentListPanel(ScrollableContainer):
             else:
                 w_prev = item
 
-        self.scroll_home()
+        if prev_selected_id:
+            for item in self.children:
+                if prev_selected_id == item.torrent.id:
+                    item.selected = True
+                    self.selected_item = item
+                    self.scroll_to_widget(self.selected_item)
+        else:
+            self.scroll_home()
 
     def is_equal_to_pane(self, torrents) -> bool:
         items = self.children
@@ -602,6 +618,14 @@ class TorrentListPanel(ScrollableContainer):
         if self.selected_item:
             self.client().reannounce_torrent(self.selected_item.t_id)
             self.post_message(MainApp.Notification("Torrent reannounce started"))
+
+    def action_toggle_view_mode(self) -> None:
+        if self.view_mode == 'card':
+            self.view_mode = 'compact'
+        elif self.view_mode == 'compact':
+            self.view_mode = 'card'
+
+        self.create_pane(self.r_tdata.torrents)
 
     def client(self):
         # TODO: get client
@@ -1084,8 +1108,9 @@ class MainApp(App):
 
         with Horizontal():
             with ContentSwitcher(initial="torrent-list"):
-                yield TorrentListPanel(id="torrent-list", view_mode=self.view_mode).data_bind(
-                        r_tdata=MainApp.r_tdata)
+                yield TorrentListPanel(id="torrent-list",
+                                       view_mode=self.view_mode).data_bind(
+                                               r_tdata=MainApp.r_tdata)
                 yield TorrentInfoPanel(id="torrent-info")
 
         yield StatePanel().data_bind(r_tdata=MainApp.r_tdata)
