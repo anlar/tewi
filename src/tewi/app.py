@@ -421,6 +421,10 @@ class TorrentListPanel(ScrollableContainer):
 
     r_tdata = reactive(None)
 
+    def __init__(self, id: str, view_mode: str):
+        self.view_mode = view_mode
+        super().__init__(id=id)
+
     def watch_r_tdata(self, new_r_tdata):
         if new_r_tdata:
             torrents = new_r_tdata.torrents
@@ -440,7 +444,11 @@ class TorrentListPanel(ScrollableContainer):
 
         w_prev = None
         for t in torrents:
-            item = TorrentItem(t)
+            if self.view_mode == 'card':
+                item = TorrentItemCard(t)
+            elif self.view_mode == 'compact':
+                item = TorrentItemCompact(t)
+
             self.mount(item)
 
             if w_prev:
@@ -601,23 +609,13 @@ class TorrentListPanel(ScrollableContainer):
 
 
 class TorrentItem(Static):
-    # TODO: refactor
-    selected = reactive(False)
 
+    selected = reactive(False)
     torrent = reactive(None)
 
     t_id = reactive(None)
     t_name = reactive(None)
     t_status = reactive(None)
-    t_size_total = reactive(None)
-    t_size_left = reactive(None)
-
-    t_upload_speed = reactive(0)
-    t_download_speed = reactive(0)
-
-    t_progress = reactive(0)
-
-    t_stats = reactive("")
 
     w_next = None
     w_prev = None
@@ -625,12 +623,6 @@ class TorrentItem(Static):
     def __init__(self, torrent):
         super().__init__()
         self.update_torrent(torrent)
-
-    def watch_selected(self, new_selected):
-        if new_selected:
-            self.add_class("selected")
-        else:
-            self.remove_class("selected")
 
     def watch_t_status(self, new_t_status):
         # For all other statuses using default colors:
@@ -644,7 +636,77 @@ class TorrentItem(Static):
             case "check pending" | "checking":
                 self.add_class("torrent-bar-check")
 
+    def watch_selected(self, new_selected):
+        if new_selected:
+            self.add_class("selected")
+        else:
+            self.remove_class("selected")
+
     def update_torrent(self, torrent) -> None:
+        pass
+
+
+class TorrentItemCompact(TorrentItem):
+
+    t_size_total = reactive(None)
+    t_size_left = reactive(None)
+
+    t_upload_speed = reactive(0)
+    t_download_speed = reactive(0)
+
+    t_progress = reactive(0)
+
+    def update_torrent(self, torrent) -> None:
+        super().update_torrent(torrent)
+
+        self.torrent = torrent
+
+        self.t_id = torrent.id
+        self.t_name = torrent.name
+        self.t_status = torrent.status
+        self.t_size_total = torrent.total_size
+        self.t_size_left = torrent.left_until_done
+
+        self.t_upload_speed = torrent.rate_upload
+        self.t_download_speed = torrent.rate_download
+
+        self.t_progress = torrent.percent_done
+
+        self.t_eta = torrent.eta
+        self.t_peers_connected = torrent.peers_connected
+        self.t_leechers = torrent.peers_getting_from_us
+        self.t_seeders = torrent.peers_sending_to_us
+        self.t_ratio = torrent.ratio
+        self.t_priority = torrent.priority
+
+    def compose(self) -> ComposeResult:
+        with Grid(id="head"):
+            yield Label(self.t_name, id="name")
+            yield Static("")
+            yield Static(" ↑ ")
+            yield SpeedIndicator().data_bind(speed=TorrentItemCompact.t_upload_speed)
+            yield Static(" ↓ ")
+            yield SpeedIndicator().data_bind(speed=TorrentItemCompact.t_download_speed)
+
+        yield (ProgressBar(total=1.0, show_percentage=False, show_eta=False)
+               .data_bind(progress=TorrentItemCompact.t_progress))
+
+
+class TorrentItemCard(TorrentItem):
+
+    t_size_total = reactive(None)
+    t_size_left = reactive(None)
+
+    t_upload_speed = reactive(0)
+    t_download_speed = reactive(0)
+
+    t_progress = reactive(0)
+
+    t_stats = reactive("")
+
+    def update_torrent(self, torrent) -> None:
+        super().update_torrent(torrent)
+
         self.torrent = torrent
 
         self.t_id = torrent.id
@@ -689,14 +751,14 @@ class TorrentItem(Static):
             yield Label(self.t_name, id="name")
             yield Static("")
             yield Static(" ↑ ")
-            yield SpeedIndicator().data_bind(speed=TorrentItem.t_upload_speed)
+            yield SpeedIndicator().data_bind(speed=TorrentItemCard.t_upload_speed)
             yield Static(" ↓ ")
-            yield SpeedIndicator().data_bind(speed=TorrentItem.t_download_speed)
+            yield SpeedIndicator().data_bind(speed=TorrentItemCard.t_download_speed)
 
         yield (ProgressBar(total=1.0, show_percentage=False, show_eta=False)
-               .data_bind(progress=TorrentItem.t_progress))
+               .data_bind(progress=TorrentItemCard.t_progress))
 
-        yield ReactiveLabel(self.t_stats, id="stats").data_bind(name=TorrentItem.t_stats)
+        yield ReactiveLabel(self.t_stats, id="stats").data_bind(name=TorrentItemCard.t_stats)
 
 
 class TorrentInfoPanel(ScrollableContainer):
@@ -997,9 +1059,12 @@ class MainApp(App):
 
     def __init__(self, host: str, port: str,
                  username: str, password: str,
+                 view_mode: str,
                  version: str):
 
         super().__init__()
+
+        self.view_mode = view_mode
 
         self.tewi_version = version
 
@@ -1017,7 +1082,7 @@ class MainApp(App):
 
         with Horizontal():
             with ContentSwitcher(initial="torrent-list"):
-                yield TorrentListPanel(id="torrent-list").data_bind(
+                yield TorrentListPanel(id="torrent-list", view_mode=self.view_mode).data_bind(
                         r_tdata=MainApp.r_tdata)
                 yield TorrentInfoPanel(id="torrent-info")
 
@@ -1082,6 +1147,9 @@ def cli():
             description='Text-based interface for the Transmission BitTorrent daemon',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
+    parser.add_argument('--view-mode', type=str, default='card',
+                        choices=['card', 'compact'],
+                        help='View mode for torrents in list')
     parser.add_argument('--host', type=str, default='localhost',
                         help='Transmission daemon host for connection')
     parser.add_argument('--port', type=str, default='9091',
@@ -1098,6 +1166,7 @@ def cli():
 
     app = MainApp(host=args.host, port=args.port,
                   username=args.username, password=args.password,
+                  view_mode=args.view_mode,
                   version=tewi_version)
     app.run()
 

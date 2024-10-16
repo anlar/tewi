@@ -57,8 +57,6 @@ View available hot-keys in Tewi by pressing `?` key.
 
 ## Roadmap
 
-- [ ] Compact view mode for torrents (one torrent per line)
-- [ ] View torrent details in separate screen
 - [ ] Torrents filtering
 - [ ] Ability to change torrent sorting order
 

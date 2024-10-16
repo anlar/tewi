@@ -15,9 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Toast notifications for torrent actions
 - Action to toggle dark/light interface modes
 - View torrent files
+- Compact mode for torrent list
 
 ### Changed
 
+- Rewrite widgets tree structure
 - In help screen display only keys for current screen
 - Use <X> key to close dialogs
 
