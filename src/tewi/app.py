@@ -451,6 +451,8 @@ class TorrentListPanel(ScrollableContainer):
 
         self.selected_item = None
 
+        torrent_widgets = []
+
         w_prev = None
         for t in torrents:
             if self.view_mode == 'card':
@@ -458,7 +460,7 @@ class TorrentListPanel(ScrollableContainer):
             elif self.view_mode == 'compact':
                 item = TorrentItemCompact(t)
 
-            self.mount(item)
+            torrent_widgets.append(item)
 
             if w_prev:
                 w_prev.w_next = item
@@ -466,6 +468,8 @@ class TorrentListPanel(ScrollableContainer):
                 w_prev = item
             else:
                 w_prev = item
+
+        self.mount_all(torrent_widgets)
 
         if prev_selected_id:
             for item in self.children:
