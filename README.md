@@ -19,6 +19,17 @@
 
 Tewi is a TUI (text user interface) interface for the Transmission BitTorrent daemon.
 
+Features:
+
+- Connect to Transmission daemon by its credentials
+- Browse torrents list
+- Card and compact view modes
+- Display torrent details: overview, files, trackers, peers
+- Torrent actions: start/pause, remove/trash, verify, reannounce
+- View and toggle Turtle Mode
+- View Transmission session statistics
+- Dark and light color themes
+
 ### Built With
 
 * [Python 3](https://www.python.org/)
