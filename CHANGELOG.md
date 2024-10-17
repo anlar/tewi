@@ -9,22 +9,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Screen to view session statistics
-- CLI options to set username and password for daemon connection (`--username`, `--password`)
-- Action to reannounce torrent
-- Toast notifications for torrent actions
-- Action to toggle dark/light interface modes
-- View torrent files
+### Changed
+
+### Removed
+
+## [0.2.0] - 2024-10-17 - Runaway Rabbit
+
+### Added
+
+- View torrent details (overview, files, peers, trackers)
+- View Transmission session statistics dialog
 - Compact mode for torrent list
+- Toast notifications for torrent actions
+- Action to reannounce torrent
+- Action to toggle dark/light interface modes
+- CLI options to set username and password for daemon connection (`--username`, `--password`)
 - Application title
 
 ### Changed
 
-- Rewrite widgets tree structure
-- In help screen display only keys for current screen
-- Use <X> key to close dialogs
-
-### Removed
+- Rewrite widgets tree structure (code cleanup/optimization)
+- Display only keys for current screen in help dialog
+- Use <X> key to close dialog (instead of <Q>)
 
 ## [0.1.0] - 2024-10-11 - Rabbit Sign
 
