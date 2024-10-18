@@ -87,6 +87,28 @@
     color: $error-darken-1;
 }
 
+/* TORRENT LIST PANEL: TORRENT ITEM ONELINE */
+
+TorrentItemOneline {
+    padding: 0 1;
+    layout: vertical;
+    background: $background-lighten-1;
+}
+
+TorrentItemOneline.selected {
+    background: $accent;
+}
+
+TorrentItemOneline > #head {
+    height: auto;
+    grid-size: 6;
+    grid-columns: auto 1fr auto 9 auto 11;
+}
+
+TorrentItemOneline > #head > #name {
+    text-style: bold;
+}
+
 /* TORRENT LIST PANEL: TORRENT ITEM COMPACT */
 
 TorrentItemCompact {

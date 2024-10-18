@@ -459,6 +459,8 @@ class TorrentListPanel(ScrollableContainer):
                 item = TorrentItemCard(t)
             elif self.view_mode == 'compact':
                 item = TorrentItemCompact(t)
+            elif self.view_mode == 'oneline':
+                item = TorrentItemOneline(t)
 
             torrent_widgets.append(item)
 
@@ -627,6 +629,8 @@ class TorrentListPanel(ScrollableContainer):
         if self.view_mode == 'card':
             self.view_mode = 'compact'
         elif self.view_mode == 'compact':
+            self.view_mode = 'oneline'
+        elif self.view_mode == 'oneline':
             self.view_mode = 'card'
 
         self.create_pane(self.r_tdata.torrents)
@@ -672,6 +676,35 @@ class TorrentItem(Static):
 
     def update_torrent(self, torrent) -> None:
         pass
+
+
+class TorrentItemOneline(TorrentItem):
+
+    t_upload_speed = reactive(0)
+    t_download_speed = reactive(0)
+
+    def update_torrent(self, torrent) -> None:
+        super().update_torrent(torrent)
+
+        self.torrent = torrent
+
+        self.t_id = torrent.id
+        self.t_name = torrent.name
+        self.t_status = torrent.status
+
+        self.t_upload_speed = torrent.rate_upload
+        self.t_download_speed = torrent.rate_download
+
+    def compose(self) -> ComposeResult:
+        with Grid(id="head"):
+            yield Label(self.t_name, id="name")
+            yield Static("")
+            yield Static(" ↑ ")
+            yield SpeedIndicator().data_bind(
+                    speed=TorrentItemOneline.t_upload_speed)
+            yield Static(" ↓ ")
+            yield SpeedIndicator().data_bind(
+                    speed=TorrentItemOneline.t_download_speed)
 
 
 class TorrentItemCompact(TorrentItem):
@@ -1185,7 +1218,7 @@ def cli():
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--view-mode', type=str, default='card',
-                        choices=['card', 'compact'],
+                        choices=['card', 'compact', 'oneline'],
                         help='View mode for torrents in list')
     parser.add_argument('--refresh-interval', type=int, default=5,
                         help='Refresh interval (in seconds) for loading data from Transmission daemon')
