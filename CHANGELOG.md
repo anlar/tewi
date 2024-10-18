@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Load Transmission data in separate thread
+- Fix tracker tier numbering (should start with Tier 1, not 0)
 
 ### Removed
 

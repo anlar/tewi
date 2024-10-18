@@ -987,7 +987,8 @@ class TorrentInfoPanel(ScrollableContainer):
 
             for t in self.r_torrent.tracker_stats:
                 table.add_row(t.host,
-                              t.tier,
+                              # Transmission RPC numbers tiers from 0
+                              t.tier + 1,
                               self.print_count(t.seeder_count),
                               self.print_count(t.leecher_count),
                               self.print_count(t.download_count))
