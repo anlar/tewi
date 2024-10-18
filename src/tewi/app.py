@@ -22,7 +22,7 @@ from datetime import datetime
 
 from transmission_rpc import Client
 
-from textual import on
+from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Grid, ScrollableContainer, Horizontal, Container
@@ -342,12 +342,12 @@ class StatePanel(Static):
     r_tdata = reactive(None)
 
     # recompose whole line to update blocks width
-    r_stats = reactive(None, recompose=True)
-    r_alt_speed = reactive(None, recompose=True)
-    r_alt_delimiter = reactive(None, recompose=True)
+    r_stats = reactive('', recompose=True)
+    r_alt_speed = reactive('', recompose=True)
+    r_alt_delimiter = reactive('', recompose=True)
 
-    r_upload_speed = reactive(None)
-    r_download_speed = reactive(None)
+    r_upload_speed = reactive(0)
+    r_download_speed = reactive(0)
 
     def compose(self) -> ComposeResult:
         with Grid(id="state-panel"):
@@ -1123,7 +1123,8 @@ class MainApp(App):
         self.load_tdata()
         self.set_interval(5, self.load_tdata)
 
-    def load_tdata(self) -> None:
+    @work(exclusive=True, thread=True)
+    async def load_tdata(self) -> None:
         tdata = TransmissionData(
                 session=self.client.get_session(),
                 session_stats=self.client.session_stats(),
@@ -1132,6 +1133,9 @@ class MainApp(App):
 
         tdata.torrents.sort(key=lambda t: t.name.lower())
 
+        self.call_from_thread(self.set_tdata, tdata)
+
+    def set_tdata(self, tdata) -> None:
         self.r_tdata = tdata
 
     def action_toggle_alt_speed(self) -> None:
