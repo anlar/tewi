@@ -649,6 +649,9 @@ class TorrentItem(Static):
     t_name = reactive(None)
     t_status = reactive(None)
 
+    t_upload_speed = reactive(0)
+    t_download_speed = reactive(0)
+
     w_next = None
     w_prev = None
 
@@ -675,17 +678,6 @@ class TorrentItem(Static):
             self.remove_class("selected")
 
     def update_torrent(self, torrent) -> None:
-        pass
-
-
-class TorrentItemOneline(TorrentItem):
-
-    t_upload_speed = reactive(0)
-    t_download_speed = reactive(0)
-
-    def update_torrent(self, torrent) -> None:
-        super().update_torrent(torrent)
-
         self.torrent = torrent
 
         self.t_id = torrent.id
@@ -694,6 +686,9 @@ class TorrentItemOneline(TorrentItem):
 
         self.t_upload_speed = torrent.rate_upload
         self.t_download_speed = torrent.rate_download
+
+
+class TorrentItemOneline(TorrentItem):
 
     def compose(self) -> ComposeResult:
         with Grid(id="head"):
@@ -712,33 +707,7 @@ class TorrentItemCompact(TorrentItem):
     t_size_total = reactive(None)
     t_size_left = reactive(None)
 
-    t_upload_speed = reactive(0)
-    t_download_speed = reactive(0)
-
     t_progress = reactive(0)
-
-    def update_torrent(self, torrent) -> None:
-        super().update_torrent(torrent)
-
-        self.torrent = torrent
-
-        self.t_id = torrent.id
-        self.t_name = torrent.name
-        self.t_status = torrent.status
-        self.t_size_total = torrent.total_size
-        self.t_size_left = torrent.left_until_done
-
-        self.t_upload_speed = torrent.rate_upload
-        self.t_download_speed = torrent.rate_download
-
-        self.t_progress = torrent.percent_done
-
-        self.t_eta = torrent.eta
-        self.t_peers_connected = torrent.peers_connected
-        self.t_leechers = torrent.peers_getting_from_us
-        self.t_seeders = torrent.peers_sending_to_us
-        self.t_ratio = torrent.ratio
-        self.t_priority = torrent.priority
 
     def compose(self) -> ComposeResult:
         with Grid(id="head"):
@@ -752,32 +721,50 @@ class TorrentItemCompact(TorrentItem):
         yield (ProgressBar(total=1.0, show_percentage=False, show_eta=False)
                .data_bind(progress=TorrentItemCompact.t_progress))
 
+    def update_torrent(self, torrent) -> None:
+        super().update_torrent(torrent)
+
+        self.t_size_total = torrent.total_size
+        self.t_size_left = torrent.left_until_done
+
+        self.t_progress = torrent.percent_done
+
+        self.t_eta = torrent.eta
+        self.t_peers_connected = torrent.peers_connected
+        self.t_leechers = torrent.peers_getting_from_us
+        self.t_seeders = torrent.peers_sending_to_us
+        self.t_ratio = torrent.ratio
+        self.t_priority = torrent.priority
+
 
 class TorrentItemCard(TorrentItem):
 
     t_size_total = reactive(None)
     t_size_left = reactive(None)
 
-    t_upload_speed = reactive(0)
-    t_download_speed = reactive(0)
-
     t_progress = reactive(0)
 
     t_stats = reactive("")
 
+    def compose(self) -> ComposeResult:
+        with Grid(id="head"):
+            yield Label(self.t_name, id="name")
+            yield Static("")
+            yield Static(" ↑ ")
+            yield SpeedIndicator().data_bind(speed=TorrentItemCard.t_upload_speed)
+            yield Static(" ↓ ")
+            yield SpeedIndicator().data_bind(speed=TorrentItemCard.t_download_speed)
+
+        yield (ProgressBar(total=1.0, show_percentage=False, show_eta=False)
+               .data_bind(progress=TorrentItemCard.t_progress))
+
+        yield ReactiveLabel(self.t_stats, id="stats").data_bind(name=TorrentItemCard.t_stats)
+
     def update_torrent(self, torrent) -> None:
         super().update_torrent(torrent)
 
-        self.torrent = torrent
-
-        self.t_id = torrent.id
-        self.t_name = torrent.name
-        self.t_status = torrent.status
         self.t_size_total = torrent.total_size
         self.t_size_left = torrent.left_until_done
-
-        self.t_upload_speed = torrent.rate_upload
-        self.t_download_speed = torrent.rate_download
 
         self.t_progress = torrent.percent_done
 
@@ -806,20 +793,6 @@ class TorrentItemCard(TorrentItem):
                            f"Leechers: {str(self.t_leechers)}")
 
         return result
-
-    def compose(self) -> ComposeResult:
-        with Grid(id="head"):
-            yield Label(self.t_name, id="name")
-            yield Static("")
-            yield Static(" ↑ ")
-            yield SpeedIndicator().data_bind(speed=TorrentItemCard.t_upload_speed)
-            yield Static(" ↓ ")
-            yield SpeedIndicator().data_bind(speed=TorrentItemCard.t_download_speed)
-
-        yield (ProgressBar(total=1.0, show_percentage=False, show_eta=False)
-               .data_bind(progress=TorrentItemCard.t_progress))
-
-        yield ReactiveLabel(self.t_stats, id="stats").data_bind(name=TorrentItemCard.t_stats)
 
 
 class TorrentInfoPanel(ScrollableContainer):
