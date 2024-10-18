@@ -1088,6 +1088,7 @@ class MainApp(App):
     def __init__(self, host: str, port: str,
                  username: str, password: str,
                  view_mode: str,
+                 refresh_interval: int,
                  version: str):
 
         super().__init__()
@@ -1095,6 +1096,7 @@ class MainApp(App):
         self.title = 'Tewi'
 
         self.view_mode = view_mode
+        self.refresh_interval = refresh_interval
 
         self.tewi_version = version
 
@@ -1121,7 +1123,7 @@ class MainApp(App):
 
     def on_mount(self) -> None:
         self.load_tdata()
-        self.set_interval(5, self.load_tdata)
+        self.set_interval(self.refresh_interval, self.load_tdata)
 
     @work(exclusive=True, thread=True)
     async def load_tdata(self) -> None:
@@ -1185,6 +1187,8 @@ def cli():
     parser.add_argument('--view-mode', type=str, default='card',
                         choices=['card', 'compact'],
                         help='View mode for torrents in list')
+    parser.add_argument('--refresh-interval', type=int, default=5,
+                        help='Refresh interval (in seconds) for loading data from Transmission daemon')
     parser.add_argument('--host', type=str, default='localhost',
                         help='Transmission daemon host for connection')
     parser.add_argument('--port', type=str, default='9091',
@@ -1202,6 +1206,7 @@ def cli():
     app = MainApp(host=args.host, port=args.port,
                   username=args.username, password=args.password,
                   view_mode=args.view_mode,
+                  refresh_interval=args.refresh_interval,
                   version=tewi_version)
     app.run()
 

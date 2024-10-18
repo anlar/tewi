@@ -9,7 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- CLI option to set refresh interval (`--refresh-interval`)
+
 ### Changed
+
+- Load Transmission data in separate thread
 
 ### Removed
 
