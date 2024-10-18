@@ -19,6 +19,7 @@
 import argparse
 import textwrap
 from datetime import datetime
+from functools import cache
 
 from transmission_rpc import Client
 
@@ -30,6 +31,8 @@ from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
 from textual.widgets import Static, Label, ProgressBar, DataTable, ContentSwitcher, TabbedContent, TabPane
+
+from geoip2fast import GeoIP2Fast
 
 
 # Common data
@@ -44,6 +47,8 @@ class TransmissionData:
 # Common utils
 
 class Util:
+
+    geoip = GeoIP2Fast()
 
     def print_size(num: int,
                    suffix: str = "B", size_bytes: int = 1000):
@@ -86,6 +91,10 @@ class Util:
             return f"{r_size} {r_unit}{suffix}/s"
         else:
             return f"{r_size} {r_unit}{suffix}"
+
+    @cache
+    def get_country(address: str) -> str:
+        return Util.geoip.lookup(address).country_name
 
 
 # Common UI components
@@ -917,7 +926,7 @@ class TorrentInfoPanel(ScrollableContainer):
         table.add_columns("ID", "Size", "Done", "Selected", "Priority", "Name")
 
         table = self.query_one("#peers")
-        table.add_columns("Encrypted", "Up", "Down", "Progress", "Status", "Address", "Client")
+        table.add_columns("Encrypted", "Up", "Down", "Progress", "Status", "Country", "Address", "Client")
 
         table = self.query_one("#trackers")
         table.add_columns("Host", "Tier", "Seeders", "Leechers", "Downloads")
@@ -969,6 +978,7 @@ class TorrentInfoPanel(ScrollableContainer):
                               Util.print_speed(p["rateToPeer"], True),
                               f'{progress:.0f}%',
                               p["flagStr"],
+                              Util.get_country(p["address"]),
                               p["address"],
                               p["clientName"])
 
