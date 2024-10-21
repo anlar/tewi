@@ -157,19 +157,21 @@ TorrentItemCard.selected {
     background: $accent;
 }
 
-TorrentItemCard > #head {
+TorrentItemCard > #speed {
+    dock: right;
+    layer: above;
+    grid-size: 4;
+    grid-columns: auto 9 auto 9;
+    width: auto;
     height: auto;
-    grid-size: 6;
-    grid-columns: auto 1fr auto 9 auto 9;
 }
 
-TorrentItemCard > #head > #name {
+TorrentItemCard > #name {
     text-style: bold;
 }
 
 TorrentItemCard > #stats {
     text-opacity: 75%;
-    width: 100%;
 }
 
 TorrentItemCard > ProgressBar > Bar {
