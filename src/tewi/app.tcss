@@ -117,6 +117,23 @@ TorrentItemOneline > #speed > #stats {
     text-opacity: 75%;
 }
 
+.torrent-complete {
+    background: $success-darken-3;
+}
+
+.torrent-incomplete {
+    background: $warning-darken-3;
+}
+
+.torrent-stop {
+    background: $background-lighten-3;
+}
+
+.torrent-check {
+    background: $error-darken-1;
+}
+
+
 /* TORRENT LIST PANEL: TORRENT ITEM COMPACT */
 
 TorrentItemCompact {

@@ -793,6 +793,22 @@ class TorrentItemOneline(TorrentItem):
             yield SpeedIndicator().data_bind(
                     speed=TorrentItemOneline.t_download_speed)
 
+    def watch_t_status(self, new_t_status):
+        self.remove_class("torrent-complete",
+                          "torrent-incomplete",
+                          "torrent-stop",
+                          "torrent-check")
+
+        match new_t_status:
+            case "stopped":
+                self.add_class("torrent-stop")
+            case "check pending" | "checking":
+                self.add_class("torrent-check")
+            case "download pending" | "downloading":
+                self.add_class("torrent-incomplete")
+            case "seed pending" | "seeding":
+                self.add_class("torrent-complete")
+
 
 class TorrentItemCompact(TorrentItem):
 
