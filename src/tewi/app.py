@@ -35,6 +35,8 @@ from textual.widgets import Static, Label, ProgressBar, DataTable, ContentSwitch
 
 from geoip2fast import GeoIP2Fast
 
+import pyperclip
+
 
 # Common data
 
@@ -338,6 +340,22 @@ class AddTorrentWidget(Static):
     def on_mount(self) -> None:
         self.border_title = 'Add magnet link'
         self.border_subtitle = '[Enter] Add / [ESC] Close'
+
+        link = self.get_link_from_clipboard()
+
+        if link:
+            self.query_one(TextArea).load_text(link)
+
+    def get_link_from_clipboard(self) -> str:
+        text = pyperclip.paste()
+
+        if text:
+            text = text.strip()
+
+            if text.startswith('magnet'):
+                return text
+
+        return None
 
     def action_add(self) -> None:
         value = self.query_one(TextArea).text

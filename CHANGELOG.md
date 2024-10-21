@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Display peer country in torrent details
 - Show torrent size/progress/ratio in compact and oneline view modes
 - Add torrent by magnet link
+- Load magnet link from clipboard when adding torrent
 
 ### Changed
 
