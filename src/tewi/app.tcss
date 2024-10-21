@@ -263,3 +263,25 @@ HelpWidget {
     border: round $warning;
     padding: 1;
 }
+
+/* SCREEN: ADD TORRENT DIALOG */
+
+AddTorrentDialog {
+    align: center middle;
+}
+
+AddTorrentWidget {
+    width: 100%;
+    height: auto;
+
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
+AddTorrentWidget > TextArea {
+    height: auto;
+
+    border: none;
+    padding: 0;
+}

@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CLI option to set refresh interval (`--refresh-interval`)
 - Display peer country in torrent details
 - Show torrent size/progress/ratio in compact and oneline view modes
+- Add torrent by magnet link
 
 ### Changed
 

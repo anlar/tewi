@@ -22,6 +22,7 @@ from datetime import datetime
 from functools import cache
 
 from transmission_rpc import Client
+from transmission_rpc.error import TransmissionError
 
 from textual import on, work
 from textual.app import App, ComposeResult
@@ -30,7 +31,7 @@ from textual.containers import Grid, ScrollableContainer, Horizontal, Container
 from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
-from textual.widgets import Static, Label, ProgressBar, DataTable, ContentSwitcher, TabbedContent, TabPane
+from textual.widgets import Static, Label, ProgressBar, DataTable, ContentSwitcher, TabbedContent, TabPane, TextArea
 
 from geoip2fast import GeoIP2Fast
 
@@ -318,6 +319,36 @@ class StatisticsWidget(Static):
         return ', '.join(result[:1])
 
 
+class AddTorrentDialog(ModalScreen):
+
+    def compose(self) -> ComposeResult:
+        yield AddTorrentWidget()
+
+
+class AddTorrentWidget(Static):
+
+    BINDINGS = [
+            Binding("enter", "add", "Add torrent by magnet", priority=True),
+            Binding("escape", "close", "Close"),
+            ]
+
+    def compose(self) -> ComposeResult:
+        yield TextArea()
+
+    def on_mount(self) -> None:
+        self.border_title = 'Add magnet link'
+        self.border_subtitle = '[Enter] Add / [ESC] Close'
+
+    def action_add(self) -> None:
+        value = self.query_one(TextArea).text
+
+        self.post_message(MainApp.AddTorrent(value))
+        self.parent.dismiss(False)
+
+    def action_close(self) -> None:
+        self.parent.dismiss(False)
+
+
 # Core UI panels
 
 class InfoPanel(Static):
@@ -420,6 +451,8 @@ class TorrentListPanel(ScrollableContainer):
             Binding("G", "move_bottom", "Go to the last item"),
 
             Binding("enter,l", "view_info", "View torrent info"),
+
+            Binding("a", "add_torrent", "Add torrent"),
 
             Binding("p", "toggle_torrent", "Toggle torrent"),
             Binding("r", "remove_torrent", "Remove torrent"),
@@ -554,6 +587,9 @@ class TorrentListPanel(ScrollableContainer):
     def action_view_info(self):
         if self.selected_item:
             self.post_message(self.TorrentViewed(self.selected_item.torrent))
+
+    def action_add_torrent(self) -> None:
+        self.post_message(MainApp.OpenAddTorrent())
 
     def action_toggle_torrent(self) -> None:
         if self.selected_item:
@@ -1068,9 +1104,14 @@ class TorrentInfoPanel(ScrollableContainer):
 class MainApp(App):
 
     class Notification(Message):
-        def __init__(self, message: str):
+
+        def __init__(self,
+                     message: str,
+                     severity: str = 'information'):
+
             super().__init__()
             self.message = message
+            self.severity = severity
 
     class Confirm(Message):
         def __init__(self, message, description, check_quit):
@@ -1078,6 +1119,14 @@ class MainApp(App):
             self.message = message
             self.description = description
             self.check_quit = check_quit
+
+    class OpenAddTorrent(Message):
+        pass
+
+    class AddTorrent(Message):
+        def __init__(self, value: str) -> None:
+            super().__init__()
+            self.value = value
 
     ENABLE_COMMAND_PALETTE = False
 
@@ -1175,7 +1224,11 @@ class MainApp(App):
 
     @on(Notification)
     def handle_notification(self, event: Notification) -> None:
-        self.notify(message=event.message, timeout=3)
+        timeout = 3 if event.severity == 'information' else 5
+
+        self.notify(message=event.message,
+                    severity=event.severity,
+                    timeout=timeout)
 
     @on(Confirm)
     def handle_confirm(self, event: Confirm) -> None:
@@ -1183,6 +1236,20 @@ class MainApp(App):
                     ConfirmationDialog(message=event.message,
                                        description=event.description),
                     event.check_quit)
+
+    @on(OpenAddTorrent)
+    def handle_open_add_torrent(self, event: OpenAddTorrent) -> None:
+        self.push_screen(AddTorrentDialog())
+
+    @on(AddTorrent)
+    def handle_add_torrent(self, event: AddTorrent) -> None:
+        try:
+            self.client.add_torrent(event.value)
+            self.post_message(MainApp.Notification("New torrent was added"))
+        except TransmissionError as e:
+            self.post_message(MainApp.Notification(
+                f"Failed to add torrent:\n{e}",
+                "warning"))
 
 
 def cli():
