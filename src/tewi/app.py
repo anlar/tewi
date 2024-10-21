@@ -781,9 +781,9 @@ class TorrentItem(Static):
 class TorrentItemOneline(TorrentItem):
 
     def compose(self) -> ComposeResult:
-        with Grid(id="head"):
-            yield Label(self.t_name, id="name")
-            yield Static("")
+        yield Label(self.t_name, id="name")
+
+        with Grid(id="speed"):
             yield ReactiveLabel(id="stats").data_bind(
                     name=TorrentItemCompact.t_size_stats)
             yield Static(" ↑ ")
@@ -797,9 +797,9 @@ class TorrentItemOneline(TorrentItem):
 class TorrentItemCompact(TorrentItem):
 
     def compose(self) -> ComposeResult:
-        with Grid(id="head"):
-            yield Label(self.t_name, id="name")
-            yield Static("")
+        yield Label(self.t_name, id="name")
+
+        with Grid(id="speed"):
             yield ReactiveLabel(id="stats").data_bind(
                     name=TorrentItemCompact.t_size_stats)
             yield Static(" ↑ ")
@@ -816,9 +816,9 @@ class TorrentItemCard(TorrentItem):
     t_stats = reactive("")
 
     def compose(self) -> ComposeResult:
-        with Grid(id="head"):
-            yield Label(self.t_name, id="name")
-            yield Static("")
+        yield Label(self.t_name, id="name")
+
+        with Grid(id="speed"):
             yield Static(" ↑ ")
             yield SpeedIndicator().data_bind(speed=TorrentItemCard.t_upload_speed)
             yield Static(" ↓ ")
