@@ -515,8 +515,6 @@ class TorrentListPanel(ScrollableContainer):
 
         w_prev = None
         for t in torrents:
-            t.fields['name'] = t.name + ' ' + t.name + ' ' + t.name
-
             if self.view_mode == 'card':
                 item = TorrentItemCard(t)
             elif self.view_mode == 'compact':
