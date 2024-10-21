@@ -126,17 +126,21 @@ TorrentItemCompact.selected {
     background: $accent;
 }
 
-TorrentItemCompact > #head {
-    height: auto;
-    grid-size: 7;
-    grid-columns: auto 1fr auto auto 9 auto 11;
-}
-
-TorrentItemCompact > #head > #name {
+TorrentItemCompact > #name {
     text-style: bold;
 }
 
-TorrentItemCompact > #head > #stats {
+TorrentItemCompact > #speed {
+    dock: right;
+    layer: above;
+    grid-size: 5;
+    grid-columns: auto auto 9 auto 11;
+    width: auto;
+    height: auto;
+    padding-left: 1;
+}
+
+TorrentItemCompact > #speed > #stats {
     text-opacity: 75%;
 }
 
