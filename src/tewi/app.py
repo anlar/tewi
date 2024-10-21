@@ -783,9 +783,9 @@ class TorrentItem(Static):
 class TorrentItemOneline(TorrentItem):
 
     def compose(self) -> ComposeResult:
-        with Grid(id="head"):
-            yield Label(self.t_name, id="name")
-            yield Static("")
+        yield Label(self.t_name, id="name")
+
+        with Grid(id="speed"):
             yield ReactiveLabel(id="stats").data_bind(
                     name=TorrentItemCompact.t_size_stats)
             yield Static(" ↑ ")

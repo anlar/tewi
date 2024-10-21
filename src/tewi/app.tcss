@@ -99,17 +99,21 @@ TorrentItemOneline.selected {
     background: $accent;
 }
 
-TorrentItemOneline > #head {
-    height: auto;
-    grid-size: 7;
-    grid-columns: auto 1fr auto auto 9 auto 11;
-}
-
-TorrentItemOneline > #head > #name {
+TorrentItemOneline > #name {
     text-style: bold;
 }
 
-TorrentItemOneline > #head > #stats {
+TorrentItemOneline > #speed {
+    dock: right;
+    layer: above;
+    grid-size: 5;
+    grid-columns: auto auto 9 auto 11;
+    width: auto;
+    height: auto;
+    padding-left: 1;
+}
+
+TorrentItemOneline > #speed > #stats {
     text-opacity: 75%;
 }
 
