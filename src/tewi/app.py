@@ -20,8 +20,10 @@ import argparse
 import textwrap
 from datetime import datetime
 from functools import cache
+from typing import NamedTuple
 
 from transmission_rpc import Client
+from transmission_rpc.session import Session, SessionStats
 from transmission_rpc.error import TransmissionError
 
 from textual import on, work
@@ -45,6 +47,14 @@ class TransmissionData:
         self.session = session
         self.session_stats = session_stats
         self.torrents = torrents
+
+
+class TransmissionSession(NamedTuple):
+    session: Session
+    session_stats: SessionStats
+    torrents_down: int
+    torrents_seed: int
+    torrents_stop: int
 
 
 # Common utils
@@ -397,7 +407,7 @@ class InfoPanel(Static):
 
 class StatePanel(Static):
 
-    r_tdata = reactive(None)
+    r_tsession = reactive(None)
 
     # recompose whole line to update blocks width
     r_stats = reactive('', recompose=True)
@@ -423,17 +433,18 @@ class StatePanel(Static):
             yield SpeedIndicator(classes="column").data_bind(
                     speed=StatePanel.r_download_speed)
 
-    def watch_r_tdata(self, new_r_tdata):
-        if new_r_tdata:
-            session = new_r_tdata.session
-            session_stats = new_r_tdata.session_stats
-            torrents = new_r_tdata.torrents
+    def watch_r_tsession(self, new_r_tsession):
+        if new_r_tsession:
+            session = new_r_tsession.session
+            session_stats = new_r_tsession.session_stats
 
-            torrents_down = len([x for x in torrents if x.status == 'downloading'])
-            torrents_seed = len([x for x in torrents if x.status == 'seeding'])
-            torrents_stop = len(torrents) - torrents_down - torrents_seed
+            torrents_down = new_r_tsession.torrents_down
+            torrents_seed = new_r_tsession.torrents_seed
+            torrents_stop = new_r_tsession.torrents_stop
 
-            self.r_stats = (f"Torrents: {len(torrents)} "
+            self.log(session_stats)
+
+            self.r_stats = (f"Torrents: {session_stats.torrent_count} "
                             f"(Downloading: {torrents_down}, "
                             f"Seeding: {torrents_seed}, "
                             f"Paused: {torrents_stop})")
@@ -481,7 +492,7 @@ class TorrentListPanel(ScrollableContainer):
             Binding("m", "toggle_view_mode", "Toggle torrents view mode"),
             ]
 
-    r_tdata = reactive(None)
+    r_torrents = reactive(None)
 
     selected_item = None
 
@@ -489,9 +500,9 @@ class TorrentListPanel(ScrollableContainer):
         self.view_mode = view_mode
         super().__init__(id=id)
 
-    def watch_r_tdata(self, new_r_tdata):
-        if new_r_tdata:
-            torrents = new_r_tdata.torrents
+    def watch_r_torrents(self, new_r_torrents):
+        if new_r_torrents:
+            torrents = new_r_torrents
 
             if self.is_equal_to_pane(torrents):
                 items = self.children
@@ -696,7 +707,7 @@ class TorrentListPanel(ScrollableContainer):
         elif self.view_mode == 'oneline':
             self.view_mode = 'card'
 
-        self.create_pane(self.r_tdata.torrents)
+        self.create_pane(self.r_torrents)
 
     def client(self):
         # TODO: get client
@@ -1175,7 +1186,8 @@ class MainApp(App):
             Binding("q", "quit", "Quit", priority=True),
             ]
 
-    r_tdata = reactive(None)
+    r_torrents = reactive(None)
+    r_tsession = reactive(None)
 
     def __init__(self, host: str, port: str,
                  username: str, password: str,
@@ -1208,10 +1220,10 @@ class MainApp(App):
             with ContentSwitcher(initial="torrent-list"):
                 yield TorrentListPanel(id="torrent-list",
                                        view_mode=self.view_mode).data_bind(
-                                               r_tdata=MainApp.r_tdata)
+                                               r_torrents=MainApp.r_torrents)
                 yield TorrentInfoPanel(id="torrent-info")
 
-        yield StatePanel().data_bind(r_tdata=MainApp.r_tdata)
+        yield StatePanel().data_bind(r_tsession=MainApp.r_tsession)
 
     def on_mount(self) -> None:
         self.load_tdata()
@@ -1219,18 +1231,29 @@ class MainApp(App):
 
     @work(exclusive=True, thread=True)
     async def load_tdata(self) -> None:
-        tdata = TransmissionData(
-                session=self.client.get_session(),
-                session_stats=self.client.session_stats(),
-                torrents=self.client.get_torrents()
-        )
+        session = self.client.get_session()
+        session_stats = self.client.session_stats()
+        torrents = self.client.get_torrents()
 
-        tdata.torrents.sort(key=lambda t: t.name.lower())
+        torrents_down = len([x for x in torrents if x.status == 'downloading'])
+        torrents_seed = len([x for x in torrents if x.status == 'seeding'])
+        torrents_stop = len(torrents) - torrents_down - torrents_seed
 
-        self.call_from_thread(self.set_tdata, tdata)
+        tsession = TransmissionSession(
+                session=session,
+                session_stats=session_stats,
+                torrents_down=torrents_down,
+                torrents_seed=torrents_seed,
+                torrents_stop=torrents_stop
+                )
 
-    def set_tdata(self, tdata) -> None:
-        self.r_tdata = tdata
+        torrents.sort(key=lambda t: t.name.lower())
+
+        self.call_from_thread(self.set_tdata, torrents, tsession)
+
+    def set_tdata(self, torrents, tsession) -> None:
+        self.r_torrents = torrents
+        self.r_tsession = tsession
 
     def action_toggle_alt_speed(self) -> None:
         alt_speed_enabled = self.client.get_session().alt_speed_enabled
@@ -1242,7 +1265,7 @@ class MainApp(App):
             self.post_message(MainApp.Notification("Turtle Mode enabled"))
 
     def action_show_statistics(self) -> None:
-        self.push_screen(StatisticsDialog(self.r_tdata.session_stats))
+        self.push_screen(StatisticsDialog(self.r_tsession.session_stats))
 
     def action_help(self) -> None:
         self.push_screen(HelpDialog(self.screen.active_bindings.values()))
