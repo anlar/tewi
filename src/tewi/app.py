@@ -73,6 +73,7 @@ class Util:
 
     geoip = GeoIP2Fast()
 
+    @cache
     def print_size(num: int,
                    suffix: str = "B", size_bytes: int = 1000):
 
@@ -92,6 +93,7 @@ class Util:
 
         return f"{r_size} {r_unit}{suffix}"
 
+    @cache
     def print_speed(num: int,
                     print_secs: bool = False,
                     suffix: str = "B",
