@@ -16,15 +16,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import argparse
-import textwrap
 from datetime import datetime
 from functools import cache
 from typing import NamedTuple
+import argparse
+import textwrap
 
 from transmission_rpc import Client
-from transmission_rpc.session import Session, SessionStats
 from transmission_rpc.error import TransmissionError
+from transmission_rpc.session import Session, SessionStats
 
 from textual import on, work
 from textual.app import App, ComposeResult
