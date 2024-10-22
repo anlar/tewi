@@ -42,13 +42,6 @@ import pyperclip
 
 # Common data
 
-class TransmissionData:
-    def __init__(self, session, session_stats, torrents):
-        self.session = session
-        self.session_stats = session_stats
-        self.torrents = torrents
-
-
 class TransmissionSession(NamedTuple):
     session: Session
     session_stats: SessionStats
