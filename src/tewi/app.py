@@ -33,7 +33,8 @@ from textual.containers import Grid, ScrollableContainer, Horizontal, Container
 from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
-from textual.widgets import Static, Label, ProgressBar, DataTable, ContentSwitcher, TabbedContent, TabPane, TextArea
+from textual.widgets import Static, Label, ProgressBar, DataTable, ContentSwitcher, TabbedContent, TabPane, TextArea, \
+        ListView, ListItem
 
 from geoip2fast import GeoIP2Fast
 
@@ -42,12 +43,28 @@ import pyperclip
 
 # Common data
 
+class SortOrder(NamedTuple):
+    id: str
+    name: str
+    sort_func: None
+
+
 class TransmissionSession(NamedTuple):
     session: Session
     session_stats: SessionStats
     torrents_down: int
     torrents_seed: int
     torrents_stop: int
+    sort_order: SortOrder
+
+
+sort_orders = [
+        SortOrder('name', 'Name', lambda t: t.name.lower()),
+        SortOrder('status', 'Status', lambda t: t.status),
+        SortOrder('size', 'Size', lambda t: t.total_size),
+        SortOrder('progress', 'Progress', lambda t: t.percent_done),
+        SortOrder('ratio', 'Ratio', lambda t: t.ratio),
+        ]
 
 
 # Common utils
@@ -370,6 +387,50 @@ class AddTorrentWidget(Static):
         self.parent.dismiss(False)
 
 
+class SortOrderDialog(ModalScreen):
+
+    def compose(self) -> ComposeResult:
+        yield SortOrderWidget()
+
+
+class SortOrderWidget(Static):
+
+    BINDINGS = [
+            Binding("escape,x", "close", "Close"),
+            ]
+
+    def compose(self) -> ComposeResult:
+        yield SortOrderListView()
+
+    def on_mount(self) -> None:
+        self.border_title = 'Sort order'
+        self.border_subtitle = '[Enter,L] Select / [X] Close'
+
+        list_view = self.query_one(SortOrderListView)
+
+        for order in sort_orders:
+            list_view.append(ListItem(Label(order.name), id=order.id))
+
+    @on(ListView.Selected)
+    def handle_selection(self, event: ListView.Selected) -> None:
+        order = next(x for x in sort_orders if x.id == event.item.id)
+
+        self.post_message(MainApp.SortOrderSelected(order))
+
+        self.parent.dismiss(False)
+
+    def action_close(self) -> None:
+        self.parent.dismiss(False)
+
+
+class SortOrderListView(ListView):
+    BINDINGS = [
+            Binding("k", "cursor_up", "Cursor up"),
+            Binding("j", "cursor_down", "Cursor down"),
+            Binding("l", "select_cursor", "Select"),
+            ]
+
+
 # Core UI panels
 
 class InfoPanel(Static):
@@ -404,6 +465,7 @@ class StatePanel(Static):
 
     # recompose whole line to update blocks width
     r_stats = reactive('', recompose=True)
+    r_sort = reactive('', recompose=True)
     r_alt_speed = reactive('', recompose=True)
     r_alt_delimiter = reactive('', recompose=True)
 
@@ -414,6 +476,8 @@ class StatePanel(Static):
         with Grid(id="state-panel"):
             yield ReactiveLabel(classes="column").data_bind(
                     name=StatePanel.r_stats)
+            yield ReactiveLabel(classes="column sort").data_bind(
+                    name=StatePanel.r_sort)
             yield Static("", classes="column")
             yield ReactiveLabel(classes="column alt-speed").data_bind(
                     name=StatePanel.r_alt_speed)
@@ -441,6 +505,9 @@ class StatePanel(Static):
                             f"(Downloading: {torrents_down}, "
                             f"Seeding: {torrents_seed}, "
                             f"Paused: {torrents_stop})")
+
+            sort_order = new_r_tsession.sort_order.name
+            self.r_sort = f'Sort: {sort_order}'
 
             self.r_upload_speed = session_stats.upload_speed
             self.r_download_speed = session_stats.download_speed
@@ -475,6 +542,7 @@ class TorrentListPanel(ScrollableContainer):
             Binding("enter,l", "view_info", "View torrent info"),
 
             Binding("a", "add_torrent", "Add torrent"),
+            Binding("s", "sort_order", "Select sort order"),
 
             Binding("p", "toggle_torrent", "Toggle torrent"),
             Binding("r", "remove_torrent", "Remove torrent"),
@@ -612,6 +680,9 @@ class TorrentListPanel(ScrollableContainer):
 
     def action_add_torrent(self) -> None:
         self.post_message(MainApp.OpenAddTorrent())
+
+    def action_sort_order(self) -> None:
+        self.post_message(MainApp.OpenSortOrder())
 
     def action_toggle_torrent(self) -> None:
         if self.selected_item:
@@ -1161,10 +1232,18 @@ class MainApp(App):
     class OpenAddTorrent(Message):
         pass
 
+    class OpenSortOrder(Message):
+        pass
+
     class AddTorrent(Message):
         def __init__(self, value: str) -> None:
             super().__init__()
             self.value = value
+
+    class SortOrderSelected(Message):
+        def __init__(self, order: str) -> None:
+            super().__init__()
+            self.order = order
 
     ENABLE_COMMAND_PALETTE = False
 
@@ -1172,7 +1251,7 @@ class MainApp(App):
 
     BINDINGS = [
             Binding("t", "toggle_alt_speed", "Toggle alt speed"),
-            Binding("s", "show_statistics", "Show statistics"),
+            Binding("S", "show_statistics", "Show statistics"),
 
             Binding("d", "toggle_dark", "Toggle dark mode", priority=True),
             Binding("?", "help", "Snow help"),
@@ -1204,6 +1283,8 @@ class MainApp(App):
                              username=username, password=password)
 
         self.transmission_version = self.client.get_session().version
+
+        self.sort_order = sort_orders[0]
 
     def compose(self) -> ComposeResult:
         yield InfoPanel(self.tewi_version, self.transmission_version,
@@ -1237,10 +1318,11 @@ class MainApp(App):
                 session_stats=session_stats,
                 torrents_down=torrents_down,
                 torrents_seed=torrents_seed,
-                torrents_stop=torrents_stop
+                torrents_stop=torrents_stop,
+                sort_order=self.sort_order,
                 )
 
-        torrents.sort(key=lambda t: t.name.lower())
+        torrents.sort(key=self.sort_order.sort_func)
 
         self.call_from_thread(self.set_tdata, torrents, tsession)
 
@@ -1291,6 +1373,10 @@ class MainApp(App):
     def handle_open_add_torrent(self, event: OpenAddTorrent) -> None:
         self.push_screen(AddTorrentDialog())
 
+    @on(OpenSortOrder)
+    def handle_open_sort_order(self, event: OpenSortOrder) -> None:
+        self.push_screen(SortOrderDialog())
+
     @on(AddTorrent)
     def handle_add_torrent(self, event: AddTorrent) -> None:
         try:
@@ -1300,6 +1386,12 @@ class MainApp(App):
             self.post_message(MainApp.Notification(
                 f"Failed to add torrent:\n{e}",
                 "warning"))
+
+    @on(SortOrderSelected)
+    def handle_sort_order_selected(self, event: SortOrderSelected) -> None:
+        self.sort_order = event.order
+        self.post_message(MainApp.Notification(
+            f"Selected sort order: {event.order.name}"))
 
 
 def cli():

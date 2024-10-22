@@ -45,14 +45,18 @@
 /* STATE PANEL */
 
 #state-panel {
-    grid-size: 8;
-    grid-columns: auto 1fr auto auto auto 10 auto 13;
+    grid-size: 9;
+    grid-columns: auto auto 1fr auto auto auto 10 auto 13;
     height: 1;
     background: $accent-darken-1;
 }
 
 #state-panel > .column {
     padding: 0 1;
+}
+
+#state-panel > .sort {
+    color: $accent-lighten-3;
 }
 
 #state-panel > .arrow {
@@ -284,7 +288,7 @@ HelpDialog {
 
 HelpWidget {
     width: 41;
-    height: 25;
+    height: 26;
 
     border-title-align: center;
     border: round $warning;
@@ -311,4 +315,23 @@ AddTorrentWidget > TextArea {
 
     border: none;
     padding: 0;
+}
+
+/* SCREEN: SORT ORDER DIALOG */
+
+SortOrderDialog {
+    align: center middle;
+}
+
+SortOrderWidget {
+    width: auto;
+    height: auto;
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
+SortOrderWidget > ListView {
+    height: auto;
+    width: 30;
 }

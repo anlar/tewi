@@ -14,11 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Show torrent size/progress/ratio in compact and oneline view modes
 - Add torrent by magnet link
 - Load magnet link from clipboard when adding torrent
+- Torrents sort order
 
 ### Changed
 
 - Load Transmission data in separate thread
 - Fix tracker tier numbering (should start with Tier 1, not 0)
+- Show statistics key changed to `S`
 
 ### Removed
 
