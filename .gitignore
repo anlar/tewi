@@ -1,3 +1,6 @@
 venv
 dist
 *.egg-info
+*.prof
+*.log
+*.svg
