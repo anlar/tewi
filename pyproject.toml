@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tewi-transmission"
-version = "0.2.0"
+version = "0.3.0"
 authors = [
   { name="Anton Larionov", email="anton.larionov.dev@gmail.com" },
 ]

@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Removed
+
+## [0.3.0] - 2024-10-23 - White Rabbit
+
+### Added
+
 - Oneline view mode for torrents
 - Display peer country in torrent details
 - Show torrent size/progress/ratio in compact and oneline view modes
@@ -27,8 +35,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix tracker tier numbering (should start with Tier 1, not 0)
 - Show statistics key changed to `S`
 - Use cache for Util class
-
-### Removed
 
 ## [0.2.0] - 2024-10-17 - Runaway Rabbit
 

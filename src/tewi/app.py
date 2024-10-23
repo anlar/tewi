@@ -1493,7 +1493,7 @@ class MainApp(App):
 
 
 def cli():
-    tewi_version = '0.2.0'
+    tewi_version = '0.3.0'
 
     parser = argparse.ArgumentParser(
             prog='tewi',
