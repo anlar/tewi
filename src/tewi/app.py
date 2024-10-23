@@ -1267,6 +1267,7 @@ class MainApp(App):
                  username: str, password: str,
                  view_mode: str,
                  refresh_interval: int,
+                 limit_torrents: int,
                  version: str):
 
         super().__init__()
@@ -1275,6 +1276,7 @@ class MainApp(App):
 
         self.view_mode = view_mode
         self.refresh_interval = refresh_interval
+        self.limit_torrents = limit_torrents
 
         self.tewi_version = version
 
@@ -1310,6 +1312,9 @@ class MainApp(App):
         session = self.client.get_session()
         session_stats = self.client.session_stats()
         torrents = self.client.get_torrents()
+
+        if self.limit_torrents:
+            torrents = torrents[:self.limit_torrents]
 
         torrents_down = len([x for x in torrents if x.status == 'downloading'])
         torrents_seed = len([x for x in torrents if x.status == 'seeding'])
@@ -1409,6 +1414,8 @@ def cli():
                         help='View mode for torrents in list')
     parser.add_argument('--refresh-interval', type=int, default=5,
                         help='Refresh interval (in seconds) for loading data from Transmission daemon')
+    parser.add_argument('--limit-torrents', type=int, default=None,
+                        help='Limit number of displayed torrents (useful for performance debugging)')
     parser.add_argument('--host', type=str, default='localhost',
                         help='Transmission daemon host for connection')
     parser.add_argument('--port', type=str, default='9091',
@@ -1427,6 +1434,7 @@ def cli():
                   username=args.username, password=args.password,
                   view_mode=args.view_mode,
                   refresh_interval=args.refresh_interval,
+                  limit_torrents=args.limit_torrents,
                   version=tewi_version)
     app.run()
 
