@@ -9,18 +9,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- CLI option to set refresh interval (`--refresh-interval`)
+- Oneline view mode for torrents
 - Display peer country in torrent details
 - Show torrent size/progress/ratio in compact and oneline view modes
 - Add torrent by magnet link
 - Load magnet link from clipboard when adding torrent
 - Torrents sort order
+- CLI option to set refresh interval (`--refresh-interval`)
 - CLI option to limit number of displayed torrents (`--limit-torrents`)
 - CLI option to enable logfile (`--logs`)
 
 ### Changed
 
-- Load Transmission data in separate thread
+- Performance: optimize UI rendering by loading all torrent widgets together
+- Performance: load Transmission data in separate thread
+- Performance: add cache for all Util methods
 - Fix tracker tier numbering (should start with Tier 1, not 0)
 - Show statistics key changed to `S`
 - Use cache for Util class
