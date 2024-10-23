@@ -17,10 +17,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from datetime import datetime
-from functools import cache
+from functools import cache, wraps
 from typing import NamedTuple
 import argparse
+import logging
 import textwrap
+import time
 
 from transmission_rpc import Client
 from transmission_rpc.error import TransmissionError
@@ -39,6 +41,31 @@ from textual.widgets import Static, Label, ProgressBar, DataTable, ContentSwitch
 from geoip2fast import GeoIP2Fast
 
 import pyperclip
+
+
+# Logging
+
+logger = logging.getLogger('tewi')
+
+
+def log_time(func):
+
+    @wraps(func)
+    def log_time_wrapper(*args, **kwargs):
+        start_time = time.perf_counter()
+
+        result = func(*args, **kwargs)
+
+        end_time = time.perf_counter()
+
+        total_time_ms = (end_time - start_time) * 1000
+
+        if total_time_ms > 1:
+            logger.info(f'Function "{func.__qualname__}": {total_time_ms:.4f} ms')
+
+        return result
+
+    return log_time_wrapper
 
 
 # Common data
@@ -437,6 +464,7 @@ class SortOrderListView(ListView):
 
 class InfoPanel(Static):
 
+    @log_time
     def __init__(self,
                  w_version: str, w_trans_version: str,
                  w_host: str, w_port: str):
@@ -448,6 +476,7 @@ class InfoPanel(Static):
 
         super().__init__()
 
+    @log_time
     def compose(self) -> ComposeResult:
         with Horizontal(id="info-panel"):
             yield Static(f'Tewi {self.w_version}', classes='column')
@@ -474,6 +503,7 @@ class StatePanel(Static):
     r_upload_speed = reactive(0)
     r_download_speed = reactive(0)
 
+    @log_time
     def compose(self) -> ComposeResult:
         with Grid(id="state-panel"):
             yield ReactiveLabel(classes="column").data_bind(
@@ -492,6 +522,7 @@ class StatePanel(Static):
             yield SpeedIndicator(classes="column").data_bind(
                     speed=StatePanel.r_download_speed)
 
+    @log_time
     def watch_r_tsession(self, new_r_tsession):
         if new_r_tsession:
             session = new_r_tsession.session
@@ -559,10 +590,12 @@ class TorrentListPanel(ScrollableContainer):
 
     selected_item = None
 
+    @log_time
     def __init__(self, id: str, view_mode: str):
         self.view_mode = view_mode
         super().__init__(id=id)
 
+    @log_time
     def watch_r_torrents(self, new_r_torrents):
         if new_r_torrents:
             torrents = new_r_torrents
@@ -575,6 +608,7 @@ class TorrentListPanel(ScrollableContainer):
             else:
                 self.create_pane(torrents)
 
+    @log_time
     def create_pane(self, torrents) -> None:
         if self.selected_item:
             prev_selected_id = self.selected_item.torrent.id
@@ -616,6 +650,7 @@ class TorrentListPanel(ScrollableContainer):
         else:
             self.scroll_home()
 
+    @log_time
     def is_equal_to_pane(self, torrents) -> bool:
         items = self.children
 
@@ -628,6 +663,7 @@ class TorrentListPanel(ScrollableContainer):
 
         return True
 
+    @log_time
     def action_move_up(self) -> None:
         items = self.children
 
@@ -644,6 +680,7 @@ class TorrentListPanel(ScrollableContainer):
                     self.selected_item.selected = True
                     self.scroll_to_widget(self.selected_item)
 
+    @log_time
     def action_move_down(self) -> None:
         items = self.children
 
@@ -659,9 +696,11 @@ class TorrentListPanel(ScrollableContainer):
                     self.selected_item.selected = True
                     self.scroll_to_widget(self.selected_item)
 
+    @log_time
     def action_move_top(self) -> None:
         self.move_to(lambda x: x[0])
 
+    @log_time
     def action_move_bottom(self) -> None:
         self.move_to(lambda x: x[-1])
 
@@ -676,16 +715,20 @@ class TorrentListPanel(ScrollableContainer):
             self.selected_item.selected = True
             self.scroll_to_widget(self.selected_item)
 
+    @log_time
     def action_view_info(self):
         if self.selected_item:
             self.post_message(self.TorrentViewed(self.selected_item.torrent))
 
+    @log_time
     def action_add_torrent(self) -> None:
         self.post_message(MainApp.OpenAddTorrent())
 
+    @log_time
     def action_sort_order(self) -> None:
         self.post_message(MainApp.OpenSortOrder())
 
+    @log_time
     def action_toggle_torrent(self) -> None:
         if self.selected_item:
             status = self.selected_item.t_status
@@ -697,6 +740,7 @@ class TorrentListPanel(ScrollableContainer):
                 self.client().stop_torrent(self.selected_item.t_id)
                 self.post_message(MainApp.Notification("Torrent stopped"))
 
+    @log_time
     def action_remove_torrent(self) -> None:
         self.remove_torrent(delete_data=False,
                             message="Remove torrent?",
@@ -705,6 +749,7 @@ class TorrentListPanel(ScrollableContainer):
                                          "Are you sure you want to remove it?"),
                             notification="Torrent removed")
 
+    @log_time
     def action_trash_torrent(self) -> None:
         self.remove_torrent(delete_data=True,
                             message="Remove torrent and delete data?",
@@ -713,6 +758,7 @@ class TorrentListPanel(ScrollableContainer):
                                          "want to remove it?"),
                             notification="Torrent and its data removed")
 
+    @log_time
     def remove_torrent(self,
                        delete_data: bool,
                        message: str,
@@ -755,16 +801,19 @@ class TorrentListPanel(ScrollableContainer):
                                               description=description,
                                               check_quit=check_quit))
 
+    @log_time
     def action_verify_torrent(self) -> None:
         if self.selected_item:
             self.client().verify_torrent(self.selected_item.t_id)
             self.post_message(MainApp.Notification("Torrent send to verification"))
 
+    @log_time
     def action_reannounce_torrent(self) -> None:
         if self.selected_item:
             self.client().reannounce_torrent(self.selected_item.t_id)
             self.post_message(MainApp.Notification("Torrent reannounce started"))
 
+    @log_time
     def action_toggle_view_mode(self) -> None:
         if self.view_mode == 'card':
             self.view_mode = 'compact'
@@ -775,6 +824,7 @@ class TorrentListPanel(ScrollableContainer):
 
         self.create_pane(self.r_torrents)
 
+    @log_time
     def client(self):
         # TODO: get client
         return self.parent.parent.parent.parent.client
@@ -802,10 +852,12 @@ class TorrentItem(Static):
     w_next = None
     w_prev = None
 
+    @log_time
     def __init__(self, torrent):
         super().__init__()
         self.update_torrent(torrent)
 
+    @log_time
     def watch_t_status(self, new_t_status):
         # For all other statuses using default colors:
         # - yellow - in progress
@@ -818,12 +870,14 @@ class TorrentItem(Static):
             case "check pending" | "checking":
                 self.add_class("torrent-bar-check")
 
+    @log_time
     def watch_selected(self, new_selected):
         if new_selected:
             self.add_class("selected")
         else:
             self.remove_class("selected")
 
+    @log_time
     def update_torrent(self, torrent) -> None:
         self.torrent = torrent
 
@@ -841,6 +895,7 @@ class TorrentItem(Static):
 
         self.t_size_stats = self.print_size_stats()
 
+    @log_time
     def print_size_stats(self) -> str:
         result = None
 
@@ -857,6 +912,7 @@ class TorrentItem(Static):
 
 class TorrentItemOneline(TorrentItem):
 
+    @log_time
     def compose(self) -> ComposeResult:
         yield Label(self.t_name, id="name")
 
@@ -870,6 +926,7 @@ class TorrentItemOneline(TorrentItem):
             yield SpeedIndicator().data_bind(
                     speed=TorrentItemOneline.t_download_speed)
 
+    @log_time
     def watch_t_status(self, new_t_status):
         self.remove_class("torrent-complete",
                           "torrent-incomplete",
@@ -889,6 +946,7 @@ class TorrentItemOneline(TorrentItem):
 
 class TorrentItemCompact(TorrentItem):
 
+    @log_time
     def compose(self) -> ComposeResult:
         yield Label(self.t_name, id="name")
 
@@ -908,6 +966,7 @@ class TorrentItemCard(TorrentItem):
 
     t_stats = reactive("")
 
+    @log_time
     def compose(self) -> ComposeResult:
         yield Label(self.t_name, id="name")
 
@@ -922,6 +981,7 @@ class TorrentItemCard(TorrentItem):
 
         yield ReactiveLabel(self.t_stats, id="stats").data_bind(name=TorrentItemCard.t_stats)
 
+    @log_time
     def update_torrent(self, torrent) -> None:
         super().update_torrent(torrent)
 
@@ -934,6 +994,7 @@ class TorrentItemCard(TorrentItem):
 
         self.t_stats = self.print_stats()
 
+    @log_time
     def print_stats(self) -> str:
         result = (self.t_size_stats +
                   f" | Status: {str(self.t_status)} | "
@@ -983,6 +1044,7 @@ class TorrentInfoPanel(ScrollableContainer):
     t_peers_up = reactive(None)
     t_peers_down = reactive(None)
 
+    @log_time
     def compose(self) -> ComposeResult:
         with TabbedContent():
             with TabPane("Overview", id="tab-overview"):
@@ -1060,6 +1122,7 @@ class TorrentInfoPanel(ScrollableContainer):
                                     cursor_type="none",
                                     zebra_stripes=True)
 
+    @log_time
     def on_mount(self):
         table = self.query_one("#files")
         table.add_columns("ID", "Size", "Done", "Selected", "Priority", "Name")
@@ -1070,6 +1133,7 @@ class TorrentInfoPanel(ScrollableContainer):
         table = self.query_one("#trackers")
         table.add_columns("Host", "Tier", "Seeders", "Leechers", "Downloads")
 
+    @log_time
     def watch_r_torrent(self, new_r_torrent):
         if new_r_torrent:
             torrent = new_r_torrent
@@ -1152,9 +1216,11 @@ class TorrentInfoPanel(ScrollableContainer):
         else:
             return 'Normal'
 
+    @log_time
     def action_view_list(self):
         self.post_message(self.TorrentViewClosed())
 
+    @log_time
     def action_go_left(self):
         tabs = self.query_one(TabbedContent)
         active = tabs.active
@@ -1168,6 +1234,7 @@ class TorrentInfoPanel(ScrollableContainer):
         elif active == 'tab-trackers':
             tabs.active = 'tab-peers'
 
+    @log_time
     def action_go_right(self):
         tabs = self.query_one(TabbedContent)
         active = tabs.active
@@ -1179,6 +1246,7 @@ class TorrentInfoPanel(ScrollableContainer):
         elif active == 'tab-peers':
             tabs.active = 'tab-trackers'
 
+    @log_time
     def action_scroll_up(self):
         if self.query_one(TabbedContent).active == 'tab-files':
             self.query_one("#files").scroll_up()
@@ -1187,6 +1255,7 @@ class TorrentInfoPanel(ScrollableContainer):
         elif self.query_one(TabbedContent).active == 'tab-trackers':
             self.query_one("#trackers").scroll_up()
 
+    @log_time
     def action_scroll_down(self):
         if self.query_one(TabbedContent).active == 'tab-files':
             self.query_one("#files").scroll_down()
@@ -1195,6 +1264,7 @@ class TorrentInfoPanel(ScrollableContainer):
         elif self.query_one(TabbedContent).active == 'tab-trackers':
             self.query_one("#trackers").scroll_up()
 
+    @log_time
     def action_scroll_top(self):
         if self.query_one(TabbedContent).active == 'tab-files':
             self.query_one("#files").action_scroll_top()
@@ -1203,6 +1273,7 @@ class TorrentInfoPanel(ScrollableContainer):
         elif self.query_one(TabbedContent).active == 'tab-trackers':
             self.query_one("#trackers").scroll_up()
 
+    @log_time
     def action_scroll_bottom(self):
         if self.query_one(TabbedContent).active == 'tab-files':
             self.query_one("#files").action_scroll_bottom()
@@ -1263,6 +1334,7 @@ class MainApp(App):
     r_torrents = reactive(None)
     r_tsession = reactive(None)
 
+    @log_time
     def __init__(self, host: str, port: str,
                  username: str, password: str,
                  view_mode: str,
@@ -1290,6 +1362,7 @@ class MainApp(App):
 
         self.sort_order = sort_orders[0]
 
+    @log_time
     def compose(self) -> ComposeResult:
         yield InfoPanel(self.tewi_version, self.transmission_version,
                         self.c_host, self.c_port)
@@ -1303,12 +1376,16 @@ class MainApp(App):
 
         yield StatePanel().data_bind(r_tsession=MainApp.r_tsession)
 
+    @log_time
     def on_mount(self) -> None:
         self.load_tdata()
         self.set_interval(self.refresh_interval, self.load_tdata)
 
+    @log_time
     @work(exclusive=True, thread=True)
     async def load_tdata(self) -> None:
+        logging.info("Start loading data from Transmission...")
+
         session = self.client.get_session()
         session_stats = self.client.session_stats()
         torrents = self.client.get_torrents()
@@ -1331,12 +1408,16 @@ class MainApp(App):
 
         torrents.sort(key=self.sort_order.sort_func)
 
+        logging.info(f"Loaded from Transmission {session.version}: {len(torrents)} torrents")
+
         self.call_from_thread(self.set_tdata, torrents, tsession)
 
+    @log_time
     def set_tdata(self, torrents, tsession) -> None:
         self.r_torrents = torrents
         self.r_tsession = tsession
 
+    @log_time
     def action_toggle_alt_speed(self) -> None:
         alt_speed_enabled = self.client.get_session().alt_speed_enabled
         self.client.set_session(alt_speed_enabled=not alt_speed_enabled)
@@ -1346,21 +1427,26 @@ class MainApp(App):
         else:
             self.post_message(MainApp.Notification("Turtle Mode enabled"))
 
+    @log_time
     def action_show_statistics(self) -> None:
         self.push_screen(StatisticsDialog(self.r_tsession.session_stats))
 
+    @log_time
     def action_help(self) -> None:
         self.push_screen(HelpDialog(self.screen.active_bindings.values()))
 
+    @log_time
     @on(TorrentListPanel.TorrentViewed)
     def handle_torrent_view(self, event: TorrentListPanel.TorrentViewed) -> None:
         self.query_one(ContentSwitcher).current = "torrent-info"
         self.query_one(TorrentInfoPanel).r_torrent = event.torrent
 
+    @log_time
     @on(TorrentInfoPanel.TorrentViewClosed)
     def handle_torrent_list(self, event: TorrentInfoPanel.TorrentViewClosed) -> None:
         self.query_one(ContentSwitcher).current = "torrent-list"
 
+    @log_time
     @on(Notification)
     def handle_notification(self, event: Notification) -> None:
         timeout = 3 if event.severity == 'information' else 5
@@ -1369,6 +1455,7 @@ class MainApp(App):
                     severity=event.severity,
                     timeout=timeout)
 
+    @log_time
     @on(Confirm)
     def handle_confirm(self, event: Confirm) -> None:
         self.push_screen(
@@ -1376,14 +1463,17 @@ class MainApp(App):
                                        description=event.description),
                     event.check_quit)
 
+    @log_time
     @on(OpenAddTorrent)
     def handle_open_add_torrent(self, event: OpenAddTorrent) -> None:
         self.push_screen(AddTorrentDialog())
 
+    @log_time
     @on(OpenSortOrder)
     def handle_open_sort_order(self, event: OpenSortOrder) -> None:
         self.push_screen(SortOrderDialog())
 
+    @log_time
     @on(AddTorrent)
     def handle_add_torrent(self, event: AddTorrent) -> None:
         try:
@@ -1394,6 +1484,7 @@ class MainApp(App):
                 f"Failed to add torrent:\n{e}",
                 "warning"))
 
+    @log_time
     @on(SortOrderSelected)
     def handle_sort_order_selected(self, event: SortOrderSelected) -> None:
         self.sort_order = event.order
@@ -1424,11 +1515,25 @@ def cli():
                         help='Transmission daemon username for connection')
     parser.add_argument('--password', type=str,
                         help='Transmission daemon password for connection')
+    parser.add_argument('--logs', default=False,
+                        action=argparse.BooleanOptionalAction,
+                        help='Enable verbose logs (added to `tewi.log` file)')
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + tewi_version,
                         help='Show version and exit')
 
     args = parser.parse_args()
+
+    if args.logs:
+        logging.basicConfig(
+                filename=('tewi.log'),
+                encoding='utf-8',
+                format='%(asctime)s.%(msecs)03d %(module)-15s %(levelname)-8s %(message)s',
+                level=logging.DEBUG,
+                datefmt='%Y-%m-%d %H:%M:%S')
+
+    logger.info(f'Start Tewi {tewi_version}...')
+    logger.info(f'Loaded CLI options: {args}')
 
     app = MainApp(host=args.host, port=args.port,
                   username=args.username, password=args.password,
