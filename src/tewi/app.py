@@ -25,6 +25,7 @@ import argparse
 import logging
 import textwrap
 import time
+import math
 
 from transmission_rpc import Client
 from transmission_rpc.error import TransmissionError
@@ -592,24 +593,134 @@ class TorrentListPanel(ScrollableContainer):
 
     selected_item = None
 
+    page_size = 5
+
     @log_time
     def __init__(self, id: str, view_mode: str):
         self.view_mode = view_mode
         super().__init__(id=id)
+
+    def torrent_idx(self, torrent) -> int:
+        return next((idx) for (idx, t) in enumerate(self.r_torrents) if t.id == torrent.id)
+
+    def has_next(self, torrent) -> bool:
+        idx = self.torrent_idx(torrent)
+
+        if idx >= (len(self.r_torrents) - 1):
+            return False
+        else:
+            return True
 
     @log_time
     def watch_r_torrents(self, new_r_torrents):
         if new_r_torrents:
             torrents = new_r_torrents
 
-            if self.is_equal_to_pane(torrents):
+            if len(torrents) == 0:
+                pages = 0
+            else:
+                pages = math.ceil(len(torrents) / self.page_size)
+
+            # detect current page by selected item
+
+            if self.selected_item:
+                selected_id = self.selected_item.torrent.id
+
+                idx = self.torrent_idx(self.selected_item.torrent)
+
+                self.log(f'selected idx = {idx}')
+
+                current_page = idx // self.page_size
+            else:
+                current_page = 0
+
+
+            self.notify(f'current_page = {current_page}')
+
+            page_torrents = torrents[current_page * self.page_size:(current_page + 1) * self.page_size]
+
+            if self.is_equal_to_page(page_torrents):
                 items = self.children
 
-                for i, torrent in enumerate(torrents):
+                for i, torrent in enumerate(page_torrents):
                     items[i].update_torrent(torrent)
             else:
-                self.create_pane(torrents)
+                self.notify('not equal, redraw')
+                self.draw_page(page_torrents)
 
+    def draw_page(self, torrents, select_first=False):
+        self.remove_children()
+
+        torrent_widgets = []
+
+        w_prev = None
+        for t in torrents:
+            item = TorrentItemCard(t)
+
+            torrent_widgets.append(item)
+
+            if w_prev:
+                w_prev.w_next = item
+                item.w_prev = w_prev
+                w_prev = item
+            else:
+                w_prev = item
+
+        self.mount_all(torrent_widgets)
+
+        if select_first:
+            self.selected_item = torrent_widgets[0]
+            self.selected_item.selected = True
+            self.scroll_to_widget(self.selected_item)
+        else:
+            if self.selected_item:
+                prev_selected_id = self.selected_item.torrent.id
+
+                for item in self.children:
+                    if prev_selected_id == item.torrent.id:
+                        item.selected = True
+                        self.selected_item = item
+                        self.scroll_to_widget(self.selected_item)
+            else:
+                self.scroll_home()
+
+    def is_equal_to_page(self, torrents) -> bool:
+        items = self.children
+
+        if len(torrents) != len(items):
+            return False
+
+        for i, torrent in enumerate(torrents):
+            if torrent.id != items[i].t_id:
+                return False
+
+        return True
+
+    def action_move_down(self) -> None:
+        items = self.children
+
+        if items:
+            if self.selected_item is None:
+                item = items[0]
+                item.selected = True
+                self.selected_item = item
+            else:
+                if self.selected_item.w_next:
+                    self.selected_item.selected = False
+                    self.selected_item = self.selected_item.w_next
+                    self.selected_item.selected = True
+                    self.scroll_to_widget(self.selected_item)
+                else:
+                    # has item on the next page?
+                    if self.has_next(self.selected_item.torrent):
+                        page_start_idx = self.torrent_idx(self.selected_item.torrent) + 1
+                        next_page = page_start_idx // self.page_size
+
+                        page_torrents = self.r_torrents[page_start_idx:page_start_idx + self.page_size]
+                        self.draw_page(page_torrents, select_first=True)
+
+
+# OLD
     @log_time
     def create_pane(self, torrents) -> None:
         if self.selected_item:
@@ -683,7 +794,7 @@ class TorrentListPanel(ScrollableContainer):
                     self.scroll_to_widget(self.selected_item)
 
     @log_time
-    def action_move_down(self) -> None:
+    def action_move_down_old(self) -> None:
         items = self.children
 
         if items:
