@@ -940,11 +940,14 @@ class TorrentListPanel(ScrollableContainer):
 
     @log_time
     def action_move_top(self) -> None:
-        self.move_to(lambda x: x[0])
+        self.update_page(self.r_torrents, 0, select_first=True, force=True)
 
     @log_time
     def action_move_bottom(self) -> None:
-        self.move_to(lambda x: x[-1])
+        last_page_start_idx = (self.total_pages(self.r_torrents) - 1) * self.page_size
+
+        self.update_page(self.r_torrents, last_page_start_idx,
+                         select_last=True, force=True)
 
     def move_to(self, selector) -> None:
         items = self.children
