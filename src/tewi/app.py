@@ -854,17 +854,43 @@ class TorrentListPanel(ScrollableContainer):
         page_torrents = torrents[start_index:start_index + self.page_size]
 
         if not force and self.is_equal_to_page(page_torrents):
-            items = self.children
+            torrent_widgets = self.children
 
             for i, torrent in enumerate(page_torrents):
-                items[i].update_torrent(torrent)
+                torrent_widgets[i].update_torrent(torrent)
         else:
-            self.draw_page(page_torrents, select_first, select_last)
+            torrent_widgets = self.draw_page(page_torrents, select_first, select_last)
 
             state = PageState(current=(start_index // self.page_size),
                               total=self.total_pages(torrents))
 
             self.post_message(MainApp.PageChanged(state))
+
+        self.update_selection(torrent_widgets, select_first, select_last)
+
+    def update_selection(self, torrent_widgets, select_first, select_last) -> None:
+        prev_selected_item = self.selected_item
+
+        if select_first:
+            self.selected_item = torrent_widgets[0]
+            self.selected_item.selected = True
+
+            if prev_selected_item:
+                prev_selected_item.selected = False
+        elif select_last:
+            self.selected_item = torrent_widgets[-1]
+            self.selected_item.selected = True
+
+            if prev_selected_item:
+                prev_selected_item.selected = False
+        else:
+            if self.selected_item:
+                prev_selected_id = self.selected_item.torrent.id
+
+                for item in torrent_widgets:
+                    if prev_selected_id == item.torrent.id:
+                        item.selected = True
+                        self.selected_item = item
 
     @log_time
     def create_item(self, torrent) -> TorrentItem:
@@ -898,20 +924,7 @@ class TorrentListPanel(ScrollableContainer):
 
         self.mount_all(torrent_widgets)
 
-        if select_first:
-            self.selected_item = torrent_widgets[0]
-            self.selected_item.selected = True
-        elif select_last:
-            self.selected_item = torrent_widgets[-1]
-            self.selected_item.selected = True
-        else:
-            if self.selected_item:
-                prev_selected_id = self.selected_item.torrent.id
-
-                for item in self.children:
-                    if prev_selected_id == item.torrent.id:
-                        item.selected = True
-                        self.selected_item = item
+        return torrent_widgets
 
     @log_time
     def is_equal_to_page(self, torrents) -> bool:
@@ -968,14 +981,14 @@ class TorrentListPanel(ScrollableContainer):
 
     @log_time
     def action_move_top(self) -> None:
-        self.update_page(self.r_torrents, 0, select_first=True, force=True)
+        self.update_page(self.r_torrents, 0, select_first=True)
 
     @log_time
     def action_move_bottom(self) -> None:
         last_page_start_idx = (self.total_pages(self.r_torrents) - 1) * self.page_size
 
         self.update_page(self.r_torrents, last_page_start_idx,
-                         select_last=True, force=True)
+                         select_last=True)
 
     def move_to(self, selector) -> None:
         items = self.children
