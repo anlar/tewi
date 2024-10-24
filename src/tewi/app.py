@@ -73,6 +73,11 @@ def log_time(func):
 
 # Common data
 
+class PageState(NamedTuple):
+    current: int
+    total: int
+
+
 class SortOrder(NamedTuple):
     id: str
     name: str
@@ -170,6 +175,17 @@ class SpeedIndicator(Static):
 
     def render(self) -> str:
         return Util.print_speed(self.speed)
+
+
+class PageIndicator(Static):
+
+    state = reactive(None)
+
+    def render(self) -> str:
+        if self.state:
+            return f'[ {self.state.current + 1} / {self.state.total} ]'
+        else:
+            return '[ 1 / 1 ]'
 
 
 # Common screens
@@ -498,6 +514,7 @@ class StatePanel(Static):
     r_tsession = reactive(None)
 
     # recompose whole line to update blocks width
+    r_page = reactive(None, recompose=True)
     r_stats = reactive('', recompose=True)
     r_sort = reactive('', recompose=True)
     r_alt_speed = reactive('', recompose=True)
@@ -509,6 +526,8 @@ class StatePanel(Static):
     @log_time
     def compose(self) -> ComposeResult:
         with Grid(id="state-panel"):
+            yield PageIndicator(classes="column page").data_bind(
+                    state=StatePanel.r_page)
             yield ReactiveLabel(classes="column").data_bind(
                     name=StatePanel.r_stats)
             yield ReactiveLabel(classes="column sort").data_bind(
@@ -832,6 +851,11 @@ class TorrentListPanel(ScrollableContainer):
                 items[i].update_torrent(torrent)
         else:
             self.draw_page(page_torrents, select_first, select_last)
+
+            state = PageState(current=(start_index // self.page_size),
+                              total=self.total_pages(torrents))
+
+            self.post_message(MainApp.PageChanged(state))
 
     def create_item(self, torrent) -> TorrentItem:
         if self.view_mode == 'card':
@@ -1389,6 +1413,11 @@ class MainApp(App):
             super().__init__()
             self.order = order
 
+    class PageChanged(Message):
+        def __init__(self, state: PageState) -> None:
+            super().__init__()
+            self.state = state
+
     ENABLE_COMMAND_PALETTE = False
 
     CSS_PATH = "app.tcss"
@@ -1404,6 +1433,7 @@ class MainApp(App):
 
     r_torrents = reactive(None)
     r_tsession = reactive(None)
+    r_page = reactive(None)
 
     @log_time
     def __init__(self, host: str, port: str,
@@ -1445,7 +1475,8 @@ class MainApp(App):
                                                r_torrents=MainApp.r_torrents)
                 yield TorrentInfoPanel(id="torrent-info")
 
-        yield StatePanel().data_bind(r_tsession=MainApp.r_tsession)
+        yield StatePanel().data_bind(r_tsession=MainApp.r_tsession,
+                                     r_page=MainApp.r_page)
 
     @log_time
     def on_mount(self) -> None:
@@ -1561,6 +1592,11 @@ class MainApp(App):
         self.sort_order = event.order
         self.post_message(MainApp.Notification(
             f"Selected sort order: {event.order.name}"))
+
+    @log_time
+    @on(PageChanged)
+    def handle_page_changed(self, event: PageChanged) -> None:
+        self.r_page = event.state
 
 
 def cli():
