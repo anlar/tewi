@@ -57,6 +57,7 @@
 
 #state-panel > .page {
     color: $warning;
+    padding: 0;
 }
 
 #state-panel > .sort {

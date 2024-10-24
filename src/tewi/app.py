@@ -182,10 +182,12 @@ class PageIndicator(Static):
     state = reactive(None)
 
     def render(self) -> str:
-        if self.state:
-            return f'[ {self.state.current + 1} / {self.state.total} ]'
+        # hide indicator when single page
+        if self.state is None or self.state.total == 1:
+            return ''
         else:
-            return '[ 1 / 1 ]'
+            # include padding by spaces
+            return f' [ {self.state.current + 1} / {self.state.total} ] '
 
 
 # Common screens
@@ -786,11 +788,10 @@ class TorrentListPanel(ScrollableContainer):
 
     selected_item = None
 
-    page_size = 5
-
     @log_time
-    def __init__(self, id: str, view_mode: str):
+    def __init__(self, id: str, view_mode: str, page_size: str):
         self.view_mode = view_mode
+        self.page_size = page_size
         super().__init__(id=id)
 
     def torrent_idx(self, torrent) -> int:
@@ -1440,6 +1441,7 @@ class MainApp(App):
                  username: str, password: str,
                  view_mode: str,
                  refresh_interval: int,
+                 page_size: int,
                  limit_torrents: int,
                  version: str):
 
@@ -1450,6 +1452,7 @@ class MainApp(App):
         self.view_mode = view_mode
         self.refresh_interval = refresh_interval
         self.limit_torrents = limit_torrents
+        self.page_size = page_size
 
         self.tewi_version = version
 
@@ -1471,7 +1474,8 @@ class MainApp(App):
         with Horizontal():
             with ContentSwitcher(initial="torrent-list"):
                 yield TorrentListPanel(id="torrent-list",
-                                       view_mode=self.view_mode).data_bind(
+                                       view_mode=self.view_mode,
+                                       page_size=self.page_size).data_bind(
                                                r_torrents=MainApp.r_torrents)
                 yield TorrentInfoPanel(id="torrent-info")
 
@@ -1614,6 +1618,8 @@ def cli():
                         help='Refresh interval (in seconds) for loading data from Transmission daemon')
     parser.add_argument('--limit-torrents', type=int, default=None,
                         help='Limit number of displayed torrents (useful for performance debugging)')
+    parser.add_argument('--page-size', type=int, default=50,
+                        help='Number of torrents displayed per page')
     parser.add_argument('--host', type=str, default='localhost',
                         help='Transmission daemon host for connection')
     parser.add_argument('--port', type=str, default='9091',
@@ -1646,6 +1652,7 @@ def cli():
                   username=args.username, password=args.password,
                   view_mode=args.view_mode,
                   refresh_interval=args.refresh_interval,
+                  page_size=args.page_size,
                   limit_torrents=args.limit_torrents,
                   version=tewi_version)
     app.run()
