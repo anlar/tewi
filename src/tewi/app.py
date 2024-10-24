@@ -786,7 +786,7 @@ class TorrentListPanel(ScrollableContainer):
 
     r_torrents = reactive(None)
 
-    selected_item = None
+    selected_item = reactive(None)
 
     @log_time
     def __init__(self, id: str, view_mode: str, page_size: str):
@@ -836,6 +836,14 @@ class TorrentListPanel(ScrollableContainer):
 
             self.update_page(torrents, current_page * self.page_size)
 
+    @log_time
+    def watch_selected_item(self, new_selected_item):
+        if new_selected_item:
+            self.scroll_to_widget(new_selected_item)
+        else:
+            self.scroll_home()
+
+    @log_time
     def update_page(self,
                     torrents, start_index=None,
                     select_first=False, select_last=False, force=False):
@@ -858,6 +866,7 @@ class TorrentListPanel(ScrollableContainer):
 
             self.post_message(MainApp.PageChanged(state))
 
+    @log_time
     def create_item(self, torrent) -> TorrentItem:
         if self.view_mode == 'card':
             item = TorrentItemCard(torrent)
@@ -868,6 +877,7 @@ class TorrentListPanel(ScrollableContainer):
 
         return item
 
+    @log_time
     def draw_page(self, torrents, select_first=False, select_last=False):
         self.remove_children()
 
@@ -891,11 +901,9 @@ class TorrentListPanel(ScrollableContainer):
         if select_first:
             self.selected_item = torrent_widgets[0]
             self.selected_item.selected = True
-            self.scroll_to_widget(self.selected_item)
         elif select_last:
             self.selected_item = torrent_widgets[-1]
             self.selected_item.selected = True
-            self.scroll_to_widget(self.selected_item)
         else:
             if self.selected_item:
                 prev_selected_id = self.selected_item.torrent.id
@@ -904,10 +912,8 @@ class TorrentListPanel(ScrollableContainer):
                     if prev_selected_id == item.torrent.id:
                         item.selected = True
                         self.selected_item = item
-                        self.scroll_to_widget(self.selected_item)
-            else:
-                self.scroll_home()
 
+    @log_time
     def is_equal_to_page(self, torrents) -> bool:
         items = self.children
 
@@ -929,13 +935,11 @@ class TorrentListPanel(ScrollableContainer):
                 item = items[-1]
                 item.selected = True
                 self.selected_item = item
-                self.scroll_to_widget(self.selected_item)
             else:
                 if self.selected_item.w_prev:
                     self.selected_item.selected = False
                     self.selected_item = self.selected_item.w_prev
                     self.selected_item.selected = True
-                    self.scroll_to_widget(self.selected_item)
                 else:
                     # has item on the prev page?
                     if self.has_prev(self.selected_item.torrent):
@@ -956,7 +960,6 @@ class TorrentListPanel(ScrollableContainer):
                     self.selected_item.selected = False
                     self.selected_item = self.selected_item.w_next
                     self.selected_item.selected = True
-                    self.scroll_to_widget(self.selected_item)
                 else:
                     # has item on the next page?
                     if self.has_next(self.selected_item.torrent):
@@ -983,7 +986,6 @@ class TorrentListPanel(ScrollableContainer):
 
             self.selected_item = selector(items)
             self.selected_item.selected = True
-            self.scroll_to_widget(self.selected_item)
 
     @log_time
     def action_view_info(self):
