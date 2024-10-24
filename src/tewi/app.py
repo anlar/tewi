@@ -560,389 +560,6 @@ class StatePanel(Static):
                 self.r_alt_delimiter = ''
 
 
-class TorrentListPanel(ScrollableContainer):
-
-    class TorrentViewed(Message):
-
-        def __init__(self, torrent) -> None:
-            super().__init__()
-            self.torrent = torrent
-
-    BINDINGS = [
-            Binding("k,up", "move_up", "Move up"),
-            Binding("j,down", "move_down", "Move down"),
-
-            Binding("g", "move_top", "Go to the first item"),
-            Binding("G", "move_bottom", "Go to the last item"),
-
-            Binding("enter,l", "view_info", "View torrent info"),
-
-            Binding("a", "add_torrent", "Add torrent"),
-            Binding("s", "sort_order", "Select sort order"),
-
-            Binding("p", "toggle_torrent", "Toggle torrent"),
-            Binding("r", "remove_torrent", "Remove torrent"),
-            Binding("R", "trash_torrent", "Trash torrent"),
-            Binding("v", "verify_torrent", "Verify torrent"),
-            Binding("n", "reannounce_torrent", "Reannounce torrent"),
-
-            Binding("m", "toggle_view_mode", "Toggle torrents view mode"),
-            ]
-
-    r_torrents = reactive(None)
-
-    selected_item = None
-
-    page_size = 5
-
-    @log_time
-    def __init__(self, id: str, view_mode: str):
-        self.view_mode = view_mode
-        super().__init__(id=id)
-
-    def torrent_idx(self, torrent) -> int:
-        return next((idx) for (idx, t) in enumerate(self.r_torrents) if t.id == torrent.id)
-
-    def has_next(self, torrent) -> bool:
-        idx = self.torrent_idx(torrent)
-
-        if idx >= (len(self.r_torrents) - 1):
-            return False
-        else:
-            return True
-
-    @log_time
-    def watch_r_torrents(self, new_r_torrents):
-        if new_r_torrents:
-            torrents = new_r_torrents
-
-            if len(torrents) == 0:
-                pages = 0
-            else:
-                pages = math.ceil(len(torrents) / self.page_size)
-
-            # detect current page by selected item
-
-            if self.selected_item:
-                selected_id = self.selected_item.torrent.id
-
-                idx = self.torrent_idx(self.selected_item.torrent)
-
-                self.log(f'selected idx = {idx}')
-
-                current_page = idx // self.page_size
-            else:
-                current_page = 0
-
-
-            self.notify(f'current_page = {current_page}')
-
-            page_torrents = torrents[current_page * self.page_size:(current_page + 1) * self.page_size]
-
-            if self.is_equal_to_page(page_torrents):
-                items = self.children
-
-                for i, torrent in enumerate(page_torrents):
-                    items[i].update_torrent(torrent)
-            else:
-                self.notify('not equal, redraw')
-                self.draw_page(page_torrents)
-
-    def draw_page(self, torrents, select_first=False):
-        self.remove_children()
-
-        torrent_widgets = []
-
-        w_prev = None
-        for t in torrents:
-            item = TorrentItemCard(t)
-
-            torrent_widgets.append(item)
-
-            if w_prev:
-                w_prev.w_next = item
-                item.w_prev = w_prev
-                w_prev = item
-            else:
-                w_prev = item
-
-        self.mount_all(torrent_widgets)
-
-        if select_first:
-            self.selected_item = torrent_widgets[0]
-            self.selected_item.selected = True
-            self.scroll_to_widget(self.selected_item)
-        else:
-            if self.selected_item:
-                prev_selected_id = self.selected_item.torrent.id
-
-                for item in self.children:
-                    if prev_selected_id == item.torrent.id:
-                        item.selected = True
-                        self.selected_item = item
-                        self.scroll_to_widget(self.selected_item)
-            else:
-                self.scroll_home()
-
-    def is_equal_to_page(self, torrents) -> bool:
-        items = self.children
-
-        if len(torrents) != len(items):
-            return False
-
-        for i, torrent in enumerate(torrents):
-            if torrent.id != items[i].t_id:
-                return False
-
-        return True
-
-    def action_move_down(self) -> None:
-        items = self.children
-
-        if items:
-            if self.selected_item is None:
-                item = items[0]
-                item.selected = True
-                self.selected_item = item
-            else:
-                if self.selected_item.w_next:
-                    self.selected_item.selected = False
-                    self.selected_item = self.selected_item.w_next
-                    self.selected_item.selected = True
-                    self.scroll_to_widget(self.selected_item)
-                else:
-                    # has item on the next page?
-                    if self.has_next(self.selected_item.torrent):
-                        page_start_idx = self.torrent_idx(self.selected_item.torrent) + 1
-                        next_page = page_start_idx // self.page_size
-
-                        page_torrents = self.r_torrents[page_start_idx:page_start_idx + self.page_size]
-                        self.draw_page(page_torrents, select_first=True)
-
-
-# OLD
-    @log_time
-    def create_pane(self, torrents) -> None:
-        if self.selected_item:
-            prev_selected_id = self.selected_item.torrent.id
-        else:
-            prev_selected_id = None
-
-        self.remove_children()
-
-        self.selected_item = None
-
-        torrent_widgets = []
-
-        w_prev = None
-        for t in torrents:
-            if self.view_mode == 'card':
-                item = TorrentItemCard(t)
-            elif self.view_mode == 'compact':
-                item = TorrentItemCompact(t)
-            elif self.view_mode == 'oneline':
-                item = TorrentItemOneline(t)
-
-            torrent_widgets.append(item)
-
-            if w_prev:
-                w_prev.w_next = item
-                item.w_prev = w_prev
-                w_prev = item
-            else:
-                w_prev = item
-
-        self.mount_all(torrent_widgets)
-
-        if prev_selected_id:
-            for item in self.children:
-                if prev_selected_id == item.torrent.id:
-                    item.selected = True
-                    self.selected_item = item
-                    self.scroll_to_widget(self.selected_item)
-        else:
-            self.scroll_home()
-
-    @log_time
-    def is_equal_to_pane(self, torrents) -> bool:
-        items = self.children
-
-        if len(torrents) != len(items):
-            return False
-
-        for i, torrent in enumerate(torrents):
-            if torrent.id != items[i].t_id:
-                return False
-
-        return True
-
-    @log_time
-    def action_move_up(self) -> None:
-        items = self.children
-
-        if items:
-            if self.selected_item is None:
-                item = items[-1]
-                item.selected = True
-                self.selected_item = item
-                self.scroll_to_widget(self.selected_item)
-            else:
-                if self.selected_item.w_prev:
-                    self.selected_item.selected = False
-                    self.selected_item = self.selected_item.w_prev
-                    self.selected_item.selected = True
-                    self.scroll_to_widget(self.selected_item)
-
-    @log_time
-    def action_move_down_old(self) -> None:
-        items = self.children
-
-        if items:
-            if self.selected_item is None:
-                item = items[0]
-                item.selected = True
-                self.selected_item = item
-            else:
-                if self.selected_item.w_next:
-                    self.selected_item.selected = False
-                    self.selected_item = self.selected_item.w_next
-                    self.selected_item.selected = True
-                    self.scroll_to_widget(self.selected_item)
-
-    @log_time
-    def action_move_top(self) -> None:
-        self.move_to(lambda x: x[0])
-
-    @log_time
-    def action_move_bottom(self) -> None:
-        self.move_to(lambda x: x[-1])
-
-    def move_to(self, selector) -> None:
-        items = self.children
-
-        if items:
-            if self.selected_item:
-                self.selected_item.selected = False
-
-            self.selected_item = selector(items)
-            self.selected_item.selected = True
-            self.scroll_to_widget(self.selected_item)
-
-    @log_time
-    def action_view_info(self):
-        if self.selected_item:
-            self.post_message(self.TorrentViewed(self.selected_item.torrent))
-
-    @log_time
-    def action_add_torrent(self) -> None:
-        self.post_message(MainApp.OpenAddTorrent())
-
-    @log_time
-    def action_sort_order(self) -> None:
-        self.post_message(MainApp.OpenSortOrder())
-
-    @log_time
-    def action_toggle_torrent(self) -> None:
-        if self.selected_item:
-            status = self.selected_item.t_status
-
-            if status == 'stopped':
-                self.client().start_torrent(self.selected_item.t_id)
-                self.post_message(MainApp.Notification("Torrent started"))
-            else:
-                self.client().stop_torrent(self.selected_item.t_id)
-                self.post_message(MainApp.Notification("Torrent stopped"))
-
-    @log_time
-    def action_remove_torrent(self) -> None:
-        self.remove_torrent(delete_data=False,
-                            message="Remove torrent?",
-                            description=("Once removed, continuing the "
-                                         "transfer will require the torrent file. "
-                                         "Are you sure you want to remove it?"),
-                            notification="Torrent removed")
-
-    @log_time
-    def action_trash_torrent(self) -> None:
-        self.remove_torrent(delete_data=True,
-                            message="Remove torrent and delete data?",
-                            description=("All data downloaded for this torrent "
-                                         "will be deleted. Are you sure you "
-                                         "want to remove it?"),
-                            notification="Torrent and its data removed")
-
-    @log_time
-    def remove_torrent(self,
-                       delete_data: bool,
-                       message: str,
-                       description: str,
-                       notification: str) -> None:
-
-        if self.selected_item:
-
-            def check_quit(confirmed: bool | None) -> None:
-                if confirmed:
-                    self.client().remove_torrent(self.selected_item.t_id,
-                                                 delete_data=delete_data)
-
-                    w_prev = self.selected_item.w_prev
-                    w_next = self.selected_item.w_next
-
-                    self.selected_item.remove()
-                    self.selected_item = None
-
-                    if w_next:
-                        w_next.w_prev = w_prev
-
-                    if w_prev:
-                        w_prev.w_next = w_next
-
-                    new_selected = None
-                    if w_next:
-                        new_selected = w_next
-                    elif w_prev:
-                        new_selected = w_prev
-
-                    if new_selected:
-                        new_selected.selected = True
-                        self.selected_item = new_selected
-                        self.scroll_to_widget(self.selected_item)
-
-                    self.post_message(MainApp.Notification(notification))
-
-            self.post_message(MainApp.Confirm(message=message,
-                                              description=description,
-                                              check_quit=check_quit))
-
-    @log_time
-    def action_verify_torrent(self) -> None:
-        if self.selected_item:
-            self.client().verify_torrent(self.selected_item.t_id)
-            self.post_message(MainApp.Notification("Torrent send to verification"))
-
-    @log_time
-    def action_reannounce_torrent(self) -> None:
-        if self.selected_item:
-            self.client().reannounce_torrent(self.selected_item.t_id)
-            self.post_message(MainApp.Notification("Torrent reannounce started"))
-
-    @log_time
-    def action_toggle_view_mode(self) -> None:
-        if self.view_mode == 'card':
-            self.view_mode = 'compact'
-        elif self.view_mode == 'compact':
-            self.view_mode = 'oneline'
-        elif self.view_mode == 'oneline':
-            self.view_mode = 'card'
-
-        self.create_pane(self.r_torrents)
-
-    @log_time
-    def client(self):
-        # TODO: get client
-        return self.parent.parent.parent.parent.client
-
-
 class TorrentItem(Static):
 
     selected = reactive(False)
@@ -1115,6 +732,344 @@ class TorrentItemCard(TorrentItem):
                   f"Leechers: {str(self.t_leechers)}")
 
         return result
+
+
+class TorrentListPanel(ScrollableContainer):
+
+    class TorrentViewed(Message):
+
+        def __init__(self, torrent) -> None:
+            super().__init__()
+            self.torrent = torrent
+
+    BINDINGS = [
+            Binding("k,up", "move_up", "Move up"),
+            Binding("j,down", "move_down", "Move down"),
+
+            Binding("g", "move_top", "Go to the first item"),
+            Binding("G", "move_bottom", "Go to the last item"),
+
+            Binding("enter,l", "view_info", "View torrent info"),
+
+            Binding("a", "add_torrent", "Add torrent"),
+            Binding("s", "sort_order", "Select sort order"),
+
+            Binding("p", "toggle_torrent", "Toggle torrent"),
+            Binding("r", "remove_torrent", "Remove torrent"),
+            Binding("R", "trash_torrent", "Trash torrent"),
+            Binding("v", "verify_torrent", "Verify torrent"),
+            Binding("n", "reannounce_torrent", "Reannounce torrent"),
+
+            Binding("m", "toggle_view_mode", "Toggle torrents view mode"),
+            ]
+
+    r_torrents = reactive(None)
+
+    selected_item = None
+
+    page_size = 5
+
+    @log_time
+    def __init__(self, id: str, view_mode: str):
+        self.view_mode = view_mode
+        super().__init__(id=id)
+
+    def torrent_idx(self, torrent) -> int:
+        return next((idx) for (idx, t) in enumerate(self.r_torrents) if t.id == torrent.id)
+
+    def has_prev(self, torrent) -> bool:
+        idx = self.torrent_idx(torrent)
+
+        if idx > 0:
+            return True
+        else:
+            return False
+
+    def has_next(self, torrent) -> bool:
+        idx = self.torrent_idx(torrent)
+
+        if idx >= (len(self.r_torrents) - 1):
+            return False
+        else:
+            return True
+
+    def total_pages(self, torrents) -> int:
+        if len(torrents) == 0:
+            pages = 0
+        else:
+            pages = math.ceil(len(torrents) / self.page_size)
+
+        return pages
+
+    @log_time
+    def watch_r_torrents(self, new_r_torrents):
+        if new_r_torrents:
+            torrents = new_r_torrents
+
+            # detect current page by selected item
+
+            if self.selected_item:
+                selected_idx = self.torrent_idx(self.selected_item.torrent)
+                current_page = selected_idx // self.page_size
+            else:
+                current_page = 0
+
+            self.update_page(torrents, current_page * self.page_size)
+
+    def update_page(self,
+                    torrents, start_index=None,
+                    select_first=False, select_last=False, force=False):
+
+        if start_index is None:
+            start_index = self.torrent_idx(self.children[0].torrent)
+
+        page_torrents = torrents[start_index:start_index + self.page_size]
+
+        if not force and self.is_equal_to_page(page_torrents):
+            items = self.children
+
+            for i, torrent in enumerate(page_torrents):
+                items[i].update_torrent(torrent)
+        else:
+            self.draw_page(page_torrents, select_first, select_last)
+
+    def create_item(self, torrent) -> TorrentItem:
+        if self.view_mode == 'card':
+            item = TorrentItemCard(torrent)
+        elif self.view_mode == 'compact':
+            item = TorrentItemCompact(torrent)
+        elif self.view_mode == 'oneline':
+            item = TorrentItemOneline(torrent)
+
+        return item
+
+    def draw_page(self, torrents, select_first=False, select_last=False):
+        self.remove_children()
+
+        torrent_widgets = []
+
+        w_prev = None
+        for t in torrents:
+            item = self.create_item(t)
+
+            torrent_widgets.append(item)
+
+            if w_prev:
+                w_prev.w_next = item
+                item.w_prev = w_prev
+                w_prev = item
+            else:
+                w_prev = item
+
+        self.mount_all(torrent_widgets)
+
+        if select_first:
+            self.selected_item = torrent_widgets[0]
+            self.selected_item.selected = True
+            self.scroll_to_widget(self.selected_item)
+        elif select_last:
+            self.selected_item = torrent_widgets[-1]
+            self.selected_item.selected = True
+            self.scroll_to_widget(self.selected_item)
+        else:
+            if self.selected_item:
+                prev_selected_id = self.selected_item.torrent.id
+
+                for item in self.children:
+                    if prev_selected_id == item.torrent.id:
+                        item.selected = True
+                        self.selected_item = item
+                        self.scroll_to_widget(self.selected_item)
+            else:
+                self.scroll_home()
+
+    def is_equal_to_page(self, torrents) -> bool:
+        items = self.children
+
+        if len(torrents) != len(items):
+            return False
+
+        for i, torrent in enumerate(torrents):
+            if torrent.id != items[i].t_id:
+                return False
+
+        return True
+
+    @log_time
+    def action_move_up(self) -> None:
+        items = self.children
+
+        if items:
+            if self.selected_item is None:
+                item = items[-1]
+                item.selected = True
+                self.selected_item = item
+                self.scroll_to_widget(self.selected_item)
+            else:
+                if self.selected_item.w_prev:
+                    self.selected_item.selected = False
+                    self.selected_item = self.selected_item.w_prev
+                    self.selected_item.selected = True
+                    self.scroll_to_widget(self.selected_item)
+                else:
+                    # has item on the prev page?
+                    if self.has_prev(self.selected_item.torrent):
+                        page_start_idx = self.torrent_idx(self.selected_item.torrent) - self.page_size
+                        self.update_page(self.r_torrents, page_start_idx, select_last=True)
+
+    @log_time
+    def action_move_down(self) -> None:
+        items = self.children
+
+        if items:
+            if self.selected_item is None:
+                item = items[0]
+                item.selected = True
+                self.selected_item = item
+            else:
+                if self.selected_item.w_next:
+                    self.selected_item.selected = False
+                    self.selected_item = self.selected_item.w_next
+                    self.selected_item.selected = True
+                    self.scroll_to_widget(self.selected_item)
+                else:
+                    # has item on the next page?
+                    if self.has_next(self.selected_item.torrent):
+                        page_start_idx = self.torrent_idx(self.selected_item.torrent) + 1
+                        self.update_page(self.r_torrents, page_start_idx, select_first=True)
+
+    @log_time
+    def action_move_top(self) -> None:
+        self.move_to(lambda x: x[0])
+
+    @log_time
+    def action_move_bottom(self) -> None:
+        self.move_to(lambda x: x[-1])
+
+    def move_to(self, selector) -> None:
+        items = self.children
+
+        if items:
+            if self.selected_item:
+                self.selected_item.selected = False
+
+            self.selected_item = selector(items)
+            self.selected_item.selected = True
+            self.scroll_to_widget(self.selected_item)
+
+    @log_time
+    def action_view_info(self):
+        if self.selected_item:
+            self.post_message(self.TorrentViewed(self.selected_item.torrent))
+
+    @log_time
+    def action_add_torrent(self) -> None:
+        self.post_message(MainApp.OpenAddTorrent())
+
+    @log_time
+    def action_sort_order(self) -> None:
+        self.post_message(MainApp.OpenSortOrder())
+
+    @log_time
+    def action_toggle_torrent(self) -> None:
+        if self.selected_item:
+            status = self.selected_item.t_status
+
+            if status == 'stopped':
+                self.client().start_torrent(self.selected_item.t_id)
+                self.post_message(MainApp.Notification("Torrent started"))
+            else:
+                self.client().stop_torrent(self.selected_item.t_id)
+                self.post_message(MainApp.Notification("Torrent stopped"))
+
+    @log_time
+    def action_remove_torrent(self) -> None:
+        self.remove_torrent(delete_data=False,
+                            message="Remove torrent?",
+                            description=("Once removed, continuing the "
+                                         "transfer will require the torrent file. "
+                                         "Are you sure you want to remove it?"),
+                            notification="Torrent removed")
+
+    @log_time
+    def action_trash_torrent(self) -> None:
+        self.remove_torrent(delete_data=True,
+                            message="Remove torrent and delete data?",
+                            description=("All data downloaded for this torrent "
+                                         "will be deleted. Are you sure you "
+                                         "want to remove it?"),
+                            notification="Torrent and its data removed")
+
+    @log_time
+    def remove_torrent(self,
+                       delete_data: bool,
+                       message: str,
+                       description: str,
+                       notification: str) -> None:
+
+        if self.selected_item:
+
+            def check_quit(confirmed: bool | None) -> None:
+                if confirmed:
+                    self.client().remove_torrent(self.selected_item.t_id,
+                                                 delete_data=delete_data)
+
+                    w_prev = self.selected_item.w_prev
+                    w_next = self.selected_item.w_next
+
+                    self.selected_item.remove()
+                    self.selected_item = None
+
+                    if w_next:
+                        w_next.w_prev = w_prev
+
+                    if w_prev:
+                        w_prev.w_next = w_next
+
+                    new_selected = None
+                    if w_next:
+                        new_selected = w_next
+                    elif w_prev:
+                        new_selected = w_prev
+
+                    if new_selected:
+                        new_selected.selected = True
+                        self.selected_item = new_selected
+                        self.scroll_to_widget(self.selected_item)
+
+                    self.post_message(MainApp.Notification(notification))
+
+            self.post_message(MainApp.Confirm(message=message,
+                                              description=description,
+                                              check_quit=check_quit))
+
+    @log_time
+    def action_verify_torrent(self) -> None:
+        if self.selected_item:
+            self.client().verify_torrent(self.selected_item.t_id)
+            self.post_message(MainApp.Notification("Torrent send to verification"))
+
+    @log_time
+    def action_reannounce_torrent(self) -> None:
+        if self.selected_item:
+            self.client().reannounce_torrent(self.selected_item.t_id)
+            self.post_message(MainApp.Notification("Torrent reannounce started"))
+
+    @log_time
+    def action_toggle_view_mode(self) -> None:
+        if self.view_mode == 'card':
+            self.view_mode = 'compact'
+        elif self.view_mode == 'compact':
+            self.view_mode = 'oneline'
+        elif self.view_mode == 'oneline':
+            self.view_mode = 'card'
+
+        self.update_page(self.r_torrents, force=True)
+
+    @log_time
+    def client(self):
+        # TODO: get client
+        return self.parent.parent.parent.parent.client
 
 
 class TorrentInfoPanel(ScrollableContainer):
