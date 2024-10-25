@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add torrent by magnet link
 - Load magnet link from clipboard when adding torrent
 - Torrents sort order
+- Pagination for torrents list
 - CLI option to set refresh interval (`--refresh-interval`)
 - CLI option to limit number of displayed torrents (`--limit-torrents`)
 - CLI option to enable logfile (`--logs`)
