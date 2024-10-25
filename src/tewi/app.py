@@ -875,13 +875,13 @@ class TorrentListPanel(ScrollableContainer):
             self.selected_item = torrent_widgets[0]
             self.selected_item.selected = True
 
-            if prev_selected_item:
+            if prev_selected_item and prev_selected_item is not self.selected_item:
                 prev_selected_item.selected = False
         elif select_last:
             self.selected_item = torrent_widgets[-1]
             self.selected_item.selected = True
 
-            if prev_selected_item:
+            if prev_selected_item and prev_selected_item is not self.selected_item:
                 prev_selected_item.selected = False
         else:
             if self.selected_item:
