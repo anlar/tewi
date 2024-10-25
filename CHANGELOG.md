@@ -35,6 +35,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Performance: add cache for all Util methods
 - Fix tracker tier numbering (should start with Tier 1, not 0)
 - Show statistics key changed to `S`
+- Split torrent card stats line into columns
 - Use cache for Util class
 - Dependencies: update textual from 0.83.0 to 0.84.0
 

@@ -717,6 +717,9 @@ class TorrentItemCard(TorrentItem):
 
     t_stats = reactive("")
 
+    t_stats_seed = reactive("")
+    t_stats_leech = reactive("")
+
     @log_time
     def compose(self) -> ComposeResult:
         yield Label(self.t_name, id="name")
@@ -730,7 +733,15 @@ class TorrentItemCard(TorrentItem):
         yield (ProgressBar(total=1.0, show_percentage=False, show_eta=False)
                .data_bind(progress=TorrentItemCard.t_progress))
 
-        yield ReactiveLabel(self.t_stats, id="stats").data_bind(name=TorrentItemCard.t_stats)
+        with Grid(id="stats"):
+            yield ReactiveLabel().data_bind(
+                    name=TorrentItemCard.t_size_stats)
+            yield ReactiveLabel().data_bind(
+                    name=TorrentItemCard.t_status)
+            yield ReactiveLabel().data_bind(
+                    name=TorrentItemCard.t_stats_seed)
+            yield ReactiveLabel().data_bind(
+                    name=TorrentItemCard.t_stats_leech)
 
     @log_time
     def update_torrent(self, torrent) -> None:
@@ -743,16 +754,8 @@ class TorrentItemCard(TorrentItem):
         self.t_ratio = torrent.ratio
         self.t_priority = torrent.priority
 
-        self.t_stats = self.print_stats()
-
-    @log_time
-    def print_stats(self) -> str:
-        result = (self.t_size_stats +
-                  f" | Status: {str(self.t_status)} | "
-                  f"Seeders: {str(self.t_seeders)} | "
-                  f"Leechers: {str(self.t_leechers)}")
-
-        return result
+        self.t_stats_seed = f'{self.t_seeders} seeders'
+        self.t_stats_leech = f'{self.t_leechers} leechers'
 
 
 class TorrentListPanel(ScrollableContainer):
@@ -1528,6 +1531,9 @@ class MainApp(App):
                 )
 
         torrents.sort(key=self.sort_order.sort_func)
+
+        self.log(vars(session))
+        self.log(vars(session_stats))
 
         logging.info(f"Loaded from Transmission {session.version}: {len(torrents)} torrents")
 

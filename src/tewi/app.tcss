@@ -205,6 +205,12 @@ TorrentItemCard > #name {
 }
 
 TorrentItemCard > #stats {
+    grid-size: 4;
+    grid-columns: 40 20 20 20;
+    height: auto;
+}
+
+TorrentItemCard > #stats > .column {
     text-opacity: 75%;
 }
 
