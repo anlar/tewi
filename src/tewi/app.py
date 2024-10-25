@@ -1152,7 +1152,10 @@ class TorrentInfoPanel(ScrollableContainer):
 
     t_status = reactive(None)
     t_location = reactive(None)
+    t_downloaded = reactive(None)
     t_uploaded = reactive(None)
+    t_ratio = reactive(None)
+    t_error = reactive(None)
 
     t_date_added = reactive(None)
     t_date_started = reactive(None)
@@ -1198,8 +1201,14 @@ class TorrentInfoPanel(ScrollableContainer):
                     yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_status)
                     yield Static("Location:", classes="name")
                     yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_location)
+                    yield Static("Downloaded:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_downloaded)
                     yield Static("Uploaded:", classes="name")
                     yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_uploaded)
+                    yield Static("Ratio:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_ratio)
+                    yield Static("Error:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_error)
 
                     yield Static(" ", classes="title")
                     yield Static("Dates", classes="title")
@@ -1270,7 +1279,10 @@ class TorrentInfoPanel(ScrollableContainer):
 
             self.t_status = torrent.status.title()
             self.t_location = torrent.download_dir
+            self.t_downloaded = Util.print_size(torrent.downloaded_ever)
             self.t_uploaded = Util.print_size(torrent.uploaded_ever)
+            self.t_ratio = f'{torrent.ratio:.2f}'
+            self.t_error = torrent.error_string
 
             self.t_date_added = self.print_datetime(torrent.added_date)
             self.t_date_started = self.print_datetime(torrent.start_date)
