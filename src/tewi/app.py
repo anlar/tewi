@@ -31,6 +31,9 @@ from transmission_rpc import Client
 from transmission_rpc.error import TransmissionError
 from transmission_rpc.session import Session, SessionStats
 
+from rich.text import Text
+from textual.binding import ActiveBinding
+
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -81,6 +84,8 @@ class PageState(NamedTuple):
 class SortOrder(NamedTuple):
     id: str
     name: str
+    key_asc: str
+    key_desc: str
     sort_func: None
 
 
@@ -96,11 +101,16 @@ class TransmissionSession(NamedTuple):
 
 
 sort_orders = [
-        SortOrder('name', 'Name', lambda t: t.name.lower()),
-        SortOrder('status', 'Status', lambda t: t.status),
-        SortOrder('size', 'Size', lambda t: t.total_size),
-        SortOrder('progress', 'Progress', lambda t: t.percent_done),
-        SortOrder('ratio', 'Ratio', lambda t: t.ratio),
+        SortOrder('name', 'Name', 'n', 'N',
+                  lambda t: t.name.lower()),
+        SortOrder('status', 'Status', 's', 'S',
+                  lambda t: t.status),
+        SortOrder('size', 'Size', 'z', 'Z',
+                  lambda t: t.total_size),
+        SortOrder('progress', 'Progress', 'p', 'P',
+                  lambda t: t.percent_done),
+        SortOrder('ratio', 'Ratio', 'r', 'R',
+                  lambda t: t.ratio),
         ]
 
 
@@ -451,23 +461,33 @@ class SortOrderWidget(Static):
             Binding("escape,x", "close", "Close"),
             ]
 
+    def __init__(self):
+        super().__init__()
+
     def compose(self) -> ComposeResult:
-        yield SortOrderListView()
+        yield DataTable(cursor_type="none",
+                        zebra_stripes=True)
 
     def on_mount(self) -> None:
         self.border_title = 'Sort order'
         self.border_subtitle = '[Enter,L] Select / [X] Close'
 
-        list_view = self.query_one(SortOrderListView)
+        table = self.query_one(DataTable)
+        table.add_columns("Order", "Keys (ASC | DESC)")
 
-        for order in sort_orders:
-            list_view.append(ListItem(Label(order.name), id=order.id))
+        for o in sort_orders:
+            table.add_row(o.name, Text(str(f'{o.key_asc} | {o.key_desc}'), justify="center"))
 
-    @on(ListView.Selected)
-    def handle_selection(self, event: ListView.Selected) -> None:
-        order = next(x for x in sort_orders if x.id == event.item.id)
+            b = Binding(o.key_asc, f"select_order('{o.id}', True)", "TODO", priority=True)
+            self._bindings._add_binding(b)
 
-        self.post_message(MainApp.SortOrderSelected(order))
+            b = Binding(o.key_desc, f"select_order('{o.id}', False)", "TODO", priority=True)
+            self._bindings._add_binding(b)
+
+    def action_select_order(self, sort_id, is_asc):
+        order = next(x for x in sort_orders if x.id == sort_id)
+
+        self.post_message(MainApp.SortOrderSelected(order, is_asc))
 
         self.parent.dismiss(False)
 
@@ -1462,9 +1482,10 @@ class MainApp(App):
             self.value = value
 
     class SortOrderSelected(Message):
-        def __init__(self, order: str) -> None:
+        def __init__(self, order: str, is_asc: bool) -> None:
             super().__init__()
             self.order = order
+            self.is_asc = is_asc
 
     class PageChanged(Message):
         def __init__(self, state: PageState) -> None:
@@ -1517,6 +1538,7 @@ class MainApp(App):
         self.transmission_version = self.client.get_session().version
 
         self.sort_order = sort_orders[0]
+        self.sort_order_asc = True
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -1569,7 +1591,8 @@ class MainApp(App):
                 sort_order=self.sort_order,
                 )
 
-        torrents.sort(key=self.sort_order.sort_func)
+        torrents.sort(key=self.sort_order.sort_func,
+                      reverse=not self.sort_order_asc)
 
         self.log(vars(session))
         self.log(vars(session_stats))
@@ -1654,6 +1677,7 @@ class MainApp(App):
     @on(SortOrderSelected)
     def handle_sort_order_selected(self, event: SortOrderSelected) -> None:
         self.sort_order = event.order
+        self.sort_order_asc = event.is_asc
         self.post_message(MainApp.Notification(
             f"Selected sort order: {event.order.name}"))
 

@@ -342,7 +342,7 @@ SortOrderWidget {
     padding: 1;
 }
 
-SortOrderWidget > ListView {
+SortOrderWidget > DataTable {
     height: auto;
-    width: 30;
+    width: auto;
 }
