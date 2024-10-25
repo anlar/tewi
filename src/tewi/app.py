@@ -717,6 +717,7 @@ class TorrentItemCard(TorrentItem):
 
     t_stats = reactive("")
 
+    t_stats_uploaded = reactive('')
     t_stats_seed = reactive("")
     t_stats_leech = reactive("")
 
@@ -739,6 +740,8 @@ class TorrentItemCard(TorrentItem):
             yield ReactiveLabel().data_bind(
                     name=TorrentItemCard.t_status)
             yield ReactiveLabel().data_bind(
+                    name=TorrentItemCard.t_stats_uploaded)
+            yield ReactiveLabel().data_bind(
                     name=TorrentItemCard.t_stats_seed)
             yield ReactiveLabel().data_bind(
                     name=TorrentItemCard.t_stats_leech)
@@ -754,6 +757,7 @@ class TorrentItemCard(TorrentItem):
         self.t_ratio = torrent.ratio
         self.t_priority = torrent.priority
 
+        self.t_stats_uploaded = 'Uploaded: ' + Util.print_size(torrent.uploaded_ever)
         self.t_stats_seed = f'{self.t_seeders} seeders'
         self.t_stats_leech = f'{self.t_leechers} leechers'
 
@@ -1148,6 +1152,7 @@ class TorrentInfoPanel(ScrollableContainer):
 
     t_status = reactive(None)
     t_location = reactive(None)
+    t_uploaded = reactive(None)
 
     t_date_added = reactive(None)
     t_date_started = reactive(None)
@@ -1193,6 +1198,8 @@ class TorrentInfoPanel(ScrollableContainer):
                     yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_status)
                     yield Static("Location:", classes="name")
                     yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_location)
+                    yield Static("Uploaded:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_uploaded)
 
                     yield Static(" ", classes="title")
                     yield Static("Dates", classes="title")
@@ -1263,6 +1270,7 @@ class TorrentInfoPanel(ScrollableContainer):
 
             self.t_status = torrent.status.title()
             self.t_location = torrent.download_dir
+            self.t_uploaded = Util.print_size(torrent.uploaded_ever)
 
             self.t_date_added = self.print_datetime(torrent.added_date)
             self.t_date_started = self.print_datetime(torrent.start_date)
