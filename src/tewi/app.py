@@ -90,6 +90,8 @@ class TransmissionSession(NamedTuple):
     torrents_down: int
     torrents_seed: int
     torrents_stop: int
+    torrents_complete_size: int
+    torrents_total_size: int
     sort_order: SortOrder
 
 
@@ -522,6 +524,8 @@ class StatePanel(Static):
     r_alt_speed = reactive('', recompose=True)
     r_alt_delimiter = reactive('', recompose=True)
 
+    r_stats_size = reactive('', recompose=True)
+
     r_upload_speed = reactive(0)
     r_download_speed = reactive(0)
 
@@ -532,6 +536,8 @@ class StatePanel(Static):
                     state=StatePanel.r_page)
             yield ReactiveLabel(classes="column").data_bind(
                     name=StatePanel.r_stats)
+            yield ReactiveLabel(classes="column").data_bind(
+                    name=StatePanel.r_stats_size)
             yield ReactiveLabel(classes="column sort").data_bind(
                     name=StatePanel.r_sort)
             yield Static("", classes="column")
@@ -562,6 +568,14 @@ class StatePanel(Static):
                             f"(Downloading: {torrents_down}, "
                             f"Seeding: {torrents_seed}, "
                             f"Paused: {torrents_stop})")
+
+            complete_size = Util.print_size(new_r_tsession.torrents_complete_size)
+            total_size = Util.print_size(new_r_tsession.torrents_total_size)
+
+            if complete_size < total_size:
+                self.r_stats_size = f'Size: {complete_size} / {total_size}'
+            else:
+                self.r_stats_size = f'Size: {complete_size}'
 
             sort_order = new_r_tsession.sort_order.name
             self.r_sort = f'Sort: {sort_order}'
@@ -1541,12 +1555,17 @@ class MainApp(App):
         torrents_seed = len([x for x in torrents if x.status == 'seeding'])
         torrents_stop = len(torrents) - torrents_down - torrents_seed
 
+        torrents_complete_size = sum(t.size_when_done - t.left_until_done for t in torrents)
+        torrents_total_size = sum(t.size_when_done for t in torrents)
+
         tsession = TransmissionSession(
                 session=session,
                 session_stats=session_stats,
                 torrents_down=torrents_down,
                 torrents_seed=torrents_seed,
                 torrents_stop=torrents_stop,
+                torrents_complete_size=torrents_complete_size,
+                torrents_total_size=torrents_total_size,
                 sort_order=self.sort_order,
                 )
 

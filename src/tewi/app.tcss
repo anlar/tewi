@@ -45,8 +45,8 @@
 /* STATE PANEL */
 
 #state-panel {
-    grid-size: 10;
-    grid-columns: auto auto auto 1fr auto auto auto 10 auto 13;
+    grid-size: 11;
+    grid-columns: auto auto auto auto 1fr auto auto auto 10 auto 13;
     height: 1;
     background: $accent-darken-1;
 }

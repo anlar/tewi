@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pagination for torrents list
 - Display torrent uploaded size in torrent card and details
 - Display downloaded, ratio and error fields in details
+- Display total size of all torrents in state panel
 - CLI option to set refresh interval (`--refresh-interval`)
 - CLI option to limit number of displayed torrents (`--limit-torrents`)
 - CLI option to enable logfile (`--logs`)
