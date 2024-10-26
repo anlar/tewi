@@ -9,9 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Pagination for torrents list
+- Display torrent uploaded size in torrent card and details
+- Display downloaded, ratio and error fields in details
+- Display total size of all torrents in state panel
+- Build: setup Github dependabot
+- Build: load Tewi version from single place
+
 ### Changed
 
-### Removed
+- Split torrent card stats line into columns
+- Use hotkeys to select sort order
+- Fix help dialog auto-resize
+- Dependencies: update textual from 0.83.0 to 0.85.0
 
 ## [0.3.0] - 2024-10-23 - White Rabbit
 
@@ -23,10 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add torrent by magnet link
 - Load magnet link from clipboard when adding torrent
 - Torrents sort order
-- Pagination for torrents list
-- Display torrent uploaded size in torrent card and details
-- Display downloaded, ratio and error fields in details
-- Display total size of all torrents in state panel
 - CLI option to set refresh interval (`--refresh-interval`)
 - CLI option to limit number of displayed torrents (`--limit-torrents`)
 - CLI option to enable logfile (`--logs`)
@@ -38,11 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Performance: add cache for all Util methods
 - Fix tracker tier numbering (should start with Tier 1, not 0)
 - Show statistics key changed to `S`
-- Split torrent card stats line into columns
-- Use hotkeys to select sort order
-- Fix help dialog auto-resize
 - Use cache for Util class
-- Dependencies: update textual from 0.83.0 to 0.85.0
 
 ## [0.2.0] - 2024-10-17 - Runaway Rabbit
 
