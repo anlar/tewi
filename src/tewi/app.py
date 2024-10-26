@@ -32,7 +32,6 @@ from transmission_rpc.error import TransmissionError
 from transmission_rpc.session import Session, SessionStats
 
 from rich.text import Text
-from textual.binding import ActiveBinding
 
 from textual import on, work
 from textual.app import App, ComposeResult
@@ -41,8 +40,7 @@ from textual.containers import Grid, ScrollableContainer, Horizontal, Container
 from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
-from textual.widgets import Static, Label, ProgressBar, DataTable, ContentSwitcher, TabbedContent, TabPane, TextArea, \
-        ListView, ListItem
+from textual.widgets import Static, Label, ProgressBar, DataTable, ContentSwitcher, TabbedContent, TabPane, TextArea
 
 from geoip2fast import GeoIP2Fast
 
@@ -98,6 +96,7 @@ class TransmissionSession(NamedTuple):
     torrents_complete_size: int
     torrents_total_size: int
     sort_order: SortOrder
+    sort_order_asc: bool
 
 
 sort_orders = [
@@ -461,27 +460,25 @@ class SortOrderWidget(Static):
             Binding("escape,x", "close", "Close"),
             ]
 
-    def __init__(self):
-        super().__init__()
-
     def compose(self) -> ComposeResult:
         yield DataTable(cursor_type="none",
                         zebra_stripes=True)
 
     def on_mount(self) -> None:
         self.border_title = 'Sort order'
-        self.border_subtitle = '[Enter,L] Select / [X] Close'
+        self.border_subtitle = '[X] Close'
 
         table = self.query_one(DataTable)
-        table.add_columns("Order", "Keys (ASC | DESC)")
+        table.add_columns("Order", "Key (ASC | DESC)")
 
         for o in sort_orders:
-            table.add_row(o.name, Text(str(f'{o.key_asc} | {o.key_desc}'), justify="center"))
+            table.add_row(o.name,
+                          Text(str(f'   {o.key_asc} | {o.key_desc}'), justify="center"))
 
-            b = Binding(o.key_asc, f"select_order('{o.id}', True)", "TODO", priority=True)
+            b = Binding(o.key_asc, f"select_order('{o.id}', True)")
             self._bindings._add_binding(b)
 
-            b = Binding(o.key_desc, f"select_order('{o.id}', False)", "TODO", priority=True)
+            b = Binding(o.key_desc, f"select_order('{o.id}', False)")
             self._bindings._add_binding(b)
 
     def action_select_order(self, sort_id, is_asc):
@@ -493,14 +490,6 @@ class SortOrderWidget(Static):
 
     def action_close(self) -> None:
         self.parent.dismiss(False)
-
-
-class SortOrderListView(ListView):
-    BINDINGS = [
-            Binding("k", "cursor_up", "Cursor up"),
-            Binding("j", "cursor_down", "Cursor down"),
-            Binding("l", "select_cursor", "Select"),
-            ]
 
 
 # Core UI panels
@@ -598,7 +587,9 @@ class StatePanel(Static):
                 self.r_stats_size = f'Size: {complete_size}'
 
             sort_order = new_r_tsession.sort_order.name
-            self.r_sort = f'Sort: {sort_order}'
+            sort_order_asc = new_r_tsession.sort_order_asc
+            sort_arrow = '' if sort_order_asc else '↑'
+            self.r_sort = f'Sort: {sort_order}{sort_arrow}'
 
             self.r_upload_speed = session_stats.upload_speed
             self.r_download_speed = session_stats.download_speed
@@ -1589,6 +1580,7 @@ class MainApp(App):
                 torrents_complete_size=torrents_complete_size,
                 torrents_total_size=torrents_total_size,
                 sort_order=self.sort_order,
+                sort_order_asc=self.sort_order_asc,
                 )
 
         torrents.sort(key=self.sort_order.sort_func,
@@ -1678,8 +1670,10 @@ class MainApp(App):
     def handle_sort_order_selected(self, event: SortOrderSelected) -> None:
         self.sort_order = event.order
         self.sort_order_asc = event.is_asc
+
+        direction = 'ASC' if event.is_asc else 'DESC'
         self.post_message(MainApp.Notification(
-            f"Selected sort order: {event.order.name}"))
+            f"Selected sort order: {event.order.name} {direction}"))
 
     @log_time
     @on(PageChanged)
