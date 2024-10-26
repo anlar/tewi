@@ -40,6 +40,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Show statistics key changed to `S`
 - Split torrent card stats line into columns
 - Use hotkeys to select sort order
+- Fix help dialog auto-resize
 - Use cache for Util class
 - Dependencies: update textual from 0.83.0 to 0.84.0
 

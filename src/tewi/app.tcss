@@ -291,19 +291,21 @@ StatisticsWidget > .title {
 }
 
 /* SCREEN: HELP DIALOG */
-/* TODO: remove hard-coded height/width value */
 
 HelpDialog {
     align: center middle;
 }
 
 HelpWidget {
-    width: 41;
-    height: 26;
+    width: auto;
 
     border-title-align: center;
     border: round $warning;
     padding: 1;
+}
+
+HelpWidget > DataTable {
+    width: auto;
 }
 
 /* SCREEN: ADD TORRENT DIALOG */

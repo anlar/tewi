@@ -270,9 +270,8 @@ class HelpWidget(Static):
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        with Horizontal():
-            yield DataTable(cursor_type="none",
-                            zebra_stripes=True)
+        yield DataTable(cursor_type="none",
+                        zebra_stripes=True)
 
     def on_mount(self) -> None:
         self.border_title = 'Help'
