@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Removed
+
+## [0.4.0] - 2024-10-27 - Chasing Two Rabbits
+
+### Added
+
 - Pagination for torrents list
 - Display torrent uploaded size in torrent card and details
 - Display downloaded, ratio and error fields in details
