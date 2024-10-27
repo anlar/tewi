@@ -8,13 +8,13 @@
 
 ## About
 
-![Tewi Screen Shot](docs/images/tewi-screenshot-1.png)
+![Tewi Screen Shot](https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-1.png)
 
 <p align="center">
-  <img src="/docs/images/tewi-screenshot-2.png" width="200"/>
-  <img src="/docs/images/tewi-screenshot-3.png" width="200"/>
-  <img src="/docs/images/tewi-screenshot-4.png" width="200"/>
-  <img src="/docs/images/tewi-screenshot-5.png" width="200"/>
+  <img src="https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-2.png" width="200"/>
+  <img src="https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-3.png" width="200"/>
+  <img src="https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-4.png" width="200"/>
+  <img src="https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-5.png" width="200"/>
 </p>
 
 Tewi is a TUI (text user interface) interface for the Transmission BitTorrent daemon.
