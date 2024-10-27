@@ -762,9 +762,9 @@ class TorrentItemCard(TorrentItem):
             yield ReactiveLabel().data_bind(
                     name=TorrentItemCard.t_size_stats)
             yield ReactiveLabel().data_bind(
-                    name=TorrentItemCard.t_status)
-            yield ReactiveLabel().data_bind(
                     name=TorrentItemCard.t_stats_uploaded)
+            yield ReactiveLabel().data_bind(
+                    name=TorrentItemCard.t_status)
             yield ReactiveLabel().data_bind(
                     name=TorrentItemCard.t_stats_seed)
             yield ReactiveLabel().data_bind(
