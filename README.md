@@ -23,8 +23,9 @@ Features:
 
 - Connect to Transmission daemon by its credentials
 - Browse torrents list
-- Card and compact view modes
+- Different view modes: card, compact, oneline
 - Display torrent details: overview, files, trackers, peers
+- Add new torrents
 - Torrent actions: start/pause, remove/trash, verify, reannounce
 - View and toggle Turtle Mode
 - View Transmission session statistics
@@ -74,9 +75,6 @@ $ tewi --help
 View available hot-keys in Tewi by pressing `?` key.
 
 ## Roadmap
-
-- [ ] Torrents filtering
-- [ ] Ability to change torrent sorting order
 
 See the [open issues](https://github.com/anlar/tewi/issues) for a full list of proposed features (and known issues).
 
