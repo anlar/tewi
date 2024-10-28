@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Add verifying status to state panel statistics [#37](https://github.com/anlar/tewi/issues/37)
 - Add action to save screenshot [#42](https://github.com/anlar/tewi/issues/42)
+- Display free disk space in torrent add dialog [#40](https://github.com/anlar/tewi/issues/40)
 
 ### Changed
 

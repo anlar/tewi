@@ -402,23 +402,40 @@ class StatisticsWidget(Static):
 
 class AddTorrentDialog(ModalScreen):
 
+    def __init__(self, session):
+        self.session = session
+        super().__init__()
+
     def compose(self) -> ComposeResult:
-        yield AddTorrentWidget()
+        yield AddTorrentWidget(self.session)
 
 
 class AddTorrentWidget(Static):
+
+    r_download_dir = reactive('')
 
     BINDINGS = [
             Binding("enter", "add", "Add torrent by magnet", priority=True),
             Binding("escape", "close", "Close"),
             ]
 
+    def __init__(self, session):
+        self.session = session
+        super().__init__()
+
     def compose(self) -> ComposeResult:
+        yield ReactiveLabel().data_bind(
+                name=AddTorrentWidget.r_download_dir)
         yield TextArea()
 
     def on_mount(self) -> None:
         self.border_title = 'Add magnet link'
         self.border_subtitle = '[Enter] Add / [ESC] Close'
+
+        free_space = Util.print_size(self.session.download_dir_free_space)
+        download_dir = self.session.download_dir
+
+        self.r_download_dir = f'Destination folder: {download_dir} ({free_space} Free)'
 
         link = self.get_link_from_clipboard()
 
@@ -1662,7 +1679,7 @@ class MainApp(App):
     @log_time
     @on(OpenAddTorrent)
     def handle_open_add_torrent(self, event: OpenAddTorrent) -> None:
-        self.push_screen(AddTorrentDialog())
+        self.push_screen(AddTorrentDialog(self.r_tsession.session))
 
     @log_time
     @on(OpenSortOrder)
