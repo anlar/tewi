@@ -564,16 +564,7 @@ class StatePanel(Static):
             session = new_r_tsession.session
             session_stats = new_r_tsession.session_stats
 
-            torrents_down = new_r_tsession.torrents_down
-            torrents_seed = new_r_tsession.torrents_seed
-            torrents_stop = new_r_tsession.torrents_stop
-
-            self.log(session_stats)
-
-            self.r_stats = (f"Torrents: {session_stats.torrent_count} "
-                            f"(Downloading: {torrents_down}, "
-                            f"Seeding: {torrents_seed}, "
-                            f"Paused: {torrents_stop})")
+            self.r_stats = self.print_stats(new_r_tsession, session_stats)
 
             complete_size = Util.print_size(new_r_tsession.torrents_complete_size)
             total_size = Util.print_size(new_r_tsession.torrents_total_size)
@@ -601,6 +592,25 @@ class StatePanel(Static):
             else:
                 self.r_alt_speed = ''
                 self.r_alt_delimiter = ''
+
+    def print_stats(self, session, session_stats) -> str:
+        stats = f"Torrents: {session_stats.torrent_count}"
+
+        statuses = []
+
+        if session.torrents_down > 0:
+            statuses.append(f"Downloading: {session.torrents_down}")
+
+        if session.torrents_seed > 0:
+            statuses.append(f"Seeding: {session.torrents_seed}")
+
+        if session.torrents_stop > 0:
+            statuses.append(f"Paused: {session.torrents_stop}")
+
+        if len(statuses) > 0:
+            stats = f"{stats} ({', '.join(statuses)})"
+
+        return stats
 
 
 class TorrentItem(Static):
