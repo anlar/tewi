@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Add verifying status to state panel statistics [#37](https://github.com/anlar/tewi/issues/37)
+
 ### Changed
 
 - Hide statuses with zero torrents from state panel [#36](https://github.com/anlar/tewi/issues/36)

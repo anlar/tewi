@@ -90,6 +90,7 @@ class TransmissionSession(NamedTuple):
     session_stats: SessionStats
     torrents_down: int
     torrents_seed: int
+    torrents_check: int
     torrents_stop: int
     torrents_complete_size: int
     torrents_total_size: int
@@ -603,6 +604,9 @@ class StatePanel(Static):
 
         if session.torrents_seed > 0:
             statuses.append(f"Seeding: {session.torrents_seed}")
+
+        if session.torrents_check > 0:
+            statuses.append(f"Verifying: {session.torrents_check}")
 
         if session.torrents_stop > 0:
             statuses.append(f"Paused: {session.torrents_stop}")
@@ -1573,7 +1577,8 @@ class MainApp(App):
 
         torrents_down = len([x for x in torrents if x.status == 'downloading'])
         torrents_seed = len([x for x in torrents if x.status == 'seeding'])
-        torrents_stop = len(torrents) - torrents_down - torrents_seed
+        torrents_check = len([x for x in torrents if x.status == 'checking'])
+        torrents_stop = len(torrents) - torrents_down - torrents_seed - torrents_check
 
         torrents_complete_size = sum(t.size_when_done - t.left_until_done for t in torrents)
         torrents_total_size = sum(t.size_when_done for t in torrents)
@@ -1583,6 +1588,7 @@ class MainApp(App):
                 session_stats=session_stats,
                 torrents_down=torrents_down,
                 torrents_seed=torrents_seed,
+                torrents_check=torrents_check,
                 torrents_stop=torrents_stop,
                 torrents_complete_size=torrents_complete_size,
                 torrents_total_size=torrents_total_size,
