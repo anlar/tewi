@@ -1502,6 +1502,8 @@ class MainApp(App):
             Binding("t", "toggle_alt_speed", "Toggle alt speed"),
             Binding("S", "show_statistics", "Show statistics"),
 
+            Binding('"', "screenshot", "Save screenshot"),
+
             Binding("d", "toggle_dark", "Toggle dark mode", priority=True),
             Binding("?", "help", "Snow help"),
             Binding("q", "quit", "Quit", priority=True),
