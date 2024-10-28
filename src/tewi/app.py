@@ -448,7 +448,7 @@ class AddTorrentWidget(Static):
         if text:
             text = text.strip()
 
-            if text.startswith('magnet'):
+            if text.startswith(tuple(['magnet:', 'http://', 'https://'])):
                 return text
 
         return None
