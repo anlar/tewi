@@ -1389,7 +1389,7 @@ class TorrentInfoPanel(ScrollableContainer):
                 table.add_row(f.id,
                               Util.print_size(f.size),
                               f'{completion:.0f}%',
-                              f.selected,
+                              'Yes' if f.selected else 'No',
                               self.print_priority(f.priority),
                               f.name)
 
