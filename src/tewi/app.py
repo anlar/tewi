@@ -1215,7 +1215,7 @@ class TorrentInfoPanel(ScrollableContainer):
     t_id = reactive(None)
     t_size = reactive(None)
     t_files = reactive(None)
-    t_private = reactive(None)
+    t_privacy = reactive(None)
     t_comment = reactive(None)
     t_creator = reactive(None)
 
@@ -1254,8 +1254,8 @@ class TorrentInfoPanel(ScrollableContainer):
                     yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_size)
                     yield Static("Files:", classes="name")
                     yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_files)
-                    yield Static("Private:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_private)
+                    yield Static("Privacy:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_privacy)
 
                     yield Static("Comment:", classes="name")
                     yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_comment)
@@ -1342,16 +1342,21 @@ class TorrentInfoPanel(ScrollableContainer):
             self.t_name = torrent.name
             self.t_size = Util.print_size(torrent.total_size)
             self.t_files = str(len(torrent.get_files()))
-            self.t_private = "Yes" if torrent.is_private else "No"
-            self.t_comment = torrent.comment
-            self.t_creator = torrent.creator
+
+            if torrent.is_private:
+                self.t_privacy = "Private to this tracker -- DHT and PEX disabled"
+            else:
+                self.t_privacy = "Public torrent"
+
+            self.t_comment = torrent.comment if torrent.comment else "None"
+            self.t_creator = torrent.creator if torrent.creator else "None"
 
             self.t_status = torrent.status.title()
             self.t_location = torrent.download_dir
             self.t_downloaded = Util.print_size(torrent.downloaded_ever)
             self.t_uploaded = Util.print_size(torrent.uploaded_ever)
             self.t_ratio = f'{torrent.ratio:.2f}'
-            self.t_error = torrent.error_string
+            self.t_error = torrent.error_string if torrent.error_string else "None"
 
             self.t_date_added = self.print_datetime(torrent.added_date)
             self.t_date_started = self.print_datetime(torrent.start_date)
