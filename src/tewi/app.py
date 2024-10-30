@@ -1215,6 +1215,7 @@ class TorrentInfoPanel(ScrollableContainer):
     t_id = reactive(None)
     t_size = reactive(None)
     t_files = reactive(None)
+    t_pieces = reactive(None)
     t_privacy = reactive(None)
     t_comment = reactive(None)
     t_creator = reactive(None)
@@ -1254,6 +1255,8 @@ class TorrentInfoPanel(ScrollableContainer):
                     yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_size)
                     yield Static("Files:", classes="name")
                     yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_files)
+                    yield Static("Pieces:", classes="name")
+                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_pieces)
                     yield Static("Privacy:", classes="name")
                     yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_privacy)
 
@@ -1342,6 +1345,7 @@ class TorrentInfoPanel(ScrollableContainer):
             self.t_name = torrent.name
             self.t_size = Util.print_size(torrent.total_size)
             self.t_files = str(len(torrent.get_files()))
+            self.t_pieces = f"{torrent.piece_count} @ {Util.print_size(torrent.piece_size, size_bytes=1024)}"
 
             if torrent.is_private:
                 self.t_privacy = "Private to this tracker -- DHT and PEX disabled"

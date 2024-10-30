@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Display free disk space in torrent add dialog [#40](https://github.com/anlar/tewi/issues/40)
 - Add torrent from URL [#41](https://github.com/anlar/tewi/issues/41)
 - Add more torrent list sort orders [#38](https://github.com/anlar/tewi/issues/38)
+- Add torrent pieces info to torrent details
 
 ### Changed
 
