@@ -1,9 +1,11 @@
 <div align="center">
-  <h1 align="center">Tewi</h3>
+  <a href="https://github.com/anlar/tewi">
+    <img src="https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-logo.png" alt="Tewi logo" width="100">
+  </a>
 
-  <p align="center">
-    Text-based interface for the Transmission BitTorrent daemon
-  </p>
+  <h1>Tewi</h1>
+
+  <p>Text-based interface for the Transmission BitTorrent daemon</p>
 </div>
 
 ## About
