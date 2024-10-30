@@ -21,9 +21,11 @@ from functools import cache, wraps
 from typing import NamedTuple
 import argparse
 import logging
+import math
+import os
+import pathlib
 import textwrap
 import time
-import math
 
 from transmission_rpc import Client
 from transmission_rpc.error import TransmissionError
@@ -453,26 +455,34 @@ class AddTorrentWidget(Static):
 
         self.r_download_dir = f'Destination folder: {download_dir} ({free_space} Free)'
 
+        text_area = self.query_one(TextArea)
+
         link = self.get_link_from_clipboard()
 
         if link:
-            self.query_one(TextArea).load_text(link)
+            text_area.load_text(link)
+        else:
+            text_area.load_text('~/')
+
+        text_area.cursor_location = text_area.document.end
 
     def get_link_from_clipboard(self) -> str:
         text = pyperclip.paste()
 
         if text:
-            text = text.strip()
-
-            if text.startswith(tuple(['magnet:', 'http://', 'https://'])):
+            if self.is_link(text):
                 return text
 
         return None
 
+    def is_link(self, text) -> bool:
+        text = text.strip()
+        return text.startswith(tuple(['magnet:', 'http://', 'https://']))
+
     def action_add(self) -> None:
         value = self.query_one(TextArea).text
 
-        self.post_message(MainApp.AddTorrent(value))
+        self.post_message(MainApp.AddTorrent(value, self.is_link(value)))
         self.parent.dismiss(False)
 
     def action_close(self) -> None:
@@ -1521,9 +1531,10 @@ class MainApp(App):
         pass
 
     class AddTorrent(Message):
-        def __init__(self, value: str) -> None:
+        def __init__(self, value: str, is_link: bool) -> None:
             super().__init__()
             self.value = value
+            self.is_link = is_link
 
     class SortOrderSelected(Message):
         def __init__(self, order: str, is_asc: bool) -> None:
@@ -1715,11 +1726,20 @@ class MainApp(App):
     @on(AddTorrent)
     def handle_add_torrent(self, event: AddTorrent) -> None:
         try:
-            self.client.add_torrent(event.value)
+            if event.is_link:
+                self.client.add_torrent(event.value)
+            else:
+                file = os.path.expanduser(event.value)
+                self.client.add_torrent(pathlib.Path(file))
+
             self.post_message(MainApp.Notification("New torrent was added"))
         except TransmissionError as e:
             self.post_message(MainApp.Notification(
                 f"Failed to add torrent:\n{e}",
+                "warning"))
+        except FileNotFoundError:
+            self.post_message(MainApp.Notification(
+                f"Failed to add torrent:\nFile not found {file}",
                 "warning"))
 
     @log_time

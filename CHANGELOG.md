@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add torrent from URL [#41](https://github.com/anlar/tewi/issues/41)
 - Add more torrent list sort orders [#38](https://github.com/anlar/tewi/issues/38)
 - Add torrent pieces info to torrent details
+- Add torrent from local file [#45](https://github.com/anlar/tewi/issues/45)
 
 ### Changed
 
