@@ -733,7 +733,7 @@ class TorrentItem(Static):
 
         if self.t_size_left > 0:
             size_current = Util.print_size(self.t_size_total - self.t_size_left)
-            result = f"{size_current} / {size_total} ({self.t_progress:.2f}%)"
+            result = f"{size_current} / {size_total} ({(self.t_progress * 100):.1f}%)"
         else:
             result = f"{size_total} (Ratio: {self.t_ratio:.2f})"
 

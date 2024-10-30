@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependencies: bump textual from 0.85.0 to 0.85.1 [#35](https://github.com/anlar/tewi/issues/35)
 - More verbose torrent details: privacy, comment, creator, error
 - Show Yes/No for selected files in torrent details
+- Fix download percentage display in torrent item
 
 ### Removed
 
