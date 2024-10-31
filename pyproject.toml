@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "tewi-transmission"
-version = "0.4.1"
+dynamic = ["version"]
 authors = [
   { name="Anton Larionov", email="anton.larionov.dev@gmail.com" },
 ]
@@ -29,6 +29,9 @@ classifiers = [
     "Topic :: Communications :: File Sharing"
 ]
 keywords = ["transmission", "torrent"]
+
+[tool.setuptools.dynamic]
+version = {attr = "tewi.app.__version__"}
 
 [project.scripts]
 tewi = "tewi.app:cli"

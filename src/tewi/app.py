@@ -16,6 +16,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+__version__ = '0.4.1'
+
 from datetime import datetime
 from functools import cache, wraps
 from typing import NamedTuple
@@ -1759,7 +1761,7 @@ class MainApp(App):
 
 
 def cli():
-    tewi_version = '0.4.1'
+    tewi_version = __version__
 
     parser = argparse.ArgumentParser(
             prog='tewi',
