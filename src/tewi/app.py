@@ -433,7 +433,7 @@ class AddTorrentWidget(Static):
     r_download_dir = reactive('')
 
     BINDINGS = [
-            Binding("enter", "add", "Add torrent by magnet", priority=True),
+            Binding("enter", "add", "Add torrent", priority=True),
             Binding("escape", "close", "Close"),
             ]
 
@@ -447,7 +447,7 @@ class AddTorrentWidget(Static):
         yield TextArea()
 
     def on_mount(self) -> None:
-        self.border_title = 'Add magnet link'
+        self.border_title = 'Add torrent (local file, magnet link, URL)'
         self.border_subtitle = '[Enter] Add / [ESC] Close'
 
         free_space = Util.print_size(self.session.download_dir_free_space)
