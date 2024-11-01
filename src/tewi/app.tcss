@@ -205,8 +205,8 @@ TorrentItemCard > #name {
 }
 
 TorrentItemCard > #stats {
-    grid-size: 5;
-    grid-columns: 30 30 20 20 20;
+    grid-size: 6;
+    grid-columns: 30 30 20 15 15 15;
     height: auto;
 }
 

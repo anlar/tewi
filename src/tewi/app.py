@@ -799,6 +799,7 @@ class TorrentItemCard(TorrentItem):
     t_stats = reactive("")
 
     t_stats_uploaded = reactive('')
+    t_stats_peer = reactive("")
     t_stats_seed = reactive("")
     t_stats_leech = reactive("")
 
@@ -823,6 +824,8 @@ class TorrentItemCard(TorrentItem):
             yield ReactiveLabel().data_bind(
                     name=TorrentItemCard.t_status)
             yield ReactiveLabel().data_bind(
+                    name=TorrentItemCard.t_stats_peer)
+            yield ReactiveLabel().data_bind(
                     name=TorrentItemCard.t_stats_seed)
             yield ReactiveLabel().data_bind(
                     name=TorrentItemCard.t_stats_leech)
@@ -839,6 +842,7 @@ class TorrentItemCard(TorrentItem):
         self.t_priority = torrent.priority
 
         self.t_stats_uploaded = 'Uploaded: ' + Util.print_size(torrent.uploaded_ever)
+        self.t_stats_peer = f'{self.t_peers_connected} peers'
         self.t_stats_seed = f'{self.t_seeders} seeders'
         self.t_stats_leech = f'{self.t_leechers} leechers'
 
