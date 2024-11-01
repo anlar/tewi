@@ -796,8 +796,6 @@ class TorrentItemCompact(TorrentItem):
 
 class TorrentItemCard(TorrentItem):
 
-    t_stats = reactive("")
-
     t_stats_uploaded = reactive('')
     t_stats_peer = reactive("")
     t_stats_seed = reactive("")
