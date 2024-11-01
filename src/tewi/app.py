@@ -1339,7 +1339,7 @@ class TorrentInfoPanel(ScrollableContainer):
     @log_time
     def on_mount(self):
         table = self.query_one("#files")
-        table.add_columns("ID", "Size", "Done", "Selected", "Priority", "Name")
+        table.add_columns("ID", "Size", "Progress", "Selected", "Priority", "Name")
 
         table = self.query_one("#peers")
         table.add_columns("Encrypted", "Up", "Down", "Progress", "Status", "Country", "Address", "Client")
