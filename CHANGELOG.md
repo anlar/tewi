@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add torrent pieces info to torrent details
 - Add torrent from local file [#45](https://github.com/anlar/tewi/issues/45)
 - Show number of peers in torrent item [#47](https://github.com/anlar/tewi/issues/47)
-- Show torrent labels in details
+- Add action to update torrent labels (displayed in torrent details) [#48](https://github.com/anlar/tewi/issues/48)
 
 ### Changed
 

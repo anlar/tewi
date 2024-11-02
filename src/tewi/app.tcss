@@ -331,6 +331,28 @@ AddTorrentWidget > TextArea {
     margin: 1 0 0 0;
 }
 
+/* SCREEN: UPDATE TORRENT LABELS */
+
+UpdateTorrentLabelsDialog {
+    align: center middle;
+}
+
+UpdateTorrentLabelsWidget {
+    width: 100%;
+    height: auto;
+
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
+UpdateTorrentLabelsWidget> TextArea {
+    height: auto;
+
+    border: none;
+    padding: 0;
+}
+
 /* SCREEN: SORT ORDER DIALOG */
 
 SortOrderDialog {
