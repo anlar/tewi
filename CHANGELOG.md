@@ -22,7 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Hide statuses with zero torrents from state panel [#36](https://github.com/anlar/tewi/issues/36)
-- Dependencies: bump textual from 0.85.0 to 0.85.1 [#35](https://github.com/anlar/tewi/issues/35)
+- Dependencies: bump textual from 0.85.0 to 0.85.2 [#35](https://github.com/anlar/tewi/issues/35) [#49](https://github.com/anlar/tewi/pull/49)
 - More verbose torrent details: privacy, comment, creator, error
 - Show Yes/No for selected files in torrent details
 - Fix download percentage display in torrent item
