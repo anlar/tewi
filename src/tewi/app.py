@@ -183,6 +183,25 @@ class Util:
             return f"{r_size} {r_unit}{suffix}"
 
     @cache
+    def print_time(seconds, units: int = 1) -> str:
+        intervals = (
+                ('days', 86400),    # 60 * 60 * 24
+                ('hours', 3600),    # 60 * 60
+                ('minutes', 60),
+                ('seconds', 1),
+                )
+        result = []
+
+        for name, count in intervals:
+            value = seconds // count
+            if value:
+                seconds -= value * count
+                if value == 1:
+                    name = name.rstrip('s')
+                result.append(f"{value:.0f} {name}")
+        return ', '.join(result[:units])
+
+    @cache
     def get_country(address: str) -> str:
         return Util.geoip.lookup(address).country_name
 
@@ -380,7 +399,7 @@ class StatisticsWidget(Static):
         self.r_ratio = self.print_ratio(self.session_stats.current_stats.uploaded_bytes,
                                         self.session_stats.current_stats.downloaded_bytes)
 
-        self.r_time = self.print_time(self.session_stats.current_stats.seconds_active)
+        self.r_time = Util.print_time(self.session_stats.current_stats.seconds_active)
 
         # cumulative stats
 
@@ -390,7 +409,7 @@ class StatisticsWidget(Static):
         self.r_total_ratio = self.print_ratio(self.session_stats.cumulative_stats.uploaded_bytes,
                                               self.session_stats.cumulative_stats.downloaded_bytes)
 
-        self.r_total_time = self.print_time(self.session_stats.cumulative_stats.seconds_active)
+        self.r_total_time = Util.print_time(self.session_stats.cumulative_stats.seconds_active)
         self.r_total_started = f"{self.session_stats.cumulative_stats.session_count} times"
 
     def print_ratio(self, uploaded, downloaded) -> str:
@@ -400,24 +419,6 @@ class StatisticsWidget(Static):
         ratio = uploaded / downloaded
 
         return f"{ratio:.2f}"
-
-    def print_time(self, seconds) -> str:
-        intervals = (
-                ('days', 86400),    # 60 * 60 * 24
-                ('hours', 3600),    # 60 * 60
-                ('minutes', 60),
-                ('seconds', 1),
-                )
-        result = []
-
-        for name, count in intervals:
-            value = seconds // count
-            if value:
-                seconds -= value * count
-                if value == 1:
-                    name = name.rstrip('s')
-                result.append("{} {}".format(value, name))
-        return ', '.join(result[:1])
 
 
 class AddTorrentDialog(ModalScreen):
@@ -722,6 +723,7 @@ class TorrentItem(Static):
     t_size_left = reactive(None)
     t_ratio = reactive(0)
     t_progress = reactive(0)
+    t_eta = reactive(None)
 
     t_upload_speed = reactive(0)
     t_download_speed = reactive(0)
@@ -767,6 +769,7 @@ class TorrentItem(Static):
         self.t_size_total = torrent.total_size
         self.t_size_left = torrent.left_until_done
         self.t_progress = torrent.percent_done
+        self.t_eta = torrent.eta
 
         self.t_upload_speed = torrent.rate_upload
         self.t_download_speed = torrent.rate_download
@@ -783,6 +786,9 @@ class TorrentItem(Static):
         if self.t_size_left > 0:
             size_current = Util.print_size(self.t_size_total - self.t_size_left)
             result = f"{size_current} / {size_total} ({(self.t_progress * 100):.1f}%)"
+
+            if self.t_eta:
+                result = f"{result} ({Util.print_time(self.t_eta.total_seconds(), 2)})"
         else:
             result = f"{size_total} (Ratio: {self.t_ratio:.2f})"
 
