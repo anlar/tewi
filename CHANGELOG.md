@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - More verbose torrent details: privacy, comment, creator, error
 - Show Yes/No for selected files in torrent details
 - Fix download percentage display in torrent item
+- More compact view for peer details in torrent item card
 - Store application version in single place [#44](https://github.com/anlar/tewi/issues/44)
 - Dependencies: specify minimal version for all dependencies
 

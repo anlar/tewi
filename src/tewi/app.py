@@ -876,10 +876,6 @@ class TorrentItemCard(TorrentItem):
                     name=TorrentItemCard.t_status)
             yield ReactiveLabel().data_bind(
                     name=TorrentItemCard.t_stats_peer)
-            yield ReactiveLabel().data_bind(
-                    name=TorrentItemCard.t_stats_seed)
-            yield ReactiveLabel().data_bind(
-                    name=TorrentItemCard.t_stats_leech)
 
     @log_time
     def update_torrent(self, torrent) -> None:
@@ -893,9 +889,11 @@ class TorrentItemCard(TorrentItem):
         self.t_priority = torrent.priority
 
         self.t_stats_uploaded = 'Uploaded: ' + Util.print_size(torrent.uploaded_ever)
-        self.t_stats_peer = f'{self.t_peers_connected} peers'
-        self.t_stats_seed = f'{self.t_seeders} seeders'
-        self.t_stats_leech = f'{self.t_leechers} leechers'
+
+        # implying that there won't be more than 9999 peers
+        self.t_stats_peer = (f'{self.t_peers_connected: >4} peers '
+                             f'{self.t_seeders: >4} seeders '
+                             f'{self.t_leechers: >4} leechers')
 
 
 class TorrentListPanel(ScrollableContainer):
