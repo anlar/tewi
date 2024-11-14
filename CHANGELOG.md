@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Removed
+
+## [0.5.0] - 2024-11-14 - Rabbit Orb
+
+### Added
+
 - Add verifying status to state panel statistics [#37](https://github.com/anlar/tewi/issues/37)
 - Add action to save screenshot [#42](https://github.com/anlar/tewi/issues/42)
 - Display free disk space in torrent add dialog [#40](https://github.com/anlar/tewi/issues/40)
@@ -29,8 +37,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - More compact view for peer details in torrent item card
 - Store application version in single place [#44](https://github.com/anlar/tewi/issues/44)
 - Dependencies: specify minimal version for all dependencies
-
-### Removed
 
 ## [0.4.1] - 2024-10-27 - Chasing Two Rabbits
 

@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.4.1'
+__version__ = '0.5.0'
 
 from datetime import datetime
 from functools import cache, wraps
