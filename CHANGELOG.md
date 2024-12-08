@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Fix error on start up when ReactiveLabel may not be initialized with value (#51)
+
 ### Removed
 
 ## [0.5.0] - 2024-11-14 - Rabbit Orb

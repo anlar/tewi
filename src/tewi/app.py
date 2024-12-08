@@ -213,7 +213,10 @@ class ReactiveLabel(Label):
     name = reactive(None)
 
     def render(self):
-        return self.name
+        if self.name:
+            return self.name
+        else:
+            return ''
 
 
 # Common torrent-related widgets
