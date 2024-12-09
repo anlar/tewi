@@ -26,7 +26,7 @@
 
 #info-panel {
     height: auto;
-    background: $accent-darken-1;
+    background: $secondary;
 }
 
 #info-panel > .column {
@@ -48,7 +48,7 @@
     grid-size: 11;
     grid-columns: auto auto auto auto 1fr auto auto auto 10 auto 13;
     height: 1;
-    background: $accent-darken-1;
+    background: $secondary;
 }
 
 #state-panel > .column {
@@ -61,7 +61,7 @@
 }
 
 #state-panel > .sort {
-    color: $accent-lighten-3;
+    background: $secondary-lighten-2;
 }
 
 #state-panel > .arrow {
@@ -73,7 +73,7 @@
 }
 
 #state-panel > .alt-speed {
-    color: $accent-lighten-3;
+    background: $secondary-lighten-2;
 }
 
 /* TORRENT LIST PANEL */
@@ -105,7 +105,7 @@ TorrentItemOneline {
 }
 
 TorrentItemOneline.selected {
-    background: $secondary;
+    background: $primary;
 }
 
 TorrentItemOneline > #name {
@@ -153,7 +153,7 @@ TorrentItemCompact {
 }
 
 TorrentItemCompact.selected {
-    background: $secondary;
+    background: $primary;
 }
 
 TorrentItemCompact > #name {
@@ -188,7 +188,7 @@ TorrentItemCard {
 }
 
 TorrentItemCard.selected {
-    background: $secondary;
+    background: $primary;
 }
 
 TorrentItemCard > #speed {
