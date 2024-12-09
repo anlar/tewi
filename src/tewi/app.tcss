@@ -105,7 +105,7 @@ TorrentItemOneline {
 }
 
 TorrentItemOneline.selected {
-    background: $accent;
+    background: $secondary;
 }
 
 TorrentItemOneline > #name {
@@ -153,7 +153,7 @@ TorrentItemCompact {
 }
 
 TorrentItemCompact.selected {
-    background: $accent;
+    background: $secondary;
 }
 
 TorrentItemCompact > #name {
@@ -188,7 +188,7 @@ TorrentItemCard {
 }
 
 TorrentItemCard.selected {
-    background: $accent;
+    background: $secondary;
 }
 
 TorrentItemCard > #speed {
