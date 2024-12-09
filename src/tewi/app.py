@@ -926,6 +926,9 @@ class TorrentListPanel(ScrollableContainer):
             Binding("v", "verify_torrent", "Verify torrent"),
             Binding("n", "reannounce_torrent", "Reannounce torrent"),
 
+            Binding("y", "start_all_torrents", "Start all torrents"),
+            Binding("Y", "stop_all_torrents", "Stop all torrents"),
+
             Binding("m", "toggle_view_mode", "Toggle torrents view mode"),
             ]
 
@@ -1249,6 +1252,16 @@ class TorrentListPanel(ScrollableContainer):
         if self.selected_item:
             self.client().reannounce_torrent(self.selected_item.t_id)
             self.post_message(MainApp.Notification("Torrent reannounce started"))
+
+    @log_time
+    def action_start_all_torrents(self) -> None:
+        self.client().start_all()
+        self.post_message(MainApp.Notification("All torrents started"))
+
+    @log_time
+    def action_stop_all_torrents(self) -> None:
+        self.client().stop_torrent([t.id for t in self.r_torrents])
+        self.post_message(MainApp.Notification("All torrents stopped"))
 
     @log_time
     def action_toggle_view_mode(self) -> None:

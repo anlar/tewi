@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Actions to start/stop all torrents [#53](https://github.com/anlar/tewi/issues/53)
+
 ### Changed
 
 - Fix error on start up when ReactiveLabel may not be initialized with value (#51)
