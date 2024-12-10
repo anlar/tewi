@@ -985,7 +985,7 @@ class TorrentListPanel(ScrollableContainer):
             self.update_page(torrents, current_page * self.page_size)
 
     @log_time
-    def watch_selected_item(self, new_selected_item):
+    async def watch_selected_item(self, new_selected_item):
         if new_selected_item:
             self.scroll_to_widget(new_selected_item)
         else:
