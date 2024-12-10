@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Actions to start/stop all torrents [#53](https://github.com/anlar/tewi/issues/53)
+- Add home/end shortcuts to torrents list [#54](https://github.com/anlar/tewi/issues/54)
 
 ### Changed
 

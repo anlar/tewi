@@ -912,7 +912,9 @@ class TorrentListPanel(ScrollableContainer):
             Binding("j,down", "move_down", "Move down"),
 
             Binding("g", "move_top", "Go to the first item"),
+            Binding("home", "move_top", "Go to the first item"),
             Binding("G", "move_bottom", "Go to the last item"),
+            Binding("end", "move_bottom", "Go to the last item"),
 
             Binding("enter,l", "view_info", "View torrent info"),
 
