@@ -326,6 +326,8 @@ class HelpWidget(Static):
 
             if key == 'question_mark':
                 key = '?'
+            elif key == 'quotation_mark':
+                key = '"'
 
             if len(key) > 1:
                 key = key.title()
@@ -1218,7 +1220,7 @@ class TorrentListPanel(ScrollableContainer):
                     w_next = self.selected_item.w_next
 
                     self.selected_item.remove()
-                    self.selected_item = None
+                    #self.selected_item = None
 
                     if w_next:
                         w_next.w_prev = w_prev

@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix error on start up when ReactiveLabel may not be initialized with value (#51)
 - Change style to exclude accent colors (use primary for selected item and secondary for panels)
 - Fix scroll to the end of items list after re-draw [#50](https://github.com/anlar/tewi/issues/50)
+- Fix screenshot action name in help window
 
 ### Removed
 
