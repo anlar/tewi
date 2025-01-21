@@ -1220,7 +1220,6 @@ class TorrentListPanel(ScrollableContainer):
                     w_next = self.selected_item.w_next
 
                     self.selected_item.remove()
-                    self.selected_item = None
 
                     if w_next:
                         w_next.w_prev = w_prev
@@ -1238,6 +1237,8 @@ class TorrentListPanel(ScrollableContainer):
                         new_selected.selected = True
                         self.selected_item = new_selected
                         self.scroll_to_widget(self.selected_item)
+                    else:
+                        self.selected_item = None
 
                     self.post_message(MainApp.Notification(notification))
 
