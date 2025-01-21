@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Removed
+
+## [0.6.0] - 2025-01-21 - Pet Rabbit
+
+### Added
+
 - Actions to start/stop all torrents [#53](https://github.com/anlar/tewi/issues/53)
 - Add home/end shortcuts to torrents list [#54](https://github.com/anlar/tewi/issues/54)
 
@@ -18,8 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Change style to exclude accent colors (use primary for selected item and secondary for panels)
 - Fix scroll to the end of items list after re-draw [#50](https://github.com/anlar/tewi/issues/50)
 - Fix screenshot action name in help window
-
-### Removed
 
 ## [0.5.0] - 2024-11-14 - Rabbit Orb
 
