@@ -475,11 +475,14 @@ class AddTorrentWidget(Static):
         text_area.cursor_location = text_area.document.end
 
     def get_link_from_clipboard(self) -> str:
-        text = pyperclip.paste()
+        try:
+            text = pyperclip.paste()
 
-        if text:
-            if self.is_link(text):
-                return text
+            if text:
+                if self.is_link(text):
+                    return text
+        except pyperclip.PyperclipException:
+            return None
 
         return None
 
