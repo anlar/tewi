@@ -11,10 +11,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+### Removed
+
+## [0.6.1] - 2025-02-27 - Pet Rabbit B
+
+### Changed
+
 - Fix torrent add dialog crash when no clipboard manager installed [#56](https://github.com/anlar/tewi/issues/56)
 - Limit max `textual` dependency version to v1.0.0
-
-### Removed
 
 ## [0.6.0] - 2025-01-21 - Pet Rabbit
 
