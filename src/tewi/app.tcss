@@ -225,7 +225,13 @@ TorrentInfoPanel {
     height: 1fr;
 }
 
-TorrentInfoPanel #overview {
+TorrentInfoPanel .overview-bottom {
+    height: auto;
+}
+
+TorrentInfoPanel .overview-block {
+    border: round white 75%;
+
     height: auto;
 
     layout: grid;
@@ -234,9 +240,8 @@ TorrentInfoPanel #overview {
     grid-gutter: 0 1;
 }
 
-TorrentInfoPanel .title {
-    text-style: bold;
-    column-span: 2;
+TorrentInfoPanel .overview-small-block {
+    height: 100%;
 }
 
 TorrentInfoPanel .name {

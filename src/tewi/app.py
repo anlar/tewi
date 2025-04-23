@@ -38,7 +38,7 @@ from rich.text import Text
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Grid, ScrollableContainer, Horizontal, Container
+from textual.containers import Grid, ScrollableContainer, Horizontal, Container, Vertical
 from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
@@ -1340,72 +1340,74 @@ class TorrentInfoPanel(ScrollableContainer):
         with TabbedContent():
             with TabPane("Overview", id="tab-overview"):
                 with ScrollableContainer(id="overview"):
-                    yield Static("Details", classes="title")
-                    yield Static(" ", classes="title")
+                    with Vertical():
+                        with Container(classes="overview-block") as block:
+                            block.border_title = 'Details'
 
-                    yield Static("Name:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_name)
-                    yield Static("ID:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_id)
-                    yield Static("Hash:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_hash)
+                            yield Static("Name:", classes="name")
+                            yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_name)
+                            yield Static("ID:", classes="name")
+                            yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_id)
+                            yield Static("Hash:", classes="name")
+                            yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_hash)
 
-                    yield Static("Size:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_size)
-                    yield Static("Files:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_files)
-                    yield Static("Pieces:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_pieces)
-                    yield Static("Privacy:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_privacy)
+                            yield Static("Size:", classes="name")
+                            yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_size)
+                            yield Static("Files:", classes="name")
+                            yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_files)
+                            yield Static("Pieces:", classes="name")
+                            yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_pieces)
+                            yield Static("Privacy:", classes="name")
+                            yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_privacy)
 
-                    yield Static("Comment:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_comment)
-                    yield Static("Creator:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_creator)
-                    yield Static("Labels:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_labels)
+                            yield Static("Comment:", classes="name")
+                            yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_comment)
+                            yield Static("Creator:", classes="name")
+                            yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_creator)
+                            yield Static("Labels:", classes="name")
+                            yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_labels)
+                            yield Static("Location:", classes="name")
+                            yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_location)
+                            yield Static("Error:", classes="name")
+                            yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_error)
 
-                    yield Static(" ", classes="title")
-                    yield Static("State", classes="title")
-                    yield Static(" ", classes="title")
+                        with Horizontal(classes="overview-bottom"):
+                            # Should be the largest block in the bottom row for all other
+                            # blocks to use height=100% to maximize their heights,
+                            # that is why it is missing 'overview-small-block' CSS class
+                            with Container(classes="overview-block") as block:
+                                block.border_title = 'State'
 
-                    yield Static("Status:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_status)
-                    yield Static("Location:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_location)
-                    yield Static("Downloaded:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_downloaded)
-                    yield Static("Uploaded:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_uploaded)
-                    yield Static("Ratio:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_ratio)
-                    yield Static("Error:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_error)
+                                yield Static("Status:", classes="name")
+                                yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_status)
+                                yield Static("Downloaded:", classes="name")
+                                yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_downloaded)
+                                yield Static("Uploaded:", classes="name")
+                                yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_uploaded)
+                                yield Static("Ratio:", classes="name")
+                                yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_ratio)
 
-                    yield Static(" ", classes="title")
-                    yield Static("Dates", classes="title")
-                    yield Static(" ", classes="title")
+                            with Container(classes="overview-block overview-small-block") as block:
+                                block.border_title = 'Dates'
 
-                    yield Static("Added:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_date_added)
-                    yield Static("Started:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_date_started)
-                    yield Static("Completed:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_date_completed)
-                    yield Static("Last active:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_date_active)
+                                yield Static("Added:", classes="name")
+                                yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_date_added)
+                                yield Static("Started:", classes="name")
+                                yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_date_started)
+                                yield Static("Completed:", classes="name")
+                                yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_date_completed)
+                                yield Static("Last active:", classes="name")
+                                yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_date_active)
 
-                    yield Static(" ", classes="title")
-                    yield Static("Peers", classes="title")
-                    yield Static(" ", classes="title")
+                            with Container(classes="overview-block overview-small-block") as block:
+                                block.border_title = 'Peers'
 
-                    yield Static("Active:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_peers_active)
-                    yield Static("Seeding:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_peers_up)
-                    yield Static("Downloading:", classes="name")
-                    yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_peers_down)
+                                yield Static("Active:", classes="name")
+                                yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_peers_active)
+                                yield Static("Seeding:", classes="name")
+                                yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_peers_up)
+                                yield Static("Downloading:", classes="name")
+                                yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_peers_down)
 
             with TabPane("Files", id='tab-files'):
                 with Container():
