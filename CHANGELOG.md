@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Fix issue when delete last torrent in the list (it re-appears when scroll down)
+
 ### Removed
 
 ## [0.6.1] - 2025-02-27 - Pet Rabbit B

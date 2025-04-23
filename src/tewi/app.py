@@ -1222,6 +1222,7 @@ class TorrentListPanel(ScrollableContainer):
                     w_prev = self.selected_item.w_prev
                     w_next = self.selected_item.w_next
 
+                    self.r_torrents.remove(self.selected_item.torrent)
                     self.selected_item.remove()
 
                     if w_next:
