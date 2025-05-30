@@ -203,6 +203,41 @@ class Util:
         return ', '.join(result[:units])
 
     @cache
+    def time_ago(dt: datetime) -> str:
+        if dt is None:
+            return ""
+
+        # Ensure both datetimes are naive (no timezone info)
+        if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+            # Convert to naive datetime
+            dt = dt.replace(tzinfo=None)
+
+        now = datetime.now()
+        diff = now - dt
+        seconds = diff.total_seconds()
+
+        if seconds < 60:
+            return "just now"
+        elif seconds < 3600:
+            minutes = int(seconds / 60)
+            return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+        elif seconds < 86400:
+            hours = int(seconds / 3600)
+            return f"{hours} hour{'s' if hours > 1 else ''} ago"
+        elif seconds < 604800:  # 7 days
+            days = int(seconds / 86400)
+            return f"{days} day{'s' if days > 1 else ''} ago"
+        elif seconds < 2592000:  # 30 days
+            weeks = int(seconds / 604800)
+            return f"{weeks} week{'s' if weeks > 1 else ''} ago"
+        elif seconds < 31536000:  # 365 days
+            months = int(seconds / 2592000)
+            return f"{months} month{'s' if months > 1 else ''} ago"
+        else:
+            years = int(seconds / 31536000)
+            return f"{years} year{'s' if years > 1 else ''} ago"
+
+    @cache
     def get_country(address: str) -> str:
         return Util.geoip.lookup(address).country_name
 
@@ -1653,7 +1688,8 @@ class TorrentInfoPanel(ScrollableContainer):
 
     def print_datetime(self, value: datetime) -> str:
         if value:
-            return value.strftime("%Y-%m-%d %H:%M:%S")
+            time_ago = Util.time_ago(value)
+            return f"{value.strftime('%Y-%m-%d %H:%M:%S')} ({time_ago})"
         else:
             return "Never"
 
