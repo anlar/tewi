@@ -375,6 +375,27 @@ UpdateTorrentLabelsWidget> TextArea {
     padding: 0;
 }
 
+/* SCREEN: SEARCH DIALOG */
+
+SearchDialog {
+    align: center middle;
+}
+
+SearchWidget {
+    height: auto;
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
+SearchWidget > #search-input {
+    height: auto;
+
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
 /* SCREEN: SORT ORDER DIALOG */
 
 SortOrderDialog {
