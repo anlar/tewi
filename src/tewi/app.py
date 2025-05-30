@@ -1543,7 +1543,8 @@ class TorrentInfoPanel(ScrollableContainer):
                             # Should be the largest block in the bottom row for all other
                             # blocks to use height=100% to maximize their heights,
                             # that is why it is missing 'overview-small-block' CSS class
-                            with Container(classes="overview-block") as block:
+                            # State panel - 25% width
+                            with Container(classes="overview-block state-panel") as block:
                                 block.border_title = 'State'
 
                                 yield Static("Status:", classes="name")
@@ -1555,7 +1556,7 @@ class TorrentInfoPanel(ScrollableContainer):
                                 yield Static("Ratio:", classes="name")
                                 yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_ratio)
 
-                            with Container(classes="overview-block overview-small-block") as block:
+                            with Container(classes="overview-block overview-small-block dates-panel") as block:
                                 block.border_title = 'Dates'
 
                                 yield Static("Added:", classes="name")
@@ -1567,7 +1568,7 @@ class TorrentInfoPanel(ScrollableContainer):
                                 yield Static("Last active:", classes="name")
                                 yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_date_active)
 
-                            with Container(classes="overview-block overview-small-block") as block:
+                            with Container(classes="overview-block overview-small-block peers-panel") as block:
                                 block.border_title = 'Peers'
 
                                 yield Static("Active:", classes="name")

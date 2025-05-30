@@ -261,6 +261,18 @@ TorrentInfoPanel .overview-small-block {
     height: 100%;
 }
 
+TorrentInfoPanel .dates-panel {
+    width: 50%;
+}
+
+TorrentInfoPanel .state-panel {
+    width: 25%;
+}
+
+TorrentInfoPanel .peers-panel {
+    width: 25%;
+}
+
 TorrentInfoPanel .name {
     text-align: right;
 }
