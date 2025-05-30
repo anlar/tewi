@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Search torrent by name [#25](https://github.com/anlar/tewi/issues/25)
+- Display ago dates in torrent details
 
 ### Changed
 
