@@ -225,6 +225,12 @@ class SpeedIndicator(Static):
 
     speed = reactive(0)
 
+    def watch_speed(self, speed: int) -> None:
+        if speed > 0:
+            self.add_class("non-zero")
+        else:
+            self.remove_class("non-zero")
+
     def render(self) -> str:
         if self.speed == 0:
             return "-"

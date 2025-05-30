@@ -96,6 +96,23 @@
     color: $error-darken-1;
 }
 
+/* SPEED INDICATORS */
+
+SpeedIndicator {
+    text-style: none;
+}
+
+SpeedIndicator.non-zero {
+    text-style: bold;
+}
+
+/* STATE PANEL SPEED INDICATORS */
+
+#state-panel > .arrow,
+#state-panel > SpeedIndicator {
+    text-style: bold;
+}
+
 /* TORRENT LIST PANEL: TORRENT ITEM ONELINE */
 
 TorrentItemOneline {
