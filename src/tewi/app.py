@@ -667,6 +667,52 @@ class SortOrderWidget(Static):
         self.parent.dismiss(False)
 
 
+class PreferencesDialog(ModalScreen):
+
+    BINDINGS = [
+            Binding("x,escape", "close", "Close"),
+            ]
+
+    def __init__(self, session):
+        self.session = session
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield PreferencesWidget(self.session)
+
+    def action_close(self) -> None:
+        self.dismiss(False)
+
+
+class PreferencesWidget(Static):
+
+    def __init__(self, session):
+        self.session = session
+        super().__init__()
+
+    def compose(self) -> ComposeResult:
+        yield DataTable(cursor_type="none",
+                        zebra_stripes=True)
+
+    def on_mount(self) -> None:
+        self.border_title = 'Transmission Preferences'
+        self.border_subtitle = '[X] Close'
+
+        table = self.query_one(DataTable)
+        table.add_columns("Name", "Value")
+
+        # Get all session attributes
+        session_dict = self.session.fields
+
+        # Sort keys for consistent display
+        for key in sorted(session_dict.keys()):
+            # Skip certain preferences
+            if key.startswith(tuple(['units', 'version'])):
+                continue
+
+            table.add_row(key, session_dict[key])
+
+
 # Core UI panels
 
 class InfoPanel(Static):
@@ -1002,6 +1048,7 @@ class TorrentListPanel(ScrollableContainer):
             Binding("a", "add_torrent", "Add torrent"),
             Binding("L", "update_torrent_labels", "Update labels"),
             Binding("s", "sort_order", "Select sort order"),
+            Binding("P", "preferences", "Show preferences"),
 
             Binding("p", "toggle_torrent", "Toggle torrent"),
             Binding("r", "remove_torrent", "Remove torrent"),
@@ -1257,6 +1304,10 @@ class TorrentListPanel(ScrollableContainer):
     @log_time
     def action_sort_order(self) -> None:
         self.post_message(MainApp.OpenSortOrder())
+
+    @log_time
+    def action_preferences(self) -> None:
+        self.post_message(MainApp.OpenPreferences())
 
     @log_time
     def action_toggle_torrent(self) -> None:
@@ -1825,6 +1876,9 @@ class MainApp(App):
     class OpenSearch(Message):
         pass
 
+    class OpenPreferences(Message):
+        pass
+
     class PageChanged(Message):
         def __init__(self, state: PageState) -> None:
             super().__init__()
@@ -2009,6 +2063,11 @@ class MainApp(App):
     @on(OpenSortOrder)
     def handle_open_sort_order(self, event: OpenSortOrder) -> None:
         self.push_screen(SortOrderDialog())
+
+    @log_time
+    @on(OpenPreferences)
+    def handle_open_preferences(self, event: OpenPreferences) -> None:
+        self.push_screen(PreferencesDialog(self.r_tsession.session))
 
     @log_time
     @on(OpenSearch)

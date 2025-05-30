@@ -426,3 +426,23 @@ SortOrderWidget > DataTable {
     height: auto;
     width: auto;
 }
+
+/* SCREEN: PREFERENCES DIALOG */
+
+PreferencesDialog {
+    align: center middle;
+}
+
+PreferencesWidget {
+    width: auto;
+    height: auto;
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
+PreferencesWidget > DataTable {
+    height: auto;
+    width: auto;
+    max-height: 30;
+}
