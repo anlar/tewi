@@ -6,3 +6,4 @@ __pycache__
 *.prof
 *.log
 *.svg
+.aider*
