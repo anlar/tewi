@@ -226,7 +226,10 @@ class SpeedIndicator(Static):
     speed = reactive(0)
 
     def render(self) -> str:
-        return Util.print_speed(self.speed)
+        if self.speed == 0:
+            return "-"
+        else:
+            return Util.print_speed(self.speed)
 
 
 class PageIndicator(Static):
