@@ -559,22 +559,16 @@ class UpdateTorrentLabelsWidget(Static):
 
 class SearchDialog(ModalScreen):
 
+    def compose(self) -> ComposeResult:
+        yield SearchWidget()
+
+
+class SearchWidget(Static):
+
     BINDINGS = [
             Binding("enter", "search", "Search", priority=True),
             Binding("escape", "close", "Close"),
     ]
-
-    def compose(self) -> ComposeResult:
-        yield SearchWidget()
-
-    def action_search(self) -> None:
-        self.dismiss(self.query_one(SearchWidget).get_search_text())
-
-    def action_close(self) -> None:
-        self.dismiss(None)
-
-
-class SearchWidget(Static):
 
     def compose(self) -> ComposeResult:
         yield Input(placeholder="Enter search term...", id="search-input")
@@ -584,8 +578,14 @@ class SearchWidget(Static):
         self.border_subtitle = '[Enter] Search / [ESC] Close'
         self.query_one("#search-input").focus()
 
-    def get_search_text(self) -> str:
-        return self.query_one("#search-input").value
+    def action_search(self) -> None:
+        value = self.query_one("#search-input").value
+
+        self.post_message(MainApp.SearchTorrent(value))
+        self.parent.dismiss(False)
+
+    def action_close(self) -> None:
+        self.parent.dismiss(False)
 
 
 class SortOrderDialog(ModalScreen):
@@ -1768,6 +1768,11 @@ class MainApp(App):
             self.value = value
             self.is_link = is_link
 
+    class SearchTorrent(Message):
+        def __init__(self, value: str) -> None:
+            super().__init__()
+            self.value = value
+
     class TorrentLabelsUpdated(Message):
         def __init__(self, torrent, value: str) -> None:
             super().__init__()
@@ -1971,11 +1976,7 @@ class MainApp(App):
     @log_time
     @on(OpenSearch)
     def handle_open_search(self, event: OpenSearch) -> None:
-        def handle_search_result(search_term: str | None) -> None:
-            if search_term:
-                self.query_one(TorrentListPanel).search_torrent(search_term)
-
-        self.push_screen(SearchDialog(), handle_search_result)
+        self.push_screen(SearchDialog())
 
     @log_time
     @on(AddTorrent)
@@ -1996,6 +1997,11 @@ class MainApp(App):
             self.post_message(MainApp.Notification(
                 f"Failed to add torrent:\nFile not found {file}",
                 "warning"))
+
+    @log_time
+    @on(SearchTorrent)
+    def handle_search_torrent(self, event: SearchTorrent) -> None:
+        self.query_one(TorrentListPanel).search_torrent(event.value)
 
     @log_time
     @on(TorrentLabelsUpdated)
