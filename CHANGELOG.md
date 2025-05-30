@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Search torrent by name [#25](https://github.com/anlar/tewi/issues/25)
+
 ### Changed
 
 - Fix issue when delete last torrent in the list (it re-appears when scroll down)

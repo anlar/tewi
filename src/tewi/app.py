@@ -42,7 +42,8 @@ from textual.containers import Grid, ScrollableContainer, Horizontal, Container,
 from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
-from textual.widgets import Static, Label, ProgressBar, DataTable, ContentSwitcher, TabbedContent, TabPane, TextArea
+from textual.widgets import Static, Label, ProgressBar, DataTable, ContentSwitcher, \
+        TabbedContent, TabPane, TextArea, Input
 
 from geoip2fast import GeoIP2Fast
 
@@ -556,6 +557,37 @@ class UpdateTorrentLabelsWidget(Static):
         self.parent.dismiss(False)
 
 
+class SearchDialog(ModalScreen):
+
+    def compose(self) -> ComposeResult:
+        yield SearchWidget()
+
+
+class SearchWidget(Static):
+
+    BINDINGS = [
+            Binding("enter", "search", "Search", priority=True),
+            Binding("escape", "close", "Close"),
+    ]
+
+    def compose(self) -> ComposeResult:
+        yield Input(placeholder="Enter search term...", id="search-input")
+
+    def on_mount(self) -> None:
+        self.border_title = 'Search'
+        self.border_subtitle = '[Enter] Search / [ESC] Close'
+        self.query_one("#search-input").focus()
+
+    def action_search(self) -> None:
+        value = self.query_one("#search-input").value
+
+        self.post_message(MainApp.SearchTorrent(value))
+        self.parent.dismiss(False)
+
+    def action_close(self) -> None:
+        self.parent.dismiss(False)
+
+
 class SortOrderDialog(ModalScreen):
 
     def compose(self) -> ComposeResult:
@@ -940,17 +972,24 @@ class TorrentListPanel(ScrollableContainer):
             Binding("r", "remove_torrent", "Remove torrent"),
             Binding("R", "trash_torrent", "Trash torrent"),
             Binding("v", "verify_torrent", "Verify torrent"),
-            Binding("n", "reannounce_torrent", "Reannounce torrent"),
+            Binding("c", "reannounce_torrent", "Reannounce torrent"),
 
             Binding("y", "start_all_torrents", "Start all torrents"),
             Binding("Y", "stop_all_torrents", "Stop all torrents"),
 
             Binding("m", "toggle_view_mode", "Toggle torrents view mode"),
+            Binding("/", "search", "Search"),
+            Binding("n", "search_next", "Search next"),
+            Binding("N", "search_previous", "Search previous"),
             ]
 
     r_torrents = reactive(None)
 
     selected_item = reactive(None)
+
+    # Search state
+    search_term = ""
+    search_active = False
 
     @log_time
     def __init__(self, id: str, view_mode: str, page_size: str):
@@ -1291,6 +1330,91 @@ class TorrentListPanel(ScrollableContainer):
             self.view_mode = 'card'
 
         self.update_page(self.r_torrents, force=True)
+
+    @log_time
+    def action_search(self) -> None:
+        # Reset search state when opening search dialog
+        self.search_active = False
+        self.search_term = ""
+        self.post_message(MainApp.OpenSearch())
+
+    @log_time
+    def action_search_next(self) -> None:
+        if not self.search_active or not self.search_term:
+            self.post_message(MainApp.Notification("No active search"))
+            return
+
+        self._search_torrent(self.search_term, forward=True)
+
+    @log_time
+    def action_search_previous(self) -> None:
+        if not self.search_active or not self.search_term:
+            self.post_message(MainApp.Notification("No active search"))
+            return
+
+        self._search_torrent(self.search_term, forward=False)
+
+    @log_time
+    def _search_torrent(self, search_term: str, forward: bool = True) -> None:
+        if not search_term or not self.r_torrents:
+            return
+
+        search_term = search_term.lower()
+
+        # Get current index if there's a selected item
+        current_idx = -1
+        if self.selected_item:
+            current_idx = self.torrent_idx(self.selected_item.torrent)
+
+        # Determine search range based on direction
+        if forward:
+            # Search from current+1 to end, then from start to current
+            range1 = range(current_idx + 1, len(self.r_torrents))
+            range2 = range(0, current_idx + 1)
+        else:
+            # Search from current-1 to start, then from end to current
+            range1 = range(current_idx - 1, -1, -1)
+            range2 = range(len(self.r_torrents) - 1, current_idx, -1)
+
+        # First search range
+        for i in range1:
+            if search_term in self.r_torrents[i].name.lower():
+                self._select_found_torrent(i)
+                return
+
+        # Second search range (wrap around)
+        for i in range2:
+            if search_term in self.r_torrents[i].name.lower():
+                self._select_found_torrent(i)
+                return
+
+        # If no match found, show notification
+        self.post_message(MainApp.Notification(f"No torrents matching '{search_term}'"))
+
+    @log_time
+    def _select_found_torrent(self, index: int) -> None:
+        # Calculate page start index
+        page_start_idx = (index // self.page_size) * self.page_size
+
+        # Update page to show the found torrent
+        self.update_page(self.r_torrents, page_start_idx)
+
+        # Select the found item
+        for item in self.children:
+            if item.torrent.id == self.r_torrents[index].id:
+                if self.selected_item:
+                    self.selected_item.selected = False
+                item.selected = True
+                self.selected_item = item
+                self.scroll_to_widget(item)
+                return
+
+    @log_time
+    def search_torrent(self, search_term: str) -> None:
+        if search_term:
+            self.search_term = search_term
+            self.search_active = True
+            self._search_torrent(search_term, forward=True)
 
     @log_time
     def client(self):
@@ -1644,6 +1768,11 @@ class MainApp(App):
             self.value = value
             self.is_link = is_link
 
+    class SearchTorrent(Message):
+        def __init__(self, value: str) -> None:
+            super().__init__()
+            self.value = value
+
     class TorrentLabelsUpdated(Message):
         def __init__(self, torrent, value: str) -> None:
             super().__init__()
@@ -1655,6 +1784,9 @@ class MainApp(App):
             super().__init__()
             self.order = order
             self.is_asc = is_asc
+
+    class OpenSearch(Message):
+        pass
 
     class PageChanged(Message):
         def __init__(self, state: PageState) -> None:
@@ -1842,6 +1974,11 @@ class MainApp(App):
         self.push_screen(SortOrderDialog())
 
     @log_time
+    @on(OpenSearch)
+    def handle_open_search(self, event: OpenSearch) -> None:
+        self.push_screen(SearchDialog())
+
+    @log_time
     @on(AddTorrent)
     def handle_add_torrent(self, event: AddTorrent) -> None:
         try:
@@ -1860,6 +1997,11 @@ class MainApp(App):
             self.post_message(MainApp.Notification(
                 f"Failed to add torrent:\nFile not found {file}",
                 "warning"))
+
+    @log_time
+    @on(SearchTorrent)
+    def handle_search_torrent(self, event: SearchTorrent) -> None:
+        self.query_one(TorrentListPanel).search_torrent(event.value)
 
     @log_time
     @on(TorrentLabelsUpdated)
