@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Search torrent by name [#25](https://github.com/anlar/tewi/issues/25)
 - Display ago dates in torrent details
+- Show Transmission server preferences [#43](https://github.com/anlar/tewi/issues/43)
 
 ### Changed
 
