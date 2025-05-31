@@ -7,8 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.999.3] - 2025-02-27 - Pet Rabbit B
-
 ### Added
 
 - Search torrent by name [#25](https://github.com/anlar/tewi/issues/25)

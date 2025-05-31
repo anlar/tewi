@@ -14,8 +14,6 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Generate changelog for release
-      run: echo "$GITHUB_REF_NAME"
-    - name: Generate changelog for release
       run: ./package/extract-changelog.sh "$GITHUB_REF_NAME" | tee release-notes.md
     - uses: ncipollo/release-action@v1
       with:
