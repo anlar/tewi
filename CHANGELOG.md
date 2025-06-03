@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Multi-column layout for torrent details screen [#57](https://github.com/anlar/tewi/issues/57)
 - Display "-" instead of "0" in speed indicators
 - Make speed indicators bold when speed value is greater than zero
+- Make torrent stats labels responsive to auto-resize [#72](https://github.com/anlar/tewi/issues/72)
 
 ### Removed
 
