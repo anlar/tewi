@@ -246,7 +246,7 @@ class Util:
 
 class ReactiveLabel(Label):
 
-    name = reactive(None)
+    name = reactive(None, layout=True)
 
     def render(self):
         if self.name:
