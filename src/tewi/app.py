@@ -947,7 +947,7 @@ class TorrentItemOneline(TorrentItem):
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield Label(self.t_name, id="name")
+        yield Label(self.t_name, id="name", markup=False)
 
         with Grid(id="speed"):
             yield ReactiveLabel(id="stats").data_bind(
@@ -981,7 +981,7 @@ class TorrentItemCompact(TorrentItem):
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield Label(self.t_name, id="name")
+        yield Label(self.t_name, id="name", markup=False)
 
         with Grid(id="speed"):
             yield ReactiveLabel(id="stats").data_bind(
@@ -1004,7 +1004,7 @@ class TorrentItemCard(TorrentItem):
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield Label(self.t_name, id="name")
+        yield Label(self.t_name, id="name", markup=False)
 
         with Grid(id="speed"):
             yield Static(" ↑ ")
