@@ -248,6 +248,10 @@ class ReactiveLabel(Label):
 
     name = reactive(None, layout=True)
 
+    def __init__(self, *args, markup=False, **kwargs):
+        super().__init__(*args, markup=markup, **kwargs)
+        self.markup = False
+
     def render(self):
         if self.name:
             return self.name
