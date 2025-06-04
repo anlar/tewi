@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Removed
+
+## [0.7.0] - 2025-06-04 - Red Eyed Rabbit
+
+### Added
+
 - Search torrent by name [#25](https://github.com/anlar/tewi/issues/25)
 - Display ago dates in torrent details
 - Show Transmission server preferences [#43](https://github.com/anlar/tewi/issues/43)
@@ -20,8 +28,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Display "-" instead of "0" in speed indicators
 - Make speed indicators bold when speed value is greater than zero
 - Make torrent stats labels responsive to auto-resize [#72](https://github.com/anlar/tewi/issues/72)
-
-### Removed
 
 ## [0.6.1] - 2025-02-27 - Pet Rabbit B
 
