@@ -670,6 +670,12 @@ class SortOrderWidget(Static):
 class PreferencesDialog(ModalScreen):
 
     BINDINGS = [
+            Binding("k", "scroll_up", "Scroll up"),
+            Binding("j", "scroll_down", "Scroll down"),
+
+            Binding("g", "scroll_top", "Scroll to the top"),
+            Binding("G", "scroll_bottom", "Scroll to the bottom"),
+
             Binding("x,escape", "close", "Close"),
             ]
 
@@ -679,6 +685,18 @@ class PreferencesDialog(ModalScreen):
 
     def compose(self) -> ComposeResult:
         yield PreferencesWidget(self.session)
+
+    def action_scroll_up(self) -> None:
+        self.query_one(DataTable).scroll_up()
+
+    def action_scroll_down(self) -> None:
+        self.query_one(DataTable).scroll_down()
+
+    def action_scroll_top(self) -> None:
+        self.query_one(DataTable).scroll_home()
+
+    def action_scroll_bottom(self) -> None:
+        self.query_one(DataTable).scroll_end()
 
     def action_close(self) -> None:
         self.dismiss(False)
