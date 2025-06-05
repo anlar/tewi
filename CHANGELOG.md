@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Support for Textual v2+ (disable label markup by default) [#71](https://github.com/anlar/tewi/issues/71)
+
 ### Removed
 
 ## [0.7.0] - 2025-06-04 - Red Eyed Rabbit

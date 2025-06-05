@@ -248,6 +248,10 @@ class ReactiveLabel(Label):
 
     name = reactive(None, layout=True)
 
+    def __init__(self, *args, markup=False, **kwargs):
+        super().__init__(*args, markup=markup, **kwargs)
+        self.markup = False
+
     def render(self):
         if self.name:
             return self.name
@@ -947,7 +951,7 @@ class TorrentItemOneline(TorrentItem):
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield Label(self.t_name, id="name")
+        yield Label(self.t_name, id="name", markup=False)
 
         with Grid(id="speed"):
             yield ReactiveLabel(id="stats").data_bind(
@@ -981,7 +985,7 @@ class TorrentItemCompact(TorrentItem):
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield Label(self.t_name, id="name")
+        yield Label(self.t_name, id="name", markup=False)
 
         with Grid(id="speed"):
             yield ReactiveLabel(id="stats").data_bind(
@@ -1004,7 +1008,7 @@ class TorrentItemCard(TorrentItem):
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield Label(self.t_name, id="name")
+        yield Label(self.t_name, id="name", markup=False)
 
         with Grid(id="speed"):
             yield Static(" ↑ ")
