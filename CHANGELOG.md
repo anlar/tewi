@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Support for Textual v3 [#71](https://github.com/anlar/tewi/issues/71)
+- Support for Textual v2+ (disable label markup by default) [#71](https://github.com/anlar/tewi/issues/71)
 
 ### Removed
 
