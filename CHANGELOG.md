@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for Textual v2+ (disable label markup by default) [#71](https://github.com/anlar/tewi/issues/71)
 - Expand file panel in torrent details
+- Fix displaying hotkeys in dialogs in Textual v2+
 
 ### Removed
 

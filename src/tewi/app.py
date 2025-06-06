@@ -333,7 +333,7 @@ class ConfirmationWidget(Static):
 
     def on_mount(self):
         self.border_title = 'Confirmation'
-        self.border_subtitle = '[Y] Yes / [N] No'
+        self.border_subtitle = '(Y) Yes / (N) No'
 
 
 class HelpDialog(ModalScreen):
@@ -365,7 +365,7 @@ class HelpWidget(Static):
 
     def on_mount(self) -> None:
         self.border_title = 'Help'
-        self.border_subtitle = '[X] Close'
+        self.border_subtitle = '(X) Close'
 
         table = self.query_one(DataTable)
         table.add_columns("Key", "Command")
@@ -443,7 +443,7 @@ class StatisticsWidget(Static):
 
     def on_mount(self) -> None:
         self.border_title = 'Statistics'
-        self.border_subtitle = '[X] Close'
+        self.border_subtitle = '(X) Close'
 
         # current stats
 
@@ -505,7 +505,7 @@ class AddTorrentWidget(Static):
 
     def on_mount(self) -> None:
         self.border_title = 'Add torrent (local file, magnet link, URL)'
-        self.border_subtitle = '[Enter] Add / [ESC] Close'
+        self.border_subtitle = '(Enter) Add / (ESC) Close'
 
         free_space = Util.print_size(self.session.download_dir_free_space)
         download_dir = self.session.download_dir
@@ -575,7 +575,7 @@ class UpdateTorrentLabelsWidget(Static):
 
     def on_mount(self) -> None:
         self.border_title = 'Update torrent labels (comma-separated list)'
-        self.border_subtitle = '[Enter] Update / [ESC] Close'
+        self.border_subtitle = '(Enter) Update / (ESC) Close'
 
         text_area = self.query_one(TextArea)
 
@@ -614,7 +614,7 @@ class SearchWidget(Static):
 
     def on_mount(self) -> None:
         self.border_title = 'Search'
-        self.border_subtitle = '[Enter] Search / [ESC] Close'
+        self.border_subtitle = '(Enter) Search / (ESC) Close'
         self.query_one("#search-input").focus()
 
     def action_search(self) -> None:
@@ -645,7 +645,7 @@ class SortOrderWidget(Static):
 
     def on_mount(self) -> None:
         self.border_title = 'Sort order'
-        self.border_subtitle = '[X] Close'
+        self.border_subtitle = '(X) Close'
 
         table = self.query_one(DataTable)
         table.add_columns("Order", "Key (ASC | DESC)")
@@ -718,7 +718,7 @@ class PreferencesWidget(Static):
 
     def on_mount(self) -> None:
         self.border_title = 'Transmission Preferences'
-        self.border_subtitle = '[X] Close'
+        self.border_subtitle = '(X) Close'
 
         table = self.query_one(DataTable)
         table.add_columns("Name", "Value")
