@@ -1720,14 +1720,16 @@ class TorrentInfoPanel(ScrollableContainer):
             table = self.query_one("#files")
             table.clear()
 
-            for f in self.r_torrent.get_files():
-                completion = (f.completed / f.size) * 100
-                table.add_row(f.id,
-                              Util.print_size(f.size),
-                              f'{completion:.0f}%',
-                              'Yes' if f.selected else 'No',
-                              self.print_priority(f.priority),
-                              f.name)
+            self.print_file_table(table, self.r_torrent.get_files())
+
+            #for f in self.r_torrent.get_files():
+            #    completion = (f.completed / f.size) * 100
+            #    table.add_row(f.id,
+            #                  Util.print_size(f.size),
+            #                  f'{completion:.0f}%',
+            #                  'Yes' if f.selected else 'No',
+            #                  self.print_priority(f.priority),
+            #                  f.name)
 
             table = self.query_one("#peers")
             table.clear()
@@ -1753,6 +1755,69 @@ class TorrentInfoPanel(ScrollableContainer):
                               self.print_count(t.seeder_count),
                               self.print_count(t.leecher_count),
                               self.print_count(t.download_count))
+
+    def print_file_table(self, table, torrents):
+        """
+        Creates and prints a tree structure of Torrent files based on their filepaths.
+        
+        Args:
+            torrents: List of Torrent objects, each having a 'name' attribute 
+                     containing the full filepath separated by '/' symbols
+        """
+        if not torrents:
+            return
+        
+        # Build the tree structure
+        tree = {}
+        
+        for torrent in torrents:
+            parts = torrent.name.split('/')
+            current = tree
+            
+            # Navigate/create the path in the tree
+            for i, part in enumerate(parts):
+                if part not in current:
+                    current[part] = {}
+                
+                # If this is the last part (filename), mark it as a file
+                if i == len(parts) - 1:
+                    current[part]['__is_file__'] = True
+                    current[part]['torrent'] = torrent
+                
+                current = current[part]
+
+        self.print_tree(table, tree)
+    
+    def print_tree(self, table, node, prefix="", is_last=True):
+        items = [(k, v) for k, v in node.items() if k != '__is_file__']
+        items.sort(key=lambda x: (x[1].get('__is_file__', False), x[0]))
+        
+        for i, (name, subtree) in enumerate(items):
+            is_last_item = i == len(items) - 1
+            
+            # Choose the appropriate tree characters
+            if prefix == "":
+                current_prefix = ""
+                symbol = ""  # No prefix for first level files
+            else:
+                symbol = "├─ " if not is_last_item else "└─ "
+                current_prefix = prefix
+
+            # Print current item
+            #print(f"{current_prefix}{symbol}{name}")
+            table.add_row(None,
+                          None,
+                          None,
+                          None,
+                          None,
+                          f"{current_prefix}{symbol}{name}")
+            
+            # If it's not a file, recursively print its contents
+            if not subtree.get('__is_file__', False):
+                extension = "│  " if not is_last_item else "  "
+                new_prefix = current_prefix + extension
+                self.print_tree(table, subtree, new_prefix, is_last_item)
+    
 
     def print_count(self, value: int) -> str:
         if value == -1:
