@@ -184,22 +184,25 @@ class Util:
             return f"{r_size} {r_unit}{suffix}"
 
     @cache
-    def print_time(seconds, units: int = 1) -> str:
+    def print_time(seconds, abbr: bool = False, units: int = 1) -> str:
         intervals = (
-                ('days', 86400),    # 60 * 60 * 24
-                ('hours', 3600),    # 60 * 60
-                ('minutes', 60),
-                ('seconds', 1),
+                ('d', 'days', 86400),    # 60 * 60 * 24
+                ('h', 'hours', 3600),    # 60 * 60
+                ('m', 'minutes', 60),
+                ('s', 'seconds', 1),
                 )
         result = []
 
-        for name, count in intervals:
+        for key, name, count in intervals:
             value = seconds // count
             if value:
                 seconds -= value * count
-                if value == 1:
-                    name = name.rstrip('s')
-                result.append(f"{value:.0f} {name}")
+                if abbr is True:
+                    result.append(f"{value:.0f}{key}")
+                else:
+                    if value == 1:
+                        name = name.rstrip('s')
+                    result.append(f"{value:.0f} {name}")
         return ', '.join(result[:units])
 
     @cache
@@ -930,19 +933,19 @@ class TorrentItem(Static):
         self.t_size_stats = self.print_size_stats()
 
     @log_time
-    def print_size_stats(self) -> str:
+    def print_size_stats(self, full_ratio=True) -> str:
         result = None
 
         size_total = Util.print_size(self.t_size_total)
 
         if self.t_size_left > 0:
             size_current = Util.print_size(self.t_size_total - self.t_size_left)
-            result = f"{size_current} / {size_total} ({(self.t_progress * 100):.1f}%)"
+            result = f"{size_current} / {size_total} | {(self.t_progress * 100):.1f}%"
 
             if self.t_eta:
-                result = f"{result} ({Util.print_time(self.t_eta.total_seconds(), 2)})"
+                result = f"{result} | {Util.print_time(self.t_eta.total_seconds(), True, 1)}"
         else:
-            result = f"{size_total} (Ratio: {self.t_ratio:.2f})"
+            result = f"{size_total} | R: {self.t_ratio:.2f}"
 
         return result
 
@@ -1021,13 +1024,13 @@ class TorrentItemCard(TorrentItem):
 
         with Grid(id="stats"):
             yield ReactiveLabel().data_bind(
-                    name=TorrentItemCard.t_size_stats)
+                    name=TorrentItemCard.t_status)
             yield ReactiveLabel().data_bind(
                     name=TorrentItemCard.t_stats_uploaded)
             yield ReactiveLabel().data_bind(
-                    name=TorrentItemCard.t_status)
-            yield ReactiveLabel().data_bind(
                     name=TorrentItemCard.t_stats_peer)
+            yield ReactiveLabel().data_bind(
+                    name=TorrentItemCard.t_size_stats)
 
     @log_time
     def update_torrent(self, torrent) -> None:
@@ -1040,12 +1043,29 @@ class TorrentItemCard(TorrentItem):
         self.t_ratio = torrent.ratio
         self.t_priority = torrent.priority
 
-        self.t_stats_uploaded = 'Uploaded: ' + Util.print_size(torrent.uploaded_ever)
+        self.t_stats_uploaded = Util.print_size(torrent.uploaded_ever) + ' uploaded'
 
         # implying that there won't be more than 9999 peers
         self.t_stats_peer = (f'{self.t_peers_connected: >4} peers '
                              f'{self.t_seeders: >4} seeders '
                              f'{self.t_leechers: >4} leechers')
+
+    @log_time
+    def print_size_stats(self, full_ratio=True) -> str:
+        result = None
+
+        size_total = Util.print_size(self.t_size_total)
+
+        if self.t_size_left > 0:
+            size_current = Util.print_size(self.t_size_total - self.t_size_left)
+            result = f"{size_current} / {size_total} | {(self.t_progress * 100):.1f}%"
+
+            if self.t_eta:
+                result = f"{result} | {Util.print_time(self.t_eta.total_seconds(), 2)}"
+        else:
+            result = f"{size_total} | Ratio: {self.t_ratio:.2f}"
+
+        return result
 
 
 class TorrentListPanel(ScrollableContainer):

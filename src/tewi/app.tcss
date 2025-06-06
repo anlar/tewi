@@ -141,6 +141,7 @@ TorrentItemOneline > #speed {
 
 TorrentItemOneline > #speed > #stats {
     text-opacity: 75%;
+    padding-right: 1;
 }
 
 .torrent-complete {
@@ -189,6 +190,7 @@ TorrentItemCompact > #speed {
 
 TorrentItemCompact > #speed > #stats {
     text-opacity: 75%;
+    padding-right: 1;
 }
 
 TorrentItemCompact > ProgressBar > Bar {
@@ -223,7 +225,7 @@ TorrentItemCard > #name {
 
 TorrentItemCard > #stats {
     grid-size: 4;
-    grid-columns: 50 25 20 auto;
+    grid-columns: 22 22 50 auto;
     height: auto;
 }
 
