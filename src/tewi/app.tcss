@@ -277,9 +277,6 @@ TorrentInfoPanel .name {
     text-align: right;
 }
 
-#files {
-    width: auto;
-}
 
 /* NOTIFICATIONS */
 
