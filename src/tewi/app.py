@@ -1720,7 +1720,8 @@ class TorrentInfoPanel(ScrollableContainer):
             table = self.query_one("#files")
             table.clear()
 
-            self.print_file_table(table, self.r_torrent.get_files())
+            file_tree = self.create_file_tree(self.r_torrent.get_files())
+            self.draw_file_table(table, file_tree)
 
             table = self.query_one("#peers")
             table.clear()
@@ -1747,10 +1748,7 @@ class TorrentInfoPanel(ScrollableContainer):
                               self.print_count(t.leecher_count),
                               self.print_count(t.download_count))
 
-    def print_file_table(self, table, torrents):
-        if not torrents:
-            return
-
+    def create_file_tree(self, torrents) -> dict:
         # Build the tree structure
         tree = {}
 
@@ -1770,9 +1768,9 @@ class TorrentInfoPanel(ScrollableContainer):
 
                 current = current[part]
 
-        self.print_file_tree(table, tree)
+        return tree
 
-    def print_file_tree(self, table, node, prefix="", is_last=True):
+    def draw_file_table(self, table, node, prefix="", is_last=True) -> None:
         items = [(k, v) for k, v in node.items() if k != '__is_file__']
 
         for i, (name, subtree) in enumerate(items):
@@ -1807,7 +1805,7 @@ class TorrentInfoPanel(ScrollableContainer):
                 # print directory content
                 extension = "│  " if not is_last_item else "  "
                 new_prefix = current_prefix + extension
-                self.print_file_tree(table, subtree, new_prefix, is_last_item)
+                self.draw_file_table(table, subtree, new_prefix, is_last_item)
 
     def print_count(self, value: int) -> str:
         if value == -1:
