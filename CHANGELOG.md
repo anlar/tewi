@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Display file tree in torrent details
+
 ### Changed
 
 - Support for Textual v2+ (disable label markup by default) [#71](https://github.com/anlar/tewi/issues/71)

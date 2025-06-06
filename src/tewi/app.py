@@ -1720,14 +1720,8 @@ class TorrentInfoPanel(ScrollableContainer):
             table = self.query_one("#files")
             table.clear()
 
-            for f in self.r_torrent.get_files():
-                completion = (f.completed / f.size) * 100
-                table.add_row(f.id,
-                              Util.print_size(f.size),
-                              f'{completion:.0f}%',
-                              'Yes' if f.selected else 'No',
-                              self.print_priority(f.priority),
-                              f.name)
+            file_tree = self.create_file_tree(self.r_torrent.get_files())
+            self.draw_file_table(table, file_tree)
 
             table = self.query_one("#peers")
             table.clear()
@@ -1753,6 +1747,65 @@ class TorrentInfoPanel(ScrollableContainer):
                               self.print_count(t.seeder_count),
                               self.print_count(t.leecher_count),
                               self.print_count(t.download_count))
+
+    def create_file_tree(self, torrents) -> dict:
+        # Build the tree structure
+        tree = {}
+
+        for torrent in torrents:
+            parts = torrent.name.split('/')
+            current = tree
+
+            # Navigate/create the path in the tree
+            for i, part in enumerate(parts):
+                if part not in current:
+                    current[part] = {}
+
+                # If this is the last part (filename), mark it as a file
+                if i == len(parts) - 1:
+                    current[part]['__is_file__'] = True
+                    current[part]['torrent'] = torrent
+
+                current = current[part]
+
+        return tree
+
+    def draw_file_table(self, table, node, prefix="", is_last=True) -> None:
+        items = [(k, v) for k, v in node.items() if k != '__is_file__']
+
+        for i, (name, subtree) in enumerate(items):
+            is_last_item = i == len(items) - 1
+
+            # Choose the appropriate tree characters
+            if prefix == "":
+                current_prefix = ""
+                symbol = ""  # No prefix for first level files
+            else:
+                symbol = "├─ " if not is_last_item else "└─ "
+                current_prefix = prefix
+
+            if subtree.get('__is_file__', False):
+                f = subtree['torrent']
+
+                completion = (f.completed / f.size) * 100
+                table.add_row(f.id,
+                              Util.print_size(f.size),
+                              f'{completion:.0f}%',
+                              'Yes' if f.selected else 'No',
+                              self.print_priority(f.priority),
+                              f"{current_prefix}{symbol}{name}")
+            else:
+                table.add_row(None,
+                              None,
+                              None,
+                              None,
+                              None,
+                              f"{current_prefix}{symbol}{name}")
+
+                # print directory content
+                extension = "│  " if not is_last_item else "  "
+                new_prefix = current_prefix + extension
+                self.draw_file_table(table, subtree, new_prefix, is_last_item)
 
     def print_count(self, value: int) -> str:
         if value == -1:
