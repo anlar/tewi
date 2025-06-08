@@ -7,8 +7,6 @@ version: 2
 updates:
   - package-ecosystem: "pip"
     directory: "/"
-    ignore:
-      - dependency-name: "textual"
     schedule:
       interval: "weekly"
     assignees:
