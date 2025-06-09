@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Removed
+
+## [0.8.0] - 2025-06-09 - Lunar Grove
+
+### Added
+
 - Display file tree in torrent details
 
 ### Changed
@@ -17,8 +25,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Expand file panel in torrent details
 - Fix displaying hotkeys in dialogs in Textual v2+
 - Cleanup and shorten statistics in torrent cards
-
-### Removed
 
 ## [0.7.0] - 2025-06-04 - Red Eyed Rabbit
 
