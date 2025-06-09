@@ -868,6 +868,7 @@ class StatePanel(Static):
 class TorrentItem(Static):
 
     selected = reactive(False)
+    marked = reactive(False)
     torrent = reactive(None)
 
     t_id = reactive(None)
@@ -912,6 +913,13 @@ class TorrentItem(Static):
             self.add_class("selected")
         else:
             self.remove_class("selected")
+
+    @log_time
+    def watch_marked(self, new_marked):
+        if new_marked:
+            self.add_class("marked")
+        else:
+            self.remove_class("marked")
 
     @log_time
     def update_torrent(self, torrent) -> None:
@@ -1087,6 +1095,9 @@ class TorrentListPanel(ScrollableContainer):
 
             Binding("enter,l", "view_info", "View torrent info"),
 
+            Binding("space", "toggle_mark", "Toggle mark"),
+            Binding("escape", "clear_marks", "Clear marks"),
+
             Binding("a", "add_torrent", "Add torrent"),
             Binding("L", "update_torrent_labels", "Update labels"),
             Binding("s", "sort_order", "Select sort order"),
@@ -1110,6 +1121,9 @@ class TorrentListPanel(ScrollableContainer):
     r_torrents = reactive(None)
 
     selected_item = reactive(None)
+
+    # Multi-selection state
+    marked_torrent_ids = []
 
     # Search state
     search_term = ""
@@ -1152,6 +1166,11 @@ class TorrentListPanel(ScrollableContainer):
     def watch_r_torrents(self, new_r_torrents):
         if new_r_torrents:
             torrents = new_r_torrents
+
+            # Clean up marked torrents list - remove IDs not present in new torrent list
+            current_torrent_ids = {t.id for t in torrents}
+            self.marked_torrent_ids = [tid for tid in self.marked_torrent_ids
+                                       if tid in current_torrent_ids]
 
             # detect current page by selected item
 
@@ -1218,6 +1237,10 @@ class TorrentListPanel(ScrollableContainer):
                     if prev_selected_id == item.torrent.id:
                         item.selected = True
                         self.selected_item = item
+
+        # Update marked state for all items
+        for item in torrent_widgets:
+            item.marked = item.torrent.id in self.marked_torrent_ids
 
     @log_time
     def create_item(self, torrent) -> TorrentItem:
@@ -1326,6 +1349,26 @@ class TorrentListPanel(ScrollableContainer):
 
             self.selected_item = selector(items)
             self.selected_item.selected = True
+
+    @log_time
+    def action_toggle_mark(self) -> None:
+        if self.selected_item:
+            torrent_id = self.selected_item.torrent.id
+
+            if torrent_id in self.marked_torrent_ids:
+                self.marked_torrent_ids.remove(torrent_id)
+                self.selected_item.marked = False
+            else:
+                self.marked_torrent_ids.append(torrent_id)
+                self.selected_item.marked = True
+
+    @log_time
+    def action_clear_marks(self) -> None:
+        self.marked_torrent_ids.clear()
+
+        # Update visual state for all currently visible items
+        for item in self.children:
+            item.marked = False
 
     @log_time
     def action_view_info(self):
