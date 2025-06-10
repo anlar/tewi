@@ -554,12 +554,13 @@ class AddTorrentWidget(Static):
 
 class UpdateTorrentLabelsDialog(ModalScreen):
 
-    def __init__(self, torrent):
+    def __init__(self, torrent, torrent_ids):
         self.torrent = torrent
+        self.torrent_ids = torrent_ids
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        yield UpdateTorrentLabelsWidget(self.torrent)
+        yield UpdateTorrentLabelsWidget(self.torrent, self.torrent_ids)
 
 
 class UpdateTorrentLabelsWidget(Static):
@@ -569,8 +570,9 @@ class UpdateTorrentLabelsWidget(Static):
             Binding("escape", "close", "Close"),
             ]
 
-    def __init__(self, torrent):
+    def __init__(self, torrent, torrent_ids):
         self.torrent = torrent
+        self.torrent_ids = torrent_ids
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -582,7 +584,7 @@ class UpdateTorrentLabelsWidget(Static):
 
         text_area = self.query_one(TextArea)
 
-        if len(self.torrent.labels) > 0:
+        if self.torrent and len(self.torrent.labels) > 0:
             text_area.load_text(", ".join(self.torrent.labels))
 
         text_area.cursor_location = text_area.document.end
@@ -590,8 +592,13 @@ class UpdateTorrentLabelsWidget(Static):
     def action_update(self) -> None:
         value = self.query_one(TextArea).text
 
+        if self.torrent:
+            torrent_ids = [self.torrent.id]
+        else:
+            torrent_ids = self.torrent_ids
+
         self.post_message(MainApp.TorrentLabelsUpdated(
-            self.torrent, value))
+            torrent_ids, value))
 
         self.parent.dismiss(False)
 
@@ -1381,10 +1388,16 @@ class TorrentListPanel(ScrollableContainer):
 
     @log_time
     def action_update_torrent_labels(self) -> None:
-        if self.selected_item:
+        if self.marked_torrent_ids:
             self.post_message(
                     MainApp.OpenUpdateTorrentLabels(
-                        self.selected_item.torrent))
+                        None,
+                        self.marked_torrent_ids))
+        elif self.selected_item:
+            self.post_message(
+                    MainApp.OpenUpdateTorrentLabels(
+                        self.selected_item.torrent,
+                        None))
 
     @log_time
     def action_sort_order(self) -> None:
@@ -2012,9 +2025,10 @@ class MainApp(App):
         pass
 
     class OpenUpdateTorrentLabels(Message):
-        def __init__(self, torrent):
+        def __init__(self, torrent, torrent_ids):
             super().__init__()
             self.torrent = torrent
+            self.torrent_ids = torrent_ids
 
     class OpenSortOrder(Message):
         pass
@@ -2031,9 +2045,9 @@ class MainApp(App):
             self.value = value
 
     class TorrentLabelsUpdated(Message):
-        def __init__(self, torrent, value: str) -> None:
+        def __init__(self, torrent_ids, value: str) -> None:
             super().__init__()
-            self.torrent = torrent
+            self.torrent_ids = torrent_ids
             self.value = value
 
     class SortOrderSelected(Message):
@@ -2226,7 +2240,7 @@ class MainApp(App):
     @log_time
     @on(OpenUpdateTorrentLabels)
     def handle_open_update_torrent_labels(self, event: OpenUpdateTorrentLabels) -> None:
-        self.push_screen(UpdateTorrentLabelsDialog(event.torrent))
+        self.push_screen(UpdateTorrentLabelsDialog(event.torrent, event.torrent_ids))
 
     @log_time
     @on(OpenSortOrder)
@@ -2273,17 +2287,22 @@ class MainApp(App):
     def handle_torrent_labels_updated(self, event: TorrentLabelsUpdated) -> None:
         labels = [x.strip() for x in event.value.split(',') if x.strip()]
 
+        if len(event.torrent_ids) == 1:
+            count_label = '1 torrent'
+        else:
+            count_label = f"{len(event.torrent_ids)} torrents"
+
         if len(labels) > 0:
-            self.client.change_torrent(event.torrent.id,
+            self.client.change_torrent(event.torrent_ids,
                                        labels=labels)
 
             self.post_message(MainApp.Notification(
-                f"Updated torrent labels:\n{','.join(labels)}"))
+                f"Updated torrent labels ({count_label}):\n{','.join(labels)}"))
         else:
-            self.client.change_torrent(event.torrent.id,
+            self.client.change_torrent(event.torrent_ids,
                                        labels=[])
             self.post_message(MainApp.Notification(
-                "Removed torrent labels"))
+                "Removed torrent labels ({count_label})"))
 
     @log_time
     @on(SortOrderSelected)
