@@ -1396,15 +1396,32 @@ class TorrentListPanel(ScrollableContainer):
 
     @log_time
     def action_toggle_torrent(self) -> None:
-        if self.selected_item:
-            status = self.selected_item.t_status
+        if not self.marked_torrent_ids:
+            # No marked torrents - toggle currently selected torrent
+            if self.selected_item:
+                status = self.selected_item.t_status
 
-            if status == 'stopped':
-                self.client().start_torrent(self.selected_item.t_id)
-                self.post_message(MainApp.Notification("Torrent started"))
+                if status == 'stopped':
+                    self.client().start_torrent(self.selected_item.t_id)
+                    self.post_message(MainApp.Notification("Torrent started"))
+                else:
+                    self.client().stop_torrent(self.selected_item.t_id)
+                    self.post_message(MainApp.Notification("Torrent stopped"))
+        else:
+            # There are marked torrents - toggle them based on their status
+            marked_torrents = [t for t in self.r_torrents if t.id in self.marked_torrent_ids]
+
+            # Check if at least one torrent is paused/stopped
+            has_stopped = any(t.status == 'stopped' for t in marked_torrents)
+
+            if has_stopped:
+                # Start all marked torrents
+                self.client().start_torrent(self.marked_torrent_ids)
+                self.post_message(MainApp.Notification(f"Started {len(self.marked_torrent_ids)} marked torrents"))
             else:
-                self.client().stop_torrent(self.selected_item.t_id)
-                self.post_message(MainApp.Notification("Torrent stopped"))
+                # Stop all marked torrents
+                self.client().stop_torrent(self.marked_torrent_ids)
+                self.post_message(MainApp.Notification(f"Stopped {len(self.marked_torrent_ids)} marked torrents"))
 
     @log_time
     def action_remove_torrent(self) -> None:
