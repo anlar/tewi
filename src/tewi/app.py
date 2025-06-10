@@ -1438,21 +1438,52 @@ class TorrentListPanel(ScrollableContainer):
 
     @log_time
     def action_remove_torrent(self) -> None:
+        if self.marked_torrent_ids:
+            count = len(self.marked_torrent_ids)
+            torrent_word = "torrent" if count == 1 else "torrents"
+            file_word = "file" if count == 1 else "files"
+            pronoun = "it" if count == 1 else "them"
+            message = f"Remove {count} marked {torrent_word}?"
+            description = ("Once removed, continuing the "
+                           f"transfer will require the torrent {file_word}. "
+                           f"Are you sure you want to remove {pronoun}?")
+            notification = f"{count} marked {torrent_word} removed"
+        else:
+            message = "Remove torrent?"
+            description = ("Once removed, continuing the "
+                           "transfer will require the torrent file. "
+                           "Are you sure you want to remove it?")
+            notification = "Torrent removed"
+
         self.remove_torrent(delete_data=False,
-                            message="Remove torrent?",
-                            description=("Once removed, continuing the "
-                                         "transfer will require the torrent file. "
-                                         "Are you sure you want to remove it?"),
-                            notification="Torrent removed")
+                            message=message,
+                            description=description,
+                            notification=notification)
 
     @log_time
     def action_trash_torrent(self) -> None:
+        if self.marked_torrent_ids:
+            count = len(self.marked_torrent_ids)
+            torrent_word = "torrent" if count == 1 else "torrents"
+            pronoun_these = "this" if count == 1 else "these"
+            pronoun_it = "it" if count == 1 else "them"
+            data_word = "its" if count == 1 else "their"
+            message = f"Remove {count} marked {torrent_word} and delete data?"
+            description = (f"All data downloaded for {pronoun_these} {count} {torrent_word} "
+                           "will be deleted. Are you sure you "
+                           f"want to remove {pronoun_it}?")
+            notification = f"{count} marked {torrent_word} and {data_word} data removed"
+        else:
+            message = "Remove torrent and delete data?"
+            description = ("All data downloaded for this torrent "
+                           "will be deleted. Are you sure you "
+                           "want to remove it?")
+            notification = "Torrent and its data removed"
+
         self.remove_torrent(delete_data=True,
-                            message="Remove torrent and delete data?",
-                            description=("All data downloaded for this torrent "
-                                         "will be deleted. Are you sure you "
-                                         "want to remove it?"),
-                            notification="Torrent and its data removed")
+                            message=message,
+                            description=description,
+                            notification=notification)
 
     @log_time
     def remove_torrent(self,
@@ -1461,7 +1492,12 @@ class TorrentListPanel(ScrollableContainer):
                        description: str,
                        notification: str) -> None:
 
-        if self.selected_item:
+        if self.marked_torrent_ids:
+            #TODO: supported marked torrents removal
+            self.post_message(MainApp.Notification(
+                "Torrent remove not supported for marked torrents"))
+
+        elif self.selected_item:
 
             def check_quit(confirmed: bool | None) -> None:
                 if confirmed:
