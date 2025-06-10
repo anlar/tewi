@@ -1493,7 +1493,7 @@ class TorrentListPanel(ScrollableContainer):
                        notification: str) -> None:
 
         if self.marked_torrent_ids:
-            #TODO: supported marked torrents removal
+            # TODO: supported marked torrents removal
             self.post_message(MainApp.Notification(
                 "Torrent remove not supported for marked torrents"))
 
