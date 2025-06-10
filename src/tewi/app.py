@@ -1488,9 +1488,16 @@ class TorrentListPanel(ScrollableContainer):
 
     @log_time
     def action_verify_torrent(self) -> None:
-        if self.selected_item:
-            self.client().verify_torrent(self.selected_item.t_id)
-            self.post_message(MainApp.Notification("Torrent send to verification"))
+        if not self.marked_torrent_ids:
+            # No marked torrents - verify currently selected torrent
+            if self.selected_item:
+                self.client().verify_torrent(self.selected_item.t_id)
+                self.post_message(MainApp.Notification("Torrent sent to verification"))
+        else:
+            # There are marked torrents - verify them all
+            self.client().verify_torrent(self.marked_torrent_ids)
+            self.post_message(MainApp.Notification(
+                f"Sent {len(self.marked_torrent_ids)} marked torrents to verification"))
 
     @log_time
     def action_reannounce_torrent(self) -> None:
