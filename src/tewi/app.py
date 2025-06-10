@@ -1501,9 +1501,16 @@ class TorrentListPanel(ScrollableContainer):
 
     @log_time
     def action_reannounce_torrent(self) -> None:
-        if self.selected_item:
-            self.client().reannounce_torrent(self.selected_item.t_id)
-            self.post_message(MainApp.Notification("Torrent reannounce started"))
+        if not self.marked_torrent_ids:
+            # No marked torrents - reannounce currently selected torrent
+            if self.selected_item:
+                self.client().reannounce_torrent(self.selected_item.t_id)
+                self.post_message(MainApp.Notification("Torrent reannounce started"))
+        else:
+            # There are marked torrents - reannounce them all
+            self.client().reannounce_torrent(self.marked_torrent_ids)
+            self.post_message(MainApp.Notification(
+                f"Reannounce started for {len(self.marked_torrent_ids)} marked torrents"))
 
     @log_time
     def action_start_all_torrents(self) -> None:
