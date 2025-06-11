@@ -11,9 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Fixed page indicator for Textual v2+ (disabled markup)
-
 ### Removed
+
+## [0.8.1] - 2025-06-11 - Lunar Grove B
+
+### Changed
+
+- Fixed page indicator for Textual v2+ (disabled markup)
 
 ## [0.8.0] - 2025-06-09 - Lunar Grove
 
