@@ -557,12 +557,13 @@ class AddTorrentWidget(Static):
 
 class UpdateTorrentLabelsDialog(ModalScreen):
 
-    def __init__(self, torrent):
+    def __init__(self, torrent, torrent_ids):
         self.torrent = torrent
+        self.torrent_ids = torrent_ids
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        yield UpdateTorrentLabelsWidget(self.torrent)
+        yield UpdateTorrentLabelsWidget(self.torrent, self.torrent_ids)
 
 
 class UpdateTorrentLabelsWidget(Static):
@@ -572,8 +573,9 @@ class UpdateTorrentLabelsWidget(Static):
             Binding("escape", "close", "Close"),
             ]
 
-    def __init__(self, torrent):
+    def __init__(self, torrent, torrent_ids):
         self.torrent = torrent
+        self.torrent_ids = torrent_ids
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -585,7 +587,7 @@ class UpdateTorrentLabelsWidget(Static):
 
         text_area = self.query_one(TextArea)
 
-        if len(self.torrent.labels) > 0:
+        if self.torrent and len(self.torrent.labels) > 0:
             text_area.load_text(", ".join(self.torrent.labels))
 
         text_area.cursor_location = text_area.document.end
@@ -593,8 +595,13 @@ class UpdateTorrentLabelsWidget(Static):
     def action_update(self) -> None:
         value = self.query_one(TextArea).text
 
+        if self.torrent:
+            torrent_ids = [self.torrent.id]
+        else:
+            torrent_ids = self.torrent_ids
+
         self.post_message(MainApp.TorrentLabelsUpdated(
-            self.torrent, value))
+            torrent_ids, value))
 
         self.parent.dismiss(False)
 
@@ -871,6 +878,7 @@ class StatePanel(Static):
 class TorrentItem(Static):
 
     selected = reactive(False)
+    marked = reactive(False)
     torrent = reactive(None)
 
     t_id = reactive(None)
@@ -915,6 +923,13 @@ class TorrentItem(Static):
             self.add_class("selected")
         else:
             self.remove_class("selected")
+
+    @log_time
+    def watch_marked(self, new_marked):
+        if new_marked:
+            self.add_class("marked")
+        else:
+            self.remove_class("marked")
 
     @log_time
     def update_torrent(self, torrent) -> None:
@@ -1090,6 +1105,9 @@ class TorrentListPanel(ScrollableContainer):
 
             Binding("enter,l", "view_info", "View torrent info"),
 
+            Binding("space", "toggle_mark", "Toggle mark"),
+            Binding("escape", "clear_marks", "Clear marks"),
+
             Binding("a", "add_torrent", "Add torrent"),
             Binding("L", "update_torrent_labels", "Update labels"),
             Binding("s", "sort_order", "Select sort order"),
@@ -1113,6 +1131,9 @@ class TorrentListPanel(ScrollableContainer):
     r_torrents = reactive(None)
 
     selected_item = reactive(None)
+
+    # Multi-selection state
+    marked_torrent_ids = []
 
     # Search state
     search_term = ""
@@ -1155,6 +1176,11 @@ class TorrentListPanel(ScrollableContainer):
     def watch_r_torrents(self, new_r_torrents):
         if new_r_torrents:
             torrents = new_r_torrents
+
+            # Clean up marked torrents list - remove IDs not present in new torrent list
+            current_torrent_ids = {t.id for t in torrents}
+            self.marked_torrent_ids = [tid for tid in self.marked_torrent_ids
+                                       if tid in current_torrent_ids]
 
             # detect current page by selected item
 
@@ -1221,6 +1247,10 @@ class TorrentListPanel(ScrollableContainer):
                     if prev_selected_id == item.torrent.id:
                         item.selected = True
                         self.selected_item = item
+
+        # Update marked state for all items
+        for item in torrent_widgets:
+            item.marked = item.torrent.id in self.marked_torrent_ids
 
     @log_time
     def create_item(self, torrent) -> TorrentItem:
@@ -1331,6 +1361,36 @@ class TorrentListPanel(ScrollableContainer):
             self.selected_item.selected = True
 
     @log_time
+    def action_toggle_mark(self) -> None:
+        if self.selected_item:
+            torrent_id = self.selected_item.torrent.id
+
+            if torrent_id in self.marked_torrent_ids:
+                self.marked_torrent_ids.remove(torrent_id)
+                self.selected_item.marked = False
+            else:
+                self.marked_torrent_ids.append(torrent_id)
+                self.selected_item.marked = True
+
+            # Move to next torrent if available
+            if self.selected_item.w_next:
+                self.selected_item.selected = False
+                self.selected_item = self.selected_item.w_next
+                self.selected_item.selected = True
+            elif self.has_next(self.selected_item.torrent):
+                # Has item on the next page
+                page_start_idx = self.torrent_idx(self.selected_item.torrent) + 1
+                self.update_page(self.r_torrents, page_start_idx, select_first=True)
+
+    @log_time
+    def action_clear_marks(self) -> None:
+        self.marked_torrent_ids.clear()
+
+        # Update visual state for all currently visible items
+        for item in self.children:
+            item.marked = False
+
+    @log_time
     def action_view_info(self):
         if self.selected_item:
             self.post_message(self.TorrentViewed(self.selected_item.torrent))
@@ -1341,10 +1401,16 @@ class TorrentListPanel(ScrollableContainer):
 
     @log_time
     def action_update_torrent_labels(self) -> None:
-        if self.selected_item:
+        if self.marked_torrent_ids:
             self.post_message(
                     MainApp.OpenUpdateTorrentLabels(
-                        self.selected_item.torrent))
+                        None,
+                        self.marked_torrent_ids))
+        elif self.selected_item:
+            self.post_message(
+                    MainApp.OpenUpdateTorrentLabels(
+                        self.selected_item.torrent,
+                        None))
 
     @log_time
     def action_sort_order(self) -> None:
@@ -1356,40 +1422,120 @@ class TorrentListPanel(ScrollableContainer):
 
     @log_time
     def action_toggle_torrent(self) -> None:
-        if self.selected_item:
-            status = self.selected_item.t_status
+        if not self.marked_torrent_ids:
+            # No marked torrents - toggle currently selected torrent
+            if self.selected_item:
+                status = self.selected_item.t_status
 
-            if status == 'stopped':
-                self.client().start_torrent(self.selected_item.t_id)
-                self.post_message(MainApp.Notification("Torrent started"))
+                if status == 'stopped':
+                    self.client().start_torrent(self.selected_item.t_id)
+                    self.post_message(MainApp.Notification("Torrent started"))
+                else:
+                    self.client().stop_torrent(self.selected_item.t_id)
+                    self.post_message(MainApp.Notification("Torrent stopped"))
+        else:
+            # There are marked torrents - toggle them based on their status
+            marked_torrents = [t for t in self.r_torrents if t.id in self.marked_torrent_ids]
+
+            # Check if at least one torrent is paused/stopped
+            has_stopped = any(t.status == 'stopped' for t in marked_torrents)
+
+            if has_stopped:
+                # Start all marked torrents
+                self.client().start_torrent(self.marked_torrent_ids)
+                self.post_message(MainApp.Notification(f"Started {len(self.marked_torrent_ids)} marked torrents"))
             else:
-                self.client().stop_torrent(self.selected_item.t_id)
-                self.post_message(MainApp.Notification("Torrent stopped"))
+                # Stop all marked torrents
+                self.client().stop_torrent(self.marked_torrent_ids)
+                self.post_message(MainApp.Notification(f"Stopped {len(self.marked_torrent_ids)} marked torrents"))
 
     @log_time
     def action_remove_torrent(self) -> None:
-        self.remove_torrent(delete_data=False,
-                            message="Remove torrent?",
-                            description=("Once removed, continuing the "
-                                         "transfer will require the torrent file. "
-                                         "Are you sure you want to remove it?"),
-                            notification="Torrent removed")
+        if self.marked_torrent_ids:
+            count = len(self.marked_torrent_ids)
+            torrent_word = "torrent" if count == 1 else "torrents"
+            file_word = "file" if count == 1 else "files"
+            pronoun = "it" if count == 1 else "them"
+            message = f"Remove {count} marked {torrent_word}?"
+            description = ("Once removed, continuing the "
+                           f"transfer will require the torrent {file_word}. "
+                           f"Are you sure you want to remove {pronoun}?")
+            notification = f"{count} marked {torrent_word} removed"
+
+            self.remove_marked_torrent(delete_data=False,
+                                       message=message,
+                                       description=description,
+                                       notification=notification)
+        else:
+            message = "Remove torrent?"
+            description = ("Once removed, continuing the "
+                           "transfer will require the torrent file. "
+                           "Are you sure you want to remove it?")
+            notification = "Torrent removed"
+
+            self.remove_selected_torrent(delete_data=False,
+                                         message=message,
+                                         description=description,
+                                         notification=notification)
 
     @log_time
     def action_trash_torrent(self) -> None:
-        self.remove_torrent(delete_data=True,
-                            message="Remove torrent and delete data?",
-                            description=("All data downloaded for this torrent "
-                                         "will be deleted. Are you sure you "
-                                         "want to remove it?"),
-                            notification="Torrent and its data removed")
+        if self.marked_torrent_ids:
+            count = len(self.marked_torrent_ids)
+            torrent_word = "torrent" if count == 1 else "torrents"
+            pronoun_these = "this" if count == 1 else "these"
+            pronoun_it = "it" if count == 1 else "them"
+            data_word = "its" if count == 1 else "their"
+            message = f"Remove {count} marked {torrent_word} and delete data?"
+            description = (f"All data downloaded for {pronoun_these} {count} {torrent_word} "
+                           "will be deleted. Are you sure you "
+                           f"want to remove {pronoun_it}?")
+            notification = f"{count} marked {torrent_word} and {data_word} data removed"
+
+            self.remove_marked_torrent(delete_data=True,
+                                       message=message,
+                                       description=description,
+                                       notification=notification)
+        else:
+            message = "Remove torrent and delete data?"
+            description = ("All data downloaded for this torrent "
+                           "will be deleted. Are you sure you "
+                           "want to remove it?")
+            notification = "Torrent and its data removed"
+
+            self.remove_selected_torrent(delete_data=True,
+                                         message=message,
+                                         description=description,
+                                         notification=notification)
 
     @log_time
-    def remove_torrent(self,
-                       delete_data: bool,
-                       message: str,
-                       description: str,
-                       notification: str) -> None:
+    def remove_marked_torrent(self,
+                              delete_data: bool,
+                              message: str,
+                              description: str,
+                              notification: str) -> None:
+
+        if self.marked_torrent_ids:
+
+            def check_quit(confirmed: bool | None) -> None:
+                if confirmed:
+                    self.client().remove_torrent(self.marked_torrent_ids,
+                                                 delete_data=delete_data)
+
+                    # TODO: remove torrents from items list
+
+                    self.post_message(MainApp.Notification(notification))
+
+            self.post_message(MainApp.Confirm(message=message,
+                                              description=description,
+                                              check_quit=check_quit))
+
+    @log_time
+    def remove_selected_torrent(self,
+                                delete_data: bool,
+                                message: str,
+                                description: str,
+                                notification: str) -> None:
 
         if self.selected_item:
 
@@ -1431,15 +1577,29 @@ class TorrentListPanel(ScrollableContainer):
 
     @log_time
     def action_verify_torrent(self) -> None:
-        if self.selected_item:
-            self.client().verify_torrent(self.selected_item.t_id)
-            self.post_message(MainApp.Notification("Torrent send to verification"))
+        if not self.marked_torrent_ids:
+            # No marked torrents - verify currently selected torrent
+            if self.selected_item:
+                self.client().verify_torrent(self.selected_item.t_id)
+                self.post_message(MainApp.Notification("Torrent sent to verification"))
+        else:
+            # There are marked torrents - verify them all
+            self.client().verify_torrent(self.marked_torrent_ids)
+            self.post_message(MainApp.Notification(
+                f"Sent {len(self.marked_torrent_ids)} marked torrents to verification"))
 
     @log_time
     def action_reannounce_torrent(self) -> None:
-        if self.selected_item:
-            self.client().reannounce_torrent(self.selected_item.t_id)
-            self.post_message(MainApp.Notification("Torrent reannounce started"))
+        if not self.marked_torrent_ids:
+            # No marked torrents - reannounce currently selected torrent
+            if self.selected_item:
+                self.client().reannounce_torrent(self.selected_item.t_id)
+                self.post_message(MainApp.Notification("Torrent reannounce started"))
+        else:
+            # There are marked torrents - reannounce them all
+            self.client().reannounce_torrent(self.marked_torrent_ids)
+            self.post_message(MainApp.Notification(
+                f"Reannounce started for {len(self.marked_torrent_ids)} marked torrents"))
 
     @log_time
     def action_start_all_torrents(self) -> None:
@@ -1941,9 +2101,10 @@ class MainApp(App):
         pass
 
     class OpenUpdateTorrentLabels(Message):
-        def __init__(self, torrent):
+        def __init__(self, torrent, torrent_ids):
             super().__init__()
             self.torrent = torrent
+            self.torrent_ids = torrent_ids
 
     class OpenSortOrder(Message):
         pass
@@ -1960,9 +2121,9 @@ class MainApp(App):
             self.value = value
 
     class TorrentLabelsUpdated(Message):
-        def __init__(self, torrent, value: str) -> None:
+        def __init__(self, torrent_ids, value: str) -> None:
             super().__init__()
-            self.torrent = torrent
+            self.torrent_ids = torrent_ids
             self.value = value
 
     class SortOrderSelected(Message):
@@ -2155,7 +2316,7 @@ class MainApp(App):
     @log_time
     @on(OpenUpdateTorrentLabels)
     def handle_open_update_torrent_labels(self, event: OpenUpdateTorrentLabels) -> None:
-        self.push_screen(UpdateTorrentLabelsDialog(event.torrent))
+        self.push_screen(UpdateTorrentLabelsDialog(event.torrent, event.torrent_ids))
 
     @log_time
     @on(OpenSortOrder)
@@ -2202,17 +2363,22 @@ class MainApp(App):
     def handle_torrent_labels_updated(self, event: TorrentLabelsUpdated) -> None:
         labels = [x.strip() for x in event.value.split(',') if x.strip()]
 
+        if len(event.torrent_ids) == 1:
+            count_label = '1 torrent'
+        else:
+            count_label = f"{len(event.torrent_ids)} torrents"
+
         if len(labels) > 0:
-            self.client.change_torrent(event.torrent.id,
+            self.client.change_torrent(event.torrent_ids,
                                        labels=labels)
 
             self.post_message(MainApp.Notification(
-                f"Updated torrent labels:\n{','.join(labels)}"))
+                f"Updated torrent labels ({count_label}):\n{','.join(labels)}"))
         else:
-            self.client.change_torrent(event.torrent.id,
+            self.client.change_torrent(event.torrent_ids,
                                        labels=[])
             self.post_message(MainApp.Notification(
-                "Removed torrent labels"))
+                "Removed torrent labels ({count_label})"))
 
     @log_time
     @on(SortOrderSelected)

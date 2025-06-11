@@ -121,6 +121,12 @@ TorrentItemOneline {
     background: $background-lighten-1;
 }
 
+TorrentItemOneline.marked {
+    background: $secondary-lighten-3;
+    text-style: bold;
+    border-left: double white;
+}
+
 TorrentItemOneline.selected {
     background: $primary;
 }
@@ -170,6 +176,12 @@ TorrentItemCompact {
     background: $background-lighten-1;
 }
 
+TorrentItemCompact.marked {
+    background: $secondary-lighten-3;
+    text-style: bold;
+    border-top: double white;
+}
+
 TorrentItemCompact.selected {
     background: $primary;
 }
@@ -204,6 +216,12 @@ TorrentItemCard {
     layout: vertical;
     border: round $primary 75%;
     background: $background-lighten-1;
+}
+
+TorrentItemCard.marked {
+    background: $secondary-lighten-3;
+    text-style: bold;
+    border: double white;
 }
 
 TorrentItemCard.selected {
