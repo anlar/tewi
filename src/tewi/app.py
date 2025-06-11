@@ -1516,9 +1516,19 @@ class TorrentListPanel(ScrollableContainer):
                               notification: str) -> None:
 
         if self.marked_torrent_ids:
-            # TODO: supported marked torrents removal
-            self.post_message(MainApp.Notification(
-                "Torrent remove not supported for marked torrents"))
+
+            def check_quit(confirmed: bool | None) -> None:
+                if confirmed:
+                    self.client().remove_torrent(self.marked_torrent_ids,
+                                                 delete_data=delete_data)
+
+                    # TODO: remove torrents from items list
+
+                    self.post_message(MainApp.Notification(notification))
+
+            self.post_message(MainApp.Confirm(message=message,
+                                              description=description,
+                                              check_quit=check_quit))
 
     @log_time
     def remove_selected_torrent(self,
