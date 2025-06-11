@@ -285,6 +285,9 @@ class PageIndicator(Static):
 
     state = reactive(None)
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, markup=False, **kwargs)
+
     def render(self) -> str:
         # hide indicator when single page
         if self.state is None or self.state.total == 1:
