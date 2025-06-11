@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Move version variable to separate Python module
+
 ### Removed
 
 ## [0.8.1] - 2025-06-11 - Lunar Grove B

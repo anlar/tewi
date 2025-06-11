@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-__version__ = '0.8.1'
+from .version import __version__
 
 from datetime import datetime
 from functools import cache, wraps
@@ -2449,6 +2449,7 @@ def cli():
                   limit_torrents=args.limit_torrents,
                   version=tewi_version)
     app.run()
+    return app
 
 
 if __name__ == "__main__":

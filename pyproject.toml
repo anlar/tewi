@@ -31,7 +31,7 @@ classifiers = [
 keywords = ["transmission", "torrent"]
 
 [tool.setuptools.dynamic]
-version = {attr = "tewi.app.__version__"}
+version = {attr = "tewi.version.__version__"}
 
 [project.scripts]
 tewi = "tewi.app:cli"
