@@ -122,8 +122,9 @@ TorrentItemOneline {
 }
 
 TorrentItemOneline.marked {
-    background: $accent-darken-3;
+    background: $secondary-lighten-3;
     text-style: bold;
+    border-left: double white;
 }
 
 TorrentItemOneline.selected {
@@ -176,7 +177,7 @@ TorrentItemCompact {
 }
 
 TorrentItemCompact.marked {
-    background: $accent-darken-3;
+    background: $secondary-lighten-3;
     text-style: bold;
     border-top: double white;
 }
@@ -218,7 +219,7 @@ TorrentItemCard {
 }
 
 TorrentItemCard.marked {
-    background: $accent-darken-3;
+    background: $secondary-lighten-3;
     text-style: bold;
     border: double white;
 }
