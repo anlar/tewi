@@ -1372,6 +1372,16 @@ class TorrentListPanel(ScrollableContainer):
                 self.marked_torrent_ids.append(torrent_id)
                 self.selected_item.marked = True
 
+            # Move to next torrent if available
+            if self.selected_item.w_next:
+                self.selected_item.selected = False
+                self.selected_item = self.selected_item.w_next
+                self.selected_item.selected = True
+            elif self.has_next(self.selected_item.torrent):
+                # Has item on the next page
+                page_start_idx = self.torrent_idx(self.selected_item.torrent) + 1
+                self.update_page(self.r_torrents, page_start_idx, select_first=True)
+
     @log_time
     def action_clear_marks(self) -> None:
         self.marked_torrent_ids.clear()
