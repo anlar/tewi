@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Move version variable to separate Python module
+- Group actions in help dialog [#39](https://github.com/anlar/tewi/issues/39)
 
 ### Removed
 
