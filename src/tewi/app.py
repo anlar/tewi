@@ -376,6 +376,8 @@ class HelpWidget(Static):
         table = self.query_one(DataTable)
         table.add_columns("Category", "Key", "Command")
 
+        # Group and sort bindings by category
+        categories = {}
         for b in filter(lambda x: x.binding.show, self.bindings):
             key = b.binding.key
             description = b.binding.description
@@ -384,26 +386,34 @@ class HelpWidget(Static):
                 key = '?'
             elif key == 'quotation_mark':
                 key = '"'
+            elif key == 'slash':
+                key = '/'
 
             if len(key) > 1:
                 key = key.title()
 
             # Split description into category and command
-
             if description.startswith("["):
                 category, _, command = b.binding.description.partition("] ")
                 category = category[1:]  # Remove leading [
             else:
-                category = None
+                category = "General"
                 command = description
 
-            table.add_row(category, key, command)
+            if category not in categories:
+                categories[category] = []
+            categories[category].append((command, key))
+
+        # Sort categories and their commands
+        for category in sorted(categories.keys()):
+            for command, key in sorted(categories[category]):
+                table.add_row(category, key, command)
 
 
 class StatisticsDialog(ModalScreen):
 
     BINDINGS = [
-            Binding("x,escape", "close", "Close"),
+            Binding("x,escape", "close", "[Info] Close"),
             ]
 
     def __init__(self, session_stats) -> None:
@@ -506,8 +516,8 @@ class AddTorrentWidget(Static):
     r_download_dir = reactive('')
 
     BINDINGS = [
-            Binding("enter", "add", "Add torrent", priority=True),
-            Binding("escape", "close", "Close"),
+            Binding("enter", "add", "[Torrent] Add torrent", priority=True),
+            Binding("escape", "close", "[Torrent] Close"),
             ]
 
     def __init__(self, session):
@@ -579,8 +589,8 @@ class UpdateTorrentLabelsDialog(ModalScreen):
 class UpdateTorrentLabelsWidget(Static):
 
     BINDINGS = [
-            Binding("enter", "update", "Update labels", priority=True),
-            Binding("escape", "close", "Close"),
+            Binding("enter", "update", "[Torrent] Update labels", priority=True),
+            Binding("escape", "close", "[Torrent] Close"),
             ]
 
     def __init__(self, torrent, torrent_ids):
@@ -628,8 +638,8 @@ class SearchDialog(ModalScreen):
 class SearchWidget(Static):
 
     BINDINGS = [
-            Binding("enter", "search", "Search", priority=True),
-            Binding("escape", "close", "Close"),
+            Binding("enter", "search", "[Search] Search", priority=True),
+            Binding("escape", "close", "[Search] Close"),
     ]
 
     def compose(self) -> ComposeResult:
@@ -659,7 +669,7 @@ class SortOrderDialog(ModalScreen):
 class SortOrderWidget(Static):
 
     BINDINGS = [
-            Binding("escape,x", "close", "Close"),
+            Binding("escape,x", "close", "[Navigation] Close"),
             ]
 
     def compose(self) -> ComposeResult:
@@ -697,13 +707,13 @@ class SortOrderWidget(Static):
 class PreferencesDialog(ModalScreen):
 
     BINDINGS = [
-            Binding("k", "scroll_up", "Scroll up"),
-            Binding("j", "scroll_down", "Scroll down"),
+            Binding("k", "scroll_up", "[Navigation] Scroll up"),
+            Binding("j", "scroll_down", "[Navigation] Scroll down"),
 
-            Binding("g", "scroll_top", "Scroll to the top"),
-            Binding("G", "scroll_bottom", "Scroll to the bottom"),
+            Binding("g", "scroll_top", "[Navigation] Scroll to the top"),
+            Binding("G", "scroll_bottom", "[Navigation] Scroll to the bottom"),
 
-            Binding("x,escape", "close", "Close"),
+            Binding("x,escape", "close", "[Navigation] Close"),
             ]
 
     def __init__(self, session):
@@ -1729,15 +1739,15 @@ class TorrentInfoPanel(ScrollableContainer):
         pass
 
     BINDINGS = [
-            Binding("enter", "view_list", "View torrent list"),
-            Binding("h", "go_left", "Go left"),
-            Binding("l", "go_right", "Go right"),
+            Binding("enter", "view_list", "[Navigation] View torrent list"),
+            Binding("h", "go_left", "[Navigation] Go left"),
+            Binding("l", "go_right", "[Navigation] Go right"),
 
-            Binding("k,up", "scroll_up", "Scroll up"),
-            Binding("j,down", "scroll_down", "Scroll down"),
+            Binding("k,up", "scroll_up", "[Navigation] Scroll up"),
+            Binding("j,down", "scroll_down", "[Navigation] Scroll down"),
 
-            Binding("g", "scroll_top", "Scroll to the top"),
-            Binding("G", "scroll_bottom", "Scroll to the bottom"),
+            Binding("g", "scroll_top", "[Navigation] Scroll to the top"),
+            Binding("G", "scroll_bottom", "[Navigation] Scroll to the bottom"),
             ]
 
     r_torrent = reactive(None)
