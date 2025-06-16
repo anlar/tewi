@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Move version variable to separate Python module
 - Group actions in help dialog [#39](https://github.com/anlar/tewi/issues/39)
+- Fix error when selected torrent was deleted in background [#82](https://github.com/anlar/tewi/issues/82)
 
 ### Removed
 

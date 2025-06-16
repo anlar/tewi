@@ -1166,7 +1166,7 @@ class TorrentListPanel(ScrollableContainer):
         super().__init__(id=id)
 
     def torrent_idx(self, torrent) -> int:
-        return next((idx) for (idx, t) in enumerate(self.r_torrents) if t.id == torrent.id)
+        return next((idx for idx, t in enumerate(self.r_torrents) if t.id == torrent.id), None)
 
     def has_prev(self, torrent) -> bool:
         idx = self.torrent_idx(torrent)
@@ -1206,7 +1206,14 @@ class TorrentListPanel(ScrollableContainer):
 
             if self.selected_item:
                 selected_idx = self.torrent_idx(self.selected_item.torrent)
-                current_page = selected_idx // self.page_size
+
+                if selected_idx is not None:
+                    current_page = selected_idx // self.page_size
+                else:
+                    # if during torrents update selected torrent was not found,
+                    # then remove its selection
+                    self.selected_item = None
+                    current_page = 0
             else:
                 current_page = 0
 
