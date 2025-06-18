@@ -28,6 +28,7 @@ import os
 import pathlib
 import textwrap
 import time
+import sys
 
 from transmission_rpc import Client
 from transmission_rpc.error import TransmissionError
@@ -2468,15 +2469,22 @@ def cli():
     logger.info(f'Start Tewi {tewi_version}...')
     logger.info(f'Loaded CLI options: {args}')
 
-    app = MainApp(host=args.host, port=args.port,
-                  username=args.username, password=args.password,
-                  view_mode=args.view_mode,
-                  refresh_interval=args.refresh_interval,
-                  page_size=args.page_size,
-                  limit_torrents=args.limit_torrents,
-                  version=tewi_version)
-    app.run()
-    return app
+    try:
+        app = MainApp(host=args.host, port=args.port,
+                      username=args.username, password=args.password,
+                      view_mode=args.view_mode,
+                      refresh_interval=args.refresh_interval,
+                      page_size=args.page_size,
+                      limit_torrents=args.limit_torrents,
+                      version=tewi_version)
+        app.run()
+        return app
+    except TransmissionError as e:
+        print(f"Failed to connect to Transmission daemon at {args.host}:{args.port}: {e.message}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Failed to initialize application: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
