@@ -14,7 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from src.tewi.util.print import print_size, print_speed, print_time
+from datetime import datetime, timedelta
+from src.tewi.util.print import print_size, print_speed, print_time, print_time_ago
 
 
 class TestPrintSize:
@@ -195,3 +196,150 @@ class TestPrintTime:
         assert print_time(complex_time, units=2) == "1 day, 1 hour"
         assert print_time(complex_time, units=3) == "1 day, 1 hour, 3 minutes"
         assert print_time(complex_time, units=4) == "1 day, 1 hour, 3 minutes, 2 seconds"
+
+
+class TestPrintTimeAgo:
+    """Test cases for print_time_ago function."""
+
+    def test_none_input(self):
+        """Test handling of None input."""
+        assert print_time_ago(None) == ""
+
+    def test_just_now(self):
+        """Test formatting for very recent times."""
+        now = datetime.now()
+        recent = now - timedelta(seconds=30)
+        assert print_time_ago(recent) == "just now"
+
+        # Test edge case - exactly at boundary
+        almost_minute = now - timedelta(seconds=59)
+        assert print_time_ago(almost_minute) == "just now"
+
+    def test_minutes_ago(self):
+        """Test formatting for minutes ago."""
+        now = datetime.now()
+
+        one_minute = now - timedelta(minutes=1)
+        assert print_time_ago(one_minute) == "1 minute ago"
+
+        two_minutes = now - timedelta(minutes=2)
+        assert print_time_ago(two_minutes) == "2 minutes ago"
+
+        fifty_nine_minutes = now - timedelta(minutes=59)
+        assert print_time_ago(fifty_nine_minutes) == "59 minutes ago"
+
+    def test_hours_ago(self):
+        """Test formatting for hours ago."""
+        now = datetime.now()
+
+        one_hour = now - timedelta(hours=1)
+        assert print_time_ago(one_hour) == "1 hour ago"
+
+        two_hours = now - timedelta(hours=2)
+        assert print_time_ago(two_hours) == "2 hours ago"
+
+        twenty_three_hours = now - timedelta(hours=23)
+        assert print_time_ago(twenty_three_hours) == "23 hours ago"
+
+    def test_days_ago(self):
+        """Test formatting for days ago."""
+        now = datetime.now()
+
+        one_day = now - timedelta(days=1)
+        assert print_time_ago(one_day) == "1 day ago"
+
+        two_days = now - timedelta(days=2)
+        assert print_time_ago(two_days) == "2 days ago"
+
+        six_days = now - timedelta(days=6)
+        assert print_time_ago(six_days) == "6 days ago"
+
+    def test_weeks_ago(self):
+        """Test formatting for weeks ago."""
+        now = datetime.now()
+
+        one_week = now - timedelta(weeks=1)
+        assert print_time_ago(one_week) == "1 week ago"
+
+        two_weeks = now - timedelta(weeks=2)
+        assert print_time_ago(two_weeks) == "2 weeks ago"
+
+        three_weeks = now - timedelta(weeks=3)
+        assert print_time_ago(three_weeks) == "3 weeks ago"
+
+    def test_months_ago(self):
+        """Test formatting for months ago."""
+        now = datetime.now()
+
+        one_month = now - timedelta(days=30)
+        assert print_time_ago(one_month) == "1 month ago"
+
+        two_months = now - timedelta(days=60)
+        assert print_time_ago(two_months) == "2 months ago"
+
+        eleven_months = now - timedelta(days=330)
+        assert print_time_ago(eleven_months) == "11 months ago"
+
+    def test_years_ago(self):
+        """Test formatting for years ago."""
+        now = datetime.now()
+
+        one_year = now - timedelta(days=365)
+        assert print_time_ago(one_year) == "1 year ago"
+
+        two_years = now - timedelta(days=730)
+        assert print_time_ago(two_years) == "2 years ago"
+
+        five_years = now - timedelta(days=1825)
+        assert print_time_ago(five_years) == "5 years ago"
+
+    def test_timezone_aware_datetime(self):
+        """Test handling of timezone-aware datetime objects."""
+        from datetime import timezone
+
+        now_utc = datetime.now(timezone.utc)
+        one_hour_ago_utc = now_utc - timedelta(hours=1)
+
+        # Should handle timezone-aware datetime by converting to naive
+        result = print_time_ago(one_hour_ago_utc)
+        assert "ago" in result  # Should return some valid time ago string
+
+    def test_boundary_conditions(self):
+        """Test boundary conditions between different time units."""
+        now = datetime.now()
+
+        # Exactly 1 minute
+        exactly_minute = now - timedelta(seconds=60)
+        assert print_time_ago(exactly_minute) == "1 minute ago"
+
+        # Exactly 1 hour
+        exactly_hour = now - timedelta(seconds=3600)
+        assert print_time_ago(exactly_hour) == "1 hour ago"
+
+        # Exactly 1 day
+        exactly_day = now - timedelta(seconds=86400)
+        assert print_time_ago(exactly_day) == "1 day ago"
+
+        # Exactly 1 week
+        exactly_week = now - timedelta(seconds=604800)
+        assert print_time_ago(exactly_week) == "1 week ago"
+
+    def test_singular_vs_plural(self):
+        """Test correct singular vs plural forms."""
+        now = datetime.now()
+
+        # Singular forms
+        assert "1 minute ago" == print_time_ago(now - timedelta(minutes=1))
+        assert "1 hour ago" == print_time_ago(now - timedelta(hours=1))
+        assert "1 day ago" == print_time_ago(now - timedelta(days=1))
+        assert "1 week ago" == print_time_ago(now - timedelta(weeks=1))
+        assert "1 month ago" == print_time_ago(now - timedelta(days=30))
+        assert "1 year ago" == print_time_ago(now - timedelta(days=365))
+
+        # Plural forms
+        assert "2 minutes ago" == print_time_ago(now - timedelta(minutes=2))
+        assert "2 hours ago" == print_time_ago(now - timedelta(hours=2))
+        assert "2 days ago" == print_time_ago(now - timedelta(days=2))
+        assert "2 weeks ago" == print_time_ago(now - timedelta(weeks=2))
+        assert "2 months ago" == print_time_ago(now - timedelta(days=60))
+        assert "2 years ago" == print_time_ago(now - timedelta(days=730))

@@ -19,7 +19,6 @@
 from .version import __version__
 
 from datetime import datetime
-from functools import cache
 from typing import NamedTuple
 import argparse
 import logging
@@ -45,11 +44,11 @@ from textual.screen import ModalScreen
 from textual.widgets import Static, Label, DataTable, ContentSwitcher, \
         TabbedContent, TabPane, TextArea, Input
 
-from geoip2fast import GeoIP2Fast
 
 import pyperclip
 
-from .util.print import print_size, print_speed, print_time
+from .util.geoip import get_country
+from .util.print import print_size, print_speed, print_time, print_time_ago
 from .util.decorator import log_time
 from .ui.widget.common import ReactiveLabel, PageIndicator, SpeedIndicator
 from .ui.widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
@@ -114,52 +113,6 @@ sort_orders = [
         SortOrder('leechers', 'Leechers', 'l', 'L',
                   lambda t: t.peers_getting_from_us),
         ]
-
-
-# Common utils
-
-class Util:
-
-    geoip = GeoIP2Fast()
-
-    @cache
-    def time_ago(dt: datetime) -> str:
-        if dt is None:
-            return ""
-
-        # Ensure both datetimes are naive (no timezone info)
-        if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
-            # Convert to naive datetime
-            dt = dt.replace(tzinfo=None)
-
-        now = datetime.now()
-        diff = now - dt
-        seconds = diff.total_seconds()
-
-        if seconds < 60:
-            return "just now"
-        elif seconds < 3600:
-            minutes = int(seconds / 60)
-            return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
-        elif seconds < 86400:
-            hours = int(seconds / 3600)
-            return f"{hours} hour{'s' if hours > 1 else ''} ago"
-        elif seconds < 604800:  # 7 days
-            days = int(seconds / 86400)
-            return f"{days} day{'s' if days > 1 else ''} ago"
-        elif seconds < 2592000:  # 30 days
-            weeks = int(seconds / 604800)
-            return f"{weeks} week{'s' if weeks > 1 else ''} ago"
-        elif seconds < 31536000:  # 365 days
-            months = int(seconds / 2592000)
-            return f"{months} month{'s' if months > 1 else ''} ago"
-        else:
-            years = int(seconds / 31536000)
-            return f"{years} year{'s' if years > 1 else ''} ago"
-
-    @cache
-    def get_country(address: str) -> str:
-        return Util.geoip.lookup(address).country_name
 
 
 # Common screens
@@ -1597,7 +1550,7 @@ class TorrentInfoPanel(ScrollableContainer):
                               print_speed(p["rateToPeer"], True),
                               f'{progress:.0f}%',
                               p["flagStr"],
-                              Util.get_country(p["address"]),
+                              get_country(p["address"]),
                               p["address"],
                               p["clientName"])
 
@@ -1679,7 +1632,7 @@ class TorrentInfoPanel(ScrollableContainer):
 
     def print_datetime(self, value: datetime) -> str:
         if value:
-            time_ago = Util.time_ago(value)
+            time_ago = print_time_ago(value)
             return f"{value.strftime('%Y-%m-%d %H:%M:%S')} ({time_ago})"
         else:
             return "Never"
