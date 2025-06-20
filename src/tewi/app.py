@@ -50,6 +50,8 @@ from geoip2fast import GeoIP2Fast
 
 import pyperclip
 
+from .util.print import print_size, print_speed, print_time
+
 
 # Logging
 
@@ -141,72 +143,6 @@ class Util:
     geoip = GeoIP2Fast()
 
     @cache
-    def print_size(num: int,
-                   suffix: str = "B", size_bytes: int = 1000):
-
-        r_unit = None
-        r_num = None
-
-        for unit in ("", "k", "M", "G", "T", "P", "E", "Z", "Y"):
-            if abs(num) < size_bytes:
-                r_unit = unit
-                r_num = num
-                break
-            num /= size_bytes
-
-        round(r_num, 2)
-
-        r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
-
-        return f"{r_size} {r_unit}{suffix}"
-
-    @cache
-    def print_speed(num: int,
-                    print_secs: bool = False,
-                    suffix: str = "B",
-                    speed_bytes: int = 1000) -> str:
-
-        r_unit = None
-        r_num = None
-
-        for i in (("", 0), ("K", 0), ("M", 2), ("G", 2), ("T", 2), ("P", 2), ("E", 2), ("Z", 2), ("Y", 2)):
-
-            if abs(num) < speed_bytes:
-                r_unit = i[0]
-                r_num = round(num, i[1])
-                break
-            num /= speed_bytes
-
-        r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
-
-        if print_secs:
-            return f"{r_size} {r_unit}{suffix}/s"
-        else:
-            return f"{r_size} {r_unit}{suffix}"
-
-    @cache
-    def print_time(seconds, abbr: bool = False, units: int = 1) -> str:
-        intervals = (
-                ('d', 'days', 86400),    # 60 * 60 * 24
-                ('h', 'hours', 3600),    # 60 * 60
-                ('m', 'minutes', 60),
-                ('s', 'seconds', 1),
-                )
-        result = []
-
-        for key, name, count in intervals:
-            value = seconds // count
-            if value:
-                seconds -= value * count
-                if abbr is True:
-                    result.append(f"{value:.0f}{key}")
-                else:
-                    if value == 1:
-                        name = name.rstrip('s')
-                    result.append(f"{value:.0f} {name}")
-        return ', '.join(result[:units])
-
-    @cache
     def time_ago(dt: datetime) -> str:
         if dt is None:
             return ""
@@ -279,7 +215,7 @@ class SpeedIndicator(Static):
         if self.speed == 0:
             return "-"
         else:
-            return Util.print_speed(self.speed)
+            return print_speed(self.speed)
 
 
 class PageIndicator(Static):
@@ -474,23 +410,23 @@ class StatisticsWidget(Static):
 
         # current stats
 
-        self.r_upload = Util.print_size(self.session_stats.current_stats.uploaded_bytes)
-        self.r_download = Util.print_size(self.session_stats.current_stats.downloaded_bytes)
+        self.r_upload = print_size(self.session_stats.current_stats.uploaded_bytes)
+        self.r_download = print_size(self.session_stats.current_stats.downloaded_bytes)
 
         self.r_ratio = self.print_ratio(self.session_stats.current_stats.uploaded_bytes,
                                         self.session_stats.current_stats.downloaded_bytes)
 
-        self.r_time = Util.print_time(self.session_stats.current_stats.seconds_active)
+        self.r_time = print_time(self.session_stats.current_stats.seconds_active)
 
         # cumulative stats
 
-        self.r_total_upload = Util.print_size(self.session_stats.cumulative_stats.uploaded_bytes)
-        self.r_total_download = Util.print_size(self.session_stats.cumulative_stats.downloaded_bytes)
+        self.r_total_upload = print_size(self.session_stats.cumulative_stats.uploaded_bytes)
+        self.r_total_download = print_size(self.session_stats.cumulative_stats.downloaded_bytes)
 
         self.r_total_ratio = self.print_ratio(self.session_stats.cumulative_stats.uploaded_bytes,
                                               self.session_stats.cumulative_stats.downloaded_bytes)
 
-        self.r_total_time = Util.print_time(self.session_stats.cumulative_stats.seconds_active)
+        self.r_total_time = print_time(self.session_stats.cumulative_stats.seconds_active)
         self.r_total_started = f"{self.session_stats.cumulative_stats.session_count} times"
 
     def print_ratio(self, uploaded, downloaded) -> str:
@@ -534,7 +470,7 @@ class AddTorrentWidget(Static):
         self.border_title = 'Add torrent (local file, magnet link, URL)'
         self.border_subtitle = '(Enter) Add / (ESC) Close'
 
-        free_space = Util.print_size(self.session.download_dir_free_space)
+        free_space = print_size(self.session.download_dir_free_space)
         download_dir = self.session.download_dir
 
         self.r_download_dir = f'Destination folder: {download_dir} ({free_space} Free)'
@@ -846,8 +782,8 @@ class StatePanel(Static):
 
             self.r_stats = self.print_stats(new_r_tsession, session_stats)
 
-            complete_size = Util.print_size(new_r_tsession.torrents_complete_size)
-            total_size = Util.print_size(new_r_tsession.torrents_total_size)
+            complete_size = print_size(new_r_tsession.torrents_complete_size)
+            total_size = print_size(new_r_tsession.torrents_total_size)
 
             if complete_size < total_size:
                 self.r_stats_size = f'Size: {complete_size} / {total_size}'
@@ -975,14 +911,14 @@ class TorrentItem(Static):
     def print_size_stats(self, full_ratio=True) -> str:
         result = None
 
-        size_total = Util.print_size(self.t_size_total)
+        size_total = print_size(self.t_size_total)
 
         if self.t_size_left > 0:
-            size_current = Util.print_size(self.t_size_total - self.t_size_left)
+            size_current = print_size(self.t_size_total - self.t_size_left)
             result = f"{size_current} / {size_total} | {(self.t_progress * 100):.1f}%"
 
             if self.t_eta:
-                result = f"{result} | {Util.print_time(self.t_eta.total_seconds(), True, 1)}"
+                result = f"{result} | {print_time(self.t_eta.total_seconds(), True, 1)}"
         else:
             result = f"{size_total} | R: {self.t_ratio:.2f}"
 
@@ -1082,7 +1018,7 @@ class TorrentItemCard(TorrentItem):
         self.t_ratio = torrent.ratio
         self.t_priority = torrent.priority
 
-        self.t_stats_uploaded = Util.print_size(torrent.uploaded_ever) + ' uploaded'
+        self.t_stats_uploaded = print_size(torrent.uploaded_ever) + ' uploaded'
 
         # implying that there won't be more than 9999 peers
         self.t_stats_peer = (f'{self.t_peers_connected: >4} peers '
@@ -1093,14 +1029,14 @@ class TorrentItemCard(TorrentItem):
     def print_size_stats(self, full_ratio=True) -> str:
         result = None
 
-        size_total = Util.print_size(self.t_size_total)
+        size_total = print_size(self.t_size_total)
 
         if self.t_size_left > 0:
-            size_current = Util.print_size(self.t_size_total - self.t_size_left)
+            size_current = print_size(self.t_size_total - self.t_size_left)
             result = f"{size_current} / {size_total} | {(self.t_progress * 100):.1f}%"
 
             if self.t_eta:
-                result = f"{result} | {Util.print_time(self.t_eta.total_seconds(), 2)}"
+                result = f"{result} | {print_time(self.t_eta.total_seconds(), 2)}"
         else:
             result = f"{size_total} | Ratio: {self.t_ratio:.2f}"
 
@@ -1899,9 +1835,9 @@ class TorrentInfoPanel(ScrollableContainer):
             self.t_id = str(torrent.id)
             self.t_hash = torrent.hash_string
             self.t_name = torrent.name
-            self.t_size = Util.print_size(torrent.total_size)
+            self.t_size = print_size(torrent.total_size)
             self.t_files = str(len(torrent.get_files()))
-            self.t_pieces = f"{torrent.piece_count} @ {Util.print_size(torrent.piece_size, size_bytes=1024)}"
+            self.t_pieces = f"{torrent.piece_count} @ {print_size(torrent.piece_size, size_bytes=1024)}"
 
             if torrent.is_private:
                 self.t_privacy = "Private to this tracker -- DHT and PEX disabled"
@@ -1914,8 +1850,8 @@ class TorrentInfoPanel(ScrollableContainer):
 
             self.t_status = torrent.status.title()
             self.t_location = torrent.download_dir
-            self.t_downloaded = Util.print_size(torrent.downloaded_ever)
-            self.t_uploaded = Util.print_size(torrent.uploaded_ever)
+            self.t_downloaded = print_size(torrent.downloaded_ever)
+            self.t_uploaded = print_size(torrent.uploaded_ever)
             self.t_ratio = f'{torrent.ratio:.2f}'
             self.t_error = torrent.error_string if torrent.error_string else "None"
 
@@ -1940,8 +1876,8 @@ class TorrentInfoPanel(ScrollableContainer):
             for p in self.r_torrent.peers:
                 progress = p["progress"] * 100
                 table.add_row("Yes" if p["isEncrypted"] else "No",
-                              Util.print_speed(p["rateToClient"], True),
-                              Util.print_speed(p["rateToPeer"], True),
+                              print_speed(p["rateToClient"], True),
+                              print_speed(p["rateToPeer"], True),
                               f'{progress:.0f}%',
                               p["flagStr"],
                               Util.get_country(p["address"]),
@@ -2000,7 +1936,7 @@ class TorrentInfoPanel(ScrollableContainer):
 
                 completion = (f.completed / f.size) * 100
                 table.add_row(f.id,
-                              Util.print_size(f.size),
+                              print_size(f.size),
                               f'{completion:.0f}%',
                               'Yes' if f.selected else 'No',
                               self.print_priority(f.priority),
