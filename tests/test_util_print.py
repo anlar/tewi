@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import pytest
 from src.tewi.util.print import print_size, print_speed, print_time
 
 
@@ -116,7 +115,7 @@ class TestPrintSpeed:
         # Bytes and KB should have 0 decimal places
         assert print_speed(999) == "999 B"
         assert print_speed(1100) == "1 KB"  # Should round to 1.1 then to 1
-        
+
         # MB and above should have 2 decimal places
         assert print_speed(1100000) == "1.1 MB"
         assert print_speed(1000000) == "1 MB"  # Should strip .00
@@ -180,18 +179,18 @@ class TestPrintTime:
         """Test edge cases."""
         # Large values
         assert print_time(31536000) == "365 days"  # 1 year
-        
+
         # Exact boundaries
         assert print_time(86400) == "1 day"
         assert print_time(86401) == "1 day"  # Should only show days with units=1
-        
+
         # Zero
         assert print_time(0) == ""
 
     def test_units_limit(self):
         """Test that units parameter limits the number of time units shown."""
         complex_time = 90182  # 1 day, 1 hour, 3 minutes, 2 seconds
-        
+
         assert print_time(complex_time, units=1) == "1 day"
         assert print_time(complex_time, units=2) == "1 day, 1 hour"
         assert print_time(complex_time, units=3) == "1 day, 1 hour, 3 minutes"
