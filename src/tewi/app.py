@@ -36,7 +36,7 @@ from rich.text import Text
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-from textual.containers import Grid, ScrollableContainer, Horizontal, Container, Vertical
+from textual.containers import ScrollableContainer, Horizontal, Container, Vertical
 from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
@@ -52,8 +52,10 @@ from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
 from .ui.dialog.statistics import StatisticsDialog
-from .ui.widget.common import ReactiveLabel, PageIndicator, SpeedIndicator
+from .ui.widget.common import ReactiveLabel
 from .ui.widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
+from .ui.panel.info import InfoPanel
+from .ui.panel.state import StatePanel
 
 
 logger = logging.getLogger('tewi')
@@ -388,130 +390,6 @@ class PreferencesWidget(Static):
 
 
 # Core UI panels
-
-class InfoPanel(Static):
-
-    @log_time
-    def __init__(self,
-                 w_version: str, w_trans_version: str,
-                 w_host: str, w_port: str):
-
-        self.w_version = w_version
-        self.w_trans_version = w_trans_version
-        self.w_host = w_host
-        self.w_port = w_port
-
-        super().__init__()
-
-    @log_time
-    def compose(self) -> ComposeResult:
-        with Horizontal(id="info-panel"):
-            yield Static(f'Tewi {self.w_version}', classes='column')
-            yield Static('»»»', classes='column delimiter')
-            yield Static(f'Transmission {self.w_trans_version}', classes='column')
-            yield Static('»»»', classes='column delimiter')
-            yield Static(f'{self.w_host}:{self.w_port}', classes='column')
-            yield Static('', classes='column space')
-            yield Static('?: Help', classes='column')
-            yield Static('', classes='column')
-            yield Static('Q: Quit', classes='column')
-
-
-class StatePanel(Static):
-
-    r_tsession = reactive(None)
-
-    # recompose whole line to update blocks width
-    r_page = reactive(None, recompose=True)
-    r_stats = reactive('', recompose=True)
-    r_sort = reactive('', recompose=True)
-    r_alt_speed = reactive('', recompose=True)
-    r_alt_delimiter = reactive('', recompose=True)
-
-    r_stats_size = reactive('', recompose=True)
-
-    r_upload_speed = reactive(0)
-    r_download_speed = reactive(0)
-
-    @log_time
-    def compose(self) -> ComposeResult:
-        with Grid(id="state-panel"):
-            yield PageIndicator(classes="column page").data_bind(
-                    state=StatePanel.r_page)
-            yield ReactiveLabel(classes="column").data_bind(
-                    name=StatePanel.r_stats)
-            yield ReactiveLabel(classes="column").data_bind(
-                    name=StatePanel.r_stats_size)
-            yield ReactiveLabel(classes="column sort").data_bind(
-                    name=StatePanel.r_sort)
-            yield Static("", classes="column")
-            yield ReactiveLabel(classes="column alt-speed").data_bind(
-                    name=StatePanel.r_alt_speed)
-            yield ReactiveLabel(classes="column delimiter").data_bind(
-                    name=StatePanel.r_alt_delimiter)
-            yield Static("↑", classes="column arrow")
-            yield SpeedIndicator(classes="column").data_bind(
-                    speed=StatePanel.r_upload_speed)
-            yield Static("↓", classes="column arrow")
-            yield SpeedIndicator(classes="column").data_bind(
-                    speed=StatePanel.r_download_speed)
-
-    @log_time
-    def watch_r_tsession(self, new_r_tsession):
-        if new_r_tsession:
-            session = new_r_tsession.session
-            session_stats = new_r_tsession.session_stats
-
-            self.r_stats = self.print_stats(new_r_tsession, session_stats)
-
-            complete_size = print_size(new_r_tsession.torrents_complete_size)
-            total_size = print_size(new_r_tsession.torrents_total_size)
-
-            if complete_size < total_size:
-                self.r_stats_size = f'Size: {complete_size} / {total_size}'
-            else:
-                self.r_stats_size = f'Size: {complete_size}'
-
-            sort_order = new_r_tsession.sort_order.name
-            sort_order_asc = new_r_tsession.sort_order_asc
-            sort_arrow = '' if sort_order_asc else '↑'
-            self.r_sort = f'Sort: {sort_order}{sort_arrow}'
-
-            self.r_upload_speed = session_stats.upload_speed
-            self.r_download_speed = session_stats.download_speed
-
-            alt_speed_enabled = session.alt_speed_enabled
-            alt_speed_up = session.alt_speed_up
-            alt_speed_down = session.alt_speed_down
-
-            if alt_speed_enabled:
-                self.r_alt_speed = f'Speed Limits: ↑ {alt_speed_up} KB ↓ {alt_speed_down} KB'
-                self.r_alt_delimiter = '»»»'
-            else:
-                self.r_alt_speed = ''
-                self.r_alt_delimiter = ''
-
-    def print_stats(self, session, session_stats) -> str:
-        stats = f"Torrents: {session_stats.torrent_count}"
-
-        statuses = []
-
-        if session.torrents_down > 0:
-            statuses.append(f"Downloading: {session.torrents_down}")
-
-        if session.torrents_seed > 0:
-            statuses.append(f"Seeding: {session.torrents_seed}")
-
-        if session.torrents_check > 0:
-            statuses.append(f"Verifying: {session.torrents_check}")
-
-        if session.torrents_stop > 0:
-            statuses.append(f"Paused: {session.torrents_stop}")
-
-        if len(statuses) > 0:
-            stats = f"{stats} ({', '.join(statuses)})"
-
-        return stats
 
 
 class TorrentListPanel(ScrollableContainer):
