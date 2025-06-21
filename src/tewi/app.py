@@ -30,7 +30,6 @@ from transmission_rpc import Client
 from transmission_rpc.error import TransmissionError
 from transmission_rpc.session import Session, SessionStats
 
-from rich.text import Text
 
 from textual import on, work
 from textual.app import App, ComposeResult
@@ -38,20 +37,19 @@ from textual.binding import Binding
 from textual.containers import ScrollableContainer, Horizontal
 from textual.message import Message
 from textual.reactive import reactive
-from textual.screen import ModalScreen
-from textual.widgets import Static, DataTable, ContentSwitcher, \
-        TextArea, Input
+from textual.widgets import ContentSwitcher
 
-
-import pyperclip
-
-from .util.print import print_size
+from .common import SortOrder, sort_orders
+from .message import AddTorrent, TorrentLabelsUpdated, SearchTorrent, SortOrderSelected
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
 from .ui.dialog.preferences import PreferencesDialog
 from .ui.dialog.statistics import StatisticsDialog
-from .ui.widget.common import ReactiveLabel
+from .ui.dialog.torrent.add import AddTorrentDialog
+from .ui.dialog.torrent.label import UpdateTorrentLabelsDialog
+from .ui.dialog.torrent.search import SearchDialog
+from .ui.dialog.torrent.sort import SortOrderDialog
 from .ui.widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
 from .ui.panel.info import InfoPanel
 from .ui.panel.state import StatePanel
@@ -68,14 +66,6 @@ class PageState(NamedTuple):
     total: int
 
 
-class SortOrder(NamedTuple):
-    id: str
-    name: str
-    key_asc: str
-    key_desc: str
-    sort_func: None
-
-
 class TransmissionSession(NamedTuple):
     session: Session
     session_stats: SessionStats
@@ -87,242 +77,6 @@ class TransmissionSession(NamedTuple):
     torrents_total_size: int
     sort_order: SortOrder
     sort_order_asc: bool
-
-
-sort_orders = [
-        SortOrder('age', 'Age', 'a', 'A',
-                  lambda t: t.added_date),
-        SortOrder('name', 'Name', 'n', 'N',
-                  lambda t: t.name.lower()),
-        SortOrder('size', 'Size', 'z', 'Z',
-                  lambda t: t.total_size),
-        SortOrder('status', 'Status', 't', 'T',
-                  lambda t: t.status),
-        SortOrder('priority', 'Priority', 'i', 'I',
-                  lambda t: t.priority),
-        SortOrder('queue_order', 'Queue Order', 'o', 'O',
-                  lambda t: t.queue_position),
-        SortOrder('ratio', 'Ratio', 'r', 'R',
-                  lambda t: t.ratio),
-        SortOrder('progress', 'Progress', 'p', 'P',
-                  lambda t: t.percent_done),
-        SortOrder('activity', 'Activity', 'y', 'Y',
-                  lambda t: t.activity_date),
-        SortOrder('uploaded', 'Uploaded', 'u', 'U',
-                  lambda t: t.uploaded_ever),
-        SortOrder('peers', 'Peers', 'e', 'E',
-                  lambda t: t.peers_connected),
-        SortOrder('seeders', 'Seeders', 's', 'S',
-                  lambda t: t.peers_sending_to_us),
-        SortOrder('leechers', 'Leechers', 'l', 'L',
-                  lambda t: t.peers_getting_from_us),
-        ]
-
-
-# Common screens
-
-
-class AddTorrentDialog(ModalScreen):
-
-    def __init__(self, session):
-        self.session = session
-        super().__init__()
-
-    def compose(self) -> ComposeResult:
-        yield AddTorrentWidget(self.session)
-
-
-class AddTorrentWidget(Static):
-
-    r_download_dir = reactive('')
-
-    BINDINGS = [
-            Binding("enter", "add", "[Torrent] Add torrent", priority=True),
-            Binding("escape", "close", "[Torrent] Close"),
-            ]
-
-    def __init__(self, session):
-        self.session = session
-        super().__init__()
-
-    def compose(self) -> ComposeResult:
-        yield ReactiveLabel().data_bind(
-                name=AddTorrentWidget.r_download_dir)
-        yield TextArea()
-
-    def on_mount(self) -> None:
-        self.border_title = 'Add torrent (local file, magnet link, URL)'
-        self.border_subtitle = '(Enter) Add / (ESC) Close'
-
-        free_space = print_size(self.session.download_dir_free_space)
-        download_dir = self.session.download_dir
-
-        self.r_download_dir = f'Destination folder: {download_dir} ({free_space} Free)'
-
-        text_area = self.query_one(TextArea)
-
-        link = self.get_link_from_clipboard()
-
-        if link:
-            text_area.load_text(link)
-        else:
-            text_area.load_text('~/')
-
-        text_area.cursor_location = text_area.document.end
-
-    def get_link_from_clipboard(self) -> str:
-        try:
-            text = pyperclip.paste()
-
-            if text:
-                if self.is_link(text):
-                    return text
-        except pyperclip.PyperclipException:
-            return None
-
-        return None
-
-    def is_link(self, text) -> bool:
-        text = text.strip()
-        return text.startswith(tuple(['magnet:', 'http://', 'https://']))
-
-    def action_add(self) -> None:
-        value = self.query_one(TextArea).text
-
-        self.post_message(MainApp.AddTorrent(value, self.is_link(value)))
-        self.parent.dismiss(False)
-
-    def action_close(self) -> None:
-        self.parent.dismiss(False)
-
-
-class UpdateTorrentLabelsDialog(ModalScreen):
-
-    def __init__(self, torrent, torrent_ids):
-        self.torrent = torrent
-        self.torrent_ids = torrent_ids
-        super().__init__()
-
-    def compose(self) -> ComposeResult:
-        yield UpdateTorrentLabelsWidget(self.torrent, self.torrent_ids)
-
-
-class UpdateTorrentLabelsWidget(Static):
-
-    BINDINGS = [
-            Binding("enter", "update", "[Torrent] Update labels", priority=True),
-            Binding("escape", "close", "[Torrent] Close"),
-            ]
-
-    def __init__(self, torrent, torrent_ids):
-        self.torrent = torrent
-        self.torrent_ids = torrent_ids
-        super().__init__()
-
-    def compose(self) -> ComposeResult:
-        yield TextArea()
-
-    def on_mount(self) -> None:
-        self.border_title = 'Update torrent labels (comma-separated list)'
-        self.border_subtitle = '(Enter) Update / (ESC) Close'
-
-        text_area = self.query_one(TextArea)
-
-        if self.torrent and len(self.torrent.labels) > 0:
-            text_area.load_text(", ".join(self.torrent.labels))
-
-        text_area.cursor_location = text_area.document.end
-
-    def action_update(self) -> None:
-        value = self.query_one(TextArea).text
-
-        if self.torrent:
-            torrent_ids = [self.torrent.id]
-        else:
-            torrent_ids = self.torrent_ids
-
-        self.post_message(MainApp.TorrentLabelsUpdated(
-            torrent_ids, value))
-
-        self.parent.dismiss(False)
-
-    def action_close(self) -> None:
-        self.parent.dismiss(False)
-
-
-class SearchDialog(ModalScreen):
-
-    def compose(self) -> ComposeResult:
-        yield SearchWidget()
-
-
-class SearchWidget(Static):
-
-    BINDINGS = [
-            Binding("enter", "search", "[Search] Search", priority=True),
-            Binding("escape", "close", "[Search] Close"),
-    ]
-
-    def compose(self) -> ComposeResult:
-        yield Input(placeholder="Enter search term...", id="search-input")
-
-    def on_mount(self) -> None:
-        self.border_title = 'Search'
-        self.border_subtitle = '(Enter) Search / (ESC) Close'
-        self.query_one("#search-input").focus()
-
-    def action_search(self) -> None:
-        value = self.query_one("#search-input").value
-
-        self.post_message(MainApp.SearchTorrent(value))
-        self.parent.dismiss(False)
-
-    def action_close(self) -> None:
-        self.parent.dismiss(False)
-
-
-class SortOrderDialog(ModalScreen):
-
-    def compose(self) -> ComposeResult:
-        yield SortOrderWidget()
-
-
-class SortOrderWidget(Static):
-
-    BINDINGS = [
-            Binding("escape,x", "close", "[Navigation] Close"),
-            ]
-
-    def compose(self) -> ComposeResult:
-        yield DataTable(cursor_type="none",
-                        zebra_stripes=True)
-
-    def on_mount(self) -> None:
-        self.border_title = 'Sort order'
-        self.border_subtitle = '(X) Close'
-
-        table = self.query_one(DataTable)
-        table.add_columns("Order", "Key (ASC | DESC)")
-
-        for o in sort_orders:
-            table.add_row(o.name,
-                          Text(str(f'   {o.key_asc} | {o.key_desc}'), justify="center"))
-
-            b = Binding(o.key_asc, f"select_order('{o.id}', True)")
-            self._bindings._add_binding(b)
-
-            b = Binding(o.key_desc, f"select_order('{o.id}', False)")
-            self._bindings._add_binding(b)
-
-    def action_select_order(self, sort_id, is_asc):
-        order = next(x for x in sort_orders if x.id == sort_id)
-
-        self.post_message(MainApp.SortOrderSelected(order, is_asc))
-
-        self.parent.dismiss(False)
-
-    def action_close(self) -> None:
-        self.parent.dismiss(False)
 
 
 # Core UI panels
@@ -992,29 +746,6 @@ class MainApp(App):
 
     class OpenSortOrder(Message):
         pass
-
-    class AddTorrent(Message):
-        def __init__(self, value: str, is_link: bool) -> None:
-            super().__init__()
-            self.value = value
-            self.is_link = is_link
-
-    class SearchTorrent(Message):
-        def __init__(self, value: str) -> None:
-            super().__init__()
-            self.value = value
-
-    class TorrentLabelsUpdated(Message):
-        def __init__(self, torrent_ids, value: str) -> None:
-            super().__init__()
-            self.torrent_ids = torrent_ids
-            self.value = value
-
-    class SortOrderSelected(Message):
-        def __init__(self, order: str, is_asc: bool) -> None:
-            super().__init__()
-            self.order = order
-            self.is_asc = is_asc
 
     class OpenSearch(Message):
         pass
