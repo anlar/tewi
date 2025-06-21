@@ -48,8 +48,10 @@ from textual.widgets import Static, Label, DataTable, ContentSwitcher, \
 import pyperclip
 
 from .util.geoip import get_country
-from .util.print import print_size, print_speed, print_time, print_time_ago
+from .util.print import print_size, print_speed, print_time_ago
 from .util.decorator import log_time
+from .ui.dialog.help import HelpDialog
+from .ui.dialog.statistics import StatisticsDialog
 from .ui.widget.common import ReactiveLabel, PageIndicator, SpeedIndicator
 from .ui.widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
 
@@ -158,165 +160,6 @@ class ConfirmationWidget(Static):
     def on_mount(self):
         self.border_title = 'Confirmation'
         self.border_subtitle = '(Y) Yes / (N) No'
-
-
-class HelpDialog(ModalScreen):
-
-    BINDINGS = [
-            Binding("x,escape", "close", "[Navigation] Close"),
-            ]
-
-    def __init__(self, bindings) -> None:
-        self.bindings = bindings
-        super().__init__()
-
-    def compose(self) -> ComposeResult:
-        yield HelpWidget(self.bindings)
-
-    def action_close(self) -> None:
-        self.dismiss(False)
-
-
-class HelpWidget(Static):
-
-    def __init__(self, bindings) -> None:
-        self.bindings = bindings
-        super().__init__()
-
-    def compose(self) -> ComposeResult:
-        yield DataTable(cursor_type="none",
-                        zebra_stripes=True)
-
-    def on_mount(self) -> None:
-        self.border_title = 'Help'
-        self.border_subtitle = '(X) Close'
-
-        table = self.query_one(DataTable)
-        table.add_columns("Category", "Key", "Command")
-
-        # Group and sort bindings by category
-        categories = {}
-        for b in filter(lambda x: x.binding.show, self.bindings):
-            key = b.binding.key
-            description = b.binding.description
-
-            if key == 'question_mark':
-                key = '?'
-            elif key == 'quotation_mark':
-                key = '"'
-            elif key == 'slash':
-                key = '/'
-
-            if len(key) > 1:
-                key = key.title()
-
-            # Split description into category and command
-            if description.startswith("["):
-                category, _, command = b.binding.description.partition("] ")
-                category = category[1:]  # Remove leading [
-            else:
-                category = "General"
-                command = description
-
-            if category not in categories:
-                categories[category] = []
-            categories[category].append((command, key))
-
-        # Sort categories and their commands
-        for category in sorted(categories.keys()):
-            for command, key in sorted(categories[category]):
-                table.add_row(category, key, command)
-
-
-class StatisticsDialog(ModalScreen):
-
-    BINDINGS = [
-            Binding("x,escape", "close", "[Info] Close"),
-            ]
-
-    def __init__(self, session_stats) -> None:
-        self.session_stats = session_stats
-        super().__init__()
-
-    def compose(self) -> ComposeResult:
-        yield StatisticsWidget(self.session_stats)
-
-    def action_close(self) -> None:
-        self.dismiss(False)
-
-
-class StatisticsWidget(Static):
-
-    r_upload = reactive("")
-    r_download = reactive("")
-    r_ratio = reactive("")
-    r_time = reactive("")
-
-    r_total_upload = reactive("")
-    r_total_download = reactive("")
-    r_total_ratio = reactive("")
-    r_total_time = reactive("")
-    r_total_started = reactive("")
-
-    def __init__(self, session_stats) -> None:
-        self.session_stats = session_stats
-        super().__init__()
-
-    def compose(self) -> ComposeResult:
-        yield Static("Current Session", classes="title")
-        yield Static("  Uploaded:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_upload)
-        yield Static("  Downloaded:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_download)
-        yield Static("  Ratio:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_ratio)
-        yield Static("  Running Time:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_time)
-        yield Static(" ", classes="title")
-        yield Static("Total", classes="title")
-        yield Static("  Uploaded:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_upload)
-        yield Static("  Downloaded:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_download)
-        yield Static("  Ratio:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_ratio)
-        yield Static("  Running Time:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_time)
-        yield Static("  Started:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_started)
-
-    def on_mount(self) -> None:
-        self.border_title = 'Statistics'
-        self.border_subtitle = '(X) Close'
-
-        # current stats
-
-        self.r_upload = print_size(self.session_stats.current_stats.uploaded_bytes)
-        self.r_download = print_size(self.session_stats.current_stats.downloaded_bytes)
-
-        self.r_ratio = self.print_ratio(self.session_stats.current_stats.uploaded_bytes,
-                                        self.session_stats.current_stats.downloaded_bytes)
-
-        self.r_time = print_time(self.session_stats.current_stats.seconds_active)
-
-        # cumulative stats
-
-        self.r_total_upload = print_size(self.session_stats.cumulative_stats.uploaded_bytes)
-        self.r_total_download = print_size(self.session_stats.cumulative_stats.downloaded_bytes)
-
-        self.r_total_ratio = self.print_ratio(self.session_stats.cumulative_stats.uploaded_bytes,
-                                              self.session_stats.cumulative_stats.downloaded_bytes)
-
-        self.r_total_time = print_time(self.session_stats.cumulative_stats.seconds_active)
-        self.r_total_started = f"{self.session_stats.cumulative_stats.session_count} times"
-
-    def print_ratio(self, uploaded, downloaded) -> str:
-        if downloaded == 0:
-            return "∞"
-
-        ratio = uploaded / downloaded
-
-        return f"{ratio:.2f}"
 
 
 class AddTorrentDialog(ModalScreen):
