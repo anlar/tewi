@@ -18,7 +18,6 @@
 
 from .version import __version__
 
-from typing import NamedTuple
 import argparse
 import logging
 import math
@@ -28,7 +27,6 @@ import sys
 
 from transmission_rpc import Client
 from transmission_rpc.error import TransmissionError
-from transmission_rpc.session import Session, SessionStats
 
 
 from textual import on, work
@@ -39,7 +37,7 @@ from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import ContentSwitcher
 
-from .common import SortOrder, sort_orders
+from .common import PageState, TransmissionSession, sort_orders
 from .message import AddTorrent, TorrentLabelsUpdated, SearchTorrent, SortOrderSelected
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
@@ -57,26 +55,6 @@ from .ui.panel.details import TorrentInfoPanel
 
 
 logger = logging.getLogger('tewi')
-
-
-# Common data
-
-class PageState(NamedTuple):
-    current: int
-    total: int
-
-
-class TransmissionSession(NamedTuple):
-    session: Session
-    session_stats: SessionStats
-    torrents_down: int
-    torrents_seed: int
-    torrents_check: int
-    torrents_stop: int
-    torrents_complete_size: int
-    torrents_total_size: int
-    sort_order: SortOrder
-    sort_order_asc: bool
 
 
 # Core UI panels

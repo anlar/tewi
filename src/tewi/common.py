@@ -1,5 +1,12 @@
 from typing import NamedTuple
 
+from transmission_rpc.session import Session, SessionStats
+
+
+class PageState(NamedTuple):
+    current: int
+    total: int
+
 
 class SortOrder(NamedTuple):
     id: str
@@ -7,6 +14,19 @@ class SortOrder(NamedTuple):
     key_asc: str
     key_desc: str
     sort_func: None
+
+
+class TransmissionSession(NamedTuple):
+    session: Session
+    session_stats: SessionStats
+    torrents_down: int
+    torrents_seed: int
+    torrents_check: int
+    torrents_stop: int
+    torrents_complete_size: int
+    torrents_total_size: int
+    sort_order: SortOrder
+    sort_order_asc: bool
 
 
 sort_orders = [
