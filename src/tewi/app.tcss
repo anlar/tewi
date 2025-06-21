@@ -304,13 +304,13 @@ Toast {
     width: 40;
 }
 
-/* SCREEN: CONFIRMATION DIALOG */
+/* SCREEN: CONFIRMDIALOG */
 
-ConfirmationDialog {
+ConfirmDialog {
     align: center middle;
 }
 
-ConfirmationWidget {
+ConfirmWidget {
     border-title-align: center;
     border: round $warning;
     height: auto;

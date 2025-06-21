@@ -25,7 +25,6 @@ import logging
 import math
 import os
 import pathlib
-import textwrap
 import sys
 
 from transmission_rpc import Client
@@ -41,7 +40,7 @@ from textual.containers import Grid, ScrollableContainer, Horizontal, Container,
 from textual.message import Message
 from textual.reactive import reactive
 from textual.screen import ModalScreen
-from textual.widgets import Static, Label, DataTable, ContentSwitcher, \
+from textual.widgets import Static, DataTable, ContentSwitcher, \
         TabbedContent, TabPane, TextArea, Input
 
 
@@ -50,6 +49,7 @@ import pyperclip
 from .util.geoip import get_country
 from .util.print import print_size, print_speed, print_time_ago
 from .util.decorator import log_time
+from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
 from .ui.dialog.statistics import StatisticsDialog
 from .ui.widget.common import ReactiveLabel, PageIndicator, SpeedIndicator
@@ -118,48 +118,6 @@ sort_orders = [
 
 
 # Common screens
-
-class ConfirmationDialog(ModalScreen):
-
-    BINDINGS = [
-            Binding("y", "confirm", "[Confirmation] Yes"),
-            Binding("n,x,escape", "close", "[Confirmation] No"),
-            ]
-
-    def __init__(self, message: str, description: str = None) -> None:
-        self.message = message
-        self.description = description
-        super().__init__()
-
-    def compose(self) -> ComposeResult:
-        yield ConfirmationWidget(self.message, self.description)
-
-    def action_confirm(self) -> None:
-        self.dismiss(True)
-
-    def action_close(self) -> None:
-        self.dismiss(False)
-
-
-class ConfirmationWidget(Static):
-
-    def __init__(self, message: str, description: str = None) -> None:
-        self.message = message
-        self.description = description
-        super().__init__()
-
-    def compose(self) -> ComposeResult:
-        yield Label(self.message)
-
-        if self.description:
-            # empty space between message and description
-            yield Label('')
-            for line in textwrap.wrap(self.description, 56):
-                yield Label(line)
-
-    def on_mount(self):
-        self.border_title = 'Confirmation'
-        self.border_subtitle = '(Y) Yes / (N) No'
 
 
 class AddTorrentDialog(ModalScreen):
@@ -1781,8 +1739,8 @@ class MainApp(App):
     @on(Confirm)
     def handle_confirm(self, event: Confirm) -> None:
         self.push_screen(
-                    ConfirmationDialog(message=event.message,
-                                       description=event.description),
+                    ConfirmDialog(message=event.message,
+                                  description=event.description),
                     event.check_quit)
 
     @log_time
