@@ -64,3 +64,8 @@ class Client:
                 'total_active_seconds': s.cumulative_stats.seconds_active,
                 'total_started_count': s.cumulative_stats.session_count,
         }
+
+    def toggle_alt_speed(self) -> bool:
+        alt_speed_enabled = self.client.get_session().alt_speed_enabled
+        self.client.set_session(alt_speed_enabled=not alt_speed_enabled)
+        return not alt_speed_enabled

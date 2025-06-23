@@ -186,13 +186,12 @@ class MainApp(App):
 
     @log_time
     def action_toggle_alt_speed(self) -> None:
-        alt_speed_enabled = self.client.get_session().alt_speed_enabled
-        self.client.set_session(alt_speed_enabled=not alt_speed_enabled)
+        alt_speed_enabled = self.client1.toggle_alt_speed()
 
         if alt_speed_enabled:
-            self.post_message(MainApp.Notification("Turtle Mode disabled"))
+            self.post_message(Notification("Turtle Mode enabled"))
         else:
-            self.post_message(MainApp.Notification("Turtle Mode enabled"))
+            self.post_message(Notification("Turtle Mode disabled"))
 
     @log_time
     def action_show_statistics(self) -> None:
