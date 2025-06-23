@@ -24,7 +24,6 @@ import os
 import pathlib
 import sys
 
-from transmission_rpc import Client
 from transmission_rpc.error import TransmissionError
 
 
@@ -36,6 +35,7 @@ from textual.reactive import reactive
 from textual.widgets import ContentSwitcher
 
 from .common import TransmissionSession, sort_orders
+from .service.client import Client
 from .message import AddTorrent, TorrentLabelsUpdated, SearchTorrent, SortOrderSelected, Notification, Confirm, \
         OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearch, OpenPreferences, PageChanged
 from .util.decorator import log_time
@@ -103,18 +103,22 @@ class MainApp(App):
         self.c_host = host
         self.c_port = port
 
-        self.client = Client(host=self.c_host, port=self.c_port,
-                             username=username, password=password)
+        self.client1 = Client(host=self.c_host, port=self.c_port,
+                              username=username, password=password)
 
-        self.transmission_version = self.client.get_session().version
+        # TODO: remove
+        self.client = self.client1.client
 
         self.sort_order = sort_orders[0]
         self.sort_order_asc = True
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield InfoPanel(self.tewi_version, self.transmission_version,
-                        self.c_host, self.c_port)
+        yield InfoPanel(self.tewi_version,
+                        self.client1.meta()['name'],
+                        self.client1.meta()['version'],
+                        self.c_host,
+                        self.c_port)
 
         with Horizontal():
             with ContentSwitcher(initial="torrent-list"):
