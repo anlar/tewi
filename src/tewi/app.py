@@ -196,7 +196,7 @@ class MainApp(App):
 
     @log_time
     def action_show_statistics(self) -> None:
-        self.push_screen(StatisticsDialog(self.r_tsession.session_stats))
+        self.push_screen(StatisticsDialog(self.client1.stats()))
 
     @log_time
     def action_help(self) -> None:

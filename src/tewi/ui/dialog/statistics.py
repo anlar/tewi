@@ -1,11 +1,9 @@
 from textual.binding import Binding
 from textual.screen import ModalScreen
-from textual.widgets import Static
+from textual.widgets import Static, Label
 from textual.app import ComposeResult
-from textual.reactive import reactive
-
-from ...util.print import print_size, print_time
-from ..widget.common import ReactiveLabel
+from ...service.client import ClientStats
+from ...util.print import print_size, print_time, print_ratio
 
 
 class StatisticsDialog(ModalScreen[None]):
@@ -14,12 +12,12 @@ class StatisticsDialog(ModalScreen[None]):
             Binding("x,escape", "close", "[Info] Close"),
             ]
 
-    def __init__(self, session_stats) -> None:
-        self.session_stats = session_stats
+    def __init__(self, stats: ClientStats) -> None:
+        self.stats = stats
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        yield StatisticsWidget(self.session_stats)
+        yield StatisticsWidget(self.stats)
 
     def action_close(self) -> None:
         self.dismiss()
@@ -27,73 +25,33 @@ class StatisticsDialog(ModalScreen[None]):
 
 class StatisticsWidget(Static):
 
-    r_upload = reactive("")
-    r_download = reactive("")
-    r_ratio = reactive("")
-    r_time = reactive("")
-
-    r_total_upload = reactive("")
-    r_total_download = reactive("")
-    r_total_ratio = reactive("")
-    r_total_time = reactive("")
-    r_total_started = reactive("")
-
-    def __init__(self, session_stats) -> None:
-        self.session_stats = session_stats
+    def __init__(self, stats: ClientStats) -> None:
+        self.stats = stats
         super().__init__()
 
     def compose(self) -> ComposeResult:
         yield Static("Current Session", classes="title")
         yield Static("  Uploaded:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_upload)
+        yield Label(print_size(self.stats['current_uploaded_bytes']))
         yield Static("  Downloaded:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_download)
+        yield Label(print_size(self.stats['current_downloaded_bytes']))
         yield Static("  Ratio:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_ratio)
+        yield Label(print_ratio(self.stats['current_ratio']))
         yield Static("  Running Time:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_time)
+        yield Label(print_time(self.stats['current_active_seconds']))
         yield Static(" ", classes="title")
         yield Static("Total", classes="title")
         yield Static("  Uploaded:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_upload)
+        yield Label(print_size(self.stats['total_uploaded_bytes']))
         yield Static("  Downloaded:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_download)
+        yield Label(print_size(self.stats['total_downloaded_bytes']))
         yield Static("  Ratio:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_ratio)
+        yield Label(print_ratio(self.stats['total_ratio']))
         yield Static("  Running Time:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_time)
+        yield Label(print_time(self.stats['total_active_seconds']))
         yield Static("  Started:")
-        yield ReactiveLabel().data_bind(name=StatisticsWidget.r_total_started)
+        yield Label(f"{self.stats['total_started_count']} times")
 
     def on_mount(self) -> None:
         self.border_title = 'Statistics'
         self.border_subtitle = '(X) Close'
-
-        # current stats
-
-        self.r_upload = print_size(self.session_stats.current_stats.uploaded_bytes)
-        self.r_download = print_size(self.session_stats.current_stats.downloaded_bytes)
-
-        self.r_ratio = self.print_ratio(self.session_stats.current_stats.uploaded_bytes,
-                                        self.session_stats.current_stats.downloaded_bytes)
-
-        self.r_time = print_time(self.session_stats.current_stats.seconds_active)
-
-        # cumulative stats
-
-        self.r_total_upload = print_size(self.session_stats.cumulative_stats.uploaded_bytes)
-        self.r_total_download = print_size(self.session_stats.cumulative_stats.downloaded_bytes)
-
-        self.r_total_ratio = self.print_ratio(self.session_stats.cumulative_stats.uploaded_bytes,
-                                              self.session_stats.cumulative_stats.downloaded_bytes)
-
-        self.r_total_time = print_time(self.session_stats.cumulative_stats.seconds_active)
-        self.r_total_started = f"{self.session_stats.cumulative_stats.session_count} times"
-
-    def print_ratio(self, uploaded, downloaded) -> str:
-        if downloaded == 0:
-            return "∞"
-
-        ratio = uploaded / downloaded
-
-        return f"{ratio:.2f}"

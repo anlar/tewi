@@ -14,6 +14,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import math
+
 from functools import cache
 from datetime import datetime
 
@@ -58,6 +60,14 @@ def print_speed(num: int, print_secs: bool = False, suffix: str = "B", speed_byt
         return f"{r_size} {r_unit}{suffix}/s"
     else:
         return f"{r_size} {r_unit}{suffix}"
+
+
+@cache
+def print_ratio(ratio: float) -> str:
+    if math.isinf(ratio):
+        return "∞"
+    else:
+        return f"{ratio:.2f}"
 
 
 @cache
