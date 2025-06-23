@@ -1,5 +1,6 @@
 from typing import TypedDict
 
+from transmission_rpc import Torrent
 from transmission_rpc import Client as TransmissionClient
 
 
@@ -64,6 +65,18 @@ class Client:
                 'total_active_seconds': s.cumulative_stats.seconds_active,
                 'total_started_count': s.cumulative_stats.session_count,
         }
+
+    def torrents(self) -> list[Torrent]:
+        return self.client.get_torrents(
+                arguments=['id', 'name', 'status', 'totalSize', 'left_until_done',
+                           'percentDone', 'eta', 'rateUpload', 'rateDownload',
+                           'uploadRatio', 'sizeWhenDone', 'leftUntilDone',
+                           'addedDate', 'peersConnected', 'peersGettingFromUs',
+                           'peersSendingToUs', 'bandwidthPriority', 'uploadedEver']
+                )
+
+    def torrent(self, id: int) -> Torrent:
+        return self.client.get_torrent(id)
 
     def toggle_alt_speed(self) -> bool:
         alt_speed_enabled = self.client.get_session().alt_speed_enabled

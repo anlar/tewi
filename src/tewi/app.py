@@ -143,7 +143,7 @@ class MainApp(App):
 
         session = self.client.get_session()
         session_stats = self.client.session_stats()
-        torrents = self.client.get_torrents()
+        torrents = self.client1.torrents()
 
         if self.limit_torrents:
             torrents = torrents[:self.limit_torrents]
@@ -204,8 +204,10 @@ class MainApp(App):
     @log_time
     @on(TorrentListPanel.TorrentViewed)
     def handle_torrent_view(self, event: TorrentListPanel.TorrentViewed) -> None:
+        torrent = self.client1.torrent(event.torrent.id)
+
         self.query_one(ContentSwitcher).current = "torrent-info"
-        self.query_one(TorrentInfoPanel).r_torrent = event.torrent
+        self.query_one(TorrentInfoPanel).r_torrent = torrent
 
     @log_time
     @on(TorrentInfoPanel.TorrentViewClosed)
