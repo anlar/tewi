@@ -292,15 +292,14 @@ class MainApp(App):
             count_label = f"{len(event.torrent_ids)} torrents"
 
         if len(labels) > 0:
-            self.client.change_torrent(event.torrent_ids,
-                                       labels=labels)
+            self.client1.update_labels(event.torrent_ids, labels)
 
-            self.post_message(MainApp.Notification(
+            self.post_message(Notification(
                 f"Updated torrent labels ({count_label}):\n{','.join(labels)}"))
         else:
-            self.client.change_torrent(event.torrent_ids,
-                                       labels=[])
-            self.post_message(MainApp.Notification(
+            self.client1.update_labels(event.torrent_ids, [])
+
+            self.post_message(Notification(
                 "Removed torrent labels ({count_label})"))
 
     @log_time

@@ -72,11 +72,22 @@ class Client:
                            'percentDone', 'eta', 'rateUpload', 'rateDownload',
                            'uploadRatio', 'sizeWhenDone', 'leftUntilDone',
                            'addedDate', 'peersConnected', 'peersGettingFromUs',
-                           'peersSendingToUs', 'bandwidthPriority', 'uploadedEver']
+                           'peersSendingToUs', 'bandwidthPriority', 'uploadedEver',
+                           'labels']
                 )
 
     def torrent(self, id: int) -> Torrent:
         return self.client.get_torrent(id)
+
+    def update_labels(self,
+                      torrent_ids: int | list[int],
+                      labels: list[str]) -> None:
+
+        if isinstance(torrent_ids, int):
+            torrent_ids = [torrent_ids]
+
+        self.client.change_torrent(torrent_ids,
+                                   labels=labels)
 
     def toggle_alt_speed(self) -> bool:
         alt_speed_enabled = self.client.get_session().alt_speed_enabled
