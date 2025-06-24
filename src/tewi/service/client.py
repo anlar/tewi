@@ -91,6 +91,28 @@ class Client:
             file = os.path.expanduser(value)
             self.client.add_torrent(pathlib.Path(file))
 
+    def start_torrent(self, torrent_ids: int | list[int]) -> None:
+        self.client.start_torrent(torrent_ids)
+
+    def stop_torrent(self, torrent_ids: int | list[int]) -> None:
+        self.client.stop_torrent(torrent_ids)
+
+    def remove_torrent(self,
+                       torrent_ids: int | list[int],
+                       delete_data: bool = False) -> None:
+
+        self.client.remove_torrent(torrent_ids,
+                                   delete_data=delete_data)
+
+    def verify_torrent(self, torrent_ids: int | list[int]) -> None:
+        self.client.verify_torrent(torrent_ids)
+
+    def reannounce_torrent(self, torrent_ids: int | list[int]) -> None:
+        self.client.reannounce_torrent(torrent_ids)
+
+    def start_all_torrents(self) -> None:
+        self.client.start_all()
+
     def update_labels(self,
                       torrent_ids: int | list[int],
                       labels: list[str]) -> None:

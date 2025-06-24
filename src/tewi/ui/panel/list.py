@@ -5,6 +5,7 @@ from textual.containers import ScrollableContainer
 from textual.message import Message
 from textual.reactive import reactive
 
+from ...service.client import Client
 from ...util.decorator import log_time
 from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
 from ...common import PageState
@@ -67,7 +68,8 @@ class TorrentListPanel(ScrollableContainer):
     search_active = False
 
     @log_time
-    def __init__(self, id: str, view_mode: str, page_size: str):
+    def __init__(self, id: str, client: Client,  view_mode: str, page_size: str):
+        self.client = client
         self.view_mode = view_mode
         self.page_size = page_size
         super().__init__(id=id)
@@ -362,10 +364,10 @@ class TorrentListPanel(ScrollableContainer):
                 status = self.selected_item.t_status
 
                 if status == 'stopped':
-                    self.client().start_torrent(self.selected_item.t_id)
+                    self.client.start_torrent(self.selected_item.t_id)
                     self.post_message(Notification("Torrent started"))
                 else:
-                    self.client().stop_torrent(self.selected_item.t_id)
+                    self.client.stop_torrent(self.selected_item.t_id)
                     self.post_message(Notification("Torrent stopped"))
         else:
             # There are marked torrents - toggle them based on their status
@@ -376,11 +378,11 @@ class TorrentListPanel(ScrollableContainer):
 
             if has_stopped:
                 # Start all marked torrents
-                self.client().start_torrent(self.marked_torrent_ids)
+                self.client.start_torrent(self.marked_torrent_ids)
                 self.post_message(Notification(f"Started {len(self.marked_torrent_ids)} marked torrents"))
             else:
                 # Stop all marked torrents
-                self.client().stop_torrent(self.marked_torrent_ids)
+                self.client.stop_torrent(self.marked_torrent_ids)
                 self.post_message(Notification(f"Stopped {len(self.marked_torrent_ids)} marked torrents"))
 
     @log_time
@@ -453,8 +455,8 @@ class TorrentListPanel(ScrollableContainer):
 
             def check_quit(confirmed: bool | None) -> None:
                 if confirmed:
-                    self.client().remove_torrent(self.marked_torrent_ids,
-                                                 delete_data=delete_data)
+                    self.client.remove_torrent(self.marked_torrent_ids,
+                                               delete_data=delete_data)
 
                     # TODO: remove torrents from items list
 
@@ -475,8 +477,8 @@ class TorrentListPanel(ScrollableContainer):
 
             def check_quit(confirmed: bool | None) -> None:
                 if confirmed:
-                    self.client().remove_torrent(self.selected_item.t_id,
-                                                 delete_data=delete_data)
+                    self.client.remove_torrent(self.selected_item.t_id,
+                                               delete_data=delete_data)
 
                     w_prev = self.selected_item.w_prev
                     w_next = self.selected_item.w_next
@@ -514,11 +516,11 @@ class TorrentListPanel(ScrollableContainer):
         if not self.marked_torrent_ids:
             # No marked torrents - verify currently selected torrent
             if self.selected_item:
-                self.client().verify_torrent(self.selected_item.t_id)
+                self.client.verify_torrent(self.selected_item.t_id)
                 self.post_message(Notification("Torrent sent to verification"))
         else:
             # There are marked torrents - verify them all
-            self.client().verify_torrent(self.marked_torrent_ids)
+            self.client.verify_torrent(self.marked_torrent_ids)
             self.post_message(Notification(
                 f"Sent {len(self.marked_torrent_ids)} marked torrents to verification"))
 
@@ -527,22 +529,22 @@ class TorrentListPanel(ScrollableContainer):
         if not self.marked_torrent_ids:
             # No marked torrents - reannounce currently selected torrent
             if self.selected_item:
-                self.client().reannounce_torrent(self.selected_item.t_id)
+                self.client.reannounce_torrent(self.selected_item.t_id)
                 self.post_message(Notification("Torrent reannounce started"))
         else:
             # There are marked torrents - reannounce them all
-            self.client().reannounce_torrent(self.marked_torrent_ids)
+            self.client.reannounce_torrent(self.marked_torrent_ids)
             self.post_message(Notification(
                 f"Reannounce started for {len(self.marked_torrent_ids)} marked torrents"))
 
     @log_time
     def action_start_all_torrents(self) -> None:
-        self.client().start_all()
+        self.client.start_all_torrents()
         self.post_message(Notification("All torrents started"))
 
     @log_time
     def action_stop_all_torrents(self) -> None:
-        self.client().stop_torrent([t.id for t in self.r_torrents])
+        self.client.stop_torrent([t.id for t in self.r_torrents])
         self.post_message(Notification("All torrents stopped"))
 
     @log_time
@@ -640,8 +642,3 @@ class TorrentListPanel(ScrollableContainer):
             self.search_term = search_term
             self.search_active = True
             self._search_torrent(search_term, forward=True)
-
-    @log_time
-    def client(self):
-        # TODO: get client
-        return self.parent.parent.parent.parent.client

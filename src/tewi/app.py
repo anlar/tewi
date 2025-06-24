@@ -121,6 +121,7 @@ class MainApp(App):
         with Horizontal():
             with ContentSwitcher(initial="torrent-list"):
                 yield TorrentListPanel(id="torrent-list",
+                                       client=self.client1,
                                        view_mode=self.view_mode,
                                        page_size=self.page_size).data_bind(
                                                r_torrents=MainApp.r_torrents)
