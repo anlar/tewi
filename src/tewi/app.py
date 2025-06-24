@@ -248,7 +248,7 @@ class MainApp(App):
     @log_time
     @on(OpenPreferences)
     def handle_open_preferences(self, event: OpenPreferences) -> None:
-        self.push_screen(PreferencesDialog(self.r_tsession.session))
+        self.push_screen(PreferencesDialog(self.client1.preferences()))
 
     @log_time
     @on(OpenSearch)

@@ -71,6 +71,13 @@ class Client:
                 'total_started_count': s.cumulative_stats.session_count,
         }
 
+    def preferences(self) -> dict[str, str]:
+        session_dict = self.client.get_session().fields
+
+        filtered = {k: v for k, v in session_dict.items() if not k.startswith(tuple(['units', 'version']))}
+
+        return dict(sorted(filtered.items()))
+
     def torrents(self) -> list[Torrent]:
         return self.client.get_torrents(
                 arguments=['id', 'name', 'status', 'totalSize', 'left_until_done',
