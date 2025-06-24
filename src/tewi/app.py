@@ -101,11 +101,8 @@ class MainApp(App):
         self.c_host = host
         self.c_port = port
 
-        self.client1 = Client(host=self.c_host, port=self.c_port,
+        self.client = Client(host=self.c_host, port=self.c_port,
                               username=username, password=password)
-
-        # TODO: remove
-        self.client = self.client1.client
 
         self.sort_order = sort_orders[0]
         self.sort_order_asc = True
@@ -113,15 +110,15 @@ class MainApp(App):
     @log_time
     def compose(self) -> ComposeResult:
         yield InfoPanel(self.tewi_version,
-                        self.client1.meta()['name'],
-                        self.client1.meta()['version'],
+                        self.client.meta()['name'],
+                        self.client.meta()['version'],
                         self.c_host,
                         self.c_port)
 
         with Horizontal():
             with ContentSwitcher(initial="torrent-list"):
                 yield TorrentListPanel(id="torrent-list",
-                                       client=self.client1,
+                                       client=self.client,
                                        view_mode=self.view_mode,
                                        page_size=self.page_size).data_bind(
                                                r_torrents=MainApp.r_torrents)
@@ -140,8 +137,8 @@ class MainApp(App):
     async def load_tdata(self) -> None:
         logging.info("Start loading data from Transmission...")
 
-        torrents = self.client1.torrents()
-        session = self.client1.session(torrents, self.sort_order, self.sort_order_asc)
+        torrents = self.client.torrents()
+        session = self.client.session(torrents, self.sort_order, self.sort_order_asc)
 
         torrents.sort(key=self.sort_order.sort_func,
                       reverse=not self.sort_order_asc)
@@ -155,7 +152,7 @@ class MainApp(App):
 
     @log_time
     def action_toggle_alt_speed(self) -> None:
-        alt_speed_enabled = self.client1.toggle_alt_speed()
+        alt_speed_enabled = self.client.toggle_alt_speed()
 
         if alt_speed_enabled:
             self.post_message(Notification("Turtle Mode enabled"))
@@ -164,7 +161,7 @@ class MainApp(App):
 
     @log_time
     def action_show_statistics(self) -> None:
-        self.push_screen(StatisticsDialog(self.client1.stats()))
+        self.push_screen(StatisticsDialog(self.client.stats()))
 
     @log_time
     def action_help(self) -> None:
@@ -173,7 +170,7 @@ class MainApp(App):
     @log_time
     @on(TorrentListPanel.TorrentViewed)
     def handle_torrent_view(self, event: TorrentListPanel.TorrentViewed) -> None:
-        torrent = self.client1.torrent(event.torrent.id)
+        torrent = self.client.torrent(event.torrent.id)
 
         self.query_one(ContentSwitcher).current = "torrent-info"
         self.query_one(TorrentInfoPanel).r_torrent = torrent
@@ -203,7 +200,7 @@ class MainApp(App):
     @log_time
     @on(OpenAddTorrent)
     def handle_open_add_torrent(self, event: OpenAddTorrent) -> None:
-        session = self.client1.session()
+        session = self.client.session()
         self.push_screen(AddTorrentDialog(session['download_dir'],
                                           session['download_dir_free_space']))
 
@@ -220,7 +217,7 @@ class MainApp(App):
     @log_time
     @on(OpenPreferences)
     def handle_open_preferences(self, event: OpenPreferences) -> None:
-        self.push_screen(PreferencesDialog(self.client1.preferences()))
+        self.push_screen(PreferencesDialog(self.client.preferences()))
 
     @log_time
     @on(OpenSearch)
@@ -231,7 +228,7 @@ class MainApp(App):
     @on(AddTorrent)
     def handle_add_torrent(self, event: AddTorrent) -> None:
         try:
-            self.client1.add_torrent(event.value)
+            self.client.add_torrent(event.value)
             self.post_message(Notification("New torrent was added"))
         except TransmissionError as e:
             self.post_message(Notification(
@@ -258,12 +255,12 @@ class MainApp(App):
             count_label = f"{len(event.torrent_ids)} torrents"
 
         if len(labels) > 0:
-            self.client1.update_labels(event.torrent_ids, labels)
+            self.client.update_labels(event.torrent_ids, labels)
 
             self.post_message(Notification(
                 f"Updated torrent labels ({count_label}):\n{','.join(labels)}"))
         else:
-            self.client1.update_labels(event.torrent_ids, [])
+            self.client.update_labels(event.torrent_ids, [])
 
             self.post_message(Notification(
                 "Removed torrent labels ({count_label})"))
