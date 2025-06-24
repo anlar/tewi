@@ -48,6 +48,7 @@ from .ui.dialog.torrent.sort import SortOrderDialog
 from .ui.panel.info import InfoPanel
 from .ui.panel.state import StatePanel
 from .ui.panel.list import TorrentListPanel
+from .ui.panel.listview import TorrentListViewPanel
 from .ui.panel.details import TorrentInfoPanel
 
 
@@ -115,14 +116,18 @@ class MainApp(App):
                         self.c_host,
                         self.c_port)
 
-        with Horizontal():
-            with ContentSwitcher(initial="torrent-list"):
-                yield TorrentListPanel(id="torrent-list",
-                                       client=self.client,
-                                       view_mode=self.view_mode,
-                                       page_size=self.page_size).data_bind(
-                                               r_torrents=MainApp.r_torrents)
-                yield TorrentInfoPanel(id="torrent-info")
+        yield TorrentListViewPanel(id="torrent-list",
+                                   page_size=self.page_size,
+                                   view_mode=self.view_mode).data_bind(r_torrents=MainApp.r_torrents)
+
+        #with Horizontal():
+        #    with ContentSwitcher(initial="torrent-list"):
+        #        yield TorrentListPanel(id="torrent-list",
+        #                               client=self.client,
+        #                               view_mode=self.view_mode,
+        #                               page_size=self.page_size).data_bind(
+        #                                       r_torrents=MainApp.r_torrents)
+        #        yield TorrentInfoPanel(id="torrent-info")
 
         yield StatePanel().data_bind(r_session=MainApp.r_session,
                                      r_page=MainApp.r_page)
@@ -137,7 +142,7 @@ class MainApp(App):
     async def load_tdata(self) -> None:
         logging.info("Start loading data from Transmission...")
 
-        torrents = self.client.torrents()
+        torrents = self.client.torrents_test()
         session = self.client.session(torrents, self.sort_order, self.sort_order_asc)
 
         torrents.sort(key=self.sort_order.sort_func,

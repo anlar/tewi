@@ -141,6 +141,19 @@ class Client:
                            'labels']
                 )
 
+    def torrents_test(self) -> list[Torrent]:
+        torrents = self.torrents()
+
+        torrents = torrents * 5
+
+        idx = 1
+
+        for t in torrents:
+            t.fields['id'] = idx
+            idx = idx + 1
+
+        return torrents
+
     def torrent(self, id: int) -> Torrent:
         return self.client.get_torrent(id)
 
