@@ -27,6 +27,11 @@ class ClientStats(TypedDict):
     total_started_count: int
 
 
+class ClientSession(TypedDict):
+    download_dir: str
+    download_dir_free_space: int
+
+
 class Client:
 
     def __init__(self,
@@ -69,6 +74,14 @@ class Client:
                 'total_ratio': total_ratio,
                 'total_active_seconds': s.cumulative_stats.seconds_active,
                 'total_started_count': s.cumulative_stats.session_count,
+        }
+
+    def session(self) -> ClientSession:
+        s = self.client.get_session()
+
+        return {
+                'download_dir': s.download_dir,
+                'download_dir_free_space': s.download_dir_free_space
         }
 
     def preferences(self) -> dict[str, str]:

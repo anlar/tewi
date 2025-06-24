@@ -14,12 +14,13 @@ from ...widget.common import ReactiveLabel
 
 class AddTorrentDialog(ModalScreen[None]):
 
-    def __init__(self, session):
-        self.session = session
+    def __init__(self, download_dir: str, download_dir_free_space: int):
+        self.download_dir = download_dir
+        self.download_dir_free_space = download_dir_free_space
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        yield AddTorrentWidget(self.session)
+        yield AddTorrentWidget(self.download_dir, self.download_dir_free_space)
 
 
 class AddTorrentWidget(Static):
@@ -31,8 +32,9 @@ class AddTorrentWidget(Static):
             Binding("escape", "close", "[Torrent] Close"),
             ]
 
-    def __init__(self, session):
-        self.session = session
+    def __init__(self, download_dir: str, download_dir_free_space: int):
+        self.download_dir = download_dir
+        self.download_dir_free_space = download_dir_free_space
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -44,10 +46,9 @@ class AddTorrentWidget(Static):
         self.border_title = 'Add torrent (local file, magnet link, URL)'
         self.border_subtitle = '(Enter) Add / (ESC) Close'
 
-        free_space = print_size(self.session.download_dir_free_space)
-        download_dir = self.session.download_dir
+        free_space = print_size(self.download_dir_free_space)
 
-        self.r_download_dir = f'Destination folder: {download_dir} ({free_space} Free)'
+        self.r_download_dir = f'Destination folder: {self.download_dir} ({free_space} Free)'
 
         text_area = self.query_one(TextArea)
 

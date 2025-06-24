@@ -233,7 +233,9 @@ class MainApp(App):
     @log_time
     @on(OpenAddTorrent)
     def handle_open_add_torrent(self, event: OpenAddTorrent) -> None:
-        self.push_screen(AddTorrentDialog(self.r_tsession.session))
+        session = self.client1.session()
+        self.push_screen(AddTorrentDialog(session['download_dir'],
+                                          session['download_dir_free_space']))
 
     @log_time
     @on(OpenUpdateTorrentLabels)
