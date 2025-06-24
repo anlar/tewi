@@ -20,8 +20,6 @@ from .version import __version__
 
 import argparse
 import logging
-import os
-import pathlib
 import sys
 
 from transmission_rpc.error import TransmissionError
@@ -260,20 +258,15 @@ class MainApp(App):
     @on(AddTorrent)
     def handle_add_torrent(self, event: AddTorrent) -> None:
         try:
-            if event.is_link:
-                self.client.add_torrent(event.value)
-            else:
-                file = os.path.expanduser(event.value)
-                self.client.add_torrent(pathlib.Path(file))
-
-            self.post_message(MainApp.Notification("New torrent was added"))
+            self.client1.add_torrent(event.value)
+            self.post_message(Notification("New torrent was added"))
         except TransmissionError as e:
-            self.post_message(MainApp.Notification(
+            self.post_message(Notification(
                 f"Failed to add torrent:\n{e}",
                 "warning"))
         except FileNotFoundError:
-            self.post_message(MainApp.Notification(
-                f"Failed to add torrent:\nFile not found {file}",
+            self.post_message(Notification(
+                f"Failed to add torrent:\nFile not found {event.value}",
                 "warning"))
 
     @log_time

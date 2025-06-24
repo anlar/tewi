@@ -1,7 +1,12 @@
+import os
+import pathlib
+
 from typing import TypedDict
 
 from transmission_rpc import Torrent
 from transmission_rpc import Client as TransmissionClient
+
+from ..util.misc import is_torrent_link
 
 
 class ClientMeta(TypedDict):
@@ -78,6 +83,13 @@ class Client:
 
     def torrent(self, id: int) -> Torrent:
         return self.client.get_torrent(id)
+
+    def add_torrent(self, value: str) -> None:
+        if is_torrent_link(value):
+            self.client.add_torrent(value)
+        else:
+            file = os.path.expanduser(value)
+            self.client.add_torrent(pathlib.Path(file))
 
     def update_labels(self,
                       torrent_ids: int | list[int],

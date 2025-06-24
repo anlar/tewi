@@ -8,6 +8,7 @@ from textual.reactive import reactive
 
 from ....message import AddTorrent
 from ....util.print import print_size
+from ....util.misc import is_torrent_link
 from ...widget.common import ReactiveLabel
 
 
@@ -64,21 +65,17 @@ class AddTorrentWidget(Static):
             text = pyperclip.paste()
 
             if text:
-                if self.is_link(text):
+                if is_torrent_link(text):
                     return text
         except pyperclip.PyperclipException:
             return None
 
         return None
 
-    def is_link(self, text) -> bool:
-        text = text.strip()
-        return text.startswith(tuple(['magnet:', 'http://', 'https://']))
-
     def action_add(self) -> None:
         value = self.query_one(TextArea).text
 
-        self.post_message(AddTorrent(value, self.is_link(value)))
+        self.post_message(AddTorrent(value))
         self.parent.dismiss()
 
     def action_close(self) -> None:
