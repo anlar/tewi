@@ -102,7 +102,7 @@ class MainApp(App):
         self.c_port = port
 
         self.client = Client(host=self.c_host, port=self.c_port,
-                              username=username, password=password)
+                             username=username, password=password)
 
         self.sort_order = sort_orders[0]
         self.sort_order_asc = True
