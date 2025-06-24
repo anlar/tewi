@@ -9,24 +9,28 @@ class InfoPanel(Static):
 
     @log_time
     def __init__(self,
-                 w_version: str, w_trans_version: str,
-                 w_host: str, w_port: str):
+                 app_version: str,
+                 client_name: str,
+                 client_version: str,
+                 host: str,
+                 port: str):
 
-        self.w_version = w_version
-        self.w_trans_version = w_trans_version
-        self.w_host = w_host
-        self.w_port = w_port
+        self.app_version = app_version
+        self.client_name = client_name
+        self.client_version = client_version
+        self.host = host
+        self.port = port
 
         super().__init__()
 
     @log_time
     def compose(self) -> ComposeResult:
         with Horizontal(id="info-panel"):
-            yield Static(f'Tewi {self.w_version}', classes='column')
+            yield Static(f'Tewi {self.app_version}', classes='column')
             yield Static('»»»', classes='column delimiter')
-            yield Static(f'Transmission {self.w_trans_version}', classes='column')
+            yield Static(f'{self.client_name} {self.client_version}', classes='column')
             yield Static('»»»', classes='column delimiter')
-            yield Static(f'{self.w_host}:{self.w_port}', classes='column')
+            yield Static(f'{self.host}:{self.port}', classes='column')
             yield Static('', classes='column space')
             yield Static('?: Help', classes='column')
             yield Static('', classes='column')

@@ -14,8 +14,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import math
 from datetime import datetime, timedelta
-from src.tewi.util.print import print_size, print_speed, print_time, print_time_ago
+from src.tewi.util.print import print_size, print_speed, print_ratio, print_time, print_time_ago
 
 
 class TestPrintSize:
@@ -69,6 +70,61 @@ class TestPrintSize:
         assert print_size(1100) == "1.1 kB"
         assert print_size(1000) == "1 kB"  # Should strip .00
         assert print_size(1001) == "1 kB"  # Should round to 1.00 then strip
+
+
+class TestPrintRatio:
+    """Test cases for print_ratio function."""
+
+    def test_normal_ratios(self):
+        """Test formatting of normal ratio values."""
+        assert print_ratio(0.0) == "0.00"
+        assert print_ratio(0.5) == "0.50"
+        assert print_ratio(1.0) == "1.00"
+        assert print_ratio(1.5) == "1.50"
+        assert print_ratio(2.0) == "2.00"
+        assert print_ratio(10.0) == "10.00"
+
+    def test_high_precision_ratios(self):
+        """Test formatting of high precision ratio values."""
+        assert print_ratio(1.234) == "1.23"
+        assert print_ratio(1.235) == "1.24"  # Should round up
+        assert print_ratio(1.999) == "2.00"
+        assert print_ratio(0.001) == "0.00"
+        assert print_ratio(0.005) == "0.01"  # Should round up
+
+    def test_negative_ratios(self):
+        """Test formatting of negative ratio values."""
+        assert print_ratio(-1.0) == "-1.00"
+        assert print_ratio(-0.5) == "-0.50"
+        assert print_ratio(-1.234) == "-1.23"
+
+    def test_infinite_ratio(self):
+        """Test formatting of infinite ratio values."""
+        assert print_ratio(math.inf) == "∞"
+        assert print_ratio(-math.inf) == "∞"  # Both positive and negative infinity should show ∞
+
+    def test_very_large_ratios(self):
+        """Test formatting of very large ratio values."""
+        assert print_ratio(999.99) == "999.99"
+        assert print_ratio(1000.0) == "1000.00"
+        assert print_ratio(9999.999) == "10000.00"
+
+    def test_very_small_ratios(self):
+        """Test formatting of very small ratio values."""
+        assert print_ratio(0.001) == "0.00"
+        assert print_ratio(0.004) == "0.00"
+        assert print_ratio(0.005) == "0.01"
+        assert print_ratio(0.009) == "0.01"
+
+    def test_edge_cases(self):
+        """Test edge cases and special values."""
+        # Test NaN (though it may not be expected in normal usage)
+        nan_result = print_ratio(float('nan'))
+        assert 'nan' in nan_result.lower() or nan_result == "nan"
+
+        # Test zero variations
+        assert print_ratio(0.0) == "0.00"
+        assert print_ratio(-0.0) == "0.00"
 
 
 class TestPrintSpeed:

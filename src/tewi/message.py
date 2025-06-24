@@ -4,10 +4,9 @@ from .common import PageState
 
 class AddTorrent(Message):
 
-    def __init__(self, value: str, is_link: bool) -> None:
+    def __init__(self, value: str) -> None:
         super().__init__()
         self.value = value
-        self.is_link = is_link
 
 
 class TorrentLabelsUpdated(Message):

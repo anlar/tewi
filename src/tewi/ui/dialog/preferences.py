@@ -16,12 +16,12 @@ class PreferencesDialog(ModalScreen[None]):
             Binding("x,escape", "close", "[Navigation] Close"),
             ]
 
-    def __init__(self, session):
-        self.session = session
+    def __init__(self, preferences):
+        self.preferences = preferences
         super().__init__()
 
     def compose(self) -> ComposeResult:
-        yield PreferencesWidget(self.session)
+        yield PreferencesWidget(self.preferences)
 
     def action_scroll_up(self) -> None:
         self.query_one(DataTable).scroll_up()
@@ -41,8 +41,8 @@ class PreferencesDialog(ModalScreen[None]):
 
 class PreferencesWidget(Static):
 
-    def __init__(self, session):
-        self.session = session
+    def __init__(self, preferences):
+        self.preferences = preferences
         super().__init__()
 
     def compose(self) -> ComposeResult:
@@ -56,13 +56,5 @@ class PreferencesWidget(Static):
         table = self.query_one(DataTable)
         table.add_columns("Name", "Value")
 
-        # Get all session attributes
-        session_dict = self.session.fields
-
-        # Sort keys for consistent display
-        for key in sorted(session_dict.keys()):
-            # Skip certain preferences
-            if key.startswith(tuple(['units', 'version'])):
-                continue
-
-            table.add_row(key, session_dict[key])
+        for key in self.preferences:
+            table.add_row(key, self.preferences[key])
