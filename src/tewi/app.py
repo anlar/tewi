@@ -32,7 +32,7 @@ from textual.containers import Horizontal
 from textual.reactive import reactive
 from textual.widgets import ContentSwitcher
 
-from .common import TransmissionSession, sort_orders
+from .common import sort_orders
 from .service.client import Client
 from .message import AddTorrent, TorrentLabelsUpdated, SearchTorrent, SortOrderSelected, Notification, Confirm, \
         OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearch, OpenPreferences, PageChanged
@@ -75,7 +75,7 @@ class MainApp(App):
             ]
 
     r_torrents = reactive(None)
-    r_tsession = reactive(None)
+    r_session = reactive(None)
     r_page = reactive(None)
 
     @log_time
@@ -127,7 +127,7 @@ class MainApp(App):
                                                r_torrents=MainApp.r_torrents)
                 yield TorrentInfoPanel(id="torrent-info")
 
-        yield StatePanel().data_bind(r_tsession=MainApp.r_tsession,
+        yield StatePanel().data_bind(r_session=MainApp.r_session,
                                      r_page=MainApp.r_page)
 
     @log_time
@@ -140,48 +140,18 @@ class MainApp(App):
     async def load_tdata(self) -> None:
         logging.info("Start loading data from Transmission...")
 
-        session = self.client.get_session()
-        session_stats = self.client.session_stats()
         torrents = self.client1.torrents()
-
-        if self.limit_torrents:
-            torrents = torrents[:self.limit_torrents]
-
-        torrents_down = len([x for x in torrents if x.status == 'downloading'])
-        torrents_seed = len([x for x in torrents if x.status == 'seeding'])
-        torrents_check = len([x for x in torrents if x.status == 'checking'])
-        torrents_stop = len(torrents) - torrents_down - torrents_seed - torrents_check
-
-        torrents_complete_size = sum(t.size_when_done - t.left_until_done for t in torrents)
-        torrents_total_size = sum(t.size_when_done for t in torrents)
-
-        tsession = TransmissionSession(
-                session=session,
-                session_stats=session_stats,
-                torrents_down=torrents_down,
-                torrents_seed=torrents_seed,
-                torrents_check=torrents_check,
-                torrents_stop=torrents_stop,
-                torrents_complete_size=torrents_complete_size,
-                torrents_total_size=torrents_total_size,
-                sort_order=self.sort_order,
-                sort_order_asc=self.sort_order_asc,
-                )
+        session = self.client1.session(torrents, self.sort_order, self.sort_order_asc)
 
         torrents.sort(key=self.sort_order.sort_func,
                       reverse=not self.sort_order_asc)
 
-        self.log(vars(session))
-        self.log(vars(session_stats))
-
-        logging.info(f"Loaded from Transmission {session.version}: {len(torrents)} torrents")
-
-        self.call_from_thread(self.set_tdata, torrents, tsession)
+        self.call_from_thread(self.set_tdata, torrents, session)
 
     @log_time
-    def set_tdata(self, torrents, tsession) -> None:
+    def set_tdata(self, torrents, session) -> None:
         self.r_torrents = torrents
-        self.r_tsession = tsession
+        self.r_session = session
 
     @log_time
     def action_toggle_alt_speed(self) -> None:
