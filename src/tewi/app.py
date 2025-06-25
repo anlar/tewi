@@ -146,8 +146,8 @@ class MainApp(App):
     async def load_tdata(self) -> None:
         logging.info("Start loading data from Transmission...")
 
-        # torrents = self.client.torrents_test()
-        torrents = self.client.torrents()
+        torrents = self.client.torrents_test()
+        # torrents = self.client.torrents()
         session = self.client.session(torrents, self.sort_order, self.sort_order_asc)
 
         torrents.sort(key=self.sort_order.sort_func,
@@ -316,7 +316,7 @@ def cli():
                         help='Refresh interval (in seconds) for loading data from Transmission daemon')
     parser.add_argument('--limit-torrents', type=int, default=None,
                         help='Limit number of displayed torrents (useful for performance debugging)')
-    parser.add_argument('--page-size', type=int, default=5,
+    parser.add_argument('--page-size', type=int, default=50,
                         help='Number of torrents displayed per page')
     parser.add_argument('--host', type=str, default='localhost',
                         help='Transmission daemon host for connection')

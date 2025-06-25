@@ -1,3 +1,4 @@
+import copy
 import os
 import pathlib
 
@@ -144,15 +145,19 @@ class Client:
     def torrents_test(self) -> list[Torrent]:
         torrents = self.torrents()
 
-        torrents = torrents * 5
+        result = []
 
         idx = 1
 
-        for t in torrents:
-            t.fields['id'] = idx
-            idx = idx + 1
+        for i in range(50):
+            for t in torrents:
+                t_copy = copy.deepcopy(t)
+                t_copy.fields['id'] = idx
+                t_copy.fields['name'] = t_copy.name + "-" + str(idx)
+                result.append(t_copy)
+                idx = idx + 1
 
-        return torrents
+        return result
 
     def torrent(self, id: int) -> Torrent:
         return self.client.get_torrent(id)
