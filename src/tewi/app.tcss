@@ -16,6 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+ListView {
+background: $surface;
+& > ListItem {
+    &.-highlight {
+	color: $primary;
+	background: $primary;
+	text-style: $block-cursor-blurred-text-style;
+    }
+}
+}
+
 /* COMMON */
 
 * {
