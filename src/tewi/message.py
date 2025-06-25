@@ -2,6 +2,8 @@ from textual.message import Message
 from .common import PageState
 
 
+# Commands
+
 class OpenTorrentInfoCommand(Message):
 
     def __init__(self, torrent_id: int) -> None:
@@ -13,14 +15,20 @@ class OpenTorrentListCommand(Message):
     pass
 
 
-# old classess, TODO: remove
+class OpenAddTorrentCommand(Message):
+    pass
 
-class AddTorrent(Message):
+
+class AddTorrentCommand(Message):
 
     def __init__(self, value: str) -> None:
         super().__init__()
         self.value = value
 
+
+# Events
+
+# old classess, TODO: remove
 
 class TorrentLabelsUpdated(Message):
 

@@ -34,9 +34,9 @@ from textual.widgets import ContentSwitcher
 
 from .common import sort_orders
 from .service.client import Client
-from .message import AddTorrent, TorrentLabelsUpdated, SearchTorrent, SortOrderSelected, Notification, Confirm, \
+from .message import AddTorrentCommand, TorrentLabelsUpdated, SearchTorrent, SortOrderSelected, Notification, Confirm, \
         OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearch, OpenPreferences, PageChanged
-from .message import OpenTorrentInfoCommand, OpenTorrentListCommand
+from .message import OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -205,7 +205,7 @@ class MainApp(App):
     @log_time
     @on(OpenAddTorrent)
     def handle_open_add_torrent(self, event: OpenAddTorrent) -> None:
-        session = self.client.session()
+        session = self.client.session(self.r_torrents, self.sort_order, self.sort_order_asc)
         self.push_screen(AddTorrentDialog(session['download_dir'],
                                           session['download_dir_free_space']))
 
@@ -230,8 +230,8 @@ class MainApp(App):
         self.push_screen(SearchDialog())
 
     @log_time
-    @on(AddTorrent)
-    def handle_add_torrent(self, event: AddTorrent) -> None:
+    @on(AddTorrentCommand)
+    def handle_add_torrent_command(self, event: AddTorrentCommand) -> None:
         try:
             self.client.add_torrent(event.value)
             self.post_message(Notification("New torrent was added"))
@@ -299,6 +299,13 @@ class MainApp(App):
     @on(OpenTorrentListCommand)
     def handle_open_torrent_list_command(self, event: OpenTorrentListCommand) -> None:
         self.query_one(ContentSwitcher).current = "torrent-list"
+
+    @log_time
+    @on(OpenAddTorrentCommand)
+    def handle_open_add_torrent_command(self, event: OpenAddTorrentCommand) -> None:
+        session = self.client.session(self.r_torrents, self.sort_order, self.sort_order_asc)
+        self.push_screen(AddTorrentDialog(session['download_dir'],
+                                          session['download_dir_free_space']))
 
 
 def cli():

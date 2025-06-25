@@ -9,7 +9,7 @@ from textual.reactive import reactive
 from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
 
 # from ...message import Notification
-from ...message import OpenTorrentInfoCommand
+from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand
 
 
 class TorrentListViewPanel(ListView):
@@ -24,6 +24,8 @@ class TorrentListViewPanel(ListView):
             Binding("end", "move_bottom", "[Navigation] Go to last item"),
 
             Binding("enter,l", "select_cursor", "[Navigation] Open"),
+
+            Binding("a", "add_torrent", "[Torrent] Add"),
     ]
 
     r_torrents = reactive(None)
@@ -181,3 +183,6 @@ class TorrentListViewPanel(ListView):
     def handle_selected(self, event: ListView.Selected) -> None:
         torrent_id = event.item._nodes[0].torrent.id
         self.post_message(OpenTorrentInfoCommand(torrent_id))
+
+    def action_add_torrent(self) -> None:
+        self.post_message(OpenAddTorrentCommand())
