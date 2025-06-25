@@ -27,6 +27,8 @@ class TorrentListViewPanel(ListView):
 
             Binding("a", "add_torrent", "[Torrent] Add"),
             Binding("p", "toggle_torrent", "[Torrent] Toggle state"),
+
+            Binding("m", "toggle_view_mode", "[UI] Toggle view mode"),
     ]
 
     r_torrents = reactive(None)
@@ -72,7 +74,7 @@ class TorrentListViewPanel(ListView):
         if next_torrent_id:
             self.update_page(self.r_torrents, next_torrent_id)
 
-    def update_page(self, torrents: list, hl_torrent_id: int = None) -> None:
+    def update_page(self, torrents: list, hl_torrent_id: int = None, force: bool = False) -> None:
         # self.post_message(Notification(f"update_page: {hl_torrent_id}"))
         if hl_torrent_id is None:
             hl_torrent_id = self.get_hl_torrent_id()
@@ -87,14 +89,14 @@ class TorrentListViewPanel(ListView):
         else:
             page = torrent_idx // self.page_size
 
-        self.draw_page(torrents, page, hl_torrent_id)
+        self.draw_page(torrents, page, hl_torrent_id, force)
 
-    def draw_page(self, torrents, page, torrent_id) -> None:
+    def draw_page(self, torrents, page, torrent_id, force) -> None:
         # self.post_message(Notification(f"draw_page: page {page}, torrent_id {torrent_id}"))
 
         page_torrents = torrents[page * self.page_size:(page * self.page_size + self.page_size)]
 
-        if self.is_equal_to_page(page_torrents):
+        if not force and self.is_equal_to_page(page_torrents):
             torrent_widgets = self.children
 
             for i, torrent in enumerate(page_torrents):
@@ -199,3 +201,13 @@ class TorrentListViewPanel(ListView):
 
         if torrent:
             self.post_message(ToggleTorrentCommand(torrent.id, torrent.status))
+
+    def action_toggle_view_mode(self) -> None:
+        if self.view_mode == 'card':
+            self.view_mode = 'compact'
+        elif self.view_mode == 'compact':
+            self.view_mode = 'oneline'
+        elif self.view_mode == 'oneline':
+            self.view_mode = 'card'
+
+        self.update_page(self.r_torrents, force=True)
