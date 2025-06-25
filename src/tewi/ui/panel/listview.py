@@ -1,12 +1,15 @@
 from typing import ClassVar
 
+from textual import on
+
 from textual.binding import Binding, BindingType
 from textual.widgets import ListView, ListItem
 from textual.reactive import reactive
 
 from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
 
-from ...message import Notification
+# from ...message import Notification
+from ...message import OpenTorrentCommand
 
 
 class TorrentListViewPanel(ListView):
@@ -19,6 +22,8 @@ class TorrentListViewPanel(ListView):
             Binding("home", "move_top", "[Navigation] Go to first item"),
             Binding("G", "move_bottom", "[Navigation] Go to last item"),
             Binding("end", "move_bottom", "[Navigation] Go to last item"),
+
+            Binding("enter,l", "select_cursor", "[Navigation] Open"),
     ]
 
     r_torrents = reactive(None)
@@ -169,3 +174,10 @@ class TorrentListViewPanel(ListView):
     def on_list_view_highlighted(self, event) -> None:
         pass
         # self.post_message(Notification(f"HL HIT: {event.control.index}"))
+
+    # Actions
+
+    @on(ListView.Selected)
+    def handle_selected(self, event: ListView.Selected) -> None:
+        torrent_id = event.item._nodes[0].torrent.id
+        self.post_message(OpenTorrentCommand(torrent_id))

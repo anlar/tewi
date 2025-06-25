@@ -28,7 +28,7 @@ from transmission_rpc.error import TransmissionError
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
-# from textual.containers import Horizontal
+from textual.containers import Horizontal
 from textual.reactive import reactive
 from textual.widgets import ContentSwitcher
 
@@ -36,6 +36,7 @@ from .common import sort_orders
 from .service.client import Client
 from .message import AddTorrent, TorrentLabelsUpdated, SearchTorrent, SortOrderSelected, Notification, Confirm, \
         OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearch, OpenPreferences, PageChanged
+from .message import OpenTorrentCommand
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -116,9 +117,12 @@ class MainApp(App):
                         self.c_host,
                         self.c_port)
 
-        yield TorrentListViewPanel(id="torrent-list",
-                                   page_size=self.page_size,
-                                   view_mode=self.view_mode).data_bind(r_torrents=MainApp.r_torrents)
+        with Horizontal():
+            with ContentSwitcher(initial="torrent-list"):
+                yield TorrentListViewPanel(id="torrent-list",
+                                           page_size=self.page_size,
+                                           view_mode=self.view_mode).data_bind(r_torrents=MainApp.r_torrents)
+                yield TorrentInfoPanel(id="torrent-info")
 
         # with Horizontal():
         #     with ContentSwitcher(initial="torrent-list"):
@@ -285,6 +289,13 @@ class MainApp(App):
     @on(PageChanged)
     def handle_page_changed(self, event: PageChanged) -> None:
         self.r_page = event.state
+
+    @on(OpenTorrentCommand)
+    def handle_open_torrent_command(self, event: OpenTorrentCommand) -> None:
+        torrent = self.client.torrent(event.torrent_id)
+
+        self.query_one(ContentSwitcher).current = "torrent-info"
+        self.query_one(TorrentInfoPanel).r_torrent = torrent
 
 
 def cli():
