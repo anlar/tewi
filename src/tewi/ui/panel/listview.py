@@ -9,7 +9,7 @@ from textual.reactive import reactive
 from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
 
 # from ...message import Notification
-from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand
+from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorrentCommand
 
 
 class TorrentListViewPanel(ListView):
@@ -26,6 +26,7 @@ class TorrentListViewPanel(ListView):
             Binding("enter,l", "select_cursor", "[Navigation] Open"),
 
             Binding("a", "add_torrent", "[Torrent] Add"),
+            Binding("p", "toggle_torrent", "[Torrent] Toggle state"),
     ]
 
     r_torrents = reactive(None)
@@ -52,12 +53,7 @@ class TorrentListViewPanel(ListView):
         return True
 
     def next_page(self, forward: bool) -> None:
-        hl_item = self.highlighted_child
-
-        if hl_item is None:
-            hl_torrent_id = None
-        else:
-            hl_torrent_id = hl_item._nodes[0].torrent.id
+        hl_torrent_id = self.get_hl_torrent_id()
 
         if hl_torrent_id:
             for i, item in enumerate(self.r_torrents):
@@ -79,12 +75,7 @@ class TorrentListViewPanel(ListView):
     def update_page(self, torrents: list, hl_torrent_id: int = None) -> None:
         # self.post_message(Notification(f"update_page: {hl_torrent_id}"))
         if hl_torrent_id is None:
-            hl_item = self.highlighted_child
-
-            if hl_item is None:
-                hl_torrent_id = None
-            else:
-                hl_torrent_id = hl_item._nodes[0].torrent.id
+            hl_torrent_id = self.get_hl_torrent_id()
 
         if hl_torrent_id is None:
             torrent_idx = None
@@ -177,6 +168,22 @@ class TorrentListViewPanel(ListView):
         pass
         # self.post_message(Notification(f"HL HIT: {event.control.index}"))
 
+    def get_hl_torrent(self) -> int:
+        hl_item = self.highlighted_child
+
+        if hl_item is None:
+            return None
+        else:
+            return hl_item._nodes[0].torrent
+
+    def get_hl_torrent_id(self) -> int:
+        hl_torrent = self.get_hl_torrent()
+
+        if hl_torrent is None:
+            return None
+        else:
+            return hl_torrent.id
+
     # Actions
 
     @on(ListView.Selected)
@@ -186,3 +193,9 @@ class TorrentListViewPanel(ListView):
 
     def action_add_torrent(self) -> None:
         self.post_message(OpenAddTorrentCommand())
+
+    def action_toggle_torrent(self) -> None:
+        torrent = self.get_hl_torrent()
+
+        if torrent:
+            self.post_message(ToggleTorrentCommand(torrent.id, torrent.status))

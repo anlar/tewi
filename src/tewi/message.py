@@ -26,6 +26,14 @@ class AddTorrentCommand(Message):
         self.value = value
 
 
+class ToggleTorrentCommand(Message):
+
+    def __init__(self, torrent_id: int, torrent_status) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+        self.torrent_status = torrent_status
+
+
 # Events
 
 # old classess, TODO: remove

@@ -36,7 +36,7 @@ from .common import sort_orders
 from .service.client import Client
 from .message import AddTorrentCommand, TorrentLabelsUpdated, SearchTorrent, SortOrderSelected, Notification, Confirm, \
         OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearch, OpenPreferences, PageChanged
-from .message import OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand
+from .message import OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -146,8 +146,8 @@ class MainApp(App):
     async def load_tdata(self) -> None:
         logging.info("Start loading data from Transmission...")
 
-        torrents = self.client.torrents_test()
-        # torrents = self.client.torrents()
+        # torrents = self.client.torrents_test()
+        torrents = self.client.torrents()
         session = self.client.session(torrents, self.sort_order, self.sort_order_asc)
 
         torrents.sort(key=self.sort_order.sort_func,
@@ -306,6 +306,16 @@ class MainApp(App):
         session = self.client.session(self.r_torrents, self.sort_order, self.sort_order_asc)
         self.push_screen(AddTorrentDialog(session['download_dir'],
                                           session['download_dir_free_space']))
+
+    @log_time
+    @on(ToggleTorrentCommand)
+    def handle_toggle_torrent_command(self, event: ToggleTorrentCommand) -> None:
+        if event.torrent_status == 'stopped':
+            self.client.start_torrent(event.torrent_id)
+            self.post_message(Notification("Torrent started"))
+        else:
+            self.client.stop_torrent(event.torrent_id)
+            self.post_message(Notification("Torrent stopped"))
 
 
 def cli():
