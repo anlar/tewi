@@ -1,5 +1,4 @@
 from typing import ClassVar
-from textual import on, work
 
 from textual.binding import Binding, BindingType
 from textual.widgets import ListView, ListItem
@@ -31,6 +30,47 @@ class TorrentListViewPanel(ListView):
 
     def watch_r_torrents(self, new_r_torrents):
         if new_r_torrents:
+            self.update_page(torrents=new_r_torrents)
+
+    def is_equal_to_page(self, torrents) -> bool:
+        items = self.children
+
+        if len(torrents) != len(items):
+            return False
+
+        for i, torrent in enumerate(torrents):
+            if torrent.id != items[i]._nodes[0].torrent.id:
+                return False
+
+        return True
+
+    def next_page(self, forward: bool) -> None:
+        hl_item = self.highlighted_child
+
+        if hl_item is None:
+            hl_torrent_id = None
+        else:
+            hl_torrent_id = hl_item._nodes[0].torrent.id
+
+        if hl_torrent_id:
+            for i, item in enumerate(self.r_torrents):
+                if item.id == hl_torrent_id:
+                    if forward is True:
+                        if i + 1 < len(self.r_torrents):
+                            next_torrent_id = self.r_torrents[i + 1].id
+                        else:
+                            next_torrent_id = None
+                    else:
+                        if i > 0:
+                            next_torrent_id = self.r_torrents[i - 1].id
+                        else:
+                            next_torrent_id = None
+
+        if next_torrent_id:
+            self.update_page(self.r_torrents, next_torrent_id)
+
+    def update_page(self, torrents: list, hl_torrent_id: int = None) -> None:
+        if hl_torrent_id is None:
             hl_item = self.highlighted_child
 
             if hl_item is None:
@@ -38,53 +78,54 @@ class TorrentListViewPanel(ListView):
             else:
                 hl_torrent_id = hl_item._nodes[0].torrent.id
 
-            if hl_item is None:
-                torrent_idx = None
-            else:
-                hl_idx = hl_item._nodes[0].torrent.id
-                torrent_idx = next((i for i, item in enumerate(new_r_torrents) if item.id == hl_idx), None)
+        if hl_torrent_id is None:
+            torrent_idx = None
+        else:
+            torrent_idx = next((i for i, item in enumerate(torrents) if item.id == hl_torrent_id), None)
 
-            if torrent_idx is None:
-                page = 0
-            else:
-                page = torrent_idx // self.page_size
+        if torrent_idx is None:
+            page = 0
+        else:
+            page = torrent_idx // self.page_size
 
-            self.draw_page(new_r_torrents, page, hl_torrent_id)
+        self.draw_page(torrents, page, hl_torrent_id)
 
     def draw_page(self, torrents, page, torrent_id) -> None:
 
         page_torrents = torrents[page * self.page_size:(page * self.page_size + self.page_size)]
 
-        # draw
+        if self.is_equal_to_page(page_torrents):
+            torrent_widgets = self.children
 
-        torrent_widgets = []
+            for i, torrent in enumerate(page_torrents):
+                torrent_widgets[i]._nodes[0].update_torrent(torrent)
+        else:
 
-        hl_idx = None
-        idx = 0
-        new_child = None
+            # draw
 
-        for t in page_torrents:
-            item = self.create_item(t)
-            list_item = ListItem(item)
+            torrent_widgets = []
 
-            if t.id == torrent_id:
-                hl_idx = idx
-                list_item.highlighted = True
-            else:
-                idx = idx + 1
+            hl_idx = None
+            idx = 0
 
-            torrent_widgets.append(list_item)
+            for t in page_torrents:
+                item = self.create_item(t)
+                list_item = ListItem(item)
 
-        self.clear()
-        self.extend(torrent_widgets)
+                if t.id == torrent_id:
+                    hl_idx = idx
+                    list_item.highlighted = True
+                else:
+                    idx = idx + 1
 
-        # select
+                torrent_widgets.append(list_item)
 
-        self.index = self.validate_index(hl_idx)
+            self.clear()
+            self.extend(torrent_widgets)
 
-    @on(ListView.Highlighted)
-    def handle_hl(self, event: ListView.Highlighted) -> None:
-        self.post_message(Notification(f"CAUGHT"))
+            # select
+
+            self.index = self.validate_index(hl_idx)
 
     def create_item(self, torrent) -> TorrentItem:
         if self.view_mode == 'card':
@@ -113,3 +154,13 @@ class TorrentListViewPanel(ListView):
 
         if old_idx == self.index:
             self.post_message(Notification("To next page"))
+            self.next_page(True)
+
+    def action_cursor_up(self) -> None:
+        old_idx = self.index
+
+        super().action_cursor_up()
+
+        if old_idx == self.index:
+            self.post_message(Notification("To prev page"))
+            self.next_page(False)
