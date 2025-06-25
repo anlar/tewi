@@ -70,6 +70,7 @@ class TorrentListViewPanel(ListView):
             self.update_page(self.r_torrents, next_torrent_id)
 
     def update_page(self, torrents: list, hl_torrent_id: int = None) -> None:
+        # self.post_message(Notification(f"update_page: {hl_torrent_id}"))
         if hl_torrent_id is None:
             hl_item = self.highlighted_child
 
@@ -91,6 +92,7 @@ class TorrentListViewPanel(ListView):
         self.draw_page(torrents, page, hl_torrent_id)
 
     def draw_page(self, torrents, page, torrent_id) -> None:
+        # self.post_message(Notification(f"draw_page: page {page}, torrent_id {torrent_id}"))
 
         page_torrents = torrents[page * self.page_size:(page * self.page_size + self.page_size)]
 
@@ -115,17 +117,20 @@ class TorrentListViewPanel(ListView):
                 if t.id == torrent_id:
                     hl_idx = idx
                     list_item.highlighted = True
+                    # self.post_message(Notification(f"HL: {t.name}"))
                 else:
                     idx = idx + 1
 
                 torrent_widgets.append(list_item)
+                # self.post_message(Notification(f"ITEM: {list_item.highlighted}"))
 
             self.clear()
-            self.extend(torrent_widgets)
+            self.insert(0, torrent_widgets)
 
             # select
 
             self.index = self.validate_index(hl_idx)
+            # self.post_message(Notification(f"HL index: {self.index}"))
 
     def create_item(self, torrent) -> TorrentItem:
         if self.view_mode == 'card':
@@ -140,27 +145,27 @@ class TorrentListViewPanel(ListView):
     def action_move_top(self) -> None:
         if len(self.children) > 0:
             self.index = 0
-            self.post_message(Notification("Go to zero"))
+            # self.post_message(Notification("Go to zero"))
 
     def action_move_bottom(self) -> None:
         if len(self.children) > 0:
             self.index = len(self.children) - 1
-            self.post_message(Notification("Go to bottom"))
+            # self.post_message(Notification("Go to bottom"))
 
     def action_cursor_down(self) -> None:
-        old_idx = self.index
-
-        super().action_cursor_down()
-
-        if old_idx == self.index:
-            self.post_message(Notification("To next page"))
+        if self.index == len(self.children) - 1:
+            # self.post_message(Notification("To next page"))
             self.next_page(True)
+        else:
+            super().action_cursor_down()
 
     def action_cursor_up(self) -> None:
-        old_idx = self.index
-
-        super().action_cursor_up()
-
-        if old_idx == self.index:
-            self.post_message(Notification("To prev page"))
+        if self.index == 0:
+            # self.post_message(Notification("To prev page"))
             self.next_page(False)
+        else:
+            super().action_cursor_up()
+
+    def on_list_view_highlighted(self, event) -> None:
+        pass
+        # self.post_message(Notification(f"HL HIT: {event.control.index}"))
