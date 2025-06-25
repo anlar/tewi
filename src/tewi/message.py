@@ -2,11 +2,15 @@ from textual.message import Message
 from .common import PageState
 
 
-class OpenTorrentCommand(Message):
+class OpenTorrentInfoCommand(Message):
 
     def __init__(self, torrent_id: int) -> None:
         super().__init__()
         self.torrent_id = torrent_id
+
+
+class OpenTorrentListCommand(Message):
+    pass
 
 
 # old classess, TODO: remove

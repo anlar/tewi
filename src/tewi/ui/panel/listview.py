@@ -9,7 +9,7 @@ from textual.reactive import reactive
 from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
 
 # from ...message import Notification
-from ...message import OpenTorrentCommand
+from ...message import OpenTorrentInfoCommand
 
 
 class TorrentListViewPanel(ListView):
@@ -180,4 +180,4 @@ class TorrentListViewPanel(ListView):
     @on(ListView.Selected)
     def handle_selected(self, event: ListView.Selected) -> None:
         torrent_id = event.item._nodes[0].torrent.id
-        self.post_message(OpenTorrentCommand(torrent_id))
+        self.post_message(OpenTorrentInfoCommand(torrent_id))

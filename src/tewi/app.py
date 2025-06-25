@@ -36,7 +36,7 @@ from .common import sort_orders
 from .service.client import Client
 from .message import AddTorrent, TorrentLabelsUpdated, SearchTorrent, SortOrderSelected, Notification, Confirm, \
         OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearch, OpenPreferences, PageChanged
-from .message import OpenTorrentCommand
+from .message import OpenTorrentInfoCommand, OpenTorrentListCommand
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -186,11 +186,6 @@ class MainApp(App):
         self.query_one(TorrentInfoPanel).r_torrent = torrent
 
     @log_time
-    @on(TorrentInfoPanel.TorrentViewClosed)
-    def handle_torrent_list(self, event: TorrentInfoPanel.TorrentViewClosed) -> None:
-        self.query_one(ContentSwitcher).current = "torrent-list"
-
-    @log_time
     @on(Notification)
     def handle_notification(self, event: Notification) -> None:
         timeout = 3 if event.severity == 'information' else 5
@@ -290,12 +285,20 @@ class MainApp(App):
     def handle_page_changed(self, event: PageChanged) -> None:
         self.r_page = event.state
 
-    @on(OpenTorrentCommand)
-    def handle_open_torrent_command(self, event: OpenTorrentCommand) -> None:
+    # refactored
+
+    @log_time
+    @on(OpenTorrentInfoCommand)
+    def handle_open_torrent_info_command(self, event: OpenTorrentInfoCommand) -> None:
         torrent = self.client.torrent(event.torrent_id)
 
         self.query_one(ContentSwitcher).current = "torrent-info"
         self.query_one(TorrentInfoPanel).r_torrent = torrent
+
+    @log_time
+    @on(OpenTorrentListCommand)
+    def handle_open_torrent_list_command(self, event: OpenTorrentListCommand) -> None:
+        self.query_one(ContentSwitcher).current = "torrent-list"
 
 
 def cli():

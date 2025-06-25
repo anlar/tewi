@@ -3,9 +3,10 @@ from datetime import datetime
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import ScrollableContainer, Horizontal, Container, Vertical
-from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import Static, DataTable, TabbedContent, TabPane
+
+from ...message import OpenTorrentListCommand
 
 from ..widget.common import ReactiveLabel
 from ...util.print import print_size, print_speed, print_time_ago
@@ -14,9 +15,6 @@ from ...util.geoip import get_country
 
 
 class TorrentInfoPanel(ScrollableContainer):
-
-    class TorrentViewClosed(Message):
-        pass
 
     BINDINGS = [
             Binding("enter", "view_list", "[Navigation] View torrent list"),
@@ -313,7 +311,7 @@ class TorrentInfoPanel(ScrollableContainer):
 
     @log_time
     def action_view_list(self):
-        self.post_message(self.TorrentViewClosed())
+        self.post_message(OpenTorrentListCommand())
 
     @log_time
     def action_go_left(self):
@@ -321,7 +319,7 @@ class TorrentInfoPanel(ScrollableContainer):
         active = tabs.active
 
         if active == 'tab-overview':
-            self.post_message(self.TorrentViewClosed())
+            self.post_message(OpenTorrentListCommand())
         elif active == 'tab-files':
             tabs.active = 'tab-overview'
         elif active == 'tab-peers':
