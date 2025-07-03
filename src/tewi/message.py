@@ -26,6 +26,20 @@ class AddTorrentCommand(Message):
         self.value = value
 
 
+class VerifyTorrentCommand(Message):
+
+    def __init__(self, torrent_id: int) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+
+
+class ReannounceTorrentCommand(Message):
+
+    def __init__(self, torrent_id: int) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+
+
 class ToggleTorrentCommand(Message):
 
     def __init__(self, torrent_id: int, torrent_status) -> None:

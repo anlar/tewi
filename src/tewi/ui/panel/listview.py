@@ -9,7 +9,7 @@ from textual.reactive import reactive
 from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
 
 # from ...message import Notification
-from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorrentCommand
+from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorrentCommand, VerifyTorrentCommand, ReannounceTorrentCommand
 
 
 class TorrentListViewPanel(ListView):
@@ -26,6 +26,9 @@ class TorrentListViewPanel(ListView):
             Binding("enter,l", "select_cursor", "[Navigation] Open"),
 
             Binding("a", "add_torrent", "[Torrent] Add"),
+            Binding("v", "verify_torrent", "[Torrent] Verify"),
+            Binding("c", "reannounce_torrent", "[Torrent] Reannounce"),
+
             Binding("p", "toggle_torrent", "[Torrent] Toggle state"),
 
             Binding("m", "toggle_view_mode", "[UI] Toggle view mode"),
@@ -195,6 +198,14 @@ class TorrentListViewPanel(ListView):
 
     def action_add_torrent(self) -> None:
         self.post_message(OpenAddTorrentCommand())
+
+    def action_verify_torrent(self) -> None:
+        if (torrent_id := self.get_hl_torrent_id()) is not None:
+            self.post_message(VerifyTorrentCommand(torrent_id))
+
+    def action_reannounce_torrent(self) -> None:
+        if (torrent_id := self.get_hl_torrent_id()) is not None:
+            self.post_message(ReannounceTorrentCommand(torrent_id))
 
     def action_toggle_torrent(self) -> None:
         torrent = self.get_hl_torrent()

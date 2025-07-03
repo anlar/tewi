@@ -35,7 +35,8 @@ from textual.widgets import ContentSwitcher
 from .common import sort_orders
 from .service.client import Client
 from .message import AddTorrentCommand, TorrentLabelsUpdated, SearchTorrent, SortOrderSelected, Notification, Confirm, \
-        OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearch, OpenPreferences, PageChanged
+        OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearch, OpenPreferences, PageChanged, \
+        VerifyTorrentCommand, ReannounceTorrentCommand
 from .message import OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
@@ -248,6 +249,18 @@ class MainApp(App):
             self.post_message(Notification(
                 f"Failed to add torrent:\nFile not found {event.value}",
                 "warning"))
+
+    @log_time
+    @on(VerifyTorrentCommand)
+    def handle_verify_torrent_command(self, event: VerifyTorrentCommand) -> None:
+        self.client.verify_torrent(event.torrent_id)
+        self.post_message(Notification("Torrent sent to verification"))
+
+    @log_time
+    @on(ReannounceTorrentCommand)
+    def handle_reannounce_torrent_command(self, event: ReannounceTorrentCommand) -> None:
+        self.client.reannounce_torrent(event.torrent_id)
+        self.post_message(Notification("Torrent reannounce started"))
 
     @log_time
     @on(SearchTorrent)
