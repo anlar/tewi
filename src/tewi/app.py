@@ -68,6 +68,7 @@ class MainApp(App):
     BINDINGS = [
             Binding("t", "toggle_alt_speed", "[Speed] Toggle limits"),
             Binding("S", "show_statistics", "[Info] Statistics"),
+            Binding("P", "show_preferences", "[App] Preferences"),
 
             Binding('"', "screenshot", "[App] Screenshot"),
 
@@ -172,6 +173,10 @@ class MainApp(App):
     @log_time
     def action_show_statistics(self) -> None:
         self.push_screen(StatisticsDialog(self.client.stats()))
+
+    @log_time
+    def action_show_preferences(self) -> None:
+        self.push_screen(PreferencesDialog(self.client.preferences()))
 
     @log_time
     def action_help(self) -> None:
