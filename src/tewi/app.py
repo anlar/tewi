@@ -36,7 +36,7 @@ from .common import sort_orders
 from .service.client import Client
 from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpdatedEvent, Notification, Confirm, \
         OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrderCommand, OpenSearchCommand, OpenPreferences, \
-        PageChanged, \
+        PageChangedEvent, \
         VerifyTorrentCommand, ReannounceTorrentCommand
 from .message import OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
         RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
@@ -307,8 +307,8 @@ class MainApp(App):
             f"Selected sort order: {event.order.name} {direction}"))
 
     @log_time
-    @on(PageChanged)
-    def handle_page_changed(self, event: PageChanged) -> None:
+    @on(PageChangedEvent)
+    def handle_page_changed_event(self, event: PageChangedEvent) -> None:
         self.r_page = event.state
 
     # refactored

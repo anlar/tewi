@@ -1,3 +1,5 @@
+import math
+
 from typing import ClassVar
 
 from textual import on
@@ -6,13 +8,15 @@ from textual.binding import Binding, BindingType
 from textual.widgets import ListView, ListItem
 from textual.reactive import reactive
 
+from ...common import PageState
 from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
 
 # from ...message import Notification
 from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
         VerifyTorrentCommand, ReannounceTorrentCommand, RemoveTorrentCommand, TorrentRemovedEvent, \
         TrashTorrentCommand, TorrentTrashedEvent, Notification, OpenSearchCommand, \
-        StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenSortOrderCommand
+        StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenSortOrderCommand, \
+        PageChangedEvent
 
 
 class TorrentListViewPanel(ListView):
@@ -154,6 +158,19 @@ class TorrentListViewPanel(ListView):
 
             self.index = self.validate_index(hl_idx)
             # self.post_message(Notification(f"HL index: {self.index}"))
+
+            state = PageState(current=page,
+                              total=self.total_pages(torrents))
+
+            self.post_message(PageChangedEvent(state))
+
+    def total_pages(self, torrents) -> int:
+        if len(torrents) == 0:
+            pages = 0
+        else:
+            pages = math.ceil(len(torrents) / self.page_size)
+
+        return pages
 
     def create_item(self, torrent) -> TorrentItem:
         if self.view_mode == 'card':

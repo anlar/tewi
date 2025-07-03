@@ -124,6 +124,13 @@ class SortOrderUpdatedEvent(Message):
         self.is_asc = is_asc
 
 
+class PageChangedEvent(Message):
+
+    def __init__(self, state: PageState) -> None:
+        super().__init__()
+        self.state = state
+
+
 # old classess, TODO: remove
 
 class SearchTorrent(Message):
@@ -173,9 +180,3 @@ class OpenSearch(Message):
 
 class OpenPreferences(Message):
     pass
-
-
-class PageChanged(Message):
-    def __init__(self, state: PageState) -> None:
-        super().__init__()
-        self.state = state

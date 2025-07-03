@@ -11,7 +11,7 @@ from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompa
 from ...common import PageState
 
 from ...message import Notification, Confirm, OpenAddTorrent, OpenUpdateTorrentLabels, \
-        OpenSortOrder, OpenSearch, OpenPreferences, PageChanged
+        OpenSortOrder, OpenSearch, OpenPreferences, PageChangedEvent
 
 
 class TorrentListPanel(ScrollableContainer):
@@ -156,7 +156,7 @@ class TorrentListPanel(ScrollableContainer):
             state = PageState(current=(start_index // self.page_size),
                               total=self.total_pages(torrents))
 
-            self.post_message(PageChanged(state))
+            self.post_message(PageChangedEvent(state))
 
         self.update_selection(torrent_widgets, select_first, select_last)
 
