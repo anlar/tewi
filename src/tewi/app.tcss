@@ -20,9 +20,8 @@ ListView {
 background: $surface;
 & > ListItem {
     &.-highlight {
-	color: $primary;
-	background: $primary;
-	text-style: $block-cursor-blurred-text-style;
+	background: $primary-lighten-1 !important;
+        text-style: none;
     }
 }
 }
@@ -129,17 +128,6 @@ SpeedIndicator.non-zero {
 TorrentItemOneline {
     padding: 0 1;
     layout: vertical;
-    background: $background-lighten-1;
-}
-
-TorrentItemOneline.marked {
-    background: $secondary-lighten-3;
-    text-style: bold;
-    border-left: double white;
-}
-
-TorrentItemOneline.selected {
-    background: $primary;
 }
 
 TorrentItemOneline > #name {
@@ -184,17 +172,6 @@ TorrentItemCompact {
     padding: 0 1;
     layout: vertical;
     border-top: round $primary 75%;
-    background: $background-lighten-1;
-}
-
-TorrentItemCompact.marked {
-    background: $secondary-lighten-3;
-    text-style: bold;
-    border-top: double white;
-}
-
-TorrentItemCompact.selected {
-    background: $primary;
 }
 
 TorrentItemCompact > #name {
@@ -226,17 +203,6 @@ TorrentItemCard {
     padding: 0 1;
     layout: vertical;
     border: round $primary 75%;
-    background: $background-lighten-1;
-}
-
-TorrentItemCard.marked {
-    background: $secondary-lighten-3;
-    text-style: bold;
-    border: double white;
-}
-
-TorrentItemCard.selected {
-    background: $primary;
 }
 
 TorrentItemCard > #speed {
