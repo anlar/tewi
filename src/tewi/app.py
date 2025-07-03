@@ -34,8 +34,9 @@ from textual.widgets import ContentSwitcher
 
 from .common import sort_orders
 from .service.client import Client
-from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderSelected, Notification, Confirm, \
-        OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearchCommand, OpenPreferences, PageChanged, \
+from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpdatedEvent, Notification, Confirm, \
+        OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrderCommand, OpenSearchCommand, OpenPreferences, \
+        PageChanged, \
         VerifyTorrentCommand, ReannounceTorrentCommand
 from .message import OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
         RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
@@ -223,8 +224,8 @@ class MainApp(App):
         self.push_screen(UpdateTorrentLabelsDialog(event.torrent, event.torrent_ids))
 
     @log_time
-    @on(OpenSortOrder)
-    def handle_open_sort_order(self, event: OpenSortOrder) -> None:
+    @on(OpenSortOrderCommand)
+    def handle_open_sort_order_command(self, event: OpenSortOrderCommand) -> None:
         self.push_screen(SortOrderDialog())
 
     @log_time
@@ -296,13 +297,13 @@ class MainApp(App):
                 "Removed torrent labels ({count_label})"))
 
     @log_time
-    @on(SortOrderSelected)
-    def handle_sort_order_selected(self, event: SortOrderSelected) -> None:
+    @on(SortOrderUpdatedEvent)
+    def handle_sort_order_updated_event(self, event: SortOrderUpdatedEvent) -> None:
         self.sort_order = event.order
         self.sort_order_asc = event.is_asc
 
         direction = 'ASC' if event.is_asc else 'DESC'
-        self.post_message(MainApp.Notification(
+        self.post_message(Notification(
             f"Selected sort order: {event.order.name} {direction}"))
 
     @log_time

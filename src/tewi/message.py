@@ -26,6 +26,10 @@ class AddTorrentCommand(Message):
         self.value = value
 
 
+class OpenSortOrderCommand(Message):
+    pass
+
+
 class OpenUpdateTorrentLabelsCommand(Message):
 
     def __init__(self, torrent):
@@ -112,6 +116,14 @@ class TorrentLabelsUpdatedEvent(Message):
         self.value = value
 
 
+class SortOrderUpdatedEvent(Message):
+
+    def __init__(self, order: str, is_asc: bool) -> None:
+        super().__init__()
+        self.order = order
+        self.is_asc = is_asc
+
+
 # old classess, TODO: remove
 
 class SearchTorrent(Message):
@@ -119,14 +131,6 @@ class SearchTorrent(Message):
     def __init__(self, value: str) -> None:
         super().__init__()
         self.value = value
-
-
-class SortOrderSelected(Message):
-
-    def __init__(self, order: str, is_asc: bool) -> None:
-        super().__init__()
-        self.order = order
-        self.is_asc = is_asc
 
 
 class Notification(Message):

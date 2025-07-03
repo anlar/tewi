@@ -12,7 +12,7 @@ from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompa
 from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
         VerifyTorrentCommand, ReannounceTorrentCommand, RemoveTorrentCommand, TorrentRemovedEvent, \
         TrashTorrentCommand, TorrentTrashedEvent, Notification, OpenSearchCommand, \
-        StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand
+        StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenSortOrderCommand
 
 
 class TorrentListViewPanel(ListView):
@@ -30,6 +30,7 @@ class TorrentListViewPanel(ListView):
 
             Binding("a", "add_torrent", "[Torrent] Add"),
             Binding("L", "update_torrent_labels", "[Torrent] Update labels"),
+            Binding("s", "sort_order", "[Torrent] Sort order"),
 
             Binding("p", "toggle_torrent", "[Torrent] Toggle state"),
             Binding("r", "remove_torrent", "[Torrent] Remove"),
@@ -221,6 +222,9 @@ class TorrentListViewPanel(ListView):
     def action_update_torrent_labels(self) -> None:
         if (torrent := self.get_hl_torrent()) is not None:
             self.post_message(OpenUpdateTorrentLabelsCommand(torrent))
+
+    def action_sort_order(self) -> None:
+        self.post_message(OpenSortOrderCommand())
 
     def action_verify_torrent(self) -> None:
         if (torrent_id := self.get_hl_torrent_id()) is not None:

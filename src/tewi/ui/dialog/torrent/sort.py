@@ -5,7 +5,7 @@ from textual.app import ComposeResult
 
 from rich.text import Text
 
-from ....message import SortOrderSelected
+from ....message import SortOrderUpdatedEvent
 from ....common import sort_orders
 
 
@@ -45,7 +45,7 @@ class SortOrderWidget(Static):
     def action_select_order(self, sort_id, is_asc):
         order = next(x for x in sort_orders if x.id == sort_id)
 
-        self.post_message(SortOrderSelected(order, is_asc))
+        self.post_message(SortOrderUpdatedEvent(order, is_asc))
 
         self.parent.dismiss(False)
 
