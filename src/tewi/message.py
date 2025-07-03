@@ -26,6 +26,20 @@ class AddTorrentCommand(Message):
         self.value = value
 
 
+class RemoveTorrentCommand(Message):
+
+    def __init__(self, torrent_id: int) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+
+
+class TrashTorrentCommand(Message):
+
+    def __init__(self, torrent_id: int) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+
+
 class VerifyTorrentCommand(Message):
 
     def __init__(self, torrent_id: int) -> None:
@@ -49,6 +63,20 @@ class ToggleTorrentCommand(Message):
 
 
 # Events
+
+class TorrentRemovedEvent(Message):
+
+    def __init__(self, torrent_id: int) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+
+
+class TorrentTrashedEvent(Message):
+
+    def __init__(self, torrent_id: int) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+
 
 # old classess, TODO: remove
 

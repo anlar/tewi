@@ -37,7 +37,8 @@ from .service.client import Client
 from .message import AddTorrentCommand, TorrentLabelsUpdated, SearchTorrent, SortOrderSelected, Notification, Confirm, \
         OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearch, OpenPreferences, PageChanged, \
         VerifyTorrentCommand, ReannounceTorrentCommand
-from .message import OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand
+from .message import OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
+        RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -334,6 +335,46 @@ class MainApp(App):
         else:
             self.client.stop_torrent(event.torrent_id)
             self.post_message(Notification("Torrent stopped"))
+
+    @log_time
+    @on(RemoveTorrentCommand)
+    def handle_remove_torrent_command(self, event: RemoveTorrentCommand) -> None:
+        def check_quit(confirmed: bool | None) -> None:
+            if confirmed:
+                self.client.remove_torrent(event.torrent_id,
+                                           delete_data=False)
+
+                self.query_one(TorrentListViewPanel).post_message(TorrentRemovedEvent(event.torrent_id))
+                self.post_message(Notification("Torrent removed"))
+
+        message = "Remove torrent?"
+        description = ("Once removed, continuing the "
+                       "transfer will require the torrent file. "
+                       "Are you sure you want to remove it?")
+
+        self.post_message(Confirm(message=message,
+                                  description=description,
+                                  check_quit=check_quit))
+
+    @log_time
+    @on(TrashTorrentCommand)
+    def handle_trash_torrent_command(self, event: TrashTorrentCommand) -> None:
+        def check_quit(confirmed: bool | None) -> None:
+            if confirmed:
+                self.client.remove_torrent(event.torrent_id,
+                                           delete_data=True)
+
+                self.query_one(TorrentListViewPanel).post_message(TorrentTrashedEvent(event.torrent_id))
+                self.post_message(Notification("Torrent and its data removed"))
+
+        message = "Remove torrent and delete data?"
+        description = ("All data downloaded for this torrent "
+                       "will be deleted. Are you sure you "
+                       "want to remove it?")
+
+        self.post_message(Confirm(message=message,
+                                  description=description,
+                                  check_quit=check_quit))
 
 
 def cli():

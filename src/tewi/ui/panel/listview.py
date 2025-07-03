@@ -10,7 +10,8 @@ from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompa
 
 # from ...message import Notification
 from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
-        VerifyTorrentCommand, ReannounceTorrentCommand
+        VerifyTorrentCommand, ReannounceTorrentCommand, RemoveTorrentCommand, TorrentRemovedEvent, \
+        TrashTorrentCommand, TorrentTrashedEvent
 
 
 class TorrentListViewPanel(ListView):
@@ -31,6 +32,8 @@ class TorrentListViewPanel(ListView):
             Binding("c", "reannounce_torrent", "[Torrent] Reannounce"),
 
             Binding("p", "toggle_torrent", "[Torrent] Toggle state"),
+            Binding("r", "remove_torrent", "[Torrent] Remove"),
+            Binding("R", "trash_torrent", "[Torrent] Trash with data"),
 
             Binding("m", "toggle_view_mode", "[UI] Toggle view mode"),
     ]
@@ -214,6 +217,14 @@ class TorrentListViewPanel(ListView):
         if torrent:
             self.post_message(ToggleTorrentCommand(torrent.id, torrent.status))
 
+    def action_remove_torrent(self) -> None:
+        if (torrent_id := self.get_hl_torrent_id()) is not None:
+            self.post_message(RemoveTorrentCommand(torrent_id))
+
+    def action_trash_torrent(self) -> None:
+        if (torrent_id := self.get_hl_torrent_id()) is not None:
+            self.post_message(TrashTorrentCommand(torrent_id))
+
     def action_toggle_view_mode(self) -> None:
         if self.view_mode == 'card':
             self.view_mode = 'compact'
@@ -223,3 +234,18 @@ class TorrentListViewPanel(ListView):
             self.view_mode = 'card'
 
         self.update_page(self.r_torrents, force=True)
+
+    # Handlers
+
+    @on(TorrentRemovedEvent)
+    def handle_torrent_removed_event(self, event: TorrentRemovedEvent) -> None:
+        self._remove_child(event.torrent_id)
+
+    @on(TorrentTrashedEvent)
+    def handle_torrent_trashed_event(self, event: TorrentRemovedEvent) -> None:
+        self._remove_child(event.torrent_id)
+
+    def _remove_child(self, torrent_id: int) -> None:
+        for i, child in enumerate(self.children):
+            if torrent_id == child._nodes[0].torrent.id:
+                self.remove_items([i])
