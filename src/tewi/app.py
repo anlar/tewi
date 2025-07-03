@@ -34,12 +34,12 @@ from textual.widgets import ContentSwitcher
 
 from .common import sort_orders
 from .service.client import Client
-from .message import AddTorrentCommand, TorrentLabelsUpdated, SortOrderSelected, Notification, Confirm, \
+from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderSelected, Notification, Confirm, \
         OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearchCommand, OpenPreferences, PageChanged, \
         VerifyTorrentCommand, ReannounceTorrentCommand
 from .message import OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
         RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
-        StartAllTorrentsCommand, StopAllTorrentsCommand
+        StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -253,6 +253,11 @@ class MainApp(App):
                 "warning"))
 
     @log_time
+    @on(OpenUpdateTorrentLabelsCommand)
+    def handle_open_update_torrent_labels_command(self, event: OpenUpdateTorrentLabelsCommand) -> None:
+        self.push_screen(UpdateTorrentLabelsDialog(event.torrent, None))
+
+    @log_time
     @on(VerifyTorrentCommand)
     def handle_verify_torrent_command(self, event: VerifyTorrentCommand) -> None:
         self.client.verify_torrent(event.torrent_id)
@@ -270,8 +275,8 @@ class MainApp(App):
         self.query_one(TorrentListViewPanel).search_torrent(event.search_term)
 
     @log_time
-    @on(TorrentLabelsUpdated)
-    def handle_torrent_labels_updated(self, event: TorrentLabelsUpdated) -> None:
+    @on(TorrentLabelsUpdatedEvent)
+    def handle_torrent_labels_updated_event(self, event: TorrentLabelsUpdatedEvent) -> None:
         labels = [x.strip() for x in event.value.split(',') if x.strip()]
 
         if len(event.torrent_ids) == 1:

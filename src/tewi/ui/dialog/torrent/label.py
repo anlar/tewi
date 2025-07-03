@@ -4,7 +4,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Static, TextArea
 from textual.app import ComposeResult
 
-from ....message import TorrentLabelsUpdated
+from ....message import TorrentLabelsUpdatedEvent
 
 
 class UpdateTorrentLabelsDialog(ModalScreen):
@@ -52,7 +52,7 @@ class UpdateTorrentLabelsWidget(Static):
         else:
             torrent_ids = self.torrent_ids
 
-        self.post_message(TorrentLabelsUpdated(
+        self.post_message(TorrentLabelsUpdatedEvent(
             torrent_ids, value))
 
         self.parent.dismiss(False)

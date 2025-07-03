@@ -26,6 +26,13 @@ class AddTorrentCommand(Message):
         self.value = value
 
 
+class OpenUpdateTorrentLabelsCommand(Message):
+
+    def __init__(self, torrent):
+        super().__init__()
+        self.torrent = torrent
+
+
 class RemoveTorrentCommand(Message):
 
     def __init__(self, torrent_id: int) -> None:
@@ -97,15 +104,15 @@ class SearchCompletedEvent(Message):
         self.search_term = search_term
 
 
-# old classess, TODO: remove
-
-class TorrentLabelsUpdated(Message):
+class TorrentLabelsUpdatedEvent(Message):
 
     def __init__(self, torrent_ids, value: str) -> None:
         super().__init__()
         self.torrent_ids = torrent_ids
         self.value = value
 
+
+# old classess, TODO: remove
 
 class SearchTorrent(Message):
 
