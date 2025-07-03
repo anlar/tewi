@@ -11,7 +11,8 @@ from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompa
 # from ...message import Notification
 from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
         VerifyTorrentCommand, ReannounceTorrentCommand, RemoveTorrentCommand, TorrentRemovedEvent, \
-        TrashTorrentCommand, TorrentTrashedEvent, Notification, OpenSearchCommand
+        TrashTorrentCommand, TorrentTrashedEvent, Notification, OpenSearchCommand, \
+        StartAllTorrentsCommand, StopAllTorrentsCommand
 
 
 class TorrentListViewPanel(ListView):
@@ -34,6 +35,9 @@ class TorrentListViewPanel(ListView):
             Binding("p", "toggle_torrent", "[Torrent] Toggle state"),
             Binding("r", "remove_torrent", "[Torrent] Remove"),
             Binding("R", "trash_torrent", "[Torrent] Trash with data"),
+
+            Binding("y", "start_all_torrents", "[Torrent] Start all"),
+            Binding("Y", "stop_all_torrents", "[Torrent] Stop all"),
 
             Binding("m", "toggle_view_mode", "[UI] Toggle view mode"),
             Binding("/", "search", "[Search] Open"),
@@ -234,6 +238,12 @@ class TorrentListViewPanel(ListView):
     def action_trash_torrent(self) -> None:
         if (torrent_id := self.get_hl_torrent_id()) is not None:
             self.post_message(TrashTorrentCommand(torrent_id))
+
+    def action_start_all_torrents(self) -> None:
+        self.post_message(StartAllTorrentsCommand())
+
+    def action_stop_all_torrents(self) -> None:
+        self.post_message(StopAllTorrentsCommand())
 
     def action_toggle_view_mode(self) -> None:
         if self.view_mode == 'card':

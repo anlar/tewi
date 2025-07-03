@@ -38,7 +38,8 @@ from .message import AddTorrentCommand, TorrentLabelsUpdated, SortOrderSelected,
         OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearchCommand, OpenPreferences, PageChanged, \
         VerifyTorrentCommand, ReannounceTorrentCommand
 from .message import OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
-        RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent
+        RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
+        StartAllTorrentsCommand, StopAllTorrentsCommand
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -375,6 +376,18 @@ class MainApp(App):
         self.post_message(Confirm(message=message,
                                   description=description,
                                   check_quit=check_quit))
+
+    @log_time
+    @on(StartAllTorrentsCommand)
+    def handle_start_all_torrents_command(self, event: StartAllTorrentsCommand) -> None:
+        self.client.start_all_torrents()
+        self.post_message(Notification("All torrents started"))
+
+    @log_time
+    @on(StopAllTorrentsCommand)
+    def handle_stop_all_torrents_command(self, event: StopAllTorrentsCommand) -> None:
+        self.client.stop_all_torrents()
+        self.post_message(Notification("All torrents stopped"))
 
 
 def cli():

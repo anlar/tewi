@@ -191,6 +191,10 @@ class Client:
     def start_all_torrents(self) -> None:
         self.client.start_all()
 
+    def stop_all_torrents(self) -> None:
+        torrents = self.client.get_torrents(arguments=['id'])
+        self.stop_torrent([t.id for t in torrents])
+
     def update_labels(self,
                       torrent_ids: int | list[int],
                       labels: list[str]) -> None:

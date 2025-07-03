@@ -62,6 +62,14 @@ class ToggleTorrentCommand(Message):
         self.torrent_status = torrent_status
 
 
+class StartAllTorrentsCommand(Message):
+    pass
+
+
+class StopAllTorrentsCommand(Message):
+    pass
+
+
 class OpenSearchCommand(Message):
     pass
 
