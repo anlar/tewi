@@ -34,11 +34,11 @@ from textual.widgets import ContentSwitcher
 
 from .common import sort_orders
 from .service.client import Client
-from .message import AddTorrentCommand, TorrentLabelsUpdated, SearchTorrent, SortOrderSelected, Notification, Confirm, \
-        OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearch, OpenPreferences, PageChanged, \
+from .message import AddTorrentCommand, TorrentLabelsUpdated, SortOrderSelected, Notification, Confirm, \
+        OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearchCommand, OpenPreferences, PageChanged, \
         VerifyTorrentCommand, ReannounceTorrentCommand
 from .message import OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
-        RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent
+        RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -232,8 +232,8 @@ class MainApp(App):
         self.push_screen(PreferencesDialog(self.client.preferences()))
 
     @log_time
-    @on(OpenSearch)
-    def handle_open_search(self, event: OpenSearch) -> None:
+    @on(OpenSearchCommand)
+    def handle_open_search(self, event: OpenSearchCommand) -> None:
         self.push_screen(SearchDialog())
 
     @log_time
@@ -264,9 +264,9 @@ class MainApp(App):
         self.post_message(Notification("Torrent reannounce started"))
 
     @log_time
-    @on(SearchTorrent)
-    def handle_search_torrent(self, event: SearchTorrent) -> None:
-        self.query_one(TorrentListPanel).search_torrent(event.value)
+    @on(SearchCompletedEvent)
+    def handle_search_completed_event(self, event: SearchCompletedEvent) -> None:
+        self.query_one(TorrentListViewPanel).search_torrent(event.search_term)
 
     @log_time
     @on(TorrentLabelsUpdated)

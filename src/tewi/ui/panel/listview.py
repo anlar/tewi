@@ -11,7 +11,7 @@ from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompa
 # from ...message import Notification
 from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
         VerifyTorrentCommand, ReannounceTorrentCommand, RemoveTorrentCommand, TorrentRemovedEvent, \
-        TrashTorrentCommand, TorrentTrashedEvent
+        TrashTorrentCommand, TorrentTrashedEvent, Notification, OpenSearchCommand
 
 
 class TorrentListViewPanel(ListView):
@@ -36,9 +36,16 @@ class TorrentListViewPanel(ListView):
             Binding("R", "trash_torrent", "[Torrent] Trash with data"),
 
             Binding("m", "toggle_view_mode", "[UI] Toggle view mode"),
+            Binding("/", "search", "[Search] Open"),
+            Binding("n", "search_next", "[Search] Next result"),
+            Binding("N", "search_previous", "[Search] Previous result"),
     ]
 
     r_torrents = reactive(None)
+
+    # Search state
+    search_term = ""
+    search_active = False
 
     def __init__(self, id: str, page_size: str, view_mode: str) -> None:
         self.page_size = page_size
@@ -108,6 +115,9 @@ class TorrentListViewPanel(ListView):
 
             for i, torrent in enumerate(page_torrents):
                 torrent_widgets[i]._nodes[0].update_torrent(torrent)
+
+                if torrent_id == torrent.id:
+                    self.index = self.validate_index(i)
         else:
 
             # draw
@@ -234,6 +244,80 @@ class TorrentListViewPanel(ListView):
             self.view_mode = 'card'
 
         self.update_page(self.r_torrents, force=True)
+
+    def torrent_idx(self, torrent) -> int:
+        return next((idx for idx, t in enumerate(self.r_torrents) if t.id == torrent.id), None)
+
+    # Search
+
+    def action_search(self) -> None:
+        # Reset search state when opening search dialog
+        self.search_active = False
+        self.search_term = ""
+        self.post_message(OpenSearchCommand())
+
+    def action_search_next(self) -> None:
+        if not self.search_active or not self.search_term:
+            self.post_message(Notification("No active search"))
+            return
+
+        self._search_torrent(self.search_term, forward=True)
+
+    def action_search_previous(self) -> None:
+        if not self.search_active or not self.search_term:
+            self.post_message(Notification("No active search"))
+            return
+
+        self._search_torrent(self.search_term, forward=False)
+
+    def _search_torrent(self, search_term: str, forward: bool = True) -> None:
+        if not search_term or not self.r_torrents:
+            return
+
+        search_term = search_term.lower()
+
+        # Get current index if there's a selected item
+        if (torrent := self.get_hl_torrent()) is not None:
+            current_idx = self.torrent_idx(torrent)
+        else:
+            current_idx = -1
+
+        if current_idx is None:
+            current_idx = -1
+
+        # Determine search range based on direction
+        if forward:
+            # Search from current+1 to end, then from start to current
+            range1 = range(current_idx + 1, len(self.r_torrents))
+            range2 = range(0, current_idx + 1)
+        else:
+            # Search from current-1 to start, then from end to current
+            range1 = range(current_idx - 1, -1, -1)
+            range2 = range(len(self.r_torrents) - 1, current_idx, -1)
+
+        # First search range
+        for i in range1:
+            if search_term in self.r_torrents[i].name.lower():
+                self._select_found_torrent(i)
+                return
+
+        # Second search range (wrap around)
+        for i in range2:
+            if search_term in self.r_torrents[i].name.lower():
+                self._select_found_torrent(i)
+                return
+
+        # If no match found, show notification
+        self.post_message(Notification(f"No torrents matching '{search_term}'"))
+
+    def _select_found_torrent(self, index: int) -> None:
+        self.update_page(self.r_torrents, self.r_torrents[index].id)
+
+    def search_torrent(self, search_term: str) -> None:
+        if search_term:
+            self.search_term = search_term
+            self.search_active = True
+            self._search_torrent(search_term, forward=True)
 
     # Handlers
 

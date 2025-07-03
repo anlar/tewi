@@ -62,6 +62,10 @@ class ToggleTorrentCommand(Message):
         self.torrent_status = torrent_status
 
 
+class OpenSearchCommand(Message):
+    pass
+
+
 # Events
 
 class TorrentRemovedEvent(Message):
@@ -76,6 +80,13 @@ class TorrentTrashedEvent(Message):
     def __init__(self, torrent_id: int) -> None:
         super().__init__()
         self.torrent_id = torrent_id
+
+
+class SearchCompletedEvent(Message):
+
+    def __init__(self, search_term: str) -> None:
+        super().__init__()
+        self.search_term = search_term
 
 
 # old classess, TODO: remove
