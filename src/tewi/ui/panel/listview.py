@@ -9,7 +9,8 @@ from textual.reactive import reactive
 from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
 
 # from ...message import Notification
-from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorrentCommand, VerifyTorrentCommand, ReannounceTorrentCommand
+from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
+        VerifyTorrentCommand, ReannounceTorrentCommand
 
 
 class TorrentListViewPanel(ListView):
