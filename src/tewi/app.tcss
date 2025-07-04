@@ -436,3 +436,5 @@ PreferencesWidget > DataTable {
     width: auto;
     max-height: 30;
 }
+
+/* vim: set filetype=css: */
