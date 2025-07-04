@@ -2,14 +2,113 @@ from textual.message import Message
 from .common import PageState
 
 
-class AddTorrent(Message):
+# Commands
+
+class OpenTorrentInfoCommand(Message):
+
+    def __init__(self, torrent_id: int) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+
+
+class OpenTorrentListCommand(Message):
+    pass
+
+
+class OpenAddTorrentCommand(Message):
+    pass
+
+
+class AddTorrentCommand(Message):
 
     def __init__(self, value: str) -> None:
         super().__init__()
         self.value = value
 
 
-class TorrentLabelsUpdated(Message):
+class OpenSortOrderCommand(Message):
+    pass
+
+
+class OpenUpdateTorrentLabelsCommand(Message):
+
+    def __init__(self, torrent):
+        super().__init__()
+        self.torrent = torrent
+
+
+class RemoveTorrentCommand(Message):
+
+    def __init__(self, torrent_id: int) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+
+
+class TrashTorrentCommand(Message):
+
+    def __init__(self, torrent_id: int) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+
+
+class VerifyTorrentCommand(Message):
+
+    def __init__(self, torrent_id: int) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+
+
+class ReannounceTorrentCommand(Message):
+
+    def __init__(self, torrent_id: int) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+
+
+class ToggleTorrentCommand(Message):
+
+    def __init__(self, torrent_id: int, torrent_status) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+        self.torrent_status = torrent_status
+
+
+class StartAllTorrentsCommand(Message):
+    pass
+
+
+class StopAllTorrentsCommand(Message):
+    pass
+
+
+class OpenSearchCommand(Message):
+    pass
+
+
+# Events
+
+class TorrentRemovedEvent(Message):
+
+    def __init__(self, torrent_id: int) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+
+
+class TorrentTrashedEvent(Message):
+
+    def __init__(self, torrent_id: int) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+
+
+class SearchCompletedEvent(Message):
+
+    def __init__(self, search_term: str) -> None:
+        super().__init__()
+        self.search_term = search_term
+
+
+class TorrentLabelsUpdatedEvent(Message):
 
     def __init__(self, torrent_ids, value: str) -> None:
         super().__init__()
@@ -17,20 +116,22 @@ class TorrentLabelsUpdated(Message):
         self.value = value
 
 
-class SearchTorrent(Message):
-
-    def __init__(self, value: str) -> None:
-        super().__init__()
-        self.value = value
-
-
-class SortOrderSelected(Message):
+class SortOrderUpdatedEvent(Message):
 
     def __init__(self, order: str, is_asc: bool) -> None:
         super().__init__()
         self.order = order
         self.is_asc = is_asc
 
+
+class PageChangedEvent(Message):
+
+    def __init__(self, state: PageState) -> None:
+        super().__init__()
+        self.state = state
+
+
+# Common
 
 class Notification(Message):
 
@@ -49,32 +150,3 @@ class Confirm(Message):
         self.message = message
         self.description = description
         self.check_quit = check_quit
-
-
-class OpenAddTorrent(Message):
-    pass
-
-
-class OpenUpdateTorrentLabels(Message):
-    def __init__(self, torrent, torrent_ids):
-        super().__init__()
-        self.torrent = torrent
-        self.torrent_ids = torrent_ids
-
-
-class OpenSortOrder(Message):
-    pass
-
-
-class OpenSearch(Message):
-    pass
-
-
-class OpenPreferences(Message):
-    pass
-
-
-class PageChanged(Message):
-    def __init__(self, state: PageState) -> None:
-        super().__init__()
-        self.state = state

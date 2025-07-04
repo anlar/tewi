@@ -1,3 +1,4 @@
+import copy
 import os
 import pathlib
 
@@ -141,6 +142,23 @@ class Client:
                            'labels']
                 )
 
+    def torrents_test(self) -> list[Torrent]:
+        torrents = self.torrents()
+
+        result = []
+
+        idx = 1
+
+        for i in range(50):
+            for t in torrents:
+                t_copy = copy.deepcopy(t)
+                t_copy.fields['id'] = idx
+                t_copy.fields['name'] = t_copy.name + "-" + str(idx)
+                result.append(t_copy)
+                idx = idx + 1
+
+        return result
+
     def torrent(self, id: int) -> Torrent:
         return self.client.get_torrent(id)
 
@@ -172,6 +190,10 @@ class Client:
 
     def start_all_torrents(self) -> None:
         self.client.start_all()
+
+    def stop_all_torrents(self) -> None:
+        torrents = self.client.get_torrents(arguments=['id'])
+        self.stop_torrent([t.id for t in torrents])
 
     def update_labels(self,
                       torrent_ids: int | list[int],

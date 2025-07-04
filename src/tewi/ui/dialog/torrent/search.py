@@ -3,7 +3,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Static, Input
 from textual.app import ComposeResult
 
-from ....message import SearchTorrent
+from ....message import SearchCompletedEvent
 
 
 class SearchDialog(ModalScreen):
@@ -30,7 +30,7 @@ class SearchWidget(Static):
     def action_search(self) -> None:
         value = self.query_one("#search-input").value
 
-        self.post_message(SearchTorrent(value))
+        self.post_message(SearchCompletedEvent(value))
         self.parent.dismiss(False)
 
     def action_close(self) -> None:

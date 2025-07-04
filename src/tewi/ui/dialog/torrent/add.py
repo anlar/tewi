@@ -6,7 +6,7 @@ from textual.widgets import Static, TextArea
 from textual.app import ComposeResult
 from textual.reactive import reactive
 
-from ....message import AddTorrent
+from ....message import AddTorrentCommand
 from ....util.print import print_size
 from ....util.misc import is_torrent_link
 from ...widget.common import ReactiveLabel
@@ -76,7 +76,7 @@ class AddTorrentWidget(Static):
     def action_add(self) -> None:
         value = self.query_one(TextArea).text
 
-        self.post_message(AddTorrent(value))
+        self.post_message(AddTorrentCommand(value))
         self.parent.dismiss()
 
     def action_close(self) -> None:

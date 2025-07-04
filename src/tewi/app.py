@@ -34,8 +34,11 @@ from textual.widgets import ContentSwitcher
 
 from .common import sort_orders
 from .service.client import Client
-from .message import AddTorrent, TorrentLabelsUpdated, SearchTorrent, SortOrderSelected, Notification, Confirm, \
-        OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrder, OpenSearch, OpenPreferences, PageChanged
+from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpdatedEvent, Notification, Confirm, \
+        OpenSortOrderCommand, OpenSearchCommand, PageChangedEvent, VerifyTorrentCommand, ReannounceTorrentCommand, \
+        OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
+        RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
+        StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -47,7 +50,7 @@ from .ui.dialog.torrent.search import SearchDialog
 from .ui.dialog.torrent.sort import SortOrderDialog
 from .ui.panel.info import InfoPanel
 from .ui.panel.state import StatePanel
-from .ui.panel.list import TorrentListPanel
+from .ui.panel.listview import TorrentListViewPanel
 from .ui.panel.details import TorrentInfoPanel
 
 
@@ -66,6 +69,7 @@ class MainApp(App):
     BINDINGS = [
             Binding("t", "toggle_alt_speed", "[Speed] Toggle limits"),
             Binding("S", "show_statistics", "[Info] Statistics"),
+            Binding("P", "show_preferences", "[App] Preferences"),
 
             Binding('"', "screenshot", "[App] Screenshot"),
 
@@ -117,11 +121,9 @@ class MainApp(App):
 
         with Horizontal():
             with ContentSwitcher(initial="torrent-list"):
-                yield TorrentListPanel(id="torrent-list",
-                                       client=self.client,
-                                       view_mode=self.view_mode,
-                                       page_size=self.page_size).data_bind(
-                                               r_torrents=MainApp.r_torrents)
+                yield TorrentListViewPanel(id="torrent-list",
+                                           page_size=self.page_size,
+                                           view_mode=self.view_mode).data_bind(r_torrents=MainApp.r_torrents)
                 yield TorrentInfoPanel(id="torrent-info")
 
         yield StatePanel().data_bind(r_session=MainApp.r_session,
@@ -137,6 +139,7 @@ class MainApp(App):
     async def load_tdata(self) -> None:
         logging.info("Start loading data from Transmission...")
 
+        # torrents = self.client.torrents_test()
         torrents = self.client.torrents()
         session = self.client.session(torrents, self.sort_order, self.sort_order_asc)
 
@@ -164,21 +167,12 @@ class MainApp(App):
         self.push_screen(StatisticsDialog(self.client.stats()))
 
     @log_time
+    def action_show_preferences(self) -> None:
+        self.push_screen(PreferencesDialog(self.client.preferences()))
+
+    @log_time
     def action_help(self) -> None:
         self.push_screen(HelpDialog(self.screen.active_bindings.values()))
-
-    @log_time
-    @on(TorrentListPanel.TorrentViewed)
-    def handle_torrent_view(self, event: TorrentListPanel.TorrentViewed) -> None:
-        torrent = self.client.torrent(event.torrent.id)
-
-        self.query_one(ContentSwitcher).current = "torrent-info"
-        self.query_one(TorrentInfoPanel).r_torrent = torrent
-
-    @log_time
-    @on(TorrentInfoPanel.TorrentViewClosed)
-    def handle_torrent_list(self, event: TorrentInfoPanel.TorrentViewClosed) -> None:
-        self.query_one(ContentSwitcher).current = "torrent-list"
 
     @log_time
     @on(Notification)
@@ -198,35 +192,18 @@ class MainApp(App):
                     event.check_quit)
 
     @log_time
-    @on(OpenAddTorrent)
-    def handle_open_add_torrent(self, event: OpenAddTorrent) -> None:
-        session = self.client.session()
-        self.push_screen(AddTorrentDialog(session['download_dir'],
-                                          session['download_dir_free_space']))
-
-    @log_time
-    @on(OpenUpdateTorrentLabels)
-    def handle_open_update_torrent_labels(self, event: OpenUpdateTorrentLabels) -> None:
-        self.push_screen(UpdateTorrentLabelsDialog(event.torrent, event.torrent_ids))
-
-    @log_time
-    @on(OpenSortOrder)
-    def handle_open_sort_order(self, event: OpenSortOrder) -> None:
+    @on(OpenSortOrderCommand)
+    def handle_open_sort_order_command(self, event: OpenSortOrderCommand) -> None:
         self.push_screen(SortOrderDialog())
 
     @log_time
-    @on(OpenPreferences)
-    def handle_open_preferences(self, event: OpenPreferences) -> None:
-        self.push_screen(PreferencesDialog(self.client.preferences()))
-
-    @log_time
-    @on(OpenSearch)
-    def handle_open_search(self, event: OpenSearch) -> None:
+    @on(OpenSearchCommand)
+    def handle_open_search(self, event: OpenSearchCommand) -> None:
         self.push_screen(SearchDialog())
 
     @log_time
-    @on(AddTorrent)
-    def handle_add_torrent(self, event: AddTorrent) -> None:
+    @on(AddTorrentCommand)
+    def handle_add_torrent_command(self, event: AddTorrentCommand) -> None:
         try:
             self.client.add_torrent(event.value)
             self.post_message(Notification("New torrent was added"))
@@ -240,13 +217,30 @@ class MainApp(App):
                 "warning"))
 
     @log_time
-    @on(SearchTorrent)
-    def handle_search_torrent(self, event: SearchTorrent) -> None:
-        self.query_one(TorrentListPanel).search_torrent(event.value)
+    @on(OpenUpdateTorrentLabelsCommand)
+    def handle_open_update_torrent_labels_command(self, event: OpenUpdateTorrentLabelsCommand) -> None:
+        self.push_screen(UpdateTorrentLabelsDialog(event.torrent, None))
 
     @log_time
-    @on(TorrentLabelsUpdated)
-    def handle_torrent_labels_updated(self, event: TorrentLabelsUpdated) -> None:
+    @on(VerifyTorrentCommand)
+    def handle_verify_torrent_command(self, event: VerifyTorrentCommand) -> None:
+        self.client.verify_torrent(event.torrent_id)
+        self.post_message(Notification("Torrent sent to verification"))
+
+    @log_time
+    @on(ReannounceTorrentCommand)
+    def handle_reannounce_torrent_command(self, event: ReannounceTorrentCommand) -> None:
+        self.client.reannounce_torrent(event.torrent_id)
+        self.post_message(Notification("Torrent reannounce started"))
+
+    @log_time
+    @on(SearchCompletedEvent)
+    def handle_search_completed_event(self, event: SearchCompletedEvent) -> None:
+        self.query_one(TorrentListViewPanel).search_torrent(event.search_term)
+
+    @log_time
+    @on(TorrentLabelsUpdatedEvent)
+    def handle_torrent_labels_updated_event(self, event: TorrentLabelsUpdatedEvent) -> None:
         labels = [x.strip() for x in event.value.split(',') if x.strip()]
 
         if len(event.torrent_ids) == 1:
@@ -266,19 +260,103 @@ class MainApp(App):
                 "Removed torrent labels ({count_label})"))
 
     @log_time
-    @on(SortOrderSelected)
-    def handle_sort_order_selected(self, event: SortOrderSelected) -> None:
+    @on(SortOrderUpdatedEvent)
+    def handle_sort_order_updated_event(self, event: SortOrderUpdatedEvent) -> None:
         self.sort_order = event.order
         self.sort_order_asc = event.is_asc
 
         direction = 'ASC' if event.is_asc else 'DESC'
-        self.post_message(MainApp.Notification(
+        self.post_message(Notification(
             f"Selected sort order: {event.order.name} {direction}"))
 
     @log_time
-    @on(PageChanged)
-    def handle_page_changed(self, event: PageChanged) -> None:
+    @on(PageChangedEvent)
+    def handle_page_changed_event(self, event: PageChangedEvent) -> None:
         self.r_page = event.state
+
+    # refactored
+
+    @log_time
+    @on(OpenTorrentInfoCommand)
+    def handle_open_torrent_info_command(self, event: OpenTorrentInfoCommand) -> None:
+        torrent = self.client.torrent(event.torrent_id)
+
+        self.query_one(ContentSwitcher).current = "torrent-info"
+        self.query_one(TorrentInfoPanel).r_torrent = torrent
+
+    @log_time
+    @on(OpenTorrentListCommand)
+    def handle_open_torrent_list_command(self, event: OpenTorrentListCommand) -> None:
+        self.query_one(ContentSwitcher).current = "torrent-list"
+
+    @log_time
+    @on(OpenAddTorrentCommand)
+    def handle_open_add_torrent_command(self, event: OpenAddTorrentCommand) -> None:
+        session = self.client.session(self.r_torrents, self.sort_order, self.sort_order_asc)
+        self.push_screen(AddTorrentDialog(session['download_dir'],
+                                          session['download_dir_free_space']))
+
+    @log_time
+    @on(ToggleTorrentCommand)
+    def handle_toggle_torrent_command(self, event: ToggleTorrentCommand) -> None:
+        if event.torrent_status == 'stopped':
+            self.client.start_torrent(event.torrent_id)
+            self.post_message(Notification("Torrent started"))
+        else:
+            self.client.stop_torrent(event.torrent_id)
+            self.post_message(Notification("Torrent stopped"))
+
+    @log_time
+    @on(RemoveTorrentCommand)
+    def handle_remove_torrent_command(self, event: RemoveTorrentCommand) -> None:
+        def check_quit(confirmed: bool | None) -> None:
+            if confirmed:
+                self.client.remove_torrent(event.torrent_id,
+                                           delete_data=False)
+
+                self.query_one(TorrentListViewPanel).post_message(TorrentRemovedEvent(event.torrent_id))
+                self.post_message(Notification("Torrent removed"))
+
+        message = "Remove torrent?"
+        description = ("Once removed, continuing the "
+                       "transfer will require the torrent file. "
+                       "Are you sure you want to remove it?")
+
+        self.post_message(Confirm(message=message,
+                                  description=description,
+                                  check_quit=check_quit))
+
+    @log_time
+    @on(TrashTorrentCommand)
+    def handle_trash_torrent_command(self, event: TrashTorrentCommand) -> None:
+        def check_quit(confirmed: bool | None) -> None:
+            if confirmed:
+                self.client.remove_torrent(event.torrent_id,
+                                           delete_data=True)
+
+                self.query_one(TorrentListViewPanel).post_message(TorrentTrashedEvent(event.torrent_id))
+                self.post_message(Notification("Torrent and its data removed"))
+
+        message = "Remove torrent and delete data?"
+        description = ("All data downloaded for this torrent "
+                       "will be deleted. Are you sure you "
+                       "want to remove it?")
+
+        self.post_message(Confirm(message=message,
+                                  description=description,
+                                  check_quit=check_quit))
+
+    @log_time
+    @on(StartAllTorrentsCommand)
+    def handle_start_all_torrents_command(self, event: StartAllTorrentsCommand) -> None:
+        self.client.start_all_torrents()
+        self.post_message(Notification("All torrents started"))
+
+    @log_time
+    @on(StopAllTorrentsCommand)
+    def handle_stop_all_torrents_command(self, event: StopAllTorrentsCommand) -> None:
+        self.client.stop_all_torrents()
+        self.post_message(Notification("All torrents stopped"))
 
 
 def cli():
