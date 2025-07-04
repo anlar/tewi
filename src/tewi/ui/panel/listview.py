@@ -10,6 +10,7 @@ from textual.reactive import reactive
 
 from ...common import PageState
 from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
+from ...util.decorator import log_time
 
 # from ...message import Notification
 from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
@@ -21,6 +22,7 @@ from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorr
 
 class TorrentListItem(ListItem):
 
+    @log_time
     def watch_highlighted(self, value: bool) -> None:
         super().watch_highlighted(value)
 
@@ -66,15 +68,18 @@ class TorrentListViewPanel(ListView):
     search_term = ""
     search_active = False
 
+    @log_time
     def __init__(self, id: str, page_size: str, view_mode: str) -> None:
         self.page_size = page_size
         self.view_mode = view_mode
         super().__init__(id=id)
 
+    @log_time
     def watch_r_torrents(self, new_r_torrents):
         if new_r_torrents:
             self.update_page(torrents=new_r_torrents)
 
+    @log_time
     def is_equal_to_page(self, torrents) -> bool:
         items = self.children
 
@@ -87,6 +92,7 @@ class TorrentListViewPanel(ListView):
 
         return True
 
+    @log_time
     def next_page(self, forward: bool) -> None:
         hl_torrent_id = self.get_hl_torrent_id()
 
@@ -107,6 +113,7 @@ class TorrentListViewPanel(ListView):
         if next_torrent_id:
             self.update_page(self.r_torrents, next_torrent_id)
 
+    @log_time
     def update_page(self, torrents: list, hl_torrent_id: int = None, force: bool = False) -> None:
         # self.post_message(Notification(f"update_page: {hl_torrent_id}"))
         if hl_torrent_id is None:
@@ -124,6 +131,7 @@ class TorrentListViewPanel(ListView):
 
         self.draw_page(torrents, page, hl_torrent_id, force)
 
+    @log_time
     def draw_page(self, torrents, page, torrent_id, force) -> None:
         # self.post_message(Notification(f"draw_page: page {page}, torrent_id {torrent_id}"))
 
@@ -173,12 +181,14 @@ class TorrentListViewPanel(ListView):
 
             self.post_message(PageChangedEvent(state))
 
+    @log_time
     def total_pages(self, torrents) -> int:
         if len(torrents) == 0:
             return 0
         else:
             return math.ceil(len(torrents) / self.page_size)
 
+    @log_time
     def create_item(self, torrent) -> TorrentItem:
         if self.view_mode == 'card':
             item = TorrentItemCard(torrent)
@@ -191,16 +201,19 @@ class TorrentListViewPanel(ListView):
 
     # Actions: movement
 
+    @log_time
     def action_move_top(self) -> None:
         if len(self.children) > 0:
             self.index = 0
             # self.post_message(Notification("Go to zero"))
 
+    @log_time
     def action_move_bottom(self) -> None:
         if len(self.children) > 0:
             self.index = len(self.children) - 1
             # self.post_message(Notification("Go to bottom"))
 
+    @log_time
     def action_cursor_down(self) -> None:
         if self.index == len(self.children) - 1:
             # self.post_message(Notification("To next page"))
@@ -208,6 +221,7 @@ class TorrentListViewPanel(ListView):
         else:
             super().action_cursor_down()
 
+    @log_time
     def action_cursor_up(self) -> None:
         if self.index == 0:
             # self.post_message(Notification("To prev page"))
@@ -217,42 +231,53 @@ class TorrentListViewPanel(ListView):
 
     # Actions: torrent
 
+    @log_time
     def action_update_torrent_labels(self) -> None:
         if (torrent := self.get_hl_torrent()) is not None:
             self.post_message(OpenUpdateTorrentLabelsCommand(torrent))
 
+    @log_time
     def action_verify_torrent(self) -> None:
         if (torrent_id := self.get_hl_torrent_id()) is not None:
             self.post_message(VerifyTorrentCommand(torrent_id))
 
+    @log_time
     def action_reannounce_torrent(self) -> None:
         if (torrent_id := self.get_hl_torrent_id()) is not None:
             self.post_message(ReannounceTorrentCommand(torrent_id))
 
+    @log_time
     def action_toggle_torrent(self) -> None:
         if (torrent := self.get_hl_torrent()) is not None:
             self.post_message(ToggleTorrentCommand(torrent.id, torrent.status))
 
+    @log_time
     def action_remove_torrent(self) -> None:
         if (torrent_id := self.get_hl_torrent_id()) is not None:
             self.post_message(RemoveTorrentCommand(torrent_id))
 
+    @log_time
     def action_trash_torrent(self) -> None:
         if (torrent_id := self.get_hl_torrent_id()) is not None:
             self.post_message(TrashTorrentCommand(torrent_id))
 
+    @log_time
     def action_add_torrent(self) -> None:
         self.post_message(OpenAddTorrentCommand())
 
+    @log_time
     def action_start_all_torrents(self) -> None:
         self.post_message(StartAllTorrentsCommand())
 
+    @log_time
     def action_stop_all_torrents(self) -> None:
         self.post_message(StopAllTorrentsCommand())
 
+    @log_time
     def action_sort_order(self) -> None:
         self.post_message(OpenSortOrderCommand())
 
+    @log_time
     def action_toggle_view_mode(self) -> None:
         if self.view_mode == 'card':
             self.view_mode = 'compact'
@@ -265,24 +290,28 @@ class TorrentListViewPanel(ListView):
 
     # Actions: Search
 
+    @log_time
     def action_search(self) -> None:
         # Reset search state when opening search dialog
         self.search_active = False
         self.search_term = ""
         self.post_message(OpenSearchCommand())
 
+    @log_time
     def action_search_next(self) -> None:
         if not self.search_active or not self.search_term:
             self.post_message(Notification("No active search"))
         else:
             self._search_torrent(self.search_term, forward=True)
 
+    @log_time
     def action_search_previous(self) -> None:
         if not self.search_active or not self.search_term:
             self.post_message(Notification("No active search"))
         else:
             self._search_torrent(self.search_term, forward=False)
 
+    @log_time
     def _search_torrent(self, search_term: str, forward: bool = True) -> None:
         if not search_term or not self.r_torrents:
             return
@@ -323,9 +352,11 @@ class TorrentListViewPanel(ListView):
         # If no match found, show notification
         self.post_message(Notification(f"No torrents matching '{search_term}'"))
 
+    @log_time
     def _select_found_torrent(self, index: int) -> None:
         self.update_page(self.r_torrents, self.r_torrents[index].id)
 
+    @log_time
     def search_torrent(self, search_term: str) -> None:
         if search_term:
             self.search_term = search_term
@@ -334,19 +365,23 @@ class TorrentListViewPanel(ListView):
 
     # Handlers
 
+    @log_time
     @on(ListView.Selected)
     def handle_selected(self, event: ListView.Selected) -> None:
         torrent_id = event.item._nodes[0].torrent.id
         self.post_message(OpenTorrentInfoCommand(torrent_id))
 
+    @log_time
     @on(TorrentRemovedEvent)
     def handle_torrent_removed_event(self, event: TorrentRemovedEvent) -> None:
         self._remove_child(event.torrent_id)
 
+    @log_time
     @on(TorrentTrashedEvent)
     def handle_torrent_trashed_event(self, event: TorrentRemovedEvent) -> None:
         self._remove_child(event.torrent_id)
 
+    @log_time
     def _remove_child(self, torrent_id: int) -> None:
         for i, child in enumerate(self.children):
             if torrent_id == child._nodes[0].torrent.id:
@@ -354,13 +389,16 @@ class TorrentListViewPanel(ListView):
 
     # Common helpers
 
+    @log_time
     def torrent_idx(self, torrent) -> Optional[int]:
         return next((idx for idx, t in enumerate(self.r_torrents) if t.id == torrent.id), None)
 
+    @log_time
     def get_hl_torrent(self) -> Optional[int]:
         if (hl_item := self.highlighted_child) is not None:
             return hl_item._nodes[0].torrent
 
+    @log_time
     def get_hl_torrent_id(self) -> Optional[int]:
         if (hl_torrent := self.get_hl_torrent()) is not None:
             return hl_torrent.id
