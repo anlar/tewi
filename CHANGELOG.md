@@ -11,7 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Refactoring: replaced custom list widget with native list view
+
 ### Removed
+
+- Ability to mark torrents and perform group actions
 
 ## [0.9.0] - 2025-07-01 - Rabbit Warren
 
