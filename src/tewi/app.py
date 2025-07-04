@@ -35,10 +35,8 @@ from textual.widgets import ContentSwitcher
 from .common import sort_orders
 from .service.client import Client
 from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpdatedEvent, Notification, Confirm, \
-        OpenAddTorrent, OpenUpdateTorrentLabels, OpenSortOrderCommand, OpenSearchCommand, OpenPreferences, \
-        PageChangedEvent, \
-        VerifyTorrentCommand, ReannounceTorrentCommand
-from .message import OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
+        OpenSortOrderCommand, OpenSearchCommand, PageChangedEvent, VerifyTorrentCommand, ReannounceTorrentCommand, \
+        OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
         RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
         StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand
 from .util.decorator import log_time
@@ -52,7 +50,6 @@ from .ui.dialog.torrent.search import SearchDialog
 from .ui.dialog.torrent.sort import SortOrderDialog
 from .ui.panel.info import InfoPanel
 from .ui.panel.state import StatePanel
-from .ui.panel.list import TorrentListPanel
 from .ui.panel.listview import TorrentListViewPanel
 from .ui.panel.details import TorrentInfoPanel
 
@@ -129,15 +126,6 @@ class MainApp(App):
                                            view_mode=self.view_mode).data_bind(r_torrents=MainApp.r_torrents)
                 yield TorrentInfoPanel(id="torrent-info")
 
-        # with Horizontal():
-        #     with ContentSwitcher(initial="torrent-list"):
-        #         yield TorrentListPanel(id="torrent-list",
-        #                                client=self.client,
-        #                                view_mode=self.view_mode,
-        #                                page_size=self.page_size).data_bind(
-        #                                        r_torrents=MainApp.r_torrents)
-        #         yield TorrentInfoPanel(id="torrent-info")
-
         yield StatePanel().data_bind(r_session=MainApp.r_session,
                                      r_page=MainApp.r_page)
 
@@ -187,14 +175,6 @@ class MainApp(App):
         self.push_screen(HelpDialog(self.screen.active_bindings.values()))
 
     @log_time
-    @on(TorrentListPanel.TorrentViewed)
-    def handle_torrent_view(self, event: TorrentListPanel.TorrentViewed) -> None:
-        torrent = self.client.torrent(event.torrent.id)
-
-        self.query_one(ContentSwitcher).current = "torrent-info"
-        self.query_one(TorrentInfoPanel).r_torrent = torrent
-
-    @log_time
     @on(Notification)
     def handle_notification(self, event: Notification) -> None:
         timeout = 3 if event.severity == 'information' else 5
@@ -212,26 +192,9 @@ class MainApp(App):
                     event.check_quit)
 
     @log_time
-    @on(OpenAddTorrent)
-    def handle_open_add_torrent(self, event: OpenAddTorrent) -> None:
-        session = self.client.session(self.r_torrents, self.sort_order, self.sort_order_asc)
-        self.push_screen(AddTorrentDialog(session['download_dir'],
-                                          session['download_dir_free_space']))
-
-    @log_time
-    @on(OpenUpdateTorrentLabels)
-    def handle_open_update_torrent_labels(self, event: OpenUpdateTorrentLabels) -> None:
-        self.push_screen(UpdateTorrentLabelsDialog(event.torrent, event.torrent_ids))
-
-    @log_time
     @on(OpenSortOrderCommand)
     def handle_open_sort_order_command(self, event: OpenSortOrderCommand) -> None:
         self.push_screen(SortOrderDialog())
-
-    @log_time
-    @on(OpenPreferences)
-    def handle_open_preferences(self, event: OpenPreferences) -> None:
-        self.push_screen(PreferencesDialog(self.client.preferences()))
 
     @log_time
     @on(OpenSearchCommand)

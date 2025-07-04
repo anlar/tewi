@@ -131,14 +131,7 @@ class PageChangedEvent(Message):
         self.state = state
 
 
-# old classess, TODO: remove
-
-class SearchTorrent(Message):
-
-    def __init__(self, value: str) -> None:
-        super().__init__()
-        self.value = value
-
+# Common
 
 class Notification(Message):
 
@@ -157,26 +150,3 @@ class Confirm(Message):
         self.message = message
         self.description = description
         self.check_quit = check_quit
-
-
-class OpenAddTorrent(Message):
-    pass
-
-
-class OpenUpdateTorrentLabels(Message):
-    def __init__(self, torrent, torrent_ids):
-        super().__init__()
-        self.torrent = torrent
-        self.torrent_ids = torrent_ids
-
-
-class OpenSortOrder(Message):
-    pass
-
-
-class OpenSearch(Message):
-    pass
-
-
-class OpenPreferences(Message):
-    pass
