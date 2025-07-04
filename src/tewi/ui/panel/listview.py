@@ -19,6 +19,15 @@ from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorr
         PageChangedEvent
 
 
+class TorrentListItem(ListItem):
+
+    def watch_highlighted(self, value: bool) -> None:
+        super().watch_highlighted(value)
+
+        if self._nodes:
+            self._nodes[0].set_class(value, "-highlight")
+
+
 class TorrentListViewPanel(ListView):
 
     BINDINGS: ClassVar[list[BindingType]] = [
@@ -139,7 +148,7 @@ class TorrentListViewPanel(ListView):
 
             for t in page_torrents:
                 item = self.create_item(t)
-                list_item = ListItem(item)
+                list_item = TorrentListItem(item)
 
                 if t.id == torrent_id:
                     hl_idx = idx

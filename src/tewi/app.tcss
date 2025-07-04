@@ -16,16 +16,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-ListView {
-background: $surface;
-& > ListItem {
-    &.-highlight {
-	background: $primary-lighten-1 !important;
-        text-style: none;
-    }
-}
-}
-
 /* COMMON */
 
 * {
@@ -121,6 +111,12 @@ SpeedIndicator.non-zero {
 #state-panel > .arrow,
 #state-panel > SpeedIndicator {
     text-style: bold;
+}
+
+/* TORRENT LIST PANEL: COMMON */
+
+TorrentItem.-highlight {
+    background: $primary-darken-1 !important;
 }
 
 /* TORRENT LIST PANEL: TORRENT ITEM ONELINE */
