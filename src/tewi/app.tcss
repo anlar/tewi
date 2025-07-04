@@ -116,7 +116,7 @@ SpeedIndicator.non-zero {
 /* TORRENT LIST PANEL: COMMON */
 
 TorrentItem.-highlight {
-    background: $primary-darken-1 !important;
+    background: $primary !important;
 }
 
 /* TORRENT LIST PANEL: TORRENT ITEM ONELINE */
