@@ -1,66 +1,28 @@
+"""Transmission torrent client implementation."""
+
 import os
 import pathlib
 
 from dataclasses import replace
-from typing import TypedDict
 
 from transmission_rpc import Torrent
-from transmission_rpc import Client as TransmissionClient
+from transmission_rpc import Client as TransmissionRPCClient
 
 from ..util.misc import is_torrent_link
-from ..common import SortOrder, TorrentDTO
+from ..common import SortOrder, TorrentDTO, TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO
+from .base_client import BaseClient, ClientMeta, ClientStats, ClientSession
 
 
-class ClientMeta(TypedDict):
-    name: str
-    version: str
-
-
-class ClientStats(TypedDict):
-    current_uploaded_bytes: int
-    current_downloaded_bytes: int
-    current_ratio: float
-    current_active_seconds: int
-
-    total_uploaded_bytes: int
-    total_downloaded_bytes: int
-    total_ratio: float
-    total_active_seconds: int
-    total_started_count: int
-
-
-class ClientSession(TypedDict):
-    download_dir: str
-    download_dir_free_space: int
-    upload_speed: int
-    download_speed: int
-    alt_speed_enabled: bool
-    alt_speed_up: int
-    alt_speed_down: int
-
-    torrents_complete_size: int
-    torrents_total_size: int
-
-    torrents_count: int
-    torrents_down: int
-    torrents_seed: int
-    torrents_check: int
-    torrents_stop: int
-
-    sort_order: SortOrder
-    sort_order_asc: bool
-
-
-class Client:
+class TransmissionClient(BaseClient):
 
     def __init__(self,
                  host: str, port: str,
                  username: str = None, password: str = None):
 
-        self.client = TransmissionClient(host=host,
-                                         port=port,
-                                         username=username,
-                                         password=password)
+        self.client = TransmissionRPCClient(host=host,
+                                            port=port,
+                                            username=username,
+                                            password=password)
 
     def meta(self) -> ClientMeta:
         return {
@@ -154,6 +116,75 @@ class Client:
             added_date=torrent.added_date,
             activity_date=torrent.activity_date,
             queue_position=torrent.queue_position,
+            labels=list(torrent.labels) if torrent.labels else [],
+        )
+
+    def _file_to_dto(self, file) -> FileDTO:
+        """Convert transmission-rpc File to FileDTO."""
+        return FileDTO(
+            id=file.id,
+            name=file.name,
+            size=file.size,
+            completed=file.completed,
+            selected=file.selected,
+            priority=file.priority,
+        )
+
+    def _peer_to_dto(self, peer: dict) -> PeerDTO:
+        """Convert transmission-rpc peer dict to PeerDTO."""
+        return PeerDTO(
+            address=peer["address"],
+            client_name=peer["clientName"],
+            progress=peer["progress"],
+            is_encrypted=peer["isEncrypted"],
+            rate_to_client=peer["rateToClient"],
+            rate_to_peer=peer["rateToPeer"],
+            flag_str=peer["flagStr"],
+        )
+
+    def _tracker_to_dto(self, tracker) -> TrackerDTO:
+        """Convert transmission-rpc Tracker to TrackerDTO."""
+        return TrackerDTO(
+            host=tracker.host,
+            tier=tracker.tier,
+            seeder_count=tracker.seeder_count,
+            leecher_count=tracker.leecher_count,
+            download_count=tracker.download_count,
+        )
+
+    def _torrent_detail_to_dto(self, torrent: Torrent) -> TorrentDetailDTO:
+        """Convert transmission-rpc Torrent to TorrentDetailDTO."""
+        files = [self._file_to_dto(f) for f in torrent.get_files()]
+        peers = [self._peer_to_dto(p) for p in torrent.peers]
+        trackers = [self._tracker_to_dto(t) for t in torrent.tracker_stats]
+
+        return TorrentDetailDTO(
+            id=torrent.id,
+            name=torrent.name,
+            hash_string=torrent.hash_string,
+            total_size=torrent.total_size,
+            piece_count=torrent.piece_count,
+            piece_size=torrent.piece_size,
+            is_private=torrent.is_private,
+            comment=torrent.comment if torrent.comment else "",
+            creator=torrent.creator if torrent.creator else "",
+            labels=list(torrent.labels) if torrent.labels else [],
+            status=torrent.status,
+            download_dir=torrent.download_dir,
+            downloaded_ever=torrent.downloaded_ever,
+            uploaded_ever=torrent.uploaded_ever,
+            ratio=torrent.ratio,
+            error_string=torrent.error_string if torrent.error_string else "",
+            added_date=torrent.added_date,
+            start_date=torrent.start_date,
+            done_date=torrent.done_date,
+            activity_date=torrent.activity_date,
+            peers_connected=torrent.peers_connected,
+            peers_sending_to_us=torrent.peers_sending_to_us,
+            peers_getting_from_us=torrent.peers_getting_from_us,
+            files=files,
+            peers=peers,
+            trackers=trackers,
         )
 
     def torrents(self) -> list[TorrentDTO]:
@@ -183,8 +214,10 @@ class Client:
 
         return result
 
-    def torrent(self, id: int) -> Torrent:
-        return self.client.get_torrent(id)
+    def torrent(self, id: int) -> TorrentDetailDTO:
+        """Get detailed information about a specific torrent."""
+        torrent = self.client.get_torrent(id)
+        return self._torrent_detail_to_dto(torrent)
 
     def add_torrent(self, value: str) -> None:
         if is_torrent_link(value):

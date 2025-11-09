@@ -22,9 +22,6 @@ import argparse
 import logging
 import sys
 
-from transmission_rpc.error import TransmissionError
-
-
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -33,7 +30,7 @@ from textual.reactive import reactive
 from textual.widgets import ContentSwitcher
 
 from .common import sort_orders, TorrentDTO
-from .service.client import Client
+from .service import create_client, ClientError
 from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpdatedEvent, Notification, Confirm, \
         OpenSortOrderCommand, OpenSearchCommand, PageChangedEvent, VerifyTorrentCommand, ReannounceTorrentCommand, \
         OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
@@ -83,7 +80,7 @@ class MainApp(App):
     r_page = reactive(None)
 
     @log_time
-    def __init__(self, host: str, port: str,
+    def __init__(self, client_type: str, host: str, port: str,
                  username: str, password: str,
                  view_mode: str,
                  refresh_interval: int,
@@ -102,11 +99,15 @@ class MainApp(App):
 
         self.tewi_version = version
 
+        self.c_type = client_type
         self.c_host = host
         self.c_port = port
 
-        self.client = Client(host=self.c_host, port=self.c_port,
-                             username=username, password=password)
+        self.client = create_client(client_type=self.c_type,
+                                    host=self.c_host,
+                                    port=self.c_port,
+                                    username=username,
+                                    password=password)
 
         self.sort_order = sort_orders[0]
         self.sort_order_asc = True
@@ -207,7 +208,7 @@ class MainApp(App):
         try:
             self.client.add_torrent(event.value)
             self.post_message(Notification("New torrent was added"))
-        except TransmissionError as e:
+        except ClientError as e:
             self.post_message(Notification(
                 f"Failed to add torrent:\n{e}",
                 "warning"))
@@ -364,26 +365,29 @@ def cli():
 
     parser = argparse.ArgumentParser(
             prog='tewi',
-            description='Text-based interface for the Transmission BitTorrent daemon',
+            description='Text-based interface for BitTorrent clients (Transmission and qBittorrent)',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
+    parser.add_argument('--client-type', type=str, default='transmission',
+                        choices=['transmission', 'qbittorrent'],
+                        help='Type of BitTorrent client to connect to')
     parser.add_argument('--view-mode', type=str, default='card',
                         choices=['card', 'compact', 'oneline'],
                         help='View mode for torrents in list')
     parser.add_argument('--refresh-interval', type=int, default=5,
-                        help='Refresh interval (in seconds) for loading data from Transmission daemon')
+                        help='Refresh interval (in seconds) for loading data from daemon')
     parser.add_argument('--limit-torrents', type=int, default=None,
                         help='Limit number of displayed torrents (useful for performance debugging)')
     parser.add_argument('--page-size', type=int, default=50,
                         help='Number of torrents displayed per page')
     parser.add_argument('--host', type=str, default='localhost',
-                        help='Transmission daemon host for connection')
+                        help='BitTorrent daemon host for connection')
     parser.add_argument('--port', type=str, default='9091',
-                        help='Transmission daemon port for connection')
+                        help='BitTorrent daemon port for connection')
     parser.add_argument('--username', type=str,
-                        help='Transmission daemon username for connection')
+                        help='BitTorrent daemon username for connection')
     parser.add_argument('--password', type=str,
-                        help='Transmission daemon password for connection')
+                        help='BitTorrent daemon password for connection')
     parser.add_argument('--logs', default=False,
                         action=argparse.BooleanOptionalAction,
                         help='Enable verbose logs (added to `tewi.log` file)')
@@ -405,7 +409,8 @@ def cli():
     logger.info(f'Loaded CLI options: {args}')
 
     try:
-        app = MainApp(host=args.host, port=args.port,
+        app = MainApp(client_type=args.client_type,
+                      host=args.host, port=args.port,
                       username=args.username, password=args.password,
                       view_mode=args.view_mode,
                       refresh_interval=args.refresh_interval,
@@ -414,8 +419,8 @@ def cli():
                       version=tewi_version)
         app.run()
         return app
-    except TransmissionError as e:
-        print(f"Failed to connect to Transmission daemon at {args.host}:{args.port}: {e.message}", file=sys.stderr)
+    except ClientError as e:
+        print(f"Failed to connect to {args.client_type} daemon at {args.host}:{args.port}: {e}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
         print(f"Failed to initialize application: {e}", file=sys.stderr)

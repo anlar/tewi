@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import NamedTuple
 
@@ -25,6 +25,71 @@ class TorrentDTO:
     added_date: datetime
     activity_date: datetime
     queue_position: int
+    labels: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True)
+class FileDTO:
+    """Data Transfer Object for torrent file information."""
+    id: int
+    name: str
+    size: int
+    completed: int
+    selected: bool
+    priority: int
+
+
+@dataclass(frozen=True)
+class PeerDTO:
+    """Data Transfer Object for peer information."""
+    address: str
+    client_name: str
+    progress: float
+    is_encrypted: bool
+    rate_to_client: int
+    rate_to_peer: int
+    flag_str: str
+
+
+@dataclass(frozen=True)
+class TrackerDTO:
+    """Data Transfer Object for tracker information."""
+    host: str
+    tier: int
+    seeder_count: int
+    leecher_count: int
+    download_count: int
+
+
+@dataclass(frozen=True)
+class TorrentDetailDTO:
+    """Data Transfer Object for detailed torrent view (immutable)."""
+    id: int
+    name: str
+    hash_string: str
+    total_size: int
+    piece_count: int
+    piece_size: int
+    is_private: bool
+    comment: str
+    creator: str
+    labels: list[str]
+    status: str
+    download_dir: str
+    downloaded_ever: int
+    uploaded_ever: int
+    ratio: float
+    error_string: str
+    added_date: datetime
+    start_date: datetime
+    done_date: datetime
+    activity_date: datetime
+    peers_connected: int
+    peers_sending_to_us: int
+    peers_getting_from_us: int
+    files: list[FileDTO]
+    peers: list[PeerDTO]
+    trackers: list[TrackerDTO]
 
 
 class PageState(NamedTuple):
