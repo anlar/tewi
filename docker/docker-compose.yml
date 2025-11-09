@@ -1,0 +1,27 @@
+services:
+  transmission:
+    image: linuxserver/transmission:latest
+    container_name: tewi-transmission-dev
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - USER=  # No authentication
+      - PASS=  # No authentication
+    ports:
+      - "9092:9091"     # Web UI / RPC
+      - "51414:51413"   # Peer connections
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/transmission/web/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - downloads:/downloads
+      - watch:/watch
+
+volumes:
+  downloads:
+  watch:

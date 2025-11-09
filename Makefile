@@ -19,3 +19,12 @@ release-pypi-test: build
 
 release-pypi-main: build
 	python -m twine upload dist/*
+
+docker-up:
+	docker compose -f docker/docker-compose.yml up -d
+
+docker-down:
+	docker compose -f docker/docker-compose.yml down -v
+
+docker-init:
+	./docker/init-torrents.sh
