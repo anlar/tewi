@@ -1,14 +1,14 @@
-import copy
 import os
 import pathlib
 
+from dataclasses import replace
 from typing import TypedDict
 
 from transmission_rpc import Torrent
 from transmission_rpc import Client as TransmissionClient
 
 from ..util.misc import is_torrent_link
-from ..common import SortOrder
+from ..common import SortOrder, TorrentDTO
 
 
 class ClientMeta(TypedDict):
@@ -95,7 +95,7 @@ class Client:
                 'total_started_count': s.cumulative_stats.session_count,
         }
 
-    def session(self, torrents, sort_order, sort_order_asc) -> ClientSession:
+    def session(self, torrents: list[TorrentDTO], sort_order: SortOrder, sort_order_asc: bool) -> ClientSession:
         s = self.client.get_session()
         stats = self.client.session_stats()
 
@@ -132,17 +132,43 @@ class Client:
 
         return dict(sorted(filtered.items()))
 
-    def torrents(self) -> list[Torrent]:
-        return self.client.get_torrents(
+    def _torrent_to_dto(self, torrent: Torrent) -> TorrentDTO:
+        """Convert transmission-rpc Torrent to TorrentDTO."""
+        return TorrentDTO(
+            id=torrent.id,
+            name=torrent.name,
+            status=torrent.status,
+            total_size=torrent.total_size,
+            size_when_done=torrent.size_when_done,
+            left_until_done=torrent.left_until_done,
+            percent_done=torrent.percent_done,
+            eta=torrent.eta,
+            rate_upload=torrent.rate_upload,
+            rate_download=torrent.rate_download,
+            ratio=torrent.ratio,
+            peers_connected=torrent.peers_connected,
+            peers_getting_from_us=torrent.peers_getting_from_us,
+            peers_sending_to_us=torrent.peers_sending_to_us,
+            uploaded_ever=torrent.uploaded_ever,
+            priority=torrent.priority,
+            added_date=torrent.added_date,
+            activity_date=torrent.activity_date,
+            queue_position=torrent.queue_position,
+        )
+
+    def torrents(self) -> list[TorrentDTO]:
+        torrents = self.client.get_torrents(
                 arguments=['id', 'name', 'status', 'totalSize', 'left_until_done',
                            'percentDone', 'eta', 'rateUpload', 'rateDownload',
                            'uploadRatio', 'sizeWhenDone', 'leftUntilDone',
-                           'addedDate', 'peersConnected', 'peersGettingFromUs',
+                           'addedDate', 'activityDate', 'queuePosition',
+                           'peersConnected', 'peersGettingFromUs',
                            'peersSendingToUs', 'bandwidthPriority', 'uploadedEver',
                            'labels']
                 )
+        return [self._torrent_to_dto(t) for t in torrents]
 
-    def torrents_test(self) -> list[Torrent]:
+    def torrents_test(self) -> list[TorrentDTO]:
         torrents = self.torrents()
 
         result = []
@@ -151,9 +177,7 @@ class Client:
 
         for i in range(50):
             for t in torrents:
-                t_copy = copy.deepcopy(t)
-                t_copy.fields['id'] = idx
-                t_copy.fields['name'] = t_copy.name + "-" + str(idx)
+                t_copy = replace(t, id=idx, name=t.name + "-" + str(idx))
                 result.append(t_copy)
                 idx = idx + 1
 

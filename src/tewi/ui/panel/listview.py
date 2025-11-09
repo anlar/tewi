@@ -8,7 +8,7 @@ from textual.binding import Binding, BindingType
 from textual.widgets import ListView, ListItem
 from textual.reactive import reactive
 
-from ...common import PageState
+from ...common import PageState, TorrentDTO
 from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
 from ...util.decorator import log_time
 
@@ -62,7 +62,7 @@ class TorrentListViewPanel(ListView):
             Binding("N", "search_previous", "[Search] Previous result"),
     ]
 
-    r_torrents = reactive(None)
+    r_torrents: list[TorrentDTO] | None = reactive(None)
 
     # Search state
     search_term = ""
@@ -114,7 +114,7 @@ class TorrentListViewPanel(ListView):
             self.update_page(self.r_torrents, next_torrent_id)
 
     @log_time
-    def update_page(self, torrents: list, hl_torrent_id: int = None, force: bool = False) -> None:
+    def update_page(self, torrents: list[TorrentDTO], hl_torrent_id: int = None, force: bool = False) -> None:
         # self.post_message(Notification(f"update_page: {hl_torrent_id}"))
         if hl_torrent_id is None:
             hl_torrent_id = self.get_hl_torrent_id()

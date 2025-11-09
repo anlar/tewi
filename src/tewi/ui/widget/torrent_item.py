@@ -21,6 +21,7 @@ from textual.containers import Grid
 from textual.reactive import reactive
 from textual.widgets import Static, Label, ProgressBar
 
+from ...common import TorrentDTO
 from ...util.decorator import log_time
 from ...util.print import print_size, print_time
 from .common import ReactiveLabel, SpeedIndicator
@@ -30,7 +31,7 @@ class TorrentItem(Static):
 
     selected = reactive(False)
     marked = reactive(False)
-    torrent = reactive(None)
+    torrent: TorrentDTO | None = reactive(None)
 
     t_id = reactive(None)
     t_name = reactive(None)
@@ -51,7 +52,7 @@ class TorrentItem(Static):
     w_prev = None
 
     @log_time
-    def __init__(self, torrent):
+    def __init__(self, torrent: TorrentDTO):
         super().__init__()
         self.update_torrent(torrent)
 
@@ -83,7 +84,7 @@ class TorrentItem(Static):
             self.remove_class("marked")
 
     @log_time
-    def update_torrent(self, torrent) -> None:
+    def update_torrent(self, torrent: TorrentDTO) -> None:
         self.torrent = torrent
 
         self.t_id = torrent.id
@@ -202,7 +203,7 @@ class TorrentItemCard(TorrentItem):
                     name=TorrentItemCard.t_size_stats)
 
     @log_time
-    def update_torrent(self, torrent) -> None:
+    def update_torrent(self, torrent: TorrentDTO) -> None:
         super().update_torrent(torrent)
 
         self.t_eta = torrent.eta

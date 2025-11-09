@@ -1,4 +1,30 @@
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 from typing import NamedTuple
+
+
+@dataclass(frozen=True)
+class TorrentDTO:
+    """Data Transfer Object for torrent list view (immutable)."""
+    id: int
+    name: str
+    status: str
+    total_size: int
+    size_when_done: int
+    left_until_done: int
+    percent_done: float
+    eta: timedelta
+    rate_upload: int
+    rate_download: int
+    ratio: float
+    peers_connected: int
+    peers_getting_from_us: int
+    peers_sending_to_us: int
+    uploaded_ever: int
+    priority: int
+    added_date: datetime
+    activity_date: datetime
+    queue_position: int
 
 
 class PageState(NamedTuple):

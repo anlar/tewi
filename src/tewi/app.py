@@ -32,7 +32,7 @@ from textual.containers import Horizontal
 from textual.reactive import reactive
 from textual.widgets import ContentSwitcher
 
-from .common import sort_orders
+from .common import sort_orders, TorrentDTO
 from .service.client import Client
 from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpdatedEvent, Notification, Confirm, \
         OpenSortOrderCommand, OpenSearchCommand, PageChangedEvent, VerifyTorrentCommand, ReannounceTorrentCommand, \
@@ -78,7 +78,7 @@ class MainApp(App):
             Binding("q", "quit", "[App] Quit", priority=True),
             ]
 
-    r_torrents = reactive(None)
+    r_torrents: list[TorrentDTO] | None = reactive(None)
     r_session = reactive(None)
     r_page = reactive(None)
 
@@ -149,7 +149,7 @@ class MainApp(App):
         self.call_from_thread(self.set_tdata, torrents, session)
 
     @log_time
-    def set_tdata(self, torrents, session) -> None:
+    def set_tdata(self, torrents: list[TorrentDTO], session) -> None:
         self.r_torrents = torrents
         self.r_session = session
 
