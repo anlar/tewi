@@ -22,6 +22,31 @@ services:
       - downloads:/downloads
       - watch:/watch
 
+  qbittorrent:
+    image: linuxserver/qbittorrent:latest
+    container_name: tewi-qbittorrent-dev
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=UTC
+      - WEBUI_PORT=9093
+    ports:
+      - "9093:9093"     # Web UI (no authentication required)
+      - "6881:6881"     # Peer connections (TCP)
+      - "6881:6881/udp" # Peer connections (UDP)
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9093/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - qbittorrent-config:/config
+      - downloads:/downloads
+      - watch:/watch
+
 volumes:
   downloads:
   watch:
+  qbittorrent-config:
