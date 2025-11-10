@@ -287,10 +287,14 @@ class QBittorrentClient(BaseClient):
         trackers_data = self.client.torrents.trackers(torrent_hash=torrent.hash)
         trackers = [self._tracker_to_dto(t) for t in trackers_data if t.url.startswith('http')]
 
-        # Get piece information (may not be available in qBittorrent API)
-        piece_size = getattr(torrent, 'piece_size', 0)
-        piece_count = (torrent.total_size // piece_size
-                       if piece_size > 0 else 0)
+        # Get piece information from properties
+        try:
+            props = self.client.torrents.properties(torrent_hash=torrent.hash)
+            piece_size = props.piece_size
+            piece_count = props.pieces_num
+        except Exception:
+            piece_size = 0
+            piece_count = 0
 
         return TorrentDetailDTO(
             id=hash(torrent.hash),
