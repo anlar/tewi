@@ -28,6 +28,10 @@ class TorrentInfoPanel(ScrollableContainer):
             Binding("G", "scroll_bottom", "[Navigation] Scroll to the bottom"),
             ]
 
+    def __init__(self, has_separate_id: bool = True, **kwargs):
+        super().__init__(**kwargs)
+        self.has_separate_id = has_separate_id
+
     r_torrent = reactive(None)
 
     t_name = reactive(None)
@@ -68,8 +72,10 @@ class TorrentInfoPanel(ScrollableContainer):
 
                             yield Static("Name:", classes="name")
                             yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_name)
-                            yield Static("ID:", classes="name")
-                            yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_id)
+                            # Only show ID if client has separate ID field (not same as hash)
+                            if self.has_separate_id:
+                                yield Static("ID:", classes="name")
+                                yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_id)
                             yield Static("Hash:", classes="name")
                             yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_hash)
 
@@ -170,7 +176,7 @@ class TorrentInfoPanel(ScrollableContainer):
             self.t_hash = torrent.hash_string
             self.t_name = torrent.name
             self.t_size = print_size(torrent.total_size)
-            self.t_files = str(len(torrent.get_files()))
+            self.t_files = str(len(torrent.files))
             self.t_pieces = f"{torrent.piece_count} @ {print_size(torrent.piece_size, size_bytes=1024)}"
 
             if torrent.is_private:
@@ -201,29 +207,29 @@ class TorrentInfoPanel(ScrollableContainer):
             table = self.query_one("#files")
             table.clear()
 
-            file_tree = self.create_file_tree(self.r_torrent.get_files())
+            file_tree = self.create_file_tree(self.r_torrent.files)
             self.draw_file_table(table, file_tree)
 
             table = self.query_one("#peers")
             table.clear()
 
             for p in self.r_torrent.peers:
-                progress = p["progress"] * 100
-                table.add_row("Yes" if p["isEncrypted"] else "No",
-                              print_speed(p["rateToClient"], True),
-                              print_speed(p["rateToPeer"], True),
+                progress = p.progress * 100
+                table.add_row("Yes" if p.is_encrypted else "No",
+                              print_speed(p.rate_to_client, True),
+                              print_speed(p.rate_to_peer, True),
                               f'{progress:.0f}%',
-                              p["flagStr"],
-                              get_country(p["address"]),
-                              p["address"],
-                              p["clientName"])
+                              p.flag_str,
+                              get_country(p.address),
+                              p.address,
+                              p.client_name)
 
             table = self.query_one("#trackers")
             table.clear()
 
-            for t in self.r_torrent.tracker_stats:
+            for t in self.r_torrent.trackers:
                 table.add_row(t.host,
-                              # Transmission RPC numbers tiers from 0
+                              # Both clients number tiers from 0, display as 1-indexed
                               t.tier + 1,
                               self.print_count(t.seeder_count),
                               self.print_count(t.leecher_count),
