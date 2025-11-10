@@ -28,3 +28,9 @@ docker-down:
 
 docker-init:
 	./docker/init-torrents.sh
+
+run-transmission:
+	PYTHONPATH=src textual run --dev tewi.app:cli -- --client-type transmission --port 9092
+
+run-qbittorrent:
+	PYTHONPATH=src textual run --dev tewi.app:cli -- --client-type qbittorrent --port 9093 --username admin --password $$(docker logs tewi-qbittorrent-dev 2>&1 | grep 'temporary password' | sed 's/.*: //')
