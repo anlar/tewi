@@ -194,7 +194,7 @@ class QBittorrentClient(BaseClient):
             activity_date=(datetime.fromtimestamp(torrent.last_activity)
                            if torrent.last_activity > 0 else datetime.now()),
             queue_position=torrent.priority if hasattr(torrent, 'priority') else 0,
-            labels=list(torrent.tags.split(',')) if torrent.tags else [],
+            labels=[tag.strip() for tag in torrent.tags.split(',')] if torrent.tags else [],
         )
 
     def torrents(self) -> list[TorrentDTO]:
@@ -302,7 +302,7 @@ class QBittorrentClient(BaseClient):
             is_private=getattr(torrent, 'is_private', False),
             comment=torrent.comment if torrent.comment else "",
             creator=torrent.created_by if hasattr(torrent, 'created_by') else "",
-            labels=list(torrent.tags.split(',')) if torrent.tags else [],
+            labels=[tag.strip() for tag in torrent.tags.split(',')] if torrent.tags else [],
             status=self._normalize_status(torrent.state),
             download_dir=torrent.save_path,
             downloaded_ever=torrent.downloaded,
