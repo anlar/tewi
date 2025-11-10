@@ -173,7 +173,7 @@ class QBittorrentClient(BaseClient):
         priority = self.PRIORITY_TO_TRANSMISSION.get(torrent.priority, 0)
 
         return TorrentDTO(
-            id=hash(torrent.hash),  # qBittorrent uses hash as ID, convert to int
+            id=torrent.hash,  # qBittorrent uses hash as ID
             name=torrent.name,
             status=self._normalize_status(torrent.state),
             total_size=torrent.total_size,
@@ -216,23 +216,16 @@ class QBittorrentClient(BaseClient):
 
         return result
 
-    def torrent(self, id: int) -> TorrentDetailDTO:
+    def torrent(self, id: int | str) -> TorrentDetailDTO:
         """Get detailed information about a specific torrent."""
-        # In qBittorrent, we need to find the torrent by hash
-        # Since we used hash(torrent.hash) as ID, we need to reverse it
-        # This is a limitation - we'll need to iterate to find the right torrent
-        qb_torrents = self.client.torrents.info()
+        # In qBittorrent, the ID is the hash string itself
+        # Get the torrent directly by hash
+        qb_torrents = self.client.torrents.info(torrent_hashes=id)
 
-        torrent = None
-        for t in qb_torrents:
-            if hash(t.hash) == id:
-                torrent = t
-                break
-
-        if not torrent:
+        if not qb_torrents:
             raise ClientError(f"Torrent with ID {id} not found")
 
-        return self._torrent_detail_to_dto(torrent)
+        return self._torrent_detail_to_dto(qb_torrents[0])
 
     def _file_to_dto(self, file, torrent_hash: str) -> FileDTO:
         """Convert qBittorrent file to FileDTO."""
@@ -297,7 +290,7 @@ class QBittorrentClient(BaseClient):
             piece_count = 0
 
         return TorrentDetailDTO(
-            id=hash(torrent.hash),
+            id=torrent.hash,
             name=torrent.name,
             hash_string=torrent.hash,
             total_size=torrent.total_size,
@@ -339,45 +332,45 @@ class QBittorrentClient(BaseClient):
             with open(file, 'rb') as f:
                 self.client.torrents.add(torrent_files=f)
 
-    def start_torrent(self, torrent_ids: int | list[int]) -> None:
+    def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Start one or more torrents."""
-        if isinstance(torrent_ids, int):
+        if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
 
         # Convert IDs back to hashes
         hashes = self._ids_to_hashes(torrent_ids)
         self.client.torrents.resume(torrent_hashes=hashes)
 
-    def stop_torrent(self, torrent_ids: int | list[int]) -> None:
+    def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Stop one or more torrents."""
-        if isinstance(torrent_ids, int):
+        if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
 
         # Convert IDs back to hashes
         hashes = self._ids_to_hashes(torrent_ids)
         self.client.torrents.pause(torrent_hashes=hashes)
 
-    def remove_torrent(self, torrent_ids: int | list[int], delete_data: bool = False) -> None:
+    def remove_torrent(self, torrent_ids: int | str | list[int | str], delete_data: bool = False) -> None:
         """Remove one or more torrents."""
-        if isinstance(torrent_ids, int):
+        if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
 
         # Convert IDs back to hashes
         hashes = self._ids_to_hashes(torrent_ids)
         self.client.torrents.delete(delete_files=delete_data, torrent_hashes=hashes)
 
-    def verify_torrent(self, torrent_ids: int | list[int]) -> None:
+    def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Verify one or more torrents."""
-        if isinstance(torrent_ids, int):
+        if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
 
         # Convert IDs back to hashes
         hashes = self._ids_to_hashes(torrent_ids)
         self.client.torrents.recheck(torrent_hashes=hashes)
 
-    def reannounce_torrent(self, torrent_ids: int | list[int]) -> None:
+    def reannounce_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Reannounce one or more torrents to their trackers."""
-        if isinstance(torrent_ids, int):
+        if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
 
         # Convert IDs back to hashes
@@ -392,9 +385,9 @@ class QBittorrentClient(BaseClient):
         """Stop all torrents."""
         self.client.torrents.pause(torrent_hashes='all')
 
-    def update_labels(self, torrent_ids: int | list[int], labels: list[str]) -> None:
+    def update_labels(self, torrent_ids: int | str | list[int | str], labels: list[str]) -> None:
         """Update labels/tags for one or more torrents."""
-        if isinstance(torrent_ids, int):
+        if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
 
         # Convert IDs back to hashes
@@ -430,15 +423,11 @@ class QBittorrentClient(BaseClient):
         self.client.transfer.set_speed_limits_mode(mode=new_state)
         return new_state == 1
 
-    def _ids_to_hashes(self, ids: list[int]) -> list[str]:
+    def has_separate_id(self) -> bool:
+        """qBittorrent uses hash as ID, no separate ID field."""
+        return False
+
+    def _ids_to_hashes(self, ids: list[int | str]) -> list[str]:
         """Convert torrent IDs to qBittorrent hashes."""
-        qb_torrents = self.client.torrents.info()
-        hashes = []
-
-        for id in ids:
-            for t in qb_torrents:
-                if hash(t.hash) == id:
-                    hashes.append(t.hash)
-                    break
-
-        return hashes
+        # For qBittorrent, IDs are already hash strings
+        return [str(id) for id in ids]

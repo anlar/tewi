@@ -133,7 +133,7 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def torrent(self, id: int):
+    def torrent(self, id: int | str):
         """Get detailed information about a specific torrent.
 
         Args:
@@ -154,7 +154,7 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def start_torrent(self, torrent_ids: int | list[int]) -> None:
+    def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Start one or more torrents.
 
         Args:
@@ -163,7 +163,7 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def stop_torrent(self, torrent_ids: int | list[int]) -> None:
+    def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Stop one or more torrents.
 
         Args:
@@ -172,7 +172,7 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def remove_torrent(self, torrent_ids: int | list[int], delete_data: bool = False) -> None:
+    def remove_torrent(self, torrent_ids: int | str | list[int | str], delete_data: bool = False) -> None:
         """Remove one or more torrents.
 
         Args:
@@ -182,7 +182,7 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def verify_torrent(self, torrent_ids: int | list[int]) -> None:
+    def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Verify one or more torrents.
 
         Args:
@@ -191,7 +191,7 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def reannounce_torrent(self, torrent_ids: int | list[int]) -> None:
+    def reannounce_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Reannounce one or more torrents to their trackers.
 
         Args:
@@ -210,7 +210,7 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def update_labels(self, torrent_ids: int | list[int], labels: list[str]) -> None:
+    def update_labels(self, torrent_ids: int | str | list[int | str], labels: list[str]) -> None:
         """Update labels/tags for one or more torrents.
 
         Args:
@@ -225,5 +225,14 @@ class BaseClient(ABC):
 
         Returns:
             True if alt speed is now enabled, False otherwise
+        """
+        pass
+
+    @abstractmethod
+    def has_separate_id(self) -> bool:
+        """Return True if this client has a separate ID field distinct from hash.
+
+        Returns:
+            True if ID should be displayed separately from hash, False otherwise
         """
         pass

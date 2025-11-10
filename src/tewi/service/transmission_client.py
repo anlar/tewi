@@ -214,7 +214,7 @@ class TransmissionClient(BaseClient):
 
         return result
 
-    def torrent(self, id: int) -> TorrentDetailDTO:
+    def torrent(self, id: int | str) -> TorrentDetailDTO:
         """Get detailed information about a specific torrent."""
         torrent = self.client.get_torrent(id)
         return self._torrent_detail_to_dto(torrent)
@@ -226,23 +226,23 @@ class TransmissionClient(BaseClient):
             file = os.path.expanduser(value)
             self.client.add_torrent(pathlib.Path(file))
 
-    def start_torrent(self, torrent_ids: int | list[int]) -> None:
+    def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         self.client.start_torrent(torrent_ids)
 
-    def stop_torrent(self, torrent_ids: int | list[int]) -> None:
+    def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         self.client.stop_torrent(torrent_ids)
 
     def remove_torrent(self,
-                       torrent_ids: int | list[int],
+                       torrent_ids: int | str | list[int | str],
                        delete_data: bool = False) -> None:
 
         self.client.remove_torrent(torrent_ids,
                                    delete_data=delete_data)
 
-    def verify_torrent(self, torrent_ids: int | list[int]) -> None:
+    def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         self.client.verify_torrent(torrent_ids)
 
-    def reannounce_torrent(self, torrent_ids: int | list[int]) -> None:
+    def reannounce_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         self.client.reannounce_torrent(torrent_ids)
 
     def start_all_torrents(self) -> None:
@@ -253,10 +253,10 @@ class TransmissionClient(BaseClient):
         self.stop_torrent([t.id for t in torrents])
 
     def update_labels(self,
-                      torrent_ids: int | list[int],
+                      torrent_ids: int | str | list[int | str],
                       labels: list[str]) -> None:
 
-        if isinstance(torrent_ids, int):
+        if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
 
         self.client.change_torrent(torrent_ids,
@@ -266,3 +266,7 @@ class TransmissionClient(BaseClient):
         alt_speed_enabled = self.client.get_session().alt_speed_enabled
         self.client.set_session(alt_speed_enabled=not alt_speed_enabled)
         return not alt_speed_enabled
+
+    def has_separate_id(self) -> bool:
+        """Transmission uses integer IDs separate from hash."""
+        return True

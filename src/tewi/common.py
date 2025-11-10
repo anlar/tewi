@@ -6,7 +6,7 @@ from typing import NamedTuple
 @dataclass(frozen=True)
 class TorrentDTO:
     """Data Transfer Object for torrent list view (immutable)."""
-    id: int
+    id: int | str
     name: str
     status: str
     total_size: int
@@ -64,7 +64,7 @@ class TrackerDTO:
 @dataclass(frozen=True)
 class TorrentDetailDTO:
     """Data Transfer Object for detailed torrent view (immutable)."""
-    id: int
+    id: int | str
     name: str
     hash_string: str
     total_size: int
