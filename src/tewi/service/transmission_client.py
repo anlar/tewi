@@ -144,12 +144,31 @@ class TransmissionClient(BaseClient):
 
     def _tracker_to_dto(self, tracker) -> TrackerDTO:
         """Convert transmission-rpc Tracker to TrackerDTO."""
+        # Map announce_state to readable status
+        # 0 = inactive, 1 = waiting, 2 = queued, 3 = active
+        announce_state_map = {
+            0: "Inactive",
+            1: "Waiting",
+            2: "Queued",
+            3: "Active"
+        }
+        status = announce_state_map.get(tracker.announce_state, "Unknown")
+
+        # Use last_announce_result for message, fallback to empty string
+        message = tracker.last_announce_result if tracker.last_announce_result else ""
+
+        # Get peer count from last announce
+        peer_count = tracker.last_announce_peer_count if tracker.last_announce_peer_count >= 0 else -1
+
         return TrackerDTO(
             host=tracker.host,
             tier=tracker.tier,
             seeder_count=tracker.seeder_count,
             leecher_count=tracker.leecher_count,
             download_count=tracker.download_count,
+            status=status,
+            message=message,
+            peer_count=peer_count,
         )
 
     def _torrent_detail_to_dto(self, torrent: Torrent) -> TorrentDetailDTO:

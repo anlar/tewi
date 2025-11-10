@@ -165,7 +165,7 @@ class TorrentInfoPanel(ScrollableContainer):
         table.add_columns("Encrypted", "Up", "Down", "Progress", "Status", "Country", "Address", "Client")
 
         table = self.query_one("#trackers")
-        table.add_columns("Host", "Tier", "Seeders", "Leechers", "Downloads")
+        table.add_columns("Tier", "Host", "Status", "Peers", "Seeders", "Leechers", "Downloads", "Message")
 
     @log_time
     def watch_r_torrent(self, new_r_torrent):
@@ -228,12 +228,15 @@ class TorrentInfoPanel(ScrollableContainer):
             table.clear()
 
             for t in self.r_torrent.trackers:
-                table.add_row(t.host,
-                              # Both clients number tiers from 0, display as 1-indexed
-                              t.tier + 1,
+                # Both clients number tiers from 0, display as 1-indexed
+                table.add_row(t.tier + 1,
+                              t.host,
+                              t.status,
+                              self.print_count(t.peer_count),
                               self.print_count(t.seeder_count),
                               self.print_count(t.leecher_count),
-                              self.print_count(t.download_count))
+                              self.print_count(t.download_count),
+                              t.message)
 
     def create_file_tree(self, torrents) -> dict:
         # Build the tree structure

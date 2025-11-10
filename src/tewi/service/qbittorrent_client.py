@@ -255,12 +255,32 @@ class QBittorrentClient(BaseClient):
 
     def _tracker_to_dto(self, tracker) -> TrackerDTO:
         """Convert qBittorrent tracker to TrackerDTO."""
+        # Map qBittorrent status to readable text
+        # 0 = disabled, 1 = not contacted, 2 = working, 3 = updating, 4 = not working
+        status_map = {
+            0: "Disabled",
+            1: "Not contacted",
+            2: "Working",
+            3: "Updating",
+            4: "Not working"
+        }
+        status = status_map.get(tracker.status, "Unknown")
+
+        # Get message (error or status message from tracker)
+        message = tracker.msg if hasattr(tracker, 'msg') and tracker.msg else ""
+
+        # Get peer count reported by tracker
+        peer_count = tracker.num_peers if hasattr(tracker, 'num_peers') else -1
+
         return TrackerDTO(
             host=tracker.url,
             tier=tracker.tier,
             seeder_count=tracker.num_seeds,
             leecher_count=tracker.num_leeches,
             download_count=tracker.num_downloaded,
+            status=status,
+            message=message,
+            peer_count=peer_count,
         )
 
     def _torrent_detail_to_dto(self, torrent) -> TorrentDetailDTO:

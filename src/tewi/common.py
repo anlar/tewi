@@ -59,6 +59,9 @@ class TrackerDTO:
     seeder_count: int
     leecher_count: int
     download_count: int
+    status: str
+    message: str
+    peer_count: int
 
 
 @dataclass(frozen=True)

@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Refactoring: replaced custom list widget with native list view
+- Add Status, Message, and Peers columns to trackers table in torrent details
+- Reorder tracker columns: Tier, Host, Status, Peers, Seeders, Leechers, Downloads, Message
 
 ### Removed
 
