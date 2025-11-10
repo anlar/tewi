@@ -13,17 +13,21 @@ class ClientMeta(TypedDict):
 
 
 class ClientStats(TypedDict):
-    """Statistics about current and cumulative session data."""
-    current_uploaded_bytes: int
-    current_downloaded_bytes: int
-    current_ratio: float
-    current_active_seconds: int
+    """Statistics about current and cumulative session data.
 
-    total_uploaded_bytes: int
-    total_downloaded_bytes: int
-    total_ratio: float
-    total_active_seconds: int
-    total_started_count: int
+    Note: All fields are optional as some clients may not provide certain statistics.
+    Fields that are None will be displayed as "N/A" in the UI.
+    """
+    current_uploaded_bytes: int | None
+    current_downloaded_bytes: int | None
+    current_ratio: float | None
+    current_active_seconds: int | None
+
+    total_uploaded_bytes: int | None
+    total_downloaded_bytes: int | None
+    total_ratio: float | None
+    total_active_seconds: int | None
+    total_started_count: int | None
 
 
 class ClientSession(TypedDict):

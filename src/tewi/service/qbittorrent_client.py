@@ -79,7 +79,7 @@ class QBittorrentClient(BaseClient):
         """Get current and cumulative session statistics."""
         transfer_info = self.client.transfer.info
 
-        # qBittorrent doesn't separate current/total stats, so we use the same values
+        # Current session stats
         current_uploaded = transfer_info.up_info_data
         current_downloaded = transfer_info.dl_info_data
         current_ratio = (
@@ -88,16 +88,27 @@ class QBittorrentClient(BaseClient):
             else current_uploaded / current_downloaded
         )
 
+        # All-time stats (available in server_state)
+        main_data = self.client.sync.maindata()
+        server_state = main_data.server_state
+        total_uploaded = server_state.alltime_ul
+        total_downloaded = server_state.alltime_dl
+        total_ratio = (
+            float('inf')
+            if total_downloaded == 0
+            else total_uploaded / total_downloaded
+        )
+
         return {
             'current_uploaded_bytes': current_uploaded,
             'current_downloaded_bytes': current_downloaded,
             'current_ratio': current_ratio,
-            'current_active_seconds': 0,  # qBittorrent doesn't provide this
-            'total_uploaded_bytes': current_uploaded,
-            'total_downloaded_bytes': current_downloaded,
-            'total_ratio': current_ratio,
-            'total_active_seconds': 0,  # qBittorrent doesn't provide this
-            'total_started_count': 0,  # qBittorrent doesn't provide this
+            'current_active_seconds': None,  # qBittorrent doesn't provide this
+            'total_uploaded_bytes': total_uploaded,
+            'total_downloaded_bytes': total_downloaded,
+            'total_ratio': total_ratio,
+            'total_active_seconds': None,  # qBittorrent doesn't provide this
+            'total_started_count': None,  # qBittorrent doesn't provide this
         }
 
     def session(self, torrents: list[TorrentDTO], sort_order: SortOrder, sort_order_asc: bool) -> ClientSession:
