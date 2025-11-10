@@ -132,6 +132,12 @@ class TransmissionClient(BaseClient):
 
     def _peer_to_dto(self, peer: dict) -> PeerDTO:
         """Convert transmission-rpc peer dict to PeerDTO."""
+        # Determine connection type from isUTP flag
+        connection_type = "uTP" if peer.get("isUTP", False) else "TCP"
+
+        # Determine direction from isIncoming flag
+        direction = "Incoming" if peer.get("isIncoming", False) else "Outgoing"
+
         return PeerDTO(
             address=peer["address"],
             client_name=peer["clientName"],
@@ -140,6 +146,9 @@ class TransmissionClient(BaseClient):
             rate_to_client=peer["rateToClient"],
             rate_to_peer=peer["rateToPeer"],
             flag_str=peer["flagStr"],
+            port=peer.get("port", -1),
+            connection_type=connection_type,
+            direction=direction,
         )
 
     def _tracker_to_dto(self, tracker) -> TrackerDTO:

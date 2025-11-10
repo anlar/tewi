@@ -243,6 +243,12 @@ class QBittorrentClient(BaseClient):
 
     def _peer_to_dto(self, peer) -> PeerDTO:
         """Convert qBittorrent peer to PeerDTO."""
+        # Get connection type (qBittorrent provides detailed connection string)
+        connection_type = peer.connection if hasattr(peer, 'connection') else "Unknown"
+
+        # Determine direction from 'I' flag in flags string
+        direction = "Incoming" if 'I' in peer.flags else "Outgoing"
+
         return PeerDTO(
             address=peer.ip,
             client_name=peer.client,
@@ -251,6 +257,9 @@ class QBittorrentClient(BaseClient):
             rate_to_client=peer.dl_speed,
             rate_to_peer=peer.up_speed,
             flag_str=peer.flags,
+            port=peer.port if hasattr(peer, 'port') else -1,
+            connection_type=connection_type,
+            direction=direction,
         )
 
     def _tracker_to_dto(self, tracker) -> TrackerDTO:

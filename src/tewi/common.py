@@ -49,6 +49,9 @@ class PeerDTO:
     rate_to_client: int
     rate_to_peer: int
     flag_str: str
+    port: int
+    connection_type: str
+    direction: str
 
 
 @dataclass(frozen=True)
