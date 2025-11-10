@@ -285,7 +285,7 @@ class QBittorrentClient(BaseClient):
 
         # Get trackers
         trackers_data = self.client.torrents.trackers(torrent_hash=torrent.hash)
-        trackers = [self._tracker_to_dto(t) for t in trackers_data if t.url.startswith('http')]
+        trackers = [self._tracker_to_dto(t) for t in trackers_data]
 
         # Get piece information from properties
         try:
