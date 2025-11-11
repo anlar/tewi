@@ -96,6 +96,29 @@
     color: $error-darken-1;
 }
 
+.position-none > #name-container > #queue {
+    display: none;
+}
+
+.position-present > #name-container > #queue {
+    padding-right: 1;
+    color: $text-muted;
+}
+
+.priority-none > #name-container > #priority {
+    display: none;
+}
+
+.priority-low > #name-container > #priority {
+    padding-right: 1;
+    color: $secondary-lighten-3;
+}
+
+.priority-high > #name-container > #priority {
+    padding-right: 1;
+    color: $warning;
+}
+
 /* SPEED INDICATORS */
 
 SpeedIndicator {
@@ -119,6 +142,11 @@ TorrentItem.-highlight {
     background: $primary !important;
 }
 
+TorrentItem > #name-container {
+    width: 1fr;
+    height: auto;
+}
+
 /* TORRENT LIST PANEL: TORRENT ITEM ONELINE */
 
 TorrentItemOneline {
@@ -126,7 +154,7 @@ TorrentItemOneline {
     layout: vertical;
 }
 
-TorrentItemOneline > #name {
+TorrentItemOneline > #name-container > #name {
     text-style: bold;
 }
 
@@ -170,7 +198,7 @@ TorrentItemCompact {
     border-top: round $primary 75%;
 }
 
-TorrentItemCompact > #name {
+TorrentItemCompact > #name-container > #name {
     text-style: bold;
 }
 
@@ -210,7 +238,7 @@ TorrentItemCard > #speed {
     height: auto;
 }
 
-TorrentItemCard > #name {
+TorrentItemCard > #name-container > #name {
     text-style: bold;
 }
 

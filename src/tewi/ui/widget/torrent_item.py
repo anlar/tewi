@@ -17,7 +17,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from textual.app import ComposeResult
-from textual.containers import Grid
+from textual.containers import Grid, Horizontal
 from textual.reactive import reactive
 from textual.widgets import Static, ProgressBar
 
@@ -35,7 +35,6 @@ class TorrentItem(Static):
 
     t_id = reactive(None)
     t_name = reactive(None)
-    t_name_with_indicator = reactive(None)
     t_status = reactive(None)
 
     t_size_total = reactive(None)
@@ -50,6 +49,8 @@ class TorrentItem(Static):
     t_size_stats = reactive("")
     t_queue_position = reactive(None)
     t_priority = reactive(None)
+    t_queue_indicator = reactive("")
+    t_priority_indicator = reactive("")
 
     w_next = None
     w_prev = None
@@ -87,6 +88,30 @@ class TorrentItem(Static):
             self.remove_class("marked")
 
     @log_time
+    def watch_t_queue_position(self, new_value):
+        self.remove_class("position-none", "position-present")
+        if new_value is not None:
+            self.t_queue_indicator = f"#{new_value}"
+            self.add_class("position-present")
+        else:
+            self.t_queue_indicator = ""
+            self.add_class("position-none")
+
+    @log_time
+    def watch_t_priority(self, new_value):
+        self.remove_class("priority-none", "priority-low", "priority-high")
+        if new_value is not None and new_value != 0:
+            if new_value > 0:
+                self.t_priority_indicator = "⬆"
+                self.add_class("priority-high")
+            elif new_value < 0:
+                self.t_priority_indicator = "⬇"
+                self.add_class("priority-low")
+        else:
+            self.t_priority_indicator = ""
+            self.add_class("priority-none")
+
+    @log_time
     def update_torrent(self, torrent: TorrentDTO) -> None:
         self.torrent = torrent
 
@@ -95,8 +120,6 @@ class TorrentItem(Static):
         self.t_status = torrent.status
         self.t_queue_position = torrent.queue_position
         self.t_priority = torrent.priority
-
-        self.t_name_with_indicator = self.format_queue_priority_indicator() + torrent.name
 
         self.t_size_total = torrent.total_size
         self.t_size_left = torrent.left_until_done
@@ -126,31 +149,18 @@ class TorrentItem(Static):
 
         return result
 
-    @log_time
-    def format_queue_priority_indicator(self) -> str:
-        """Format queue position and priority indicator prefix."""
-        # If no queue position, don't show any indicator
-        if self.t_queue_position is None:
-            return ""
-
-        indicator = f"#{self.t_queue_position}"
-
-        # Add priority indicator: ⬆ for high, ⬇ for low, nothing for normal or None
-        if self.t_priority is not None:
-            if self.t_priority > 0:
-                indicator += " ⬆"
-            elif self.t_priority < 0:
-                indicator += " ⬇"
-
-        return indicator + " "
-
 
 class TorrentItemOneline(TorrentItem):
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield ReactiveLabel(id="name", markup=False).data_bind(
-                name=TorrentItemOneline.t_name_with_indicator)
+        with Horizontal(id="name-container"):
+            yield ReactiveLabel(id="queue", markup=False).data_bind(
+                    name=TorrentItemOneline.t_queue_indicator)
+            yield ReactiveLabel(id="priority", markup=False).data_bind(
+                    name=TorrentItemOneline.t_priority_indicator)
+            yield ReactiveLabel(id="name", markup=False).data_bind(
+                    name=TorrentItemOneline.t_name)
 
         with Grid(id="speed"):
             yield ReactiveLabel(id="stats").data_bind(
@@ -184,8 +194,13 @@ class TorrentItemCompact(TorrentItem):
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield ReactiveLabel(id="name", markup=False).data_bind(
-                name=TorrentItemCompact.t_name_with_indicator)
+        with Horizontal(id="name-container"):
+            yield ReactiveLabel(id="queue", markup=False).data_bind(
+                    name=TorrentItemCompact.t_queue_indicator)
+            yield ReactiveLabel(id="priority", markup=False).data_bind(
+                    name=TorrentItemCompact.t_priority_indicator)
+            yield ReactiveLabel(id="name", markup=False).data_bind(
+                    name=TorrentItemCompact.t_name)
 
         with Grid(id="speed"):
             yield ReactiveLabel(id="stats").data_bind(
@@ -208,8 +223,13 @@ class TorrentItemCard(TorrentItem):
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield ReactiveLabel(id="name", markup=False).data_bind(
-                name=TorrentItemCard.t_name_with_indicator)
+        with Horizontal(id="name-container"):
+            yield ReactiveLabel(id="queue", markup=False).data_bind(
+                    name=TorrentItemCard.t_queue_indicator)
+            yield ReactiveLabel(id="priority", markup=False).data_bind(
+                    name=TorrentItemCard.t_priority_indicator)
+            yield ReactiveLabel(id="name", markup=False).data_bind(
+                    name=TorrentItemCard.t_name)
 
         with Grid(id="speed"):
             yield Static(" ↑ ")
