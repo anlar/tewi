@@ -29,10 +29,7 @@ class SpeedIndicator(Static):
             self.remove_class("non-zero")
 
     def render(self) -> str:
-        if self.speed == 0:
-            return "-"
-        else:
-            return print_speed(self.speed)
+        return print_speed(self.speed, dash_for_zero=True)
 
 
 class PageIndicator(Static):

@@ -177,6 +177,20 @@ class TestPrintSpeed:
         assert print_speed(1100000) == "1.1 MB"
         assert print_speed(1000000) == "1 MB"  # Should strip .00
 
+    def test_dash_for_zero(self):
+        """Test dash_for_zero parameter."""
+        # Default behavior: show 0 B
+        assert print_speed(0) == "0 B"
+        assert print_speed(0, print_secs=True) == "0 B/s"
+
+        # With dash_for_zero=True: show "-"
+        assert print_speed(0, dash_for_zero=True) == "-"
+        assert print_speed(0, print_secs=True, dash_for_zero=True) == "-"
+
+        # Non-zero values should be unaffected
+        assert print_speed(1000, dash_for_zero=True) == "1 KB"
+        assert print_speed(1500000, print_secs=True, dash_for_zero=True) == "1.5 MB/s"
+
 
 class TestPrintTime:
     """Test cases for print_time function."""

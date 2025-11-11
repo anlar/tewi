@@ -41,8 +41,23 @@ def print_size(num: int, suffix: str = "B", size_bytes: int = 1000) -> str:
 
 
 @cache
-def print_speed(num: int, print_secs: bool = False, suffix: str = "B", speed_bytes: int = 1000) -> str:
-    """Format a number of bytes per second as a human-readable speed string."""
+def print_speed(num: int, print_secs: bool = False, suffix: str = "B", speed_bytes: int = 1000,
+                dash_for_zero: bool = False) -> str:
+    """Format a number of bytes per second as a human-readable speed string.
+
+    Args:
+        num: Speed in bytes per second
+        print_secs: If True, append "/s" suffix
+        suffix: Unit suffix (default: "B")
+        speed_bytes: Divisor for unit conversion (default: 1000)
+        dash_for_zero: If True, return "-" for zero values (default: False)
+
+    Returns:
+        Formatted speed string or "-" if num is 0 and dash_for_zero is True
+    """
+    if dash_for_zero and num == 0:
+        return "-"
+
     r_unit = None
     r_num = None
 

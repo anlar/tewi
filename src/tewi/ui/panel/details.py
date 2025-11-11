@@ -217,8 +217,8 @@ class TorrentInfoPanel(ScrollableContainer):
             for p in self.r_torrent.peers:
                 progress = p.progress * 100
                 table.add_row("Yes" if p.is_encrypted else "No",
-                              print_speed(p.rate_to_client, True),
-                              print_speed(p.rate_to_peer, True),
+                              print_speed(p.rate_to_client, print_secs=True, dash_for_zero=True),
+                              print_speed(p.rate_to_peer, print_secs=True, dash_for_zero=True),
                               f'{progress:.0f}%',
                               p.connection_type,
                               p.direction,
