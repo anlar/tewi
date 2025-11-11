@@ -128,7 +128,8 @@ class QBittorrentClient(BaseClient):
             free_space = 0
 
         # Check if alternative speed limits are enabled
-        alt_speed_enabled = self.client.transfer.speed_limits_mode == 1
+        # Note: speed_limits_mode returns a string '0' or '1', not an integer
+        alt_speed_enabled = self.client.transfer.speed_limits_mode == '1'
 
         return {
             'download_dir': prefs.save_path,
@@ -136,8 +137,10 @@ class QBittorrentClient(BaseClient):
             'upload_speed': transfer_info.up_info_speed,
             'download_speed': transfer_info.dl_info_speed,
             'alt_speed_enabled': alt_speed_enabled,
-            'alt_speed_up': prefs.alt_up_limit * 1024,  # Convert KiB/s to B/s
-            'alt_speed_down': prefs.alt_dl_limit * 1024,  # Convert KiB/s to B/s
+            # Note: qBittorrent returns bytes/s, Transmission returns KB/s
+            # Convert qBittorrent's bytes/s to KB/s by dividing by 1024
+            'alt_speed_up': prefs.alt_up_limit // 1024,
+            'alt_speed_down': prefs.alt_dl_limit // 1024,
             'torrents_complete_size': sum(t.size_when_done - t.left_until_done for t in torrents),
             'torrents_total_size': sum(t.size_when_done for t in torrents),
             'torrents_count': len(torrents),
@@ -447,10 +450,10 @@ class QBittorrentClient(BaseClient):
     def toggle_alt_speed(self) -> bool:
         """Toggle alternative speed limits."""
         current_state = self.client.transfer.speed_limits_mode
-        # Toggle: 0 = normal, 1 = alternative
-        new_state = 0 if current_state == 1 else 1
+        # Toggle: '0' = normal, '1' = alternative (API returns strings)
+        new_state = '0' if current_state == '1' else '1'
         self.client.transfer.set_speed_limits_mode(mode=new_state)
-        return new_state == 1
+        return new_state == '1'
 
     def has_separate_id(self) -> bool:
         """qBittorrent uses hash as ID, no separate ID field."""
