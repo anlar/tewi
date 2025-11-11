@@ -5,7 +5,7 @@ from textual.reactive import reactive
 
 from ..widget.common import ReactiveLabel, PageIndicator, SpeedIndicator
 
-from ...util.print import print_size
+from ...util.print import print_size, print_speed
 from ...util.decorator import log_time
 
 
@@ -73,10 +73,9 @@ class StatePanel(Static):
             alt_speed_down_bytes = new_r_session['alt_speed_down']
 
             if alt_speed_enabled:
-                # Convert bytes/s to KB/s for display (using decimal KB = 1000 bytes)
-                alt_speed_up_kb = alt_speed_up_bytes // 1000
-                alt_speed_down_kb = alt_speed_down_bytes // 1000
-                self.r_alt_speed = f'Speed Limits: ↑ {alt_speed_up_kb} KB ↓ {alt_speed_down_kb} KB'
+                alt_speed_up = print_speed(alt_speed_up_bytes)
+                alt_speed_down = print_speed(alt_speed_down_bytes)
+                self.r_alt_speed = f'Speed Limits: ↑ {alt_speed_up} ↓ {alt_speed_down}'
                 self.r_alt_delimiter = '»»»'
             else:
                 self.r_alt_speed = ''
