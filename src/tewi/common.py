@@ -24,10 +24,10 @@ class TorrentDTO:
     peers_getting_from_us: int
     peers_sending_to_us: int
     uploaded_ever: int  # bytes
-    priority: int
+    priority: int | None
     added_date: datetime
     activity_date: datetime
-    queue_position: int
+    queue_position: int | None
     labels: list[str] = field(default_factory=list)
 
 

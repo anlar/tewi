@@ -171,9 +171,6 @@ class QBittorrentClient(BaseClient):
         else:
             eta = timedelta(seconds=-1)  # Transmission uses -1 for unknown
 
-        # Map priority (qBittorrent uses different values)
-        priority = self.PRIORITY_TO_TRANSMISSION.get(torrent.priority, 0)
-
         return TorrentDTO(
             id=torrent.hash,  # qBittorrent uses hash as ID
             name=torrent.name,
@@ -190,12 +187,12 @@ class QBittorrentClient(BaseClient):
             peers_getting_from_us=torrent.num_leechs,
             peers_sending_to_us=torrent.num_seeds,
             uploaded_ever=torrent.uploaded,
-            priority=priority,
+            priority=None,  # qBittorrent doesn't have whole-torrent priority (like Transmission)
             added_date=(datetime.fromtimestamp(torrent.added_on)
                         if torrent.added_on > 0 else datetime.now()),
             activity_date=(datetime.fromtimestamp(torrent.last_activity)
                            if torrent.last_activity > 0 else datetime.now()),
-            queue_position=torrent.priority if hasattr(torrent, 'priority') else 0,
+            queue_position=torrent.priority if torrent.priority > 0 else None,
             labels=[tag.strip() for tag in torrent.tags.split(',')] if torrent.tags else [],
         )
 

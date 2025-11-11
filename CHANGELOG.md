@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Port, Connection Type, and Direction columns to peers table in torrent details
 - Use speed formatter for alternative speed limits display (shows proper units: B, KB, MB, GB)
 - Display "-" instead of "0 B/s" for zero speeds in peers
+- Display queue position and priority indicators in torrent list (shows #N prefix and ⬆/⬇ for high/low priority)
 
 ### Removed
 
