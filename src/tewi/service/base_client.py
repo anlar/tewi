@@ -31,14 +31,17 @@ class ClientStats(TypedDict):
 
 
 class ClientSession(TypedDict):
-    """Session information including speeds, settings, and torrent counts."""
+    """Session information including speeds, settings, and torrent counts.
+
+    Note: All speed values are in bytes/second for consistency across clients.
+    """
     download_dir: str
     download_dir_free_space: int
     upload_speed: int
     download_speed: int
     alt_speed_enabled: bool
-    alt_speed_up: int
-    alt_speed_down: int
+    alt_speed_up: int  # bytes/second
+    alt_speed_down: int  # bytes/second
 
     torrents_complete_size: int
     torrents_total_size: int

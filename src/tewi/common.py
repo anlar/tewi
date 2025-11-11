@@ -5,22 +5,25 @@ from typing import NamedTuple
 
 @dataclass(frozen=True)
 class TorrentDTO:
-    """Data Transfer Object for torrent list view (immutable)."""
+    """Data Transfer Object for torrent list view (immutable).
+
+    Note: All size fields are in bytes, all speed fields are in bytes/second.
+    """
     id: int | str
     name: str
     status: str
-    total_size: int
-    size_when_done: int
-    left_until_done: int
+    total_size: int  # bytes
+    size_when_done: int  # bytes
+    left_until_done: int  # bytes
     percent_done: float
     eta: timedelta
-    rate_upload: int
-    rate_download: int
+    rate_upload: int  # bytes/second
+    rate_download: int  # bytes/second
     ratio: float
     peers_connected: int
     peers_getting_from_us: int
     peers_sending_to_us: int
-    uploaded_ever: int
+    uploaded_ever: int  # bytes
     priority: int
     added_date: datetime
     activity_date: datetime
@@ -30,24 +33,30 @@ class TorrentDTO:
 
 @dataclass(frozen=True)
 class FileDTO:
-    """Data Transfer Object for torrent file information."""
+    """Data Transfer Object for torrent file information.
+
+    Note: All size fields are in bytes.
+    """
     id: int
     name: str
-    size: int
-    completed: int
+    size: int  # bytes
+    completed: int  # bytes
     selected: bool
     priority: int
 
 
 @dataclass(frozen=True)
 class PeerDTO:
-    """Data Transfer Object for peer information."""
+    """Data Transfer Object for peer information.
+
+    Note: All speed fields are in bytes/second.
+    """
     address: str
     client_name: str
     progress: float
     is_encrypted: bool
-    rate_to_client: int
-    rate_to_peer: int
+    rate_to_client: int  # bytes/second
+    rate_to_peer: int  # bytes/second
     flag_str: str
     port: int
     connection_type: str
@@ -69,21 +78,24 @@ class TrackerDTO:
 
 @dataclass(frozen=True)
 class TorrentDetailDTO:
-    """Data Transfer Object for detailed torrent view (immutable)."""
+    """Data Transfer Object for detailed torrent view (immutable).
+
+    Note: All size fields are in bytes.
+    """
     id: int | str
     name: str
     hash_string: str
-    total_size: int
+    total_size: int  # bytes
     piece_count: int
-    piece_size: int
+    piece_size: int  # bytes
     is_private: bool
     comment: str
     creator: str
     labels: list[str]
     status: str
     download_dir: str
-    downloaded_ever: int
-    uploaded_ever: int
+    downloaded_ever: int  # bytes
+    uploaded_ever: int  # bytes
     ratio: float
     error_string: str
     added_date: datetime

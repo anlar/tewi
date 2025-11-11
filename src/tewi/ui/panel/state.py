@@ -69,11 +69,14 @@ class StatePanel(Static):
             self.r_upload_speed = new_r_session['upload_speed']
             self.r_download_speed = new_r_session['download_speed']
             alt_speed_enabled = new_r_session['alt_speed_enabled']
-            alt_speed_up = new_r_session['alt_speed_up']
-            alt_speed_down = new_r_session['alt_speed_down']
+            alt_speed_up_bytes = new_r_session['alt_speed_up']
+            alt_speed_down_bytes = new_r_session['alt_speed_down']
 
             if alt_speed_enabled:
-                self.r_alt_speed = f'Speed Limits: ↑ {alt_speed_up} KB ↓ {alt_speed_down} KB'
+                # Convert bytes/s to KB/s for display (using decimal KB = 1000 bytes)
+                alt_speed_up_kb = alt_speed_up_bytes // 1000
+                alt_speed_down_kb = alt_speed_down_bytes // 1000
+                self.r_alt_speed = f'Speed Limits: ↑ {alt_speed_up_kb} KB ↓ {alt_speed_down_kb} KB'
                 self.r_alt_delimiter = '»»»'
             else:
                 self.r_alt_speed = ''

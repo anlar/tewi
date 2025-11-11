@@ -137,10 +137,9 @@ class QBittorrentClient(BaseClient):
             'upload_speed': transfer_info.up_info_speed,
             'download_speed': transfer_info.dl_info_speed,
             'alt_speed_enabled': alt_speed_enabled,
-            # Note: qBittorrent returns bytes/s, Transmission returns KB/s
-            # Convert qBittorrent's bytes/s to KB/s by dividing by 1024
-            'alt_speed_up': prefs.alt_up_limit // 1024,
-            'alt_speed_down': prefs.alt_dl_limit // 1024,
+            # qBittorrent returns bytes/s - store as-is
+            'alt_speed_up': prefs.alt_up_limit,
+            'alt_speed_down': prefs.alt_dl_limit,
             'torrents_complete_size': sum(t.size_when_done - t.left_until_done for t in torrents),
             'torrents_total_size': sum(t.size_when_done for t in torrents),
             'torrents_count': len(torrents),

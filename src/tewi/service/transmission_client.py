@@ -71,8 +71,9 @@ class TransmissionClient(BaseClient):
                 'upload_speed': stats.upload_speed,
                 'download_speed': stats.download_speed,
                 'alt_speed_enabled': s.alt_speed_enabled,
-                'alt_speed_up': s.alt_speed_up,
-                'alt_speed_down': s.alt_speed_down,
+                # Transmission returns KB/s - convert to bytes/s for consistency
+                'alt_speed_up': s.alt_speed_up * 1000,
+                'alt_speed_down': s.alt_speed_down * 1000,
 
                 'torrents_complete_size': sum(t.size_when_done - t.left_until_done for t in torrents),
                 'torrents_total_size': sum(t.size_when_done for t in torrents),
