@@ -76,6 +76,10 @@
     background: $secondary-lighten-2;
 }
 
+.alt-speed-none > #state-panel > #alt-speed {
+    background: $secondary;
+}
+
 /* TORRENT LIST PANEL */
 
 /* TORRENT LIST PANEL: TORRENT ITEM COMMON */

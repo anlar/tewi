@@ -37,7 +37,7 @@ class StatePanel(Static):
             yield ReactiveLabel(classes="column sort").data_bind(
                     name=StatePanel.r_sort)
             yield Static("", classes="column")
-            yield ReactiveLabel(classes="column alt-speed").data_bind(
+            yield ReactiveLabel(id="alt-speed", classes="column alt-speed").data_bind(
                     name=StatePanel.r_alt_speed)
             yield ReactiveLabel(classes="column delimiter").data_bind(
                     name=StatePanel.r_alt_delimiter)
@@ -80,6 +80,12 @@ class StatePanel(Static):
             else:
                 self.r_alt_speed = ''
                 self.r_alt_delimiter = ''
+
+    def watch_r_alt_speed(self, new_value):
+        if new_value:
+            self.remove_class("alt-speed-none")
+        else:
+            self.add_class("alt-speed-none")
 
     def print_stats(self, session) -> str:
         stats = f"Torrents: {session['torrents_count']}"
