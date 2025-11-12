@@ -152,24 +152,26 @@ class TorrentListViewPanel(ListView):
 
         # Fast path 1: Same page, same torrents - just update data
         if not force and self.is_equal_to_page(page_torrents):
-            for i, torrent in enumerate(page_torrents):
-                existing_widgets[i]._nodes[0].update_torrent(torrent)
+            with self.app.batch_update():
+                for i, torrent in enumerate(page_torrents):
+                    existing_widgets[i]._nodes[0].update_torrent(torrent)
 
-                if torrent_id == torrent.id:
-                    self.index = self.validate_index(i)
+                    if torrent_id == torrent.id:
+                        self.index = self.validate_index(i)
 
         # Fast path 2: Different page but same widget count - RECYCLE widgets
         elif not force and len(existing_widgets) == len(page_torrents):
             hl_idx = None
 
-            for i, torrent in enumerate(page_torrents):
-                # Reuse existing widget, update its data and cached ID
-                widget = existing_widgets[i]
-                widget.torrent_id = torrent.id  # Update cached ID
-                widget._nodes[0].update_torrent(torrent)  # Update torrent data
+            with self.app.batch_update():
+                for i, torrent in enumerate(page_torrents):
+                    # Reuse existing widget, update its data and cached ID
+                    widget = existing_widgets[i]
+                    widget.torrent_id = torrent.id  # Update cached ID
+                    widget._nodes[0].update_torrent(torrent)  # Update torrent data
 
-                if torrent.id == torrent_id:
-                    hl_idx = i
+                    if torrent.id == torrent_id:
+                        hl_idx = i
 
             # Update highlight
             self.index = self.validate_index(hl_idx)

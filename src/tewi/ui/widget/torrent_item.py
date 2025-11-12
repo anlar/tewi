@@ -113,24 +113,25 @@ class TorrentItem(Static):
 
     @log_time
     def update_torrent(self, torrent: TorrentDTO) -> None:
-        self.torrent = torrent
+        with self.app.batch_update():
+            self.torrent = torrent
 
-        self.t_id = torrent.id
-        self.t_name = torrent.name
-        self.t_status = torrent.status
-        self.t_queue_position = torrent.queue_position
-        self.t_priority = torrent.priority
+            self.t_id = torrent.id
+            self.t_name = torrent.name
+            self.t_status = torrent.status
+            self.t_queue_position = torrent.queue_position
+            self.t_priority = torrent.priority
 
-        self.t_size_total = torrent.total_size
-        self.t_size_left = torrent.left_until_done
-        self.t_progress = torrent.percent_done
-        self.t_eta = torrent.eta
+            self.t_size_total = torrent.total_size
+            self.t_size_left = torrent.left_until_done
+            self.t_progress = torrent.percent_done
+            self.t_eta = torrent.eta
 
-        self.t_upload_speed = torrent.rate_upload
-        self.t_download_speed = torrent.rate_download
-        self.t_ratio = torrent.ratio
+            self.t_upload_speed = torrent.rate_upload
+            self.t_download_speed = torrent.rate_download
+            self.t_ratio = torrent.ratio
 
-        self.t_size_stats = self.print_size_stats()
+            self.t_size_stats = self.print_size_stats()
 
     @log_time
     def print_size_stats(self, full_ratio=True) -> str:
@@ -254,19 +255,20 @@ class TorrentItemCard(TorrentItem):
     def update_torrent(self, torrent: TorrentDTO) -> None:
         super().update_torrent(torrent)
 
-        self.t_eta = torrent.eta
-        self.t_peers_connected = torrent.peers_connected
-        self.t_leechers = torrent.peers_getting_from_us
-        self.t_seeders = torrent.peers_sending_to_us
-        self.t_ratio = torrent.ratio
-        self.t_priority = torrent.priority
+        with self.app.batch_update():
+            self.t_eta = torrent.eta
+            self.t_peers_connected = torrent.peers_connected
+            self.t_leechers = torrent.peers_getting_from_us
+            self.t_seeders = torrent.peers_sending_to_us
+            self.t_ratio = torrent.ratio
+            self.t_priority = torrent.priority
 
-        self.t_stats_uploaded = print_size(torrent.uploaded_ever) + ' uploaded'
+            self.t_stats_uploaded = print_size(torrent.uploaded_ever) + ' uploaded'
 
-        # implying that there won't be more than 9999 peers
-        self.t_stats_peer = (f'{self.t_peers_connected: >4} peers '
-                             f'{self.t_seeders: >4} seeders '
-                             f'{self.t_leechers: >4} leechers')
+            # implying that there won't be more than 9999 peers
+            self.t_stats_peer = (f'{self.t_peers_connected: >4} peers '
+                                 f'{self.t_seeders: >4} seeders '
+                                 f'{self.t_leechers: >4} leechers')
 
     @log_time
     def print_size_stats(self, full_ratio=True) -> str:
