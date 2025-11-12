@@ -21,6 +21,11 @@ from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorr
 
 
 class TorrentListItem(ListItem):
+    """List item wrapper for TorrentItem with cached torrent ID for fast comparison."""
+
+    def __init__(self, *args, torrent_id=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.torrent_id = torrent_id  # Cache for fast is_equal_to_page checks
 
     @log_time
     def watch_highlighted(self, value: bool) -> None:
@@ -81,13 +86,15 @@ class TorrentListViewPanel(ListView):
 
     @log_time
     def is_equal_to_page(self, torrents) -> bool:
+        """Check if current page displays the same torrents (optimized with cached IDs)."""
         items = self.children
 
         if len(torrents) != len(items):
             return False
 
         for i, torrent in enumerate(torrents):
-            if torrent.id != items[i]._nodes[0].torrent.id:
+            # Use cached torrent_id for fast comparison instead of accessing widget internals
+            if torrent.id != items[i].torrent_id:
                 return False
 
         return True
@@ -133,37 +140,57 @@ class TorrentListViewPanel(ListView):
 
     @log_time
     def draw_page(self, torrents, page, torrent_id, force) -> None:
+        """Draw a page of torrents with optimized widget recycling.
+
+        Performance optimization: Reuse existing widgets when possible instead of
+        recreating them, which is expensive (100+ ms for 50 items).
+        """
         # self.post_message(Notification(f"draw_page: page {page}, torrent_id {torrent_id}"))
 
         page_torrents = torrents[page * self.page_size:(page * self.page_size + self.page_size)]
+        existing_widgets = list(self.children)
 
+        # Fast path 1: Same page, same torrents - just update data
         if not force and self.is_equal_to_page(page_torrents):
-            torrent_widgets = self.children
-
             for i, torrent in enumerate(page_torrents):
-                torrent_widgets[i]._nodes[0].update_torrent(torrent)
+                existing_widgets[i]._nodes[0].update_torrent(torrent)
 
                 if torrent_id == torrent.id:
                     self.index = self.validate_index(i)
-        else:
 
-            # draw
-
-            torrent_widgets = []
-
+        # Fast path 2: Different page but same widget count - RECYCLE widgets
+        elif not force and len(existing_widgets) == len(page_torrents):
             hl_idx = None
-            idx = 0
 
-            for t in page_torrents:
+            for i, torrent in enumerate(page_torrents):
+                # Reuse existing widget, update its data and cached ID
+                widget = existing_widgets[i]
+                widget.torrent_id = torrent.id  # Update cached ID
+                widget._nodes[0].update_torrent(torrent)  # Update torrent data
+
+                if torrent.id == torrent_id:
+                    hl_idx = i
+
+            # Update highlight
+            self.index = self.validate_index(hl_idx)
+
+            # Update page state
+            state = PageState(current=page, total=self.total_pages(torrents))
+            self.post_message(PageChangedEvent(state))
+
+        # Slow path: Different widget count or forced - recreate everything
+        else:
+            torrent_widgets = []
+            hl_idx = None
+
+            for i, t in enumerate(page_torrents):
                 item = self.create_item(t)
-                list_item = TorrentListItem(item)
+                list_item = TorrentListItem(item, torrent_id=t.id)  # Pass cached ID
 
                 if t.id == torrent_id:
-                    hl_idx = idx
+                    hl_idx = i
                     list_item.highlighted = True
                     # self.post_message(Notification(f"HL: {t.name}"))
-                else:
-                    idx = idx + 1
 
                 torrent_widgets.append(list_item)
                 # self.post_message(Notification(f"ITEM: {list_item.highlighted}"))
@@ -172,7 +199,6 @@ class TorrentListViewPanel(ListView):
             self.insert(0, torrent_widgets)
 
             # select
-
             self.index = self.validate_index(hl_idx)
             # self.post_message(Notification(f"HL index: {self.index}"))
 
