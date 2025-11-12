@@ -1,0 +1,11 @@
+magnet:?xt=urn:btih:d4487f489d4ee786f99bcdeeb8d3f226694ea27f&dn=archlinux-2025.11.01-x86_64.iso
+magnet:?xt=urn:btih:dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c&dn=Big%2BBuck%2BBunny
+magnet:?xt=urn:btih:026c3f93dca05a69d228191f085442d936803b39&dn=Fedora-i3-Live-x86_64-41
+magnet:?xt=urn:btih:40995979359c73e1ec88146697ba0346b3423afc&dn=debian-mac-13.1.0-amd64-netinst.iso
+magnet:?xt=urn:btih:ffebd2eb80c40491aaa52011557fcfc3786cee91&dn=debian-edu-13.1.0-amd64-netinst.iso
+magnet:?xt=urn:btih:2ced861966e919e5ca9e35d27dc23e0b02fb7ff8&dn=debian-13.1.0-amd64-netinst.iso
+magnet:?xt=urn:btih:e52f683b73d4da2744fcbc5653f8f45944b230e7&dn=debian-13.1.0-arm64-netinst.iso
+magnet:?xt=urn:btih:a1500d2efa07d330ca8dc528f2d5efac96b27780&dn=debian-13.1.0-armhf-netinst.iso
+magnet:?xt=urn:btih:19f8ba80304ab2efcdd7df6d32ecac1d7456693c&dn=debian-13.1.0-ppc64el-netinst.iso
+magnet:?xt=urn:btih:b51ec858b9fce5cf33ed0eafab0680a710a4d839&dn=debian-13.1.0-riscv64-netinst.iso
+magnet:?xt=urn:btih:0611d1979fc8bbf5827f705efaa1ec44eb049674&dn=debian-13.1.0-s390x-netinst.iso
