@@ -9,16 +9,19 @@ from textual.reactive import reactive
 from ....message import AddTorrentCommand
 from ....util.print import print_size
 from ....util.misc import is_torrent_link
+from ....util.decorator import log_time
 from ...widget.common import ReactiveLabel
 
 
 class AddTorrentDialog(ModalScreen[None]):
 
+    @log_time
     def __init__(self, download_dir: str, download_dir_free_space: int):
         self.download_dir = download_dir
         self.download_dir_free_space = download_dir_free_space
         super().__init__()
 
+    @log_time
     def compose(self) -> ComposeResult:
         yield AddTorrentWidget(self.download_dir, self.download_dir_free_space)
 
@@ -32,16 +35,19 @@ class AddTorrentWidget(Static):
             Binding("escape", "close", "[Torrent] Close"),
             ]
 
+    @log_time
     def __init__(self, download_dir: str, download_dir_free_space: int):
         self.download_dir = download_dir
         self.download_dir_free_space = download_dir_free_space
         super().__init__()
 
+    @log_time
     def compose(self) -> ComposeResult:
         yield ReactiveLabel().data_bind(
                 name=AddTorrentWidget.r_download_dir)
         yield TextArea()
 
+    @log_time
     def on_mount(self) -> None:
         self.border_title = 'Add torrent (local file, magnet link, URL)'
         self.border_subtitle = '(Enter) Add / (ESC) Close'
@@ -61,6 +67,7 @@ class AddTorrentWidget(Static):
 
         text_area.cursor_location = text_area.document.end
 
+    @log_time
     def get_link_from_clipboard(self) -> str:
         try:
             text = pyperclip.paste()
@@ -73,11 +80,13 @@ class AddTorrentWidget(Static):
 
         return None
 
+    @log_time
     def action_add(self) -> None:
         value = self.query_one(TextArea).text
 
         self.post_message(AddTorrentCommand(value))
         self.parent.dismiss()
 
+    @log_time
     def action_close(self) -> None:
         self.parent.dismiss()

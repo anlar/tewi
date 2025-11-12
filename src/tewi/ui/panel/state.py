@@ -81,12 +81,14 @@ class StatePanel(Static):
                 self.r_alt_speed = ''
                 self.r_alt_delimiter = ''
 
+    @log_time
     def watch_r_alt_speed(self, new_value):
         if new_value:
             self.remove_class("alt-speed-none")
         else:
             self.add_class("alt-speed-none")
 
+    @log_time
     def print_stats(self, session) -> str:
         stats = f"Torrents: {session['torrents_count']}"
 

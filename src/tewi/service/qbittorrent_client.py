@@ -7,6 +7,7 @@ from dataclasses import replace
 from qbittorrentapi import Client as QBittorrentAPIClient
 
 from ..util.misc import is_torrent_link
+from ..util.decorator import log_time
 from ..common import SortOrder, TorrentDTO, TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO
 from .base_client import BaseClient, ClientMeta, ClientStats, ClientSession, ClientError
 
@@ -51,6 +52,7 @@ class QBittorrentClient(BaseClient):
         1: 6,    # High -> High
     }
 
+    @log_time
     def __init__(self,
                  host: str, port: str,
                  username: str = None, password: str = None):
@@ -68,6 +70,7 @@ class QBittorrentClient(BaseClient):
         except Exception as e:
             raise ClientError(f"Failed to authenticate with qBittorrent: {e}")
 
+    @log_time
     def meta(self) -> ClientMeta:
         """Get daemon name and version."""
         return {
@@ -75,6 +78,7 @@ class QBittorrentClient(BaseClient):
             'version': self.client.app.version
         }
 
+    @log_time
     def stats(self) -> ClientStats:
         """Get current and cumulative session statistics."""
         transfer_info = self.client.transfer.info
@@ -111,6 +115,7 @@ class QBittorrentClient(BaseClient):
             'total_started_count': None,  # qBittorrent doesn't provide this
         }
 
+    @log_time
     def session(self, torrents: list[TorrentDTO], sort_order: SortOrder, sort_order_asc: bool) -> ClientSession:
         """Get session information with computed torrent counts."""
         transfer_info = self.client.transfer.info
@@ -151,6 +156,7 @@ class QBittorrentClient(BaseClient):
             'sort_order_asc': sort_order_asc,
         }
 
+    @log_time
     def preferences(self) -> dict[str, str]:
         """Get session preferences as key-value pairs."""
         prefs = self.client.app.preferences
@@ -158,10 +164,12 @@ class QBittorrentClient(BaseClient):
         prefs_dict = prefs.dict() if hasattr(prefs, 'dict') else dict(prefs)
         return {k: str(v) for k, v in sorted(prefs_dict.items())}
 
+    @log_time
     def _normalize_status(self, qb_status: str) -> str:
         """Normalize qBittorrent status to common status string."""
         return self.STATUS_MAP.get(qb_status, 'stopped')
 
+    @log_time
     def _torrent_to_dto(self, torrent) -> TorrentDTO:
         """Convert qBittorrent torrent to TorrentDTO."""
         # Calculate ETA
@@ -196,11 +204,13 @@ class QBittorrentClient(BaseClient):
             labels=[tag.strip() for tag in torrent.tags.split(',')] if torrent.tags else [],
         )
 
+    @log_time
     def torrents(self) -> list[TorrentDTO]:
         """Get list of all torrents."""
         qb_torrents = self.client.torrents.info()
         return [self._torrent_to_dto(t) for t in qb_torrents]
 
+    @log_time
     def torrents_test(self) -> list[TorrentDTO]:
         """Get test torrent list (for performance testing)."""
         torrents = self.torrents()
@@ -215,6 +225,7 @@ class QBittorrentClient(BaseClient):
 
         return result
 
+    @log_time
     def torrent(self, id: int | str) -> TorrentDetailDTO:
         """Get detailed information about a specific torrent."""
         # In qBittorrent, the ID is the hash string itself
@@ -226,6 +237,7 @@ class QBittorrentClient(BaseClient):
 
         return self._torrent_detail_to_dto(qb_torrents[0])
 
+    @log_time
     def _file_to_dto(self, file, torrent_hash: str) -> FileDTO:
         """Convert qBittorrent file to FileDTO."""
         # Map qBittorrent priority (0, 1, 6, 7) to Transmission (-1, 0, 1)
@@ -240,6 +252,7 @@ class QBittorrentClient(BaseClient):
             priority=priority,
         )
 
+    @log_time
     def _peer_to_dto(self, peer) -> PeerDTO:
         """Convert qBittorrent peer to PeerDTO."""
         # Get connection type (qBittorrent provides detailed connection string)
@@ -261,6 +274,7 @@ class QBittorrentClient(BaseClient):
             direction=direction,
         )
 
+    @log_time
     def _tracker_to_dto(self, tracker) -> TrackerDTO:
         """Convert qBittorrent tracker to TrackerDTO."""
         # Map qBittorrent status to readable text
@@ -291,6 +305,7 @@ class QBittorrentClient(BaseClient):
             peer_count=peer_count,
         )
 
+    @log_time
     def _torrent_detail_to_dto(self, torrent) -> TorrentDetailDTO:
         """Convert qBittorrent torrent to TorrentDetailDTO."""
         # Get files
@@ -351,6 +366,7 @@ class QBittorrentClient(BaseClient):
             trackers=trackers,
         )
 
+    @log_time
     def add_torrent(self, value: str) -> None:
         """Add a torrent from magnet link or file path."""
         if is_torrent_link(value):
@@ -360,6 +376,7 @@ class QBittorrentClient(BaseClient):
             with open(file, 'rb') as f:
                 self.client.torrents.add(torrent_files=f)
 
+    @log_time
     def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Start one or more torrents."""
         if isinstance(torrent_ids, (int, str)):
@@ -369,6 +386,7 @@ class QBittorrentClient(BaseClient):
         hashes = self._ids_to_hashes(torrent_ids)
         self.client.torrents.resume(torrent_hashes=hashes)
 
+    @log_time
     def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Stop one or more torrents."""
         if isinstance(torrent_ids, (int, str)):
@@ -378,6 +396,7 @@ class QBittorrentClient(BaseClient):
         hashes = self._ids_to_hashes(torrent_ids)
         self.client.torrents.pause(torrent_hashes=hashes)
 
+    @log_time
     def remove_torrent(self, torrent_ids: int | str | list[int | str], delete_data: bool = False) -> None:
         """Remove one or more torrents."""
         if isinstance(torrent_ids, (int, str)):
@@ -387,6 +406,7 @@ class QBittorrentClient(BaseClient):
         hashes = self._ids_to_hashes(torrent_ids)
         self.client.torrents.delete(delete_files=delete_data, torrent_hashes=hashes)
 
+    @log_time
     def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Verify one or more torrents."""
         if isinstance(torrent_ids, (int, str)):
@@ -396,6 +416,7 @@ class QBittorrentClient(BaseClient):
         hashes = self._ids_to_hashes(torrent_ids)
         self.client.torrents.recheck(torrent_hashes=hashes)
 
+    @log_time
     def reannounce_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Reannounce one or more torrents to their trackers."""
         if isinstance(torrent_ids, (int, str)):
@@ -405,14 +426,17 @@ class QBittorrentClient(BaseClient):
         hashes = self._ids_to_hashes(torrent_ids)
         self.client.torrents.reannounce(torrent_hashes=hashes)
 
+    @log_time
     def start_all_torrents(self) -> None:
         """Start all torrents."""
         self.client.torrents.resume(torrent_hashes='all')
 
+    @log_time
     def stop_all_torrents(self) -> None:
         """Stop all torrents."""
         self.client.torrents.pause(torrent_hashes='all')
 
+    @log_time
     def update_labels(self, torrent_ids: int | str | list[int | str], labels: list[str]) -> None:
         """Update labels/tags for one or more torrents."""
         if isinstance(torrent_ids, (int, str)):
@@ -443,6 +467,7 @@ class QBittorrentClient(BaseClient):
                 except Exception:
                     pass  # Ignore if tag addition fails
 
+    @log_time
     def toggle_alt_speed(self) -> bool:
         """Toggle alternative speed limits."""
         current_state = self.client.transfer.speed_limits_mode
@@ -451,10 +476,12 @@ class QBittorrentClient(BaseClient):
         self.client.transfer.set_speed_limits_mode(mode=new_state)
         return new_state == '1'
 
+    @log_time
     def has_separate_id(self) -> bool:
         """qBittorrent uses hash as ID, no separate ID field."""
         return False
 
+    @log_time
     def _ids_to_hashes(self, ids: list[int | str]) -> list[str]:
         """Convert torrent IDs to qBittorrent hashes."""
         # For qBittorrent, IDs are already hash strings

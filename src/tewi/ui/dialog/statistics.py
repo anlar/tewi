@@ -4,6 +4,7 @@ from textual.widgets import Static, Label
 from textual.app import ComposeResult
 from ...service import ClientStats
 from ...util.print import print_size, print_time, print_ratio
+from ...util.decorator import log_time
 
 
 class StatisticsDialog(ModalScreen[None]):
@@ -12,23 +13,28 @@ class StatisticsDialog(ModalScreen[None]):
             Binding("x,escape", "close", "[Info] Close"),
             ]
 
+    @log_time
     def __init__(self, stats: ClientStats) -> None:
         self.stats = stats
         super().__init__()
 
+    @log_time
     def compose(self) -> ComposeResult:
         yield StatisticsWidget(self.stats)
 
+    @log_time
     def action_close(self) -> None:
         self.dismiss()
 
 
 class StatisticsWidget(Static):
 
+    @log_time
     def __init__(self, stats: ClientStats) -> None:
         self.stats = stats
         super().__init__()
 
+    @log_time
     def compose(self) -> ComposeResult:
         yield Static("Current Session", classes="title")
         yield Static("  Uploaded:")
@@ -61,6 +67,7 @@ class StatisticsWidget(Static):
         yield Label("N/A" if self.stats['total_started_count'] is None
                     else f"{self.stats['total_started_count']} times")
 
+    @log_time
     def on_mount(self) -> None:
         self.border_title = 'Statistics'
         self.border_subtitle = '(X) Close'

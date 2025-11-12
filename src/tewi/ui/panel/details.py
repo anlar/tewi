@@ -28,6 +28,7 @@ class TorrentInfoPanel(ScrollableContainer):
             Binding("G", "scroll_bottom", "[Navigation] Scroll to the bottom"),
             ]
 
+    @log_time
     def __init__(self, has_separate_id: bool = True, **kwargs):
         super().__init__(**kwargs)
         self.has_separate_id = has_separate_id
@@ -242,6 +243,7 @@ class TorrentInfoPanel(ScrollableContainer):
                               self.print_count(t.download_count),
                               t.message)
 
+    @log_time
     def create_file_tree(self, torrents) -> dict:
         # Build the tree structure
         tree = {}
@@ -264,6 +266,7 @@ class TorrentInfoPanel(ScrollableContainer):
 
         return tree
 
+    @log_time
     def draw_file_table(self, table, node, prefix="", is_last=True) -> None:
         items = [(k, v) for k, v in node.items() if k != '__is_file__']
 
@@ -301,12 +304,14 @@ class TorrentInfoPanel(ScrollableContainer):
                 new_prefix = current_prefix + extension
                 self.draw_file_table(table, subtree, new_prefix, is_last_item)
 
+    @log_time
     def print_count(self, value: int) -> str:
         if value == -1:
             return "N/A"
 
         return value
 
+    @log_time
     def print_datetime(self, value: datetime) -> str:
         if value:
             time_ago = print_time_ago(value)
@@ -314,6 +319,7 @@ class TorrentInfoPanel(ScrollableContainer):
         else:
             return "Never"
 
+    @log_time
     def print_priority(self, priority) -> str:
         if priority == -1:
             return 'Low'

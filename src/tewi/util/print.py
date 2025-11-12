@@ -19,7 +19,10 @@ import math
 from functools import cache
 from datetime import datetime
 
+from .decorator import log_time
 
+
+@log_time
 @cache
 def print_size(num: int, suffix: str = "B", size_bytes: int = 1000) -> str:
     """Format a number of bytes as a human-readable size string."""
@@ -40,6 +43,7 @@ def print_size(num: int, suffix: str = "B", size_bytes: int = 1000) -> str:
     return f"{r_size} {r_unit}{suffix}"
 
 
+@log_time
 @cache
 def print_speed(num: int, print_secs: bool = False, suffix: str = "B", speed_bytes: int = 1000,
                 dash_for_zero: bool = False) -> str:
@@ -77,6 +81,7 @@ def print_speed(num: int, print_secs: bool = False, suffix: str = "B", speed_byt
         return f"{r_size} {r_unit}{suffix}"
 
 
+@log_time
 @cache
 def print_ratio(ratio: float) -> str:
     if math.isinf(ratio):
@@ -85,6 +90,7 @@ def print_ratio(ratio: float) -> str:
         return f"{ratio:.2f}"
 
 
+@log_time
 @cache
 def print_time(seconds, abbr: bool = False, units: int = 1) -> str:
     """Format a number of seconds as a human-readable time string."""
@@ -109,6 +115,7 @@ def print_time(seconds, abbr: bool = False, units: int = 1) -> str:
     return ', '.join(result[:units])
 
 
+@log_time
 @cache
 def print_time_ago(dt: datetime) -> str:
     if dt is None:

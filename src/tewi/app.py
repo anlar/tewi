@@ -360,6 +360,7 @@ class MainApp(App):
         self.post_message(Notification("All torrents stopped"))
 
 
+@log_time
 def cli():
     tewi_version = __version__
 

@@ -2,6 +2,7 @@ from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.widgets import Static, DataTable
 from textual.app import ComposeResult
+from ...util.decorator import log_time
 
 
 class PreferencesDialog(ModalScreen[None]):
@@ -16,39 +17,49 @@ class PreferencesDialog(ModalScreen[None]):
             Binding("x,escape", "close", "[Navigation] Close"),
             ]
 
+    @log_time
     def __init__(self, preferences):
         self.preferences = preferences
         super().__init__()
 
+    @log_time
     def compose(self) -> ComposeResult:
         yield PreferencesWidget(self.preferences)
 
+    @log_time
     def action_scroll_up(self) -> None:
         self.query_one(DataTable).scroll_up()
 
+    @log_time
     def action_scroll_down(self) -> None:
         self.query_one(DataTable).scroll_down()
 
+    @log_time
     def action_scroll_top(self) -> None:
         self.query_one(DataTable).scroll_home()
 
+    @log_time
     def action_scroll_bottom(self) -> None:
         self.query_one(DataTable).scroll_end()
 
+    @log_time
     def action_close(self) -> None:
         self.dismiss(False)
 
 
 class PreferencesWidget(Static):
 
+    @log_time
     def __init__(self, preferences):
         self.preferences = preferences
         super().__init__()
 
+    @log_time
     def compose(self) -> ComposeResult:
         yield DataTable(cursor_type="none",
                         zebra_stripes=True)
 
+    @log_time
     def on_mount(self) -> None:
         self.border_title = 'Transmission Preferences'
         self.border_subtitle = '(X) Close'

@@ -2,6 +2,7 @@ from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.widgets import Static, DataTable
 from textual.app import ComposeResult
+from ...util.decorator import log_time
 
 
 class HelpDialog(ModalScreen[None]):
@@ -10,27 +11,33 @@ class HelpDialog(ModalScreen[None]):
             Binding("x,escape", "close", "[Navigation] Close"),
             ]
 
+    @log_time
     def __init__(self, bindings) -> None:
         self.bindings = bindings
         super().__init__()
 
+    @log_time
     def compose(self) -> ComposeResult:
         yield HelpWidget(self.bindings)
 
+    @log_time
     def action_close(self) -> None:
         self.dismiss()
 
 
 class HelpWidget(Static):
 
+    @log_time
     def __init__(self, bindings) -> None:
         self.bindings = bindings
         super().__init__()
 
+    @log_time
     def compose(self) -> ComposeResult:
         yield DataTable(cursor_type="none",
                         zebra_stripes=True)
 
+    @log_time
     def on_mount(self) -> None:
         self.border_title = 'Help'
         self.border_subtitle = '(X) Close'

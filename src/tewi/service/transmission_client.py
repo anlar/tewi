@@ -9,12 +9,14 @@ from transmission_rpc import Torrent
 from transmission_rpc import Client as TransmissionRPCClient
 
 from ..util.misc import is_torrent_link
+from ..util.decorator import log_time
 from ..common import SortOrder, TorrentDTO, TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO
 from .base_client import BaseClient, ClientMeta, ClientStats, ClientSession
 
 
 class TransmissionClient(BaseClient):
 
+    @log_time
     def __init__(self,
                  host: str, port: str,
                  username: str = None, password: str = None):
@@ -24,12 +26,14 @@ class TransmissionClient(BaseClient):
                                             username=username,
                                             password=password)
 
+    @log_time
     def meta(self) -> ClientMeta:
         return {
                 'name': 'Transmission',
                 'version': self.client.get_session().version
         }
 
+    @log_time
     def stats(self) -> ClientStats:
         s = self.client.session_stats()
 
@@ -57,6 +61,7 @@ class TransmissionClient(BaseClient):
                 'total_started_count': s.cumulative_stats.session_count,
         }
 
+    @log_time
     def session(self, torrents: list[TorrentDTO], sort_order: SortOrder, sort_order_asc: bool) -> ClientSession:
         s = self.client.get_session()
         stats = self.client.session_stats()
@@ -88,6 +93,7 @@ class TransmissionClient(BaseClient):
                 'sort_order_asc': sort_order_asc,
         }
 
+    @log_time
     def preferences(self) -> dict[str, str]:
         session_dict = self.client.get_session().fields
 
@@ -95,6 +101,7 @@ class TransmissionClient(BaseClient):
 
         return dict(sorted(filtered.items()))
 
+    @log_time
     def _torrent_to_dto(self, torrent: Torrent) -> TorrentDTO:
         """Convert transmission-rpc Torrent to TorrentDTO."""
         return TorrentDTO(
@@ -120,6 +127,7 @@ class TransmissionClient(BaseClient):
             labels=list(torrent.labels) if torrent.labels else [],
         )
 
+    @log_time
     def _file_to_dto(self, file) -> FileDTO:
         """Convert transmission-rpc File to FileDTO."""
         return FileDTO(
@@ -131,6 +139,7 @@ class TransmissionClient(BaseClient):
             priority=file.priority,
         )
 
+    @log_time
     def _peer_to_dto(self, peer: dict) -> PeerDTO:
         """Convert transmission-rpc peer dict to PeerDTO."""
         # Determine connection type from isUTP flag
@@ -152,6 +161,7 @@ class TransmissionClient(BaseClient):
             direction=direction,
         )
 
+    @log_time
     def _tracker_to_dto(self, tracker) -> TrackerDTO:
         """Convert transmission-rpc Tracker to TrackerDTO."""
         # Map announce_state to readable status
@@ -181,6 +191,7 @@ class TransmissionClient(BaseClient):
             peer_count=peer_count,
         )
 
+    @log_time
     def _torrent_detail_to_dto(self, torrent: Torrent) -> TorrentDetailDTO:
         """Convert transmission-rpc Torrent to TorrentDetailDTO."""
         files = [self._file_to_dto(f) for f in torrent.get_files()]
@@ -216,6 +227,7 @@ class TransmissionClient(BaseClient):
             trackers=trackers,
         )
 
+    @log_time
     def torrents(self) -> list[TorrentDTO]:
         torrents = self.client.get_torrents(
                 arguments=['id', 'name', 'status', 'totalSize', 'left_until_done',
@@ -228,6 +240,7 @@ class TransmissionClient(BaseClient):
                 )
         return [self._torrent_to_dto(t) for t in torrents]
 
+    @log_time
     def torrents_test(self) -> list[TorrentDTO]:
         torrents = self.torrents()
 
@@ -243,11 +256,13 @@ class TransmissionClient(BaseClient):
 
         return result
 
+    @log_time
     def torrent(self, id: int | str) -> TorrentDetailDTO:
         """Get detailed information about a specific torrent."""
         torrent = self.client.get_torrent(id)
         return self._torrent_detail_to_dto(torrent)
 
+    @log_time
     def add_torrent(self, value: str) -> None:
         if is_torrent_link(value):
             self.client.add_torrent(value)
@@ -255,12 +270,15 @@ class TransmissionClient(BaseClient):
             file = os.path.expanduser(value)
             self.client.add_torrent(pathlib.Path(file))
 
+    @log_time
     def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         self.client.start_torrent(torrent_ids)
 
+    @log_time
     def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         self.client.stop_torrent(torrent_ids)
 
+    @log_time
     def remove_torrent(self,
                        torrent_ids: int | str | list[int | str],
                        delete_data: bool = False) -> None:
@@ -268,19 +286,24 @@ class TransmissionClient(BaseClient):
         self.client.remove_torrent(torrent_ids,
                                    delete_data=delete_data)
 
+    @log_time
     def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         self.client.verify_torrent(torrent_ids)
 
+    @log_time
     def reannounce_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         self.client.reannounce_torrent(torrent_ids)
 
+    @log_time
     def start_all_torrents(self) -> None:
         self.client.start_all()
 
+    @log_time
     def stop_all_torrents(self) -> None:
         torrents = self.client.get_torrents(arguments=['id'])
         self.stop_torrent([t.id for t in torrents])
 
+    @log_time
     def update_labels(self,
                       torrent_ids: int | str | list[int | str],
                       labels: list[str]) -> None:
@@ -291,11 +314,13 @@ class TransmissionClient(BaseClient):
         self.client.change_torrent(torrent_ids,
                                    labels=labels)
 
+    @log_time
     def toggle_alt_speed(self) -> bool:
         alt_speed_enabled = self.client.get_session().alt_speed_enabled
         self.client.set_session(alt_speed_enabled=not alt_speed_enabled)
         return not alt_speed_enabled
 
+    @log_time
     def has_separate_id(self) -> bool:
         """Transmission uses integer IDs separate from hash."""
         return True

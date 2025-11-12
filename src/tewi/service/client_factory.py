@@ -1,10 +1,12 @@
 """Factory for creating torrent client instances."""
 
+from ..util.decorator import log_time
 from .base_client import BaseClient, ClientError
 from .transmission_client import TransmissionClient
 from .qbittorrent_client import QBittorrentClient
 
 
+@log_time
 def create_client(
     client_type: str,
     host: str,

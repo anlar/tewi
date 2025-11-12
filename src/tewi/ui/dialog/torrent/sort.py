@@ -7,10 +7,12 @@ from rich.text import Text
 
 from ....message import SortOrderUpdatedEvent
 from ....common import sort_orders
+from ....util.decorator import log_time
 
 
 class SortOrderDialog(ModalScreen):
 
+    @log_time
     def compose(self) -> ComposeResult:
         yield SortOrderWidget()
 
@@ -21,10 +23,12 @@ class SortOrderWidget(Static):
             Binding("escape,x", "close", "[Navigation] Close"),
             ]
 
+    @log_time
     def compose(self) -> ComposeResult:
         yield DataTable(cursor_type="none",
                         zebra_stripes=True)
 
+    @log_time
     def on_mount(self) -> None:
         self.border_title = 'Sort order'
         self.border_subtitle = '(X) Close'
@@ -42,6 +46,7 @@ class SortOrderWidget(Static):
             b = Binding(o.key_desc, f"select_order('{o.id}', False)")
             self._bindings._add_binding(b)
 
+    @log_time
     def action_select_order(self, sort_id, is_asc):
         order = next(x for x in sort_orders if x.id == sort_id)
 
@@ -49,5 +54,6 @@ class SortOrderWidget(Static):
 
         self.parent.dismiss(False)
 
+    @log_time
     def action_close(self) -> None:
         self.parent.dismiss(False)
