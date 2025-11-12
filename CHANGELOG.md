@@ -11,16 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for qBittorrent client
 - CLI option to add torrent from file path or magnet link (`-a/--add-torrent`)
+- Add Status, Message, and Peers columns to trackers table in torrent details
+- Add Port, Connection Type, and Direction columns to peers table in torrent details
+- Display colorized queue position and priority indicators in torrent list (shows #N prefix and ⬆/⬇ for high/low priority)
 
 ### Changed
 
 - Refactoring: replaced custom list widget with native list view
-- Add Status, Message, and Peers columns to trackers table in torrent details
 - Reorder tracker columns: Tier, Host, Status, Peers, Seeders, Leechers, Downloads, Message
-- Add Port, Connection Type, and Direction columns to peers table in torrent details
 - Use speed formatter for alternative speed limits display (shows proper units: B, KB, MB, GB)
 - Display "-" instead of "0 B/s" for zero speeds in peers
-- Display colorized queue position and priority indicators in torrent list (shows #N prefix and ⬆/⬇ for high/low priority)
 - Fix state panel artifact when alt speed is disabled
 
 ### Removed
