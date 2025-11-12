@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for qBittorrent client
+- CLI option to add torrent from file path or magnet link (`-a/--add-torrent`)
 
 ### Changed
 

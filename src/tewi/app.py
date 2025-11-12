@@ -394,6 +394,8 @@ def cli():
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + tewi_version,
                         help='Show version and exit')
+    parser.add_argument('-a', '--add-torrent', type=str, metavar='PATH_OR_MAGNET',
+                        help='Add torrent from file path or magnet link and exit')
 
     args = parser.parse_args()
 
@@ -408,6 +410,28 @@ def cli():
     logger.info(f'Start Tewi {tewi_version}...')
     logger.info(f'Loaded CLI options: {args}')
 
+    # Handle add-torrent mode (non-interactive)
+    if args.add_torrent:
+        try:
+            client = create_client(client_type=args.client_type,
+                                   host=args.host,
+                                   port=args.port,
+                                   username=args.username,
+                                   password=args.password)
+            client.add_torrent(args.add_torrent)
+            print(f"Successfully added torrent to {args.client_type} daemon at {args.host}:{args.port}")
+            sys.exit(0)
+        except ClientError as e:
+            print(f"Failed to add torrent: {e}", file=sys.stderr)
+            sys.exit(1)
+        except FileNotFoundError:
+            print(f"Failed to add torrent: File not found {args.add_torrent}", file=sys.stderr)
+            sys.exit(1)
+        except Exception as e:
+            print(f"Failed to add torrent: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    # Launch interactive TUI
     try:
         app = MainApp(client_type=args.client_type,
                       host=args.host, port=args.port,
