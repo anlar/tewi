@@ -155,7 +155,7 @@ TorrentItemOneline {
 }
 
 ListItem.-highlight > TorrentItemOneline {
-    background: $primary-lighten-1 !important;
+    background: $primary-darken-1 !important;
 }
 
 TorrentItemOneline > #name-container > #name {
@@ -203,7 +203,7 @@ TorrentItemCompact {
 }
 
 ListItem.-highlight > TorrentItemCompact {
-    background: $primary-lighten-1 !important;
+    background: $primary-darken-1 !important;
 }
 
 TorrentItemCompact > #name-container > #name {
@@ -238,7 +238,7 @@ TorrentItemCard {
 }
 
 ListItem.-highlight > TorrentItemCard {
-    background: $primary-lighten-1 !important;
+    background: $primary-darken-1 !important;
 }
 
 TorrentItemCard > #speed {
