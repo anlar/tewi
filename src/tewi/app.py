@@ -142,7 +142,7 @@ class MainApp(App):
     @log_time
     @work(exclusive=True, thread=True)
     async def load_tdata(self) -> None:
-        logging.info("Start loading data from Transmission...")
+        logging.info("Start loading data from torrent client...")
 
         torrents = self.client.torrents_test(self.test_mode) if self.test_mode else self.client.torrents()
         session = self.client.session(torrents, self.sort_order, self.sort_order_asc)
