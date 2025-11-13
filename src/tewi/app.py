@@ -22,6 +22,8 @@ import argparse
 import logging
 import sys
 
+from datetime import datetime
+
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -404,8 +406,9 @@ def cli():
     args = parser.parse_args()
 
     if args.logs:
+        now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         logging.basicConfig(
-                filename=('tewi.log'),
+                filename=(f'tewi_{now}.log'),
                 encoding='utf-8',
                 format='%(asctime)s.%(msecs)03d %(module)-15s %(levelname)-8s %(message)s',
                 level=logging.DEBUG,
