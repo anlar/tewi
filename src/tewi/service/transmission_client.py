@@ -66,9 +66,25 @@ class TransmissionClient(BaseClient):
         s = self.client.get_session()
         stats = self.client.session_stats()
 
-        torrents_down = len([x for x in torrents if x.status == 'downloading'])
-        torrents_seed = len([x for x in torrents if x.status == 'seeding'])
-        torrents_check = len([x for x in torrents if x.status == 'checking'])
+        torrents_down = 0
+        torrents_seed = 0
+        torrents_check = 0
+        torrents_complete_size = 0
+        torrents_total_size = 0
+
+        for t in torrents:
+            torrents_total_size += t.size_when_done
+            torrents_complete_size += t.size_when_done - t.left_until_done
+
+            if t.status == 'downloading':
+                torrents_down += 1
+            elif t.status == 'seeding':
+                torrents_seed += 1
+            elif t.status == 'checking':
+                torrents_check += 1
+
+        torrents_count = stats.torrent_count
+        torrents_stop = torrents_count - torrents_down - torrents_seed - torrents_check
 
         return {
                 'download_dir': s.download_dir,
@@ -80,14 +96,14 @@ class TransmissionClient(BaseClient):
                 'alt_speed_up': s.alt_speed_up * 1000,
                 'alt_speed_down': s.alt_speed_down * 1000,
 
-                'torrents_complete_size': sum(t.size_when_done - t.left_until_done for t in torrents),
-                'torrents_total_size': sum(t.size_when_done for t in torrents),
+                'torrents_complete_size': torrents_complete_size,
+                'torrents_total_size': torrents_total_size,
 
-                'torrents_count': len(torrents),
+                'torrents_count': torrents_count,
                 'torrents_down': torrents_down,
                 'torrents_seed': torrents_seed,
                 'torrents_check': torrents_check,
-                'torrents_stop': len(torrents) - torrents_down - torrents_seed - torrents_check,
+                'torrents_stop': torrents_stop,
 
                 'sort_order': sort_order,
                 'sort_order_asc': sort_order_asc,

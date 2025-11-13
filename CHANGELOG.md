@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use speed formatter for alternative speed limits display (shows proper units: B, KB, MB, GB)
 - Display "-" instead of "0 B/s" for zero speeds in peers
 - Fix state panel artifact when alt speed is disabled
+- Optimize session statistics calculation with single-pass algorithm
 
 ### Removed
 
