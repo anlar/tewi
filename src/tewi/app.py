@@ -86,6 +86,7 @@ class MainApp(App):
                  refresh_interval: int,
                  page_size: int,
                  limit_torrents: int,
+                 test_mode: int,
                  version: str):
 
         super().__init__()
@@ -96,6 +97,7 @@ class MainApp(App):
         self.refresh_interval = refresh_interval
         self.limit_torrents = limit_torrents
         self.page_size = page_size
+        self.test_mode = test_mode
 
         self.tewi_version = version
 
@@ -140,8 +142,7 @@ class MainApp(App):
     async def load_tdata(self) -> None:
         logging.info("Start loading data from Transmission...")
 
-        # torrents = self.client.torrents_test()
-        torrents = self.client.torrents()
+        torrents = self.client.torrents_test(self.test_mode) if self.test_mode else self.client.torrents()
         session = self.client.session(torrents, self.sort_order, self.sort_order_asc)
 
         torrents.sort(key=self.sort_order.sort_func,
@@ -397,6 +398,8 @@ def cli():
                         help='Show version and exit')
     parser.add_argument('-a', '--add-torrent', type=str, metavar='PATH_OR_MAGNET',
                         help='Add torrent from file path or magnet link and exit')
+    parser.add_argument('--test-mode', type=int, default=None,
+                        help=argparse.SUPPRESS)
 
     args = parser.parse_args()
 
@@ -441,6 +444,7 @@ def cli():
                       refresh_interval=args.refresh_interval,
                       page_size=args.page_size,
                       limit_torrents=args.limit_torrents,
+                      test_mode=args.test_mode,
                       version=tewi_version)
         app.run()
         return app

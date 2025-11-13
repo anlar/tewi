@@ -2,7 +2,6 @@
 
 import os
 from datetime import datetime, timedelta
-from dataclasses import replace
 
 from qbittorrentapi import Client as QBittorrentAPIClient
 
@@ -120,6 +119,7 @@ class QBittorrentClient(BaseClient):
         transfer_info = self.client.transfer.info
         prefs = self.client.app.preferences
 
+        torrents_count = len(torrents)
         torrents_down = 0
         torrents_seed = 0
         torrents_check = 0
@@ -137,7 +137,6 @@ class QBittorrentClient(BaseClient):
             elif t.status == 'checking':
                 torrents_check += 1
 
-        torrents_count = len(torrents)
         torrents_stop = torrents_count - torrents_down - torrents_seed - torrents_check
 
         # Get free space for download directory
@@ -224,21 +223,6 @@ class QBittorrentClient(BaseClient):
         """Get list of all torrents."""
         qb_torrents = self.client.torrents.info()
         return [self._torrent_to_dto(t) for t in qb_torrents]
-
-    @log_time
-    def torrents_test(self) -> list[TorrentDTO]:
-        """Get test torrent list (for performance testing)."""
-        torrents = self.torrents()
-        result = []
-        idx = 1
-
-        for i in range(50):
-            for t in torrents:
-                t_copy = replace(t, id=idx, name=t.name + "-" + str(idx))
-                result.append(t_copy)
-                idx = idx + 1
-
-        return result
 
     @log_time
     def torrent(self, id: int | str) -> TorrentDetailDTO:

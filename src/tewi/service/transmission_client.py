@@ -3,8 +3,6 @@
 import os
 import pathlib
 
-from dataclasses import replace
-
 from transmission_rpc import Torrent
 from transmission_rpc import Client as TransmissionRPCClient
 
@@ -66,6 +64,7 @@ class TransmissionClient(BaseClient):
         s = self.client.get_session()
         stats = self.client.session_stats()
 
+        torrents_count = len(torrents)
         torrents_down = 0
         torrents_seed = 0
         torrents_check = 0
@@ -83,7 +82,6 @@ class TransmissionClient(BaseClient):
             elif t.status == 'checking':
                 torrents_check += 1
 
-        torrents_count = stats.torrent_count
         torrents_stop = torrents_count - torrents_down - torrents_seed - torrents_check
 
         return {
@@ -255,22 +253,6 @@ class TransmissionClient(BaseClient):
                            'labels']
                 )
         return [self._torrent_to_dto(t) for t in torrents]
-
-    @log_time
-    def torrents_test(self) -> list[TorrentDTO]:
-        torrents = self.torrents()
-
-        result = []
-
-        idx = 1
-
-        for i in range(50):
-            for t in torrents:
-                t_copy = replace(t, id=idx, name=t.name + "-" + str(idx))
-                result.append(t_copy)
-                idx = idx + 1
-
-        return result
 
     @log_time
     def torrent(self, id: int | str) -> TorrentDetailDTO:

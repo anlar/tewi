@@ -1,6 +1,8 @@
 """Abstract base class for torrent client implementations."""
 
+import math
 from abc import ABC, abstractmethod
+from dataclasses import replace
 from typing import TypedDict
 
 from ..common import SortOrder, TorrentDTO
@@ -126,14 +128,33 @@ class BaseClient(ABC):
         """
         pass
 
-    @abstractmethod
-    def torrents_test(self) -> list[TorrentDTO]:
+    def torrents_test(self, target_count: int) -> list[TorrentDTO]:
         """Get test torrent list (for performance testing).
 
+        Args:
+            target_count: Target number of test torrents to generate (approximate)
+
         Returns:
-            List of duplicated TorrentDTO objects
+            List of duplicated TorrentDTO objects (~target_count items)
         """
-        pass
+        torrents = self.torrents()
+
+        if not torrents:
+            return []
+
+        # Calculate multiplier to achieve approximately target_count torrents
+        multiplier = max(1, math.ceil(target_count / len(torrents)))
+
+        result = []
+        idx = 1
+
+        for i in range(multiplier):
+            for t in torrents:
+                t_copy = replace(t, id=idx, name=t.name + "-" + str(idx))
+                result.append(t_copy)
+                idx = idx + 1
+
+        return result
 
     @abstractmethod
     def torrent(self, id: int | str):

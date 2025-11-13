@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Status, Message, and Peers columns to trackers table in torrent details
 - Add Port, Connection Type, and Direction columns to peers table in torrent details
 - Display colorized queue position and priority indicators in torrent list (shows #N prefix and ⬆/⬇ for high/low priority)
+- Hidden `--test-mode N` option for performance testing (generates ~N test torrents)
 
 ### Changed
 
