@@ -217,6 +217,8 @@ class TorrentItemCompact(TorrentItem):
 
 class TorrentItemCard(TorrentItem):
 
+    t_status_markup = reactive(None)
+
     t_stats_uploaded = reactive('')
     t_stats_peer = reactive("")
     t_stats_seed = reactive("")
@@ -242,8 +244,8 @@ class TorrentItemCard(TorrentItem):
                .data_bind(progress=TorrentItemCard.t_progress))
 
         with Grid(id="stats"):
-            yield ReactiveLabel().data_bind(
-                    name=TorrentItemCard.t_status)
+            yield ReactiveLabel(markup=True).data_bind(
+                    name=TorrentItemCard.t_status_markup)
             yield ReactiveLabel().data_bind(
                     name=TorrentItemCard.t_stats_uploaded)
             yield ReactiveLabel().data_bind(
@@ -256,6 +258,8 @@ class TorrentItemCard(TorrentItem):
         super().update_torrent(torrent)
 
         with self.app.batch_update():
+            self.t_status_markup = self.print_status(torrent.status)
+
             self.t_eta = torrent.eta
             self.t_peers_connected = torrent.peers_connected
             self.t_leechers = torrent.peers_getting_from_us
@@ -286,3 +290,17 @@ class TorrentItemCard(TorrentItem):
             result = f"{size_total} | Ratio: {self.t_ratio:.2f}"
 
         return result
+
+    @log_time
+    def print_status(self, status: str) -> str:
+        match status:
+            case "stopped":
+                return '[bold $background-lighten-3]' + status + '[/]'
+            case "check pending" | "checking":
+                return '[bold $error-darken-1]' + status + '[/]'
+            case "download pending" | "downloading":
+                return '[bold $primary]' + status + '[/]'
+            case "seed pending" | "seeding":
+                return '[bold $success]' + status + '[/]'
+            case _:
+                return '[bold]' + status + '[/]'
