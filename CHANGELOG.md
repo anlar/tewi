@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Display "-" instead of "0 B/s" for zero speeds in peers
 - Fix state panel artifact when alt speed is disabled
 - Optimize session statistics calculation with single-pass algorithm
+- Improved item highlight CSS code
 
 ### Removed
 

@@ -27,13 +27,6 @@ class TorrentListItem(ListItem):
         super().__init__(*args, **kwargs)
         self.torrent_id = torrent_id  # Cache for fast is_equal_to_page checks
 
-    @log_time
-    def watch_highlighted(self, value: bool) -> None:
-        super().watch_highlighted(value)
-
-        if self._nodes:
-            self._nodes[0].set_class(value, "-highlight")
-
 
 class TorrentListViewPanel(ListView):
 

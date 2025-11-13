@@ -142,10 +142,6 @@ SpeedIndicator.non-zero {
 
 /* TORRENT LIST PANEL: COMMON */
 
-TorrentItem.-highlight {
-    background: $primary !important;
-}
-
 TorrentItem > #name-container {
     width: 1fr;
     height: auto;
@@ -156,6 +152,10 @@ TorrentItem > #name-container {
 TorrentItemOneline {
     padding: 0 1;
     layout: vertical;
+}
+
+ListItem.-highlight > TorrentItemOneline {
+    background: $primary !important;
 }
 
 TorrentItemOneline > #name-container > #name {
@@ -202,6 +202,10 @@ TorrentItemCompact {
     border-top: round $primary 75%;
 }
 
+ListItem.-highlight > TorrentItemCompact {
+    background: $primary !important;
+}
+
 TorrentItemCompact > #name-container > #name {
     text-style: bold;
 }
@@ -231,6 +235,10 @@ TorrentItemCard {
     padding: 0 1;
     layout: vertical;
     border: round $primary 75%;
+}
+
+ListItem.-highlight > TorrentItemCard {
+    background: $primary !important;
 }
 
 TorrentItemCard > #speed {
