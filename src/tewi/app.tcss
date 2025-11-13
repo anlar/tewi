@@ -115,12 +115,12 @@
 
 .priority-low > #name-container > #priority {
     padding-right: 1;
-    color: $secondary-lighten-3;
+    color: $accent;
 }
 
 .priority-high > #name-container > #priority {
     padding-right: 1;
-    color: $warning;
+    color: $success-lighten-3;
 }
 
 /* SPEED INDICATORS */
@@ -155,7 +155,7 @@ TorrentItemOneline {
 }
 
 ListItem.-highlight > TorrentItemOneline {
-    background: $primary !important;
+    background: $primary-lighten-1 !important;
 }
 
 TorrentItemOneline > #name-container > #name {
@@ -203,7 +203,7 @@ TorrentItemCompact {
 }
 
 ListItem.-highlight > TorrentItemCompact {
-    background: $primary !important;
+    background: $primary-lighten-1 !important;
 }
 
 TorrentItemCompact > #name-container > #name {
@@ -238,7 +238,7 @@ TorrentItemCard {
 }
 
 ListItem.-highlight > TorrentItemCard {
-    background: $primary !important;
+    background: $primary-lighten-1 !important;
 }
 
 TorrentItemCard > #speed {
