@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Optimize session statistics calculation with single-pass algorithm
 - Improved item highlight CSS code
 - Add current timestamp to log file
+- Set default number of torrents on page to 30
 
 ### Removed
 

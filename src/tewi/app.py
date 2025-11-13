@@ -382,7 +382,7 @@ def cli():
                         help='Refresh interval (in seconds) for loading data from daemon')
     parser.add_argument('--limit-torrents', type=int, default=None,
                         help='Limit number of displayed torrents (useful for performance debugging)')
-    parser.add_argument('--page-size', type=int, default=50,
+    parser.add_argument('--page-size', type=int, default=30,
                         help='Number of torrents displayed per page')
     parser.add_argument('--host', type=str, default='localhost',
                         help='BitTorrent daemon host for connection')
