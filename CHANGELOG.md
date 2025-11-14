@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved item highlight CSS code
 - Add current timestamp to log file
 - Set default number of torrents on page to 30
+- Added left/right navigation with cursor keys
 
 ### Removed
 

@@ -18,8 +18,8 @@ class TorrentInfoPanel(ScrollableContainer):
 
     BINDINGS = [
             Binding("enter", "view_list", "[Navigation] View torrent list"),
-            Binding("h", "go_left", "[Navigation] Go left"),
-            Binding("l", "go_right", "[Navigation] Go right"),
+            Binding("h,left", "go_left", "[Navigation] Go left"),
+            Binding("l,right", "go_right", "[Navigation] Go right"),
 
             Binding("k,up", "scroll_up", "[Navigation] Scroll up"),
             Binding("j,down", "scroll_down", "[Navigation] Scroll down"),

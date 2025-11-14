@@ -39,7 +39,7 @@ class TorrentListViewPanel(ListView):
             Binding("G", "move_bottom", "[Navigation] Go to last item"),
             Binding("end", "move_bottom", "[Navigation] Go to last item"),
 
-            Binding("enter,l", "select_cursor", "[Navigation] Open"),
+            Binding("enter,l,right", "select_cursor", "[Navigation] Open"),
 
             Binding("a", "add_torrent", "[Torrent] Add"),
             Binding("L", "update_torrent_labels", "[Torrent] Update labels"),
