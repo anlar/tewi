@@ -5,7 +5,7 @@
 
   <h1>Tewi</h1>
 
-  <p>Text-based interface for the Transmission BitTorrent daemon</p>
+  <p>Text-based interface for BitTorrent clients (Transmission & qBittorrent)</p>
 </div>
 
 ## About
@@ -19,18 +19,19 @@
   <img src="https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-5.png" width="200"/>
 </p>
 
-Tewi is a TUI (text user interface) interface for the Transmission BitTorrent daemon.
+Tewi is a TUI (text user interface) for BitTorrent clients, supporting both
+Transmission and qBittorrent daemons.
 
 Features:
 
-- Connect to Transmission daemon by its credentials
+- Connect to Transmission or qBittorrent daemon by credentials
 - Browse torrents list
 - Different view modes: card, compact, oneline
 - Display torrent details: overview, files, trackers, peers
 - Add new torrents
 - Torrent actions: start/pause, remove/trash, verify, reannounce
-- View and toggle Turtle Mode
-- View Transmission session statistics
+- View and toggle alternative speed limits
+- View session statistics
 - Dark and light color themes
 
 ### Built With
@@ -38,6 +39,7 @@ Features:
 * [Python 3](https://www.python.org/)
 * [Textual](https://textual.textualize.io/)
 * [transmission-rpc](https://github.com/Trim21/transmission-rpc)
+* [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api)
 
 ## Getting Started
 
@@ -69,11 +71,17 @@ Launch Tewi from command line:
 $ tewi
 ```
 
-By default it connects to Transmission daemon on http://localhost:9091. To change these settings
-you could specify your connection details:
+By default it connects to Transmission daemon on http://localhost:9091. To
+change these settings you could specify your connection details:
 
 ```
 $ tewi --host XXXX --port XXXX
+```
+
+To connect to qBittorrent instead of Transmission:
+
+```
+$ tewi --client-type qbittorrent --port 8080
 ```
 
 Check other command line options using help command:
@@ -86,7 +94,8 @@ View available hot-keys in Tewi by pressing `?` key.
 
 ## Roadmap
 
-See the [open issues](https://github.com/anlar/tewi/issues) for a full list of proposed features (and known issues).
+See the [open issues](https://github.com/anlar/tewi/issues) for a full list of
+proposed features (and known issues).
 
 ## Contributing
 
