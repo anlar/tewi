@@ -45,8 +45,8 @@ class HelpWidget(Static):
         table = self.query_one(DataTable)
         table.add_columns("Category", "Key", "Command")
 
-        # Group and sort bindings by category
-        categories = {}
+        # Group bindings by (category, command) and collect keys
+        command_groups = {}
         for b in filter(lambda x: x.binding.show, self.bindings):
             key = b.binding.key
             description = b.binding.description
@@ -69,11 +69,24 @@ class HelpWidget(Static):
                 category = "General"
                 command = description
 
-            if category not in categories:
-                categories[category] = []
-            categories[category].append((command, key))
+            # Group by (category, command) tuple
+            group_key = (category, command)
+            if group_key not in command_groups:
+                command_groups[group_key] = []
+            command_groups[group_key].append(key)
 
-        # Sort categories and their commands
-        for category in sorted(categories.keys()):
-            for command, key in sorted(categories[category]):
-                table.add_row(category, key, command)
+        # Sort and combine keys for each command group
+        rows = []
+        for (category, command), keys in command_groups.items():
+            # Sort keys: single-char first, then multi-char (both alphabetically)
+            single_char = sorted([k for k in keys if len(k) == 1])
+            multi_char = sorted([k for k in keys if len(k) > 1])
+            sorted_keys = single_char + multi_char
+
+            # Combine keys with comma and space
+            combined_keys = ", ".join(sorted_keys)
+            rows.append((category, command, combined_keys))
+
+        # Sort rows by category, then by command
+        for category, command, combined_keys in sorted(rows):
+            table.add_row(category, combined_keys, command)
