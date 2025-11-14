@@ -47,10 +47,18 @@ Tewi requires Python 3.10+.
 
 ### Installation
 
-Recommended way to install is to use `pipx` or `pip`:
+Recommended way to install is to use `pipx`, `pip`, or `uv`:
 
 ```
 $ pipx install tewi-transmission
+```
+
+```
+$ pip install tewi-transmission
+```
+
+```
+$ uv tool install tewi-transmission
 ```
 
 ## Usage
