@@ -364,7 +364,8 @@ class MainApp(App):
 
 
 @log_time
-def cli():
+def create_app():
+    """Create and return a MainApp instance. Used by `textual run` for development."""
     tewi_version = __version__
 
     parser = argparse.ArgumentParser(
@@ -438,7 +439,7 @@ def cli():
             print(f"Failed to add torrent: {e}", file=sys.stderr)
             sys.exit(1)
 
-    # Launch interactive TUI
+    # Create and return the app instance
     try:
         app = MainApp(client_type=args.client_type,
                       host=args.host, port=args.port,
@@ -449,7 +450,6 @@ def cli():
                       limit_torrents=args.limit_torrents,
                       test_mode=args.test_mode,
                       version=tewi_version)
-        app.run()
         return app
     except ClientError as e:
         print(f"Failed to connect to {args.client_type} daemon at {args.host}:{args.port}: {e}", file=sys.stderr)
@@ -457,6 +457,13 @@ def cli():
     except Exception as e:
         print(f"Failed to initialize application: {e}", file=sys.stderr)
         sys.exit(1)
+
+
+@log_time
+def cli():
+    """CLI entry point. Creates and runs the MainApp."""
+    app = create_app()
+    app.run()
 
 
 if __name__ == "__main__":
