@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Removed
+
+## [1.0.0] - 2025-11-14 - Silver Whiskers
+
+### Added
+
 - Support for qBittorrent client
 - CLI option to add torrent from file path or magnet link (`-a/--add-torrent`)
 - Add Status, Message, and Peers columns to trackers table in torrent details
