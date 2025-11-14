@@ -261,7 +261,7 @@ class MainApp(App):
             self.client.update_labels(event.torrent_ids, [])
 
             self.post_message(Notification(
-                "Removed torrent labels ({count_label})"))
+                f"Removed torrent labels ({count_label})"))
 
     @log_time
     @on(SortOrderUpdatedEvent)
