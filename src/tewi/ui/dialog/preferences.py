@@ -61,7 +61,7 @@ class PreferencesWidget(Static):
 
     @log_time
     def on_mount(self) -> None:
-        self.border_title = 'Transmission Preferences'
+        self.border_title = 'Torrent Client Preferences'
         self.border_subtitle = '(X) Close'
 
         table = self.query_one(DataTable)
