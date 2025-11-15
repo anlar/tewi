@@ -163,7 +163,7 @@ class TorrentInfoPanel(ScrollableContainer):
         table.add_columns("ID", "Size", "Progress", "Selected", "Priority", "Name")
 
         table = self.query_one("#peers")
-        table.add_columns("Encrypted", "Up", "Down", "Progress", "Connection", "Direction",
+        table.add_columns("Encrypted", "Up", "Down", "UL State", "DL State", "Progress", "Connection", "Direction",
                           "Status", "Country", "Address", "Port", "Client")
 
         table = self.query_one("#trackers")
@@ -220,6 +220,8 @@ class TorrentInfoPanel(ScrollableContainer):
                 table.add_row("Yes" if p.is_encrypted else "No",
                               print_speed(p.rate_to_client, print_secs=True, dash_for_zero=True),
                               print_speed(p.rate_to_peer, print_secs=True, dash_for_zero=True),
+                              p.ul_state.value,
+                              p.dl_state.value,
                               f'{progress:.0f}%',
                               p.connection_type,
                               p.direction,

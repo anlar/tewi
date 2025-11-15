@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import NamedTuple
+from enum import Enum
 
 
 @dataclass(frozen=True)
@@ -45,6 +46,17 @@ class FileDTO:
     priority: int
 
 
+class PeerState(Enum):
+    INTERESTED = 'Interested'
+    """Peer is interested in data and unchoked."""
+
+    CHOKED = 'Choked'
+    """Peer is interested in data BUT unchoked."""
+
+    NONE = '-'
+    """No active interest or transfer state."""
+
+
 @dataclass(frozen=True)
 class PeerDTO:
     """Data Transfer Object for peer information.
@@ -62,6 +74,8 @@ class PeerDTO:
     connection_type: str
     direction: str
     country: str | None
+    dl_state: PeerState
+    ul_state: PeerState
 
 
 @dataclass(frozen=True)

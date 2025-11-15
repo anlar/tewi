@@ -7,7 +7,7 @@ from qbittorrentapi import Client as QBittorrentAPIClient
 
 from ..util.misc import is_torrent_link
 from ..util.decorator import log_time
-from ..common import SortOrder, TorrentDTO, TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO
+from ..common import SortOrder, TorrentDTO, TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO, PeerState
 from .base_client import BaseClient, ClientMeta, ClientStats, ClientSession, ClientError
 
 
@@ -266,6 +266,20 @@ class QBittorrentClient(BaseClient):
         # Determine direction from 'I' flag in flags string
         direction = "Incoming" if 'I' in peer.flags else "Outgoing"
 
+        if 'D' in peer.flags:
+            dl_state = PeerState.INTERESTED
+        elif 'd' in peer.flags:
+            dl_state = PeerState.CHOKED
+        else:
+            dl_state = PeerState.NONE
+
+        if 'U' in peer.flags:
+            ul_state = PeerState.INTERESTED
+        elif 'u' in peer.flags:
+            ul_state = PeerState.CHOKED
+        else:
+            ul_state = PeerState.NONE
+
         return PeerDTO(
             address=peer.ip,
             client_name=peer.client,
@@ -278,6 +292,8 @@ class QBittorrentClient(BaseClient):
             connection_type=connection_type,
             direction=direction,
             country=peer.country,
+            dl_state=dl_state,
+            ul_state=ul_state,
         )
 
     @log_time

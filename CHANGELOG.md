@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Display download and upload state (interested/choked) for peers
+
 ### Changed
 
 - Display "-" instead of "<not found in database>" for peers with unrecognized IP addresses

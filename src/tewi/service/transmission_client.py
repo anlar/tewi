@@ -8,7 +8,7 @@ from transmission_rpc import Client as TransmissionRPCClient
 
 from ..util.misc import is_torrent_link
 from ..util.decorator import log_time
-from ..common import SortOrder, TorrentDTO, TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO
+from ..common import SortOrder, TorrentDTO, TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO, PeerState
 from .base_client import BaseClient, ClientMeta, ClientStats, ClientSession
 
 
@@ -162,6 +162,22 @@ class TransmissionClient(BaseClient):
         # Determine direction from isIncoming flag
         direction = "Incoming" if peer.get("isIncoming", False) else "Outgoing"
 
+        if peer['clientIsInterested']:
+            if peer['clientIsChoked']:
+                dl_state = PeerState.CHOKED
+            else:
+                dl_state = PeerState.INTERESTED
+        else:
+            dl_state = PeerState.NONE
+
+        if peer['peerIsInterested']:
+            if peer['peerIsChoked']:
+                ul_state = PeerState.CHOKED
+            else:
+                ul_state = PeerState.INTERESTED
+        else:
+            ul_state = PeerState.NONE
+
         return PeerDTO(
             address=peer["address"],
             client_name=peer["clientName"],
@@ -174,6 +190,8 @@ class TransmissionClient(BaseClient):
             connection_type=connection_type,
             direction=direction,
             country=None,
+            dl_state=dl_state,
+            ul_state=ul_state,
         )
 
     @log_time
