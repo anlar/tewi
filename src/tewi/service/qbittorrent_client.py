@@ -254,8 +254,14 @@ class QBittorrentClient(BaseClient):
     @log_time
     def _peer_to_dto(self, peer) -> PeerDTO:
         """Convert qBittorrent peer to PeerDTO."""
-        # Get connection type (qBittorrent provides detailed connection string)
-        connection_type = peer.connection if hasattr(peer, 'connection') else "Unknown"
+
+        match peer.connection:
+            case 'BT':
+                connection_type = 'TCP'
+            case None:
+                connection_type = 'Unknown'
+            case _:
+                connection_type = peer.connection
 
         # Determine direction from 'I' flag in flags string
         direction = "Incoming" if 'I' in peer.flags else "Outgoing"
