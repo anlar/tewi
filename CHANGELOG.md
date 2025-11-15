@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Display "-" instead of "<not found in database>" for peers with unrecognized IP addresses
+- Load peer country from qBittorrent details
 
 ### Removed
 

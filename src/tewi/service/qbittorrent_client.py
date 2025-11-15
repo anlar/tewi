@@ -271,6 +271,7 @@ class QBittorrentClient(BaseClient):
             port=peer.port if hasattr(peer, 'port') else -1,
             connection_type=connection_type,
             direction=direction,
+            country=peer.country,
         )
 
     @log_time

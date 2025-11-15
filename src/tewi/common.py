@@ -61,6 +61,7 @@ class PeerDTO:
     port: int
     connection_type: str
     direction: str
+    country: str | None
 
 
 @dataclass(frozen=True)

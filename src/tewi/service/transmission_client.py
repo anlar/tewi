@@ -173,6 +173,7 @@ class TransmissionClient(BaseClient):
             port=peer.get("port", -1),
             connection_type=connection_type,
             direction=direction,
+            country=None,
         )
 
     @log_time
