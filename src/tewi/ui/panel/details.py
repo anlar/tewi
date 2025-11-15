@@ -224,7 +224,7 @@ class TorrentInfoPanel(ScrollableContainer):
                               p.connection_type,
                               p.direction,
                               p.flag_str,
-                              get_country(p.address),
+                              get_country(p.address) or "-",
                               p.address,
                               self.print_count(p.port),
                               p.client_name)

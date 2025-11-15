@@ -12,8 +12,8 @@ class TestGetCountry:
         """Test country lookup for IPv6 addresses"""
         # Google's IPv6 DNS
         result = get_country('2001:4860:4860::8888')
-        assert isinstance(result, str)
-        assert len(result) > 0
+        # IPv6 may not be in database, can return None or a country name
+        assert result is None or isinstance(result, str)
 
     def test_get_country_private_ipv4(self):
         """Test country lookup for private IPv4 addresses"""
@@ -57,7 +57,7 @@ class TestGetCountry:
         assert isinstance(result_network, str)
 
     def test_get_country_return_type(self):
-        """Test that function always returns string type"""
+        """Test that function returns either string or None"""
         test_ips = [
             '8.8.8.8',
             '1.1.1.1',
@@ -68,4 +68,22 @@ class TestGetCountry:
 
         for ip in test_ips:
             result = get_country(ip)
-            assert isinstance(result, str), f"Result for {ip} should be string, got {type(result)}"
+            assert result is None or isinstance(result, str), \
+                f"Result for {ip} should be None or string, got {type(result)}"
+
+    def test_get_country_not_found_in_database(self):
+        """Test that IPs not found in database return None instead of technical error message"""
+        # Documentation IP ranges (RFC 5737) that may not be in the database
+        test_ips = [
+            '198.51.100.1',   # TEST-NET-2
+            '203.0.113.1',    # TEST-NET-3
+        ]
+
+        for ip in test_ips:
+            result = get_country(ip)
+            # Should not return the technical error message
+            assert result != "<not found in database>", \
+                f"Should return None instead of '<not found in database>' for {ip}"
+            # Should return either a valid country name (string) or None
+            assert result is None or isinstance(result, str), \
+                f"Result for {ip} should be None or string, got {type(result)}"

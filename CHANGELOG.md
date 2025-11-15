@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Display "-" instead of "<not found in database>" for peers with unrecognized IP addresses
+
 ### Removed
 
 ## [1.0.0] - 2025-11-14 - Silver Whiskers
