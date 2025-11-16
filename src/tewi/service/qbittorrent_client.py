@@ -291,7 +291,7 @@ class QBittorrentClient(BaseClient):
             port=peer.port if hasattr(peer, 'port') else -1,
             connection_type=connection_type,
             direction=direction,
-            country=peer.country,
+            country=peer.country.split(',', 1)[0] if peer.country else None,
             dl_state=dl_state,
             ul_state=ul_state,
         )

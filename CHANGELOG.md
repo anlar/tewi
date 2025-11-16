@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Load peer country from qBittorrent details
 - Unified naming scheme for peer connection types
 - Fix wrong order of upload and download speed columns in peers
+- Use short country names for qbittorrent peers
 
 ### Removed
 
