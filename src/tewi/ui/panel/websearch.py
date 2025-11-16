@@ -16,7 +16,7 @@ from ...message import (
     AddTorrentFromWebSearchCommand,
     Notification
 )
-from ...service.search import YTSProvider, TorrentsCsvProvider
+from ...service.search import YTSProvider, TorrentsCsvProvider, TPBProvider
 from ...util.decorator import log_time
 from ...util.print import print_size
 
@@ -43,7 +43,8 @@ class TorrentWebSearch(Static):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.providers = [YTSProvider(), TorrentsCsvProvider()]
+        self.providers = [YTSProvider(), TorrentsCsvProvider(),
+                          TPBProvider()]
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -189,7 +190,19 @@ class TorrentWebSearch(Static):
                 # Log error but continue with other providers
                 errors.append(f"{provider.display_name}: {str(e)}")
 
-        # Sort by seeders for relevance
+        # Deduplicate by info_hash, keeping result with highest seeders
+        best_results = {}
+        for result in all_results:
+            hash_key = result.info_hash
+            if hash_key not in best_results:
+                best_results[hash_key] = result
+            else:
+                # Keep the result with more seeders
+                if result.seeders > best_results[hash_key].seeders:
+                    best_results[hash_key] = result
+
+        # Convert back to list and sort by seeders for relevance
+        all_results = list(best_results.values())
         all_results.sort(key=lambda r: r.seeders, reverse=True)
 
         # Report results or errors
