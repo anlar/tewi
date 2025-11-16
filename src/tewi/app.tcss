@@ -438,6 +438,29 @@ SearchWidget > #search-input {
     margin: 0;
 }
 
+/* SCREEN: WEB SEARCH QUERY DIALOG */
+
+WebSearchQueryDialog {
+    align: center middle;
+}
+
+WebSearchQueryWidget {
+    width: 100%;
+    height: auto;
+
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
+WebSearchQueryWidget > #websearch-query-input {
+    height: auto;
+
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
 /* SCREEN: SORT ORDER DIALOG */
 
 SortOrderDialog {
@@ -475,6 +498,31 @@ PreferencesWidget > DataTable {
     height: auto;
     width: auto;
     max-height: 30;
+}
+
+/* TORRENT WEB SEARCH PANEL */
+
+TorrentWebSearch {
+    height: 1fr;
+    border: round $primary 75%;
+}
+
+TorrentWebSearch #search-query-label {
+    height: auto;
+    text-style: bold;
+    color: $accent;
+    margin: 1;
+}
+
+TorrentWebSearch #search-status {
+    height: auto;
+    text-align: center;
+    text-opacity: 75%;
+    margin: 1;
+}
+
+TorrentWebSearch #websearch-results {
+    height: 1fr;
 }
 
 /* vim: set filetype=css: */

@@ -92,6 +92,23 @@ class TrackerDTO:
 
 
 @dataclass(frozen=True)
+class SearchResultDTO:
+    """Data Transfer Object for web search results.
+
+    Note: All size fields are in bytes.
+    """
+    title: str
+    category: str
+    seeders: int
+    leechers: int
+    size: int  # bytes
+    magnet_link: str
+    info_hash: str
+    upload_date: datetime | None  # Unix timestamp from API
+    provider: str  # Display name of search provider
+
+
+@dataclass(frozen=True)
 class TorrentDetailDTO:
     """Data Transfer Object for detailed torrent view (immutable).
 

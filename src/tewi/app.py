@@ -37,7 +37,8 @@ from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpda
         OpenSortOrderCommand, OpenSearchCommand, PageChangedEvent, VerifyTorrentCommand, ReannounceTorrentCommand, \
         OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
         RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
-        StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand
+        StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenWebSearchCommand, \
+        AddTorrentFromWebSearchCommand, WebSearchQuerySubmitted
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -47,10 +48,12 @@ from .ui.dialog.torrent.add import AddTorrentDialog
 from .ui.dialog.torrent.label import UpdateTorrentLabelsDialog
 from .ui.dialog.torrent.search import SearchDialog
 from .ui.dialog.torrent.sort import SortOrderDialog
+from .ui.dialog.websearch_query import WebSearchQueryDialog
 from .ui.panel.info import InfoPanel
 from .ui.panel.state import StatePanel
 from .ui.panel.listview import TorrentListViewPanel
 from .ui.panel.details import TorrentInfoPanel
+from .ui.panel.websearch import TorrentWebSearch
 
 
 logger = logging.getLogger('tewi')
@@ -69,6 +72,8 @@ class MainApp(App):
             Binding("t", "toggle_alt_speed", "[Speed] Toggle limits"),
             Binding("S", "show_statistics", "[Info] Statistics"),
             Binding("P", "show_preferences", "[App] Preferences"),
+
+            Binding("W", "open_websearch", "[Search] Web search"),
 
             Binding('"', "screenshot", "[App] Screenshot"),
 
@@ -130,6 +135,7 @@ class MainApp(App):
                                            page_size=self.page_size,
                                            view_mode=self.view_mode).data_bind(r_torrents=MainApp.r_torrents)
                 yield TorrentInfoPanel(has_separate_id=self.client.has_separate_id(), id="torrent-info")
+                yield TorrentWebSearch(id="torrent-websearch")
 
         yield StatePanel().data_bind(r_session=MainApp.r_session,
                                      r_page=MainApp.r_page)
@@ -177,6 +183,10 @@ class MainApp(App):
     @log_time
     def action_help(self) -> None:
         self.push_screen(HelpDialog(self.screen.active_bindings.values()))
+
+    @log_time
+    def action_open_websearch(self) -> None:
+        self.push_screen(WebSearchQueryDialog())
 
     @log_time
     @on(Notification)
@@ -292,6 +302,8 @@ class MainApp(App):
     @on(OpenTorrentListCommand)
     def handle_open_torrent_list_command(self, event: OpenTorrentListCommand) -> None:
         self.query_one(ContentSwitcher).current = "torrent-list"
+        # Focus on the torrent list when returning from other panels
+        self.query_one(TorrentListViewPanel).focus()
 
     @log_time
     @on(OpenAddTorrentCommand)
@@ -361,6 +373,30 @@ class MainApp(App):
     def handle_stop_all_torrents_command(self, event: StopAllTorrentsCommand) -> None:
         self.client.stop_all_torrents()
         self.post_message(Notification("All torrents stopped"))
+
+    @log_time
+    @on(OpenWebSearchCommand)
+    def handle_open_websearch_command(self, event: OpenWebSearchCommand) -> None:
+        self.push_screen(WebSearchQueryDialog())
+
+    @log_time
+    @on(WebSearchQuerySubmitted)
+    def handle_websearch_query_submitted(self, event: WebSearchQuerySubmitted) -> None:
+        # Switch to results panel
+        self.query_one(ContentSwitcher).current = "torrent-websearch"
+        # Execute search with query
+        self.query_one(TorrentWebSearch).execute_search(event.query)
+
+    @log_time
+    @on(AddTorrentFromWebSearchCommand)
+    def handle_add_torrent_from_websearch_command(self, event: AddTorrentFromWebSearchCommand) -> None:
+        try:
+            self.client.add_torrent(event.magnet_link)
+            self.post_message(Notification("New torrent was added from web search"))
+        except ClientError as e:
+            self.post_message(Notification(
+                f"Failed to add torrent:\n{e}",
+                "warning"))
 
 
 @log_time

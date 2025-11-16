@@ -85,6 +85,24 @@ class OpenSearchCommand(Message):
     pass
 
 
+class OpenWebSearchCommand(Message):
+    pass
+
+
+class AddTorrentFromWebSearchCommand(Message):
+
+    def __init__(self, magnet_link: str) -> None:
+        super().__init__()
+        self.magnet_link = magnet_link
+
+
+class WebSearchQuerySubmitted(Message):
+
+    def __init__(self, query: str) -> None:
+        super().__init__()
+        self.query = query
+
+
 # Events
 
 class TorrentRemovedEvent(Message):
@@ -129,6 +147,13 @@ class PageChangedEvent(Message):
     def __init__(self, state: PageState) -> None:
         super().__init__()
         self.state = state
+
+
+class WebSearchCompletedEvent(Message):
+
+    def __init__(self, results: list) -> None:
+        super().__init__()
+        self.results = results
 
 
 # Common
