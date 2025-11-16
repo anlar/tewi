@@ -98,7 +98,7 @@ class SearchResultDTO:
     Note: All size fields are in bytes.
     """
     title: str
-    category: str
+    category: str | None
     seeders: int
     leechers: int
     size: int  # bytes

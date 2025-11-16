@@ -16,7 +16,7 @@ from ...message import (
     AddTorrentFromWebSearchCommand,
     Notification
 )
-from ...service.search import YTSProvider
+from ...service.search import YTSProvider, TorrentsCsvProvider
 from ...util.decorator import log_time
 from ...util.print import print_size
 
@@ -43,7 +43,7 @@ class TorrentWebSearch(Static):
 
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.provider = YTSProvider()
+        self.providers = [YTSProvider(), TorrentsCsvProvider()]
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -100,7 +100,7 @@ class TorrentWebSearch(Static):
 
             table.add_row(
                 r.title,
-                r.category,
+                r.category or '-',
                 str(r.seeders),
                 str(r.leechers),
                 print_size(r.size),
@@ -170,20 +170,36 @@ class TorrentWebSearch(Static):
     @log_time
     @work(exclusive=True, thread=True)
     async def perform_search(self, query: str) -> None:
-        """Perform search in background thread.
+        """Perform search in background thread using all providers.
 
         Args:
             query: Search term
         """
         self.r_search_status = "Searching..."
 
-        try:
-            results = self.provider.search(query)
-            results.sort(key=lambda r: r.seeders, reverse=True)
-            self.app.call_from_thread(self.update_results, results, None)
-        except Exception as e:
-            error_msg = str(e)
+        all_results = []
+        errors = []
+
+        # Query all providers and collect results
+        for provider in self.providers:
+            try:
+                provider_results = provider.search(query)
+                all_results.extend(provider_results)
+            except Exception as e:
+                # Log error but continue with other providers
+                errors.append(f"{provider.display_name}: {str(e)}")
+
+        # Sort by seeders for relevance
+        all_results.sort(key=lambda r: r.seeders, reverse=True)
+
+        # Report results or errors
+        if all_results:
+            self.app.call_from_thread(self.update_results, all_results, None)
+        elif errors:
+            error_msg = "; ".join(errors)
             self.app.call_from_thread(self.update_results, [], error_msg)
+        else:
+            self.app.call_from_thread(self.update_results, [], None)
 
     @log_time
     def update_results(self, results: list[SearchResultDTO],
