@@ -62,13 +62,13 @@ class TorrentWebSearch(Static):
     def on_mount(self) -> None:
         table = self.query_one("#websearch-results", DataTable)
 
-        table.add_column("Name", key="name")
-        table.add_column("Category", key="category")
+        table.add_column("Provider", key="provider")
+        table.add_column("Uploaded", key="uploaded")
         table.add_column("Seeders", key="seeders")
         table.add_column("Leechers", key="leechers")
         table.add_column("Size", key="size")
-        table.add_column("Uploaded", key="uploaded")
-        table.add_column("Provider", key="provider")
+        table.add_column("Category", key="category")
+        table.add_column("Name", key="name")
 
     @log_time
     def execute_search(self, query: str) -> None:
@@ -100,13 +100,13 @@ class TorrentWebSearch(Static):
             up_date = r.upload_date.strftime("%Y-%m-%d") if r.upload_date else '-'
 
             table.add_row(
-                r.title,
-                r.category or '-',
-                str(r.seeders),
-                str(r.leechers),
-                print_size(r.size),
-                up_date,
                 r.provider,
+                up_date,
+                r.seeders,
+                r.leechers,
+                print_size(r.size),
+                r.category or '-',
+                r.title,
                 key=r.info_hash
             )
 
