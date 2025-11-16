@@ -37,3 +37,7 @@ run-transmission:
 
 run-qbittorrent:
 	PYTHONPATH=src textual run --dev tewi.app:create_app -- --client-type qbittorrent --port 9093 --username admin --password $$(docker logs tewi-qbittorrent-dev 2>&1 | grep 'temporary password' | tail -1 | sed 's/.*: //')
+
+auto-test: docker-up docker-init check test
+	@timeout 5 $(MAKE) run-transmission; status=$$?; [ $$status -eq 124 ] || exit $$status
+	@timeout 5 $(MAKE) run-qbittorrent; status=$$?; [ $$status -eq 124 ] || exit $$status
