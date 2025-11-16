@@ -125,7 +125,7 @@ class YTSProvider(BaseSearchProvider):
 
             return SearchResultDTO(
                 title=full_title,
-                category="Movies",
+                category='Video',
                 seeders=torrent.get('seeds', 0),
                 leechers=torrent.get('peers', 0),
                 size=size,

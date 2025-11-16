@@ -78,6 +78,7 @@ class TPBProvider(BaseSearchProvider):
             name = torrent.get('name', 'Unknown')
 
             size = int(torrent.get('size', 0))
+            category_code = int(torrent.get('category', 0))
 
             magnet_link = self._build_magnet_link(
                 info_hash=info_hash,
@@ -92,7 +93,7 @@ class TPBProvider(BaseSearchProvider):
 
             return SearchResultDTO(
                 title=name,
-                category=None,  # TODO: detect category by code
+                category=self._get_category(category_code),
                 seeders=int(torrent.get('seeders', 0)),
                 leechers=int(torrent.get('leechers', 0)),
                 size=size,
@@ -104,6 +105,25 @@ class TPBProvider(BaseSearchProvider):
 
         except (KeyError, ValueError, TypeError):
             return None
+
+    def _get_category(self, code: str) -> str:
+        c = code // 100
+
+        match c:
+            case 1:
+                return 'Audio'
+            case 2:
+                return 'Video'
+            case 3:
+                return 'Applications'
+            case 4:
+                return 'Games'
+            case 5:
+                return 'XXX'
+            case 6:
+                return 'Other'
+            case _:
+                return None
 
     def _build_magnet_link(self, info_hash: str, name: str) -> str:
         """Build a magnet link from hash and name.
