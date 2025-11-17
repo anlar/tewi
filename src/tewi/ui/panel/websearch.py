@@ -207,32 +207,25 @@ class TorrentWebSearch(Static):
         all_results = list(best_results.values())
         all_results.sort(key=lambda r: r.seeders, reverse=True)
 
-        # Report results or errors
-        if all_results:
-            self.app.call_from_thread(self.update_results, all_results, None)
-        elif errors:
-            error_msg = "; ".join(errors)
-            self.app.call_from_thread(self.update_results, [], error_msg)
-        else:
-            self.app.call_from_thread(self.update_results, [], None)
+        self.app.call_from_thread(self.update_results, all_results, errors)
 
     @log_time
     def update_results(self, results: list[SearchResultDTO],
-                       error: str | None) -> None:
+                       errors: list[str] | None) -> None:
         """Update results in main thread.
 
         Args:
             results: Search results
-            error: Error message if search failed
+            errors: Error message if search providers failed
         """
 
-        if error:
-            self.post_message(Notification(
-                f"Search failed: {error}",
-                "warning"))
-            self.r_results = []
-        else:
-            self.r_results = results
+        if errors:
+            for error in errors:
+                self.post_message(Notification(
+                    f"Search provider failed: {error}",
+                    "warning"))
+
+        self.r_results = results
 
     # Event handlers
 
