@@ -129,6 +129,7 @@ class YTSProvider(BaseSearchProvider):
                 seeders=torrent.get('seeds', 0),
                 leechers=torrent.get('peers', 0),
                 size=size,
+                files_count=None,
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,

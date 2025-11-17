@@ -97,6 +97,7 @@ class TPBProvider(BaseSearchProvider):
                 seeders=int(torrent.get('seeders', 0)),
                 leechers=int(torrent.get('leechers', 0)),
                 size=size,
+                files_count=int(torrent.get('num_files', None)),
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,

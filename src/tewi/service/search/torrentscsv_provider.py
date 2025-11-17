@@ -98,6 +98,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 seeders=torrent.get('seeders', 0),
                 leechers=torrent.get('leechers', 0),
                 size=size,
+                files_count=None,
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,

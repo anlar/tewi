@@ -102,6 +102,7 @@ class SearchResultDTO:
     seeders: int
     leechers: int
     size: int  # bytes
+    files_count: int | None
     magnet_link: str
     info_hash: str
     upload_date: datetime | None  # Unix timestamp from API
