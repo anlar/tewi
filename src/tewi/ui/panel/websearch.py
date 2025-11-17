@@ -17,7 +17,8 @@ from ...message import (
     AddTorrentFromWebSearchCommand,
     Notification
 )
-from ...service.search import YTSProvider, TorrentsCsvProvider, TPBProvider
+from ...service.search import YTSProvider, TorrentsCsvProvider, \
+    TPBProvider, NyaaProvider
 from ...util.decorator import log_time
 from ...util.print import print_size
 
@@ -45,7 +46,7 @@ class TorrentWebSearch(Static):
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.providers = [YTSProvider(), TorrentsCsvProvider(),
-                          TPBProvider()]
+                          TPBProvider(), NyaaProvider()]
 
     @log_time
     def compose(self) -> ComposeResult:

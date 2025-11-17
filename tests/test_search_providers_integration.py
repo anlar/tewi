@@ -13,6 +13,7 @@ from datetime import datetime
 from src.tewi.service.search.yts_provider import YTSProvider
 from src.tewi.service.search.tpb_provider import TPBProvider
 from src.tewi.service.search.torrentscsv_provider import TorrentsCsvProvider
+from src.tewi.service.search.nyaa_provider import NyaaProvider
 from src.tewi.common import SearchResultDTO
 
 
@@ -149,7 +150,12 @@ class BaseProviderIntegrationTest(ABC):
         if upload_date is not None:
             assert isinstance(upload_date, datetime), \
                 f"Upload date should be datetime, got {type(upload_date)}"
-            assert upload_date < datetime.now(), \
+
+            # Handle both timezone-aware and naive datetimes
+            now = datetime.now(upload_date.tzinfo) \
+                if upload_date.tzinfo else datetime.now()
+
+            assert upload_date < now, \
                 "Upload date should be in the past"
 
     def validate_category(self, category, valid_categories: set):
@@ -247,3 +253,20 @@ class TestTorrentsCsvProviderIntegration(BaseProviderIntegrationTest):
 
     def requires_trackers(self) -> bool:
         return False
+
+
+class TestNyaaProviderIntegration(BaseProviderIntegrationTest):
+    """Integration tests for Nyaa.si provider."""
+
+    def get_provider(self):
+        return NyaaProvider()
+
+    def get_search_query(self) -> str:
+        return "anime"
+
+    def get_valid_categories(self) -> set:
+        # Nyaa categories are now mapped to basic categories
+        return {"Audio", "Video", "Applications", "Games", "Other", None}
+
+    def requires_trackers(self) -> bool:
+        return True
