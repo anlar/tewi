@@ -9,9 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Web search for torrents on public trackers (YTS.mx)
-- Add web search provider Torrents-CSV
-- Add web search provider TPB
+- Web search for torrents on public trackers (YTS, TPB, Torrents-CSV)
 - Display download and upload state (interested/choked) for peers
 
 ### Changed
