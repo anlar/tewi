@@ -1,5 +1,6 @@
 """Web search results panel for public torrent trackers."""
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import ClassVar
 
 from textual import on, work
@@ -173,7 +174,7 @@ class TorrentWebSearch(Static):
     @log_time
     @work(exclusive=True, thread=True)
     async def perform_search(self, query: str) -> None:
-        """Perform search in background thread using all providers.
+        """Perform search in background thread using all providers in parallel.
 
         Args:
             query: Search term
@@ -183,14 +184,23 @@ class TorrentWebSearch(Static):
         all_results = []
         errors = []
 
-        # Query all providers and collect results
-        for provider in self.providers:
-            try:
-                provider_results = provider.search(query)
-                all_results.extend(provider_results)
-            except Exception as e:
-                # Log error but continue with other providers
-                errors.append(f"{provider.display_name}: {str(e)}")
+        # Execute all provider searches in parallel
+        with ThreadPoolExecutor(max_workers=len(self.providers)) as executor:
+            # Submit all search tasks
+            future_to_provider = {
+                executor.submit(provider.search, query): provider
+                for provider in self.providers
+            }
+
+            # Collect results as they complete
+            for future in as_completed(future_to_provider):
+                provider = future_to_provider[future]
+                try:
+                    provider_results = future.result()
+                    all_results.extend(provider_results)
+                except Exception as e:
+                    # Log error but continue with other providers
+                    errors.append(f"{provider.display_name}: {str(e)}")
 
         # Deduplicate by info_hash, keeping result with highest seeders
         best_results = {}

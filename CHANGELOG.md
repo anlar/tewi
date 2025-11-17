@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Run all web search providers in parallel for faster results
 - Display "-" instead of "<not found in database>" for peers with unrecognized IP addresses
 - Load peer country from qBittorrent details
 - Unified naming scheme for peer connection types
