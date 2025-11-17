@@ -62,10 +62,10 @@ class TorrentWebSearch(Static):
     def on_mount(self) -> None:
         table = self.query_one("#websearch-results", DataTable)
 
-        table.add_column("Provider", key="provider")
+        table.add_column("Source", key="source")
         table.add_column("Uploaded", key="uploaded")
-        table.add_column("Seeders", key="seeders")
-        table.add_column("Leechers", key="leechers")
+        table.add_column("S ↓", key="seeders")
+        table.add_column("L", key="leechers")
         table.add_column("Size", key="size")
         table.add_column("Files", key="files")
         table.add_column("Category", key="category")

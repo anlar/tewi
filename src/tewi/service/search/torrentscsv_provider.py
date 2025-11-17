@@ -25,7 +25,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
     @property
     def display_name(self) -> str:
-        return "Torrents-CSV"
+        return "T-CSV"
 
     def search(self, query: str) -> list[SearchResultDTO]:
         """Search torrents-csv.com for torrents.
