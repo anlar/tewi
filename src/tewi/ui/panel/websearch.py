@@ -146,9 +146,6 @@ class TorrentWebSearch(Static):
         # Post command to add torrent
         self.post_message(AddTorrentFromWebSearchCommand(result.magnet_link))
 
-        # Return to main list
-        self.post_message(OpenTorrentListCommand())
-
     @log_time
     def action_cursor_down(self) -> None:
         """Move cursor down in table."""
