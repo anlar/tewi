@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Web search for torrents on public trackers (YTS, TPB, Torrents-CSV)
+- Configuration file support with INI format stored in XDG_CONFIG_HOME or ~/.config
 - Display download and upload state (interested/choked) for peers
 
 ### Changed

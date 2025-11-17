@@ -32,6 +32,8 @@ from textual.reactive import reactive
 from textual.widgets import ContentSwitcher
 
 from .common import sort_orders, TorrentDTO
+from .config import get_config_path, load_config, create_default_config, \
+    merge_config_with_args
 from .service import create_client, ClientError
 from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpdatedEvent, Notification, Confirm, \
         OpenSortOrderCommand, OpenSearchCommand, PageChangedEvent, VerifyTorrentCommand, ReannounceTorrentCommand, \
@@ -399,14 +401,12 @@ class MainApp(App):
                 "warning"))
 
 
-@log_time
-def create_app():
-    """Create and return a MainApp instance. Used by `textual run` for development."""
-    tewi_version = __version__
-
+def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
+    """Set up and return the argument parser."""
     parser = argparse.ArgumentParser(
             prog='tewi',
-            description='Text-based interface for BitTorrent clients (Transmission and qBittorrent)',
+            description='Text-based interface for BitTorrent clients '
+                        '(Transmission and qBittorrent)',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--client-type', type=str, default='transmission',
@@ -416,9 +416,10 @@ def create_app():
                         choices=['card', 'compact', 'oneline'],
                         help='View mode for torrents in list')
     parser.add_argument('--refresh-interval', type=int, default=5,
-                        help='Refresh interval (in seconds) for loading data from daemon')
+                        help='Refresh interval (in seconds) for loading '
+                             'data from daemon')
     parser.add_argument('--limit-torrents', type=int, default=None,
-                        help='Limit number of displayed torrents (useful for performance debugging)')
+                        help=argparse.SUPPRESS)
     parser.add_argument('--page-size', type=int, default=30,
                         help='Number of torrents displayed per page')
     parser.add_argument('--host', type=str, default='localhost',
@@ -431,23 +432,73 @@ def create_app():
                         help='BitTorrent daemon password for connection')
     parser.add_argument('--logs', default=False,
                         action=argparse.BooleanOptionalAction,
-                        help='Enable verbose logs (added to `tewi.log` file)')
+                        help='Enable verbose logs (added to `tewi.log` '
+                             'file)')
     parser.add_argument('--version', action='version',
-                        version='%(prog)s ' + tewi_version,
+                        version='%(prog)s ' + version,
                         help='Show version and exit')
-    parser.add_argument('-a', '--add-torrent', type=str, metavar='PATH_OR_MAGNET',
-                        help='Add torrent from file path or magnet link and exit')
+    parser.add_argument('--create-config', action='store_true',
+                        help='Create default configuration file and exit')
+    parser.add_argument('-a', '--add-torrent', type=str,
+                        metavar='PATH_OR_MAGNET',
+                        help='Add torrent from file path or magnet link '
+                             'and exit')
     parser.add_argument('--test-mode', type=int, default=None,
                         help=argparse.SUPPRESS)
 
+    return parser
+
+
+def _handle_add_torrent_mode(args) -> None:
+    """Handle non-interactive add-torrent mode."""
+    try:
+        client = create_client(client_type=args.client_type,
+                               host=args.host,
+                               port=args.port,
+                               username=args.username,
+                               password=args.password)
+        client.add_torrent(args.add_torrent)
+        print(f"Successfully added torrent to {args.client_type} daemon "
+              f"at {args.host}:{args.port}")
+        sys.exit(0)
+    except ClientError as e:
+        print(f"Failed to add torrent: {e}", file=sys.stderr)
+        sys.exit(1)
+    except FileNotFoundError:
+        print(f"Failed to add torrent: File not found "
+              f"{args.add_torrent}", file=sys.stderr)
+        sys.exit(1)
+    except Exception as e:
+        print(f"Failed to add torrent: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+@log_time
+def create_app():
+    """Create and return a MainApp instance."""
+    tewi_version = __version__
+
+    parser = _setup_argument_parser(tewi_version)
     args = parser.parse_args()
+
+    # Handle --create-config (must happen before other processing)
+    if args.create_config:
+        config_path = get_config_path()
+        create_default_config(config_path)
+        print(f"Config file created: {config_path}")
+        sys.exit(0)
+
+    # Load config file and merge with CLI arguments
+    config = load_config()
+    merge_config_with_args(config, args)
 
     if args.logs:
         now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         logging.basicConfig(
                 filename=(f'tewi_{now}.log'),
                 encoding='utf-8',
-                format='%(asctime)s.%(msecs)03d %(module)-15s %(levelname)-8s %(message)s',
+                format='%(asctime)s.%(msecs)03d %(module)-15s '
+                       '%(levelname)-8s %(message)s',
                 level=logging.DEBUG,
                 datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -456,24 +507,7 @@ def create_app():
 
     # Handle add-torrent mode (non-interactive)
     if args.add_torrent:
-        try:
-            client = create_client(client_type=args.client_type,
-                                   host=args.host,
-                                   port=args.port,
-                                   username=args.username,
-                                   password=args.password)
-            client.add_torrent(args.add_torrent)
-            print(f"Successfully added torrent to {args.client_type} daemon at {args.host}:{args.port}")
-            sys.exit(0)
-        except ClientError as e:
-            print(f"Failed to add torrent: {e}", file=sys.stderr)
-            sys.exit(1)
-        except FileNotFoundError:
-            print(f"Failed to add torrent: File not found {args.add_torrent}", file=sys.stderr)
-            sys.exit(1)
-        except Exception as e:
-            print(f"Failed to add torrent: {e}", file=sys.stderr)
-            sys.exit(1)
+        _handle_add_torrent_mode(args)
 
     # Create and return the app instance
     try:
@@ -488,7 +522,8 @@ def create_app():
                       version=tewi_version)
         return app
     except ClientError as e:
-        print(f"Failed to connect to {args.client_type} daemon at {args.host}:{args.port}: {e}", file=sys.stderr)
+        print(f"Failed to connect to {args.client_type} daemon at "
+              f"{args.host}:{args.port}: {e}", file=sys.stderr)
         sys.exit(1)
     except Exception as e:
         print(f"Failed to initialize application: {e}", file=sys.stderr)
