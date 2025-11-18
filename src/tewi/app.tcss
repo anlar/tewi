@@ -521,6 +521,10 @@ TorrentDetailsWidget > .details-title {
     height: auto;
 }
 
+TorrentDetailsWidget .details-block {
+    height: auto;
+}
+
 TorrentDetailsWidget .details-column {
     width: 1fr;
 }

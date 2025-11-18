@@ -4,7 +4,7 @@ from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.widgets import Static, Markdown
 from textual.app import ComposeResult
-from textual.containers import Horizontal
+from textual.containers import Horizontal, ScrollableContainer
 
 from ...util.decorator import log_time
 
@@ -13,6 +13,12 @@ class TorrentDetailsDialog(ModalScreen[None]):
     """Modal dialog for displaying torrent details in markdown format."""
 
     BINDINGS = [
+        Binding("k", "scroll_up", "[Navigation] Scroll up"),
+        Binding("j", "scroll_down", "[Navigation] Scroll down"),
+
+        Binding("g", "scroll_top", "[Navigation] Scroll to the top"),
+        Binding("G", "scroll_bottom", "[Navigation] Scroll to the bottom"),
+
         Binding("x,escape", "close", "[Navigation] Close"),
     ]
 
@@ -36,6 +42,22 @@ class TorrentDetailsDialog(ModalScreen[None]):
         """Compose the dialog layout."""
         yield TorrentDetailsWidget(self.title, self.common_content,
                                    self.extended_content)
+
+    @log_time
+    def action_scroll_up(self) -> None:
+        self.query_one(ScrollableContainer).scroll_up()
+
+    @log_time
+    def action_scroll_down(self) -> None:
+        self.query_one(ScrollableContainer).scroll_down()
+
+    @log_time
+    def action_scroll_top(self) -> None:
+        self.query_one(ScrollableContainer).scroll_home()
+
+    @log_time
+    def action_scroll_bottom(self) -> None:
+        self.query_one(ScrollableContainer).scroll_end()
 
     @log_time
     def action_close(self) -> None:
@@ -65,9 +87,10 @@ class TorrentDetailsWidget(Static):
     def compose(self) -> ComposeResult:
         """Compose the two-column layout with title."""
         yield Static(self.title, classes="details-title")
-        with Horizontal():
-            yield Markdown(self.common_content, classes="details-column")
-            yield Markdown(self.extended_content, classes="details-column")
+        with ScrollableContainer():
+            with Horizontal(classes='details-block'):
+                yield Markdown(self.common_content, classes="details-column")
+                yield Markdown(self.extended_content, classes="details-column")
 
     @log_time
     def on_mount(self) -> None:
