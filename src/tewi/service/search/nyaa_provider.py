@@ -151,7 +151,7 @@ class NyaaProvider(BaseSearchProvider):
 
             # Extract page URL from link element
             page_url = None
-            link_elem = item.find('link')
+            link_elem = item.find('guid')
             if link_elem is not None and link_elem.text:
                 page_url = link_elem.text
 
