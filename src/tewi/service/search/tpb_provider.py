@@ -111,7 +111,7 @@ class TPBProvider(BaseSearchProvider):
             page_url = None
             torrent_id = torrent.get('id')
             if torrent_id:
-                page_url = f"https://apibay.org/t.php?id={torrent_id}"
+                page_url = f"https://thepiratebay.org/description.php?id={torrent_id}"
 
             return SearchResultDTO(
                 title=name,
