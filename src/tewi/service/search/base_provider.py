@@ -3,6 +3,7 @@
 import urllib.parse
 from abc import ABC, abstractmethod
 from ...common import SearchResultDTO, TorrentCategory
+from ...util.print import print_size
 
 
 class BaseSearchProvider(ABC):
@@ -143,8 +144,9 @@ class BaseSearchProvider(ABC):
         # No pattern matched
         return None
 
-    def _refine_results(self,
-                        results: list[SearchResultDTO]) -> list[SearchResultDTO]:
+    def _refine_results(
+            self,
+            results: list[SearchResultDTO]) -> list[SearchResultDTO]:
         """Refine UNKNOWN categories by detecting from torrent names.
 
         Creates new DTOs with refined categories where detection succeeds,
@@ -172,7 +174,53 @@ class BaseSearchProvider(ABC):
                         magnet_link=result.magnet_link,
                         info_hash=result.info_hash,
                         upload_date=result.upload_date,
-                        provider=result.provider
+                        provider=result.provider,
+                        fields=result.fields
                     )
             refined_results.append(result)
         return refined_results
+
+    def details_common(self, result: SearchResultDTO) -> str:
+        """Generate common torrent details for left column.
+
+        Args:
+            result: Search result to format
+
+        Returns:
+            Markdown-formatted string with common details
+        """
+        md = "## General\n"
+        md += f"- **Provider:** {result.provider}\n"
+        md += f"- **Category:** {result.category.value}\n"
+        md += f"- **Info Hash:** `{result.info_hash}`\n"
+
+        if result.page_url:
+            md += f"- **Link:** {result.page_url}\n"
+
+        md += "## Statistics\n"
+        md += f"- **Size:** {print_size(result.size)}\n"
+        md += f"- **Seeders:** {result.seeders}\n"
+        md += f"- **Leechers:** {result.leechers}\n"
+
+        if result.files_count is not None:
+            md += f"- **Files:** {result.files_count}\n"
+
+        if result.upload_date:
+            date_str = result.upload_date.strftime('%Y-%m-%d %H:%M')
+            md += f"- **Uploaded:** {date_str}\n"
+
+        return md
+
+    def details_extended(self, result: SearchResultDTO) -> str:
+        """Generate provider-specific details for right column.
+
+        Base implementation returns empty string.
+        Subclasses should override to add provider-specific fields.
+
+        Args:
+            result: Search result to format
+
+        Returns:
+            Markdown-formatted string with provider-specific details
+        """
+        return ""

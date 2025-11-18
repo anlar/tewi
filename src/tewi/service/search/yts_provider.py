@@ -93,6 +93,71 @@ class YTSProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
 
+    def _build_movie_fields(self, movie: dict[str, Any], torrent: dict[str, Any],
+                            year: str, language: str, quality: str) -> dict[str, str]:
+        """Build provider-specific fields dictionary.
+
+        Args:
+            movie: Movie data from API
+            torrent: Torrent data from API
+            year: Movie year
+            language: Movie language
+            quality: Torrent quality
+
+        Returns:
+            Dictionary of provider-specific fields
+        """
+        fields = {}
+        if movie.get('rating'):
+            fields['rating'] = str(movie['rating'])
+        if movie.get('runtime'):
+            fields['runtime'] = f"{movie['runtime']} min"
+        if movie.get('genres'):
+            fields['genres'] = ', '.join(movie['genres'])
+        if year:
+            fields['year'] = str(year)
+        if language:
+            fields['language'] = language
+        if quality:
+            fields['quality'] = quality
+        if movie.get('imdb_code'):
+            fields['imdb_code'] = movie['imdb_code']
+        if movie.get('summary'):
+            fields['summary'] = movie['summary']
+        if movie.get('yt_trailer_code'):
+            fields['yt_trailer_code'] = movie['yt_trailer_code']
+
+        return fields
+
+    def _build_quality_fields(self, movie: dict[str, Any], torrent: dict[str, Any],
+                              year: str, language: str, quality: str) -> dict[str, str]:
+        """Build provider-specific fields dictionary.
+
+        Args:
+            movie: Movie data from API
+            torrent: Torrent data from API
+            year: Movie year
+            language: Movie language
+            quality: Torrent quality
+
+        Returns:
+            Dictionary of provider-specific fields
+        """
+        fields = {}
+
+        if torrent.get('video_codec'):
+            fields['video_codec'] = torrent['video_codec']
+        if torrent.get('audio_channels'):
+            fields['audio_channels'] = torrent['audio_channels']
+        if torrent.get('type'):
+            fields['type'] = torrent['type']
+        if torrent.get('is_repack'):
+            fields['is_repack'] = 'Yes' if int(torrent['is_repack']) else 'No'
+        if torrent.get('bit_depth'):
+            fields['bit_depth'] = torrent['bit_depth']
+
+        return fields
+
     def _parse_torrent(self, movie: dict[str, Any],
                        torrent: dict[str, Any]) -> SearchResultDTO | None:
         """Parse a single torrent from YTS API response."""
@@ -106,6 +171,7 @@ class YTSProvider(BaseSearchProvider):
             year = movie.get('year', '')
             language = movie.get('language', '').upper()
             quality = torrent.get('quality', '')
+
             full_title = f"{title} ({year})"
             if quality:
                 full_title += f" [{quality}]"
@@ -126,6 +192,17 @@ class YTSProvider(BaseSearchProvider):
             if date_uploaded_unix:
                 upload_date = datetime.fromtimestamp(date_uploaded_unix)
 
+            # Build provider-specific fields
+            fields = self._build_movie_fields(movie, torrent, year,
+                                              language, quality)
+            fields.update(self._build_quality_fields(movie, torrent, year,
+                                                     language, quality))
+
+            # Construct page URL from movie URL or ID
+            page_url = movie.get('url')
+            if not page_url and movie.get('id'):
+                page_url = f"https://yts.mx/movies/{movie['id']}"
+
             return SearchResultDTO(
                 title=full_title,
                 category=TorrentCategory.VIDEO,
@@ -136,8 +213,64 @@ class YTSProvider(BaseSearchProvider):
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,
-                provider=self.display_name
+                provider=self.display_name,
+                page_url=page_url,
+                fields=fields
             )
 
         except (KeyError, ValueError, TypeError):
             return None
+
+    def _add_movie_info(self, md: str, fields: dict[str, str]) -> str:
+        """Add movie information section to markdown."""
+        md += "## Movie\n"
+        field_mappings = [
+            ('year', 'Year', None),
+            ('runtime', 'Runtime', None),
+            ('genres', 'Genres', None),
+            ('language', 'Language', None),
+            ('rating', 'Rating', lambda v: f"{v}/10"),
+            ('summary', 'Summary', None),
+            ('imdb_code', 'IMDB', lambda v: f"https://www.imdb.com/title/{v}"),
+            ('yt_trailer_code', 'Trailer',
+             lambda v: f"https://www.youtube.com/watch?v={v}"),
+        ]
+        for key, label, formatter in field_mappings:
+            if key in fields:
+                value = formatter(fields[key]) if formatter else fields[key]
+                md += f"- **{label}:** {value}\n"
+        return md
+
+    def _add_quality_info(self, md: str, fields: dict[str, str]) -> str:
+        """Add quality information section to markdown."""
+        md += "## Quality Information\n"
+        field_mappings = [
+            ('type', 'Type'),
+            ('quality', 'Quality'),
+            ('video_codec', 'Video Codec'),
+            ('bit_depth', 'Bit Depth'),
+            ('audio_channels', 'Audio Channels'),
+            ('is_repack', 'Repack'),
+        ]
+        for key, label in field_mappings:
+            if key in fields:
+                md += f"- **{label}:** {fields[key]}\n"
+
+        return md
+
+    def details_extended(self, result: SearchResultDTO) -> str:
+        """Generate YTS-specific details for right column.
+
+        Args:
+            result: Search result to format
+
+        Returns:
+            Markdown-formatted string with movie details
+        """
+        if not result.fields:
+            return ""
+
+        md = ""
+        md = self._add_movie_info(md, result.fields)
+        md = self._add_quality_info(md, result.fields)
+        return md

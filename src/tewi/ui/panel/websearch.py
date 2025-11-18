@@ -11,6 +11,7 @@ from textual.containers import Vertical
 from textual.reactive import reactive
 
 from ..widget.common import ReactiveLabel
+from ..dialog.torrent_details import TorrentDetailsDialog
 from ...common import SearchResultDTO
 from ...message import (
     OpenTorrentListCommand,
@@ -31,6 +32,7 @@ class TorrentWebSearch(Static):
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding("escape,h,left", "close", "[Navigation] Close"),
         Binding("enter,l,right", "add_torrent", "[Action] Add Torrent"),
+        Binding("i", "show_details", "[Action] Show Details"),
         Binding("j,down", "cursor_down", "[Navigation] Move down"),
         Binding("k,up", "cursor_up", "[Navigation] Move up"),
         Binding("g", "scroll_top", "[Navigation] Scroll to the top"),
@@ -100,7 +102,8 @@ class TorrentWebSearch(Static):
             self.r_search_status = f"Found {len(results)} results"
 
         for r in results:
-            up_date = r.upload_date.strftime("%Y-%m-%d") if r.upload_date else '-'
+            up_date = r.upload_date.strftime("%Y-%m-%d") \
+                if r.upload_date else '-'
 
             table.add_row(
                 r.provider,
@@ -122,6 +125,48 @@ class TorrentWebSearch(Static):
     def action_close(self) -> None:
         """Return to main torrent list."""
         self.post_message(OpenTorrentListCommand())
+
+    @log_time
+    def action_show_details(self) -> None:
+        """Show detailed information for the selected torrent."""
+        table = self.query_one("#websearch-results", DataTable)
+
+        if not self.r_results:
+            return
+
+        # Get selected row
+        if table.cursor_row is None or table.cursor_row < 0:
+            self.post_message(Notification(
+                "No torrent selected",
+                "warning"))
+            return
+
+        # Find the corresponding result
+        if table.cursor_row >= len(self.r_results):
+            return
+
+        result = self.r_results[table.cursor_row]
+
+        # Find the provider instance that matches the result
+        provider = None
+        for p in self.providers:
+            if p.display_name == result.provider:
+                provider = p
+                break
+
+        if not provider:
+            self.post_message(Notification(
+                f"Provider {result.provider} not found",
+                "error"))
+            return
+
+        # Generate details using the provider
+        common_content = provider.details_common(result)
+        extended_content = provider.details_extended(result)
+
+        # Show the details dialog
+        self.app.push_screen(TorrentDetailsDialog(
+            result.title, common_content, extended_content))
 
     @log_time
     def action_add_torrent(self) -> None:

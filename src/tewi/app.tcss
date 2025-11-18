@@ -500,6 +500,35 @@ PreferencesWidget > DataTable {
     max-height: 30;
 }
 
+/* SCREEN: TORRENT DETAILS DIALOG */
+
+TorrentDetailsDialog {
+    align: center middle;
+}
+
+TorrentDetailsWidget {
+    width: 80%;
+    height: 80%;
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
+TorrentDetailsWidget > .details-title {
+    text-style: bold;
+    text-align: center;
+    color: $accent;
+    height: auto;
+}
+
+TorrentDetailsWidget .details-block {
+    height: auto;
+}
+
+TorrentDetailsWidget .details-column {
+    width: 1fr;
+}
+
 /* TORRENT WEB SEARCH PANEL */
 
 TorrentWebSearch {

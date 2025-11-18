@@ -119,6 +119,7 @@ class SearchResultDTO:
     """Data Transfer Object for web search results.
 
     Note: All size fields are in bytes.
+    The fields dict contains provider-specific additional metadata.
     """
     title: str
     category: TorrentCategory
@@ -130,6 +131,8 @@ class SearchResultDTO:
     info_hash: str
     upload_date: datetime | None  # Unix timestamp from API
     provider: str  # Display name of search provider
+    page_url: str | None = None  # Link to torrent page on provider site
+    fields: dict[str, str] | None = None  # Provider-specific metadata
 
 
 @dataclass(frozen=True)
