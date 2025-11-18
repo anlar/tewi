@@ -96,7 +96,8 @@ class MainApp(App):
                  page_size: int,
                  limit_torrents: int,
                  test_mode: int,
-                 version: str):
+                 version: str,
+                 search_query: str = None):
 
         super().__init__()
 
@@ -109,6 +110,7 @@ class MainApp(App):
         self.test_mode = test_mode
 
         self.tewi_version = version
+        self.initial_search_query = search_query
 
         self.c_type = client_type
         self.c_host = host
@@ -146,6 +148,11 @@ class MainApp(App):
     def on_mount(self) -> None:
         self.load_tdata()
         self.set_interval(self.refresh_interval, self.load_tdata)
+
+        # Auto-start web search if query provided via CLI
+        if self.initial_search_query:
+            self.post_message(WebSearchQuerySubmitted(
+                self.initial_search_query))
 
     @log_time
     @work(exclusive=True, thread=True)
@@ -443,6 +450,9 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
                         metavar='PATH_OR_MAGNET',
                         help='Add torrent from file path or magnet link '
                              'and exit')
+    parser.add_argument('-s', '--search', type=str,
+                        metavar='QUERY',
+                        help='Start web search with the given query')
     parser.add_argument('--test-mode', type=int, default=None,
                         help=argparse.SUPPRESS)
 
@@ -505,6 +515,14 @@ def create_app():
     logger.info(f'Start Tewi {tewi_version}...')
     logger.info(f'Loaded CLI options: {args}')
 
+    # Validate search query if provided
+    if args.search:
+        query = args.search.strip()
+        if not query:
+            print("Error: Search query cannot be empty", file=sys.stderr)
+            sys.exit(1)
+        args.search = query
+
     # Handle add-torrent mode (non-interactive)
     if args.add_torrent:
         _handle_add_torrent_mode(args)
@@ -519,7 +537,8 @@ def create_app():
                       page_size=args.page_size,
                       limit_torrents=args.limit_torrents,
                       test_mode=args.test_mode,
-                      version=tewi_version)
+                      version=tewi_version,
+                      search_query=args.search)
         return app
     except ClientError as e:
         print(f"Failed to connect to {args.client_type} daemon at "
