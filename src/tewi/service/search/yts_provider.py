@@ -243,7 +243,7 @@ class YTSProvider(BaseSearchProvider):
 
     def _add_quality_info(self, md: str, fields: dict[str, str]) -> str:
         """Add quality information section to markdown."""
-        md += "## Quality Information\n"
+        md += "## Quality\n"
         field_mappings = [
             ('type', 'Type'),
             ('quality', 'Quality'),
