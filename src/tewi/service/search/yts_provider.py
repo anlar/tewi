@@ -219,7 +219,7 @@ class YTSProvider(BaseSearchProvider):
         if 'imdb_code' in fields:
             imdb_code = fields['imdb_code']
             imdb_url = f"https://www.imdb.com/title/{imdb_code}/"
-            md += f"- **IMDB:** [{imdb_code}]({imdb_url})\n"
+            md += f"- **IMDB:** {imdb_url}\n"
         return md
 
     def details_extended(self, result: SearchResultDTO) -> str:

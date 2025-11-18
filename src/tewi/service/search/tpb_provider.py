@@ -177,6 +177,6 @@ class TPBProvider(BaseSearchProvider):
         if 'imdb' in result.fields and result.fields['imdb']:
             imdb_code = result.fields['imdb']
             imdb_url = f"https://www.imdb.com/title/{imdb_code}/"
-            md += f"- **IMDB:** [{imdb_code}]({imdb_url})\n"
+            md += f"- **IMDB:** {imdb_url}\n"
 
         return md
