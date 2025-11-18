@@ -13,29 +13,33 @@ class TorrentDetailsDialog(ModalScreen[None]):
     """Modal dialog for displaying torrent details in markdown format."""
 
     BINDINGS = [
-        Binding("k", "scroll_up", "[Navigation] Scroll up"),
-        Binding("j", "scroll_down", "[Navigation] Scroll down"),
+        Binding("a", "add_torrent", "[Action] Add Torrent"),
+
+        Binding("x,escape", "close", "[Navigation] Close"),
+
+        Binding("k,up", "scroll_up", "[Navigation] Scroll up"),
+        Binding("j,down", "scroll_down", "[Navigation] Scroll down"),
 
         Binding("g", "scroll_top", "[Navigation] Scroll to the top"),
         Binding("G", "scroll_bottom", "[Navigation] Scroll to the bottom"),
-
-        Binding("x,escape", "close", "[Navigation] Close"),
     ]
 
     @log_time
     def __init__(self, title: str, common_content: str,
-                 extended_content: str) -> None:
+                 extended_content: str, magnet_link: str | None = None) -> None:
         """Initialize the dialog with torrent details.
 
         Args:
             title: Torrent title
             common_content: Common details (left column)
             extended_content: Provider-specific details (right column)
+            magnet_link: Optional magnet link for adding torrent
         """
         super().__init__()
         self.title = title
         self.common_content = common_content
         self.extended_content = extended_content
+        self.magnet_link = magnet_link
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -58,6 +62,19 @@ class TorrentDetailsDialog(ModalScreen[None]):
     @log_time
     def action_scroll_bottom(self) -> None:
         self.query_one(ScrollableContainer).scroll_end()
+
+    @log_time
+    def action_add_torrent(self) -> None:
+        """Add the torrent to the client."""
+        if self.magnet_link:
+            from ...message import AddTorrentFromWebSearchCommand, Notification
+            self.post_message(AddTorrentFromWebSearchCommand(self.magnet_link))
+            self.dismiss()
+        else:
+            from ...message import Notification
+            self.post_message(Notification(
+                "No magnet link available for this torrent",
+                "warning"))
 
     @log_time
     def action_close(self) -> None:
@@ -96,4 +113,4 @@ class TorrentDetailsWidget(Static):
     def on_mount(self) -> None:
         """Set border title and subtitle, focus left column."""
         self.border_title = 'Torrent Details'
-        self.border_subtitle = '(X) Close'
+        self.border_subtitle = '(A) Add / (X) Close'

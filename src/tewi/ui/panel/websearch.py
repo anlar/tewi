@@ -30,11 +30,16 @@ class TorrentWebSearch(Static):
     BORDER_TITLE = "Search Results"
 
     BINDINGS: ClassVar[list[BindingType]] = [
-        Binding("escape,h,left", "close", "[Navigation] Close"),
-        Binding("enter,l,right", "add_torrent", "[Action] Add Torrent"),
-        Binding("i", "show_details", "[Action] Show Details"),
+        Binding("a", "add_torrent", "[Action] Add Torrent"),
+        Binding("enter", "show_details", "[Action] Show Details"),
+
+        Binding("x,escape", "close", "[Navigation] Close"),
+
         Binding("j,down", "cursor_down", "[Navigation] Move down"),
         Binding("k,up", "cursor_up", "[Navigation] Move up"),
+        Binding("h,left", "cursor_left", "[Navigation] Move left"),
+        Binding("l,right", "cursor_right", "[Navigation] Move right"),
+
         Binding("g", "scroll_top", "[Navigation] Scroll to the top"),
         Binding("G", "scroll_bottom", "[Navigation] Scroll to the bottom"),
     ]
@@ -64,6 +69,9 @@ class TorrentWebSearch(Static):
 
     @log_time
     def on_mount(self) -> None:
+        self.border_title = "Search Results"
+        self.border_subtitle = "(A) Add / (Enter) Details / (X) Close"
+
         table = self.query_one("#websearch-results", DataTable)
 
         table.add_column("Source", key="source")
@@ -166,7 +174,8 @@ class TorrentWebSearch(Static):
 
         # Show the details dialog
         self.app.push_screen(TorrentDetailsDialog(
-            result.title, common_content, extended_content))
+            result.title, common_content, extended_content,
+            result.magnet_link))
 
     @log_time
     def action_add_torrent(self) -> None:
@@ -203,6 +212,18 @@ class TorrentWebSearch(Static):
         """Move cursor up in table."""
         table = self.query_one("#websearch-results", DataTable)
         table.action_cursor_up()
+
+    @log_time
+    def action_cursor_left(self) -> None:
+        """Move cursor left in table."""
+        table = self.query_one("#websearch-results", DataTable)
+        table.action_cursor_left()
+
+    @log_time
+    def action_cursor_right(self) -> None:
+        """Move cursor right in table."""
+        table = self.query_one("#websearch-results", DataTable)
+        table.action_cursor_right()
 
     @log_time
     def action_scroll_top(self):
@@ -286,4 +307,4 @@ class TorrentWebSearch(Static):
     @on(DataTable.RowSelected, "#websearch-results")
     def handle_row_selected(self, event: DataTable.RowSelected) -> None:
         """Handle row selection (Enter on table)."""
-        self.action_add_torrent()
+        self.action_show_details()
