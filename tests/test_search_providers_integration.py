@@ -174,6 +174,7 @@ class BaseProviderIntegrationTest(ABC):
         assert category in valid_categories, \
             f"Category '{category}' not in valid set {valid_categories}"
 
+    @pytest.mark.xfail(reason="External provider API may be unavailable or unreliable")
     def test_provider_search(self):
         """Test provider search with single API call and validate all results.
 
