@@ -93,6 +93,41 @@ class YTSProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
 
+    def _build_fields(self, movie: dict[str, Any], torrent: dict[str, Any],
+                      year: str, language: str, quality: str) -> dict[str, str]:
+        """Build provider-specific fields dictionary.
+
+        Args:
+            movie: Movie data from API
+            torrent: Torrent data from API
+            year: Movie year
+            language: Movie language
+            quality: Torrent quality
+
+        Returns:
+            Dictionary of provider-specific fields
+        """
+        fields = {}
+        if movie.get('rating'):
+            fields['rating'] = str(movie['rating'])
+        if movie.get('runtime'):
+            fields['runtime'] = f"{movie['runtime']} min"
+        if movie.get('genres'):
+            fields['genres'] = ', '.join(movie['genres'])
+        if year:
+            fields['year'] = str(year)
+        if language:
+            fields['language'] = language
+        if quality:
+            fields['quality'] = quality
+        if movie.get('imdb_code'):
+            fields['imdb_code'] = movie['imdb_code']
+        if torrent.get('video_codec'):
+            fields['video_codec'] = torrent['video_codec']
+        if torrent.get('audio_channels'):
+            fields['audio_channels'] = torrent['audio_channels']
+        return fields
+
     def _parse_torrent(self, movie: dict[str, Any],
                        torrent: dict[str, Any]) -> SearchResultDTO | None:
         """Parse a single torrent from YTS API response."""
@@ -127,25 +162,8 @@ class YTSProvider(BaseSearchProvider):
                 upload_date = datetime.fromtimestamp(date_uploaded_unix)
 
             # Build provider-specific fields
-            fields = {}
-            if movie.get('rating'):
-                fields['rating'] = str(movie['rating'])
-            if movie.get('runtime'):
-                fields['runtime'] = f"{movie['runtime']} min"
-            if movie.get('genres'):
-                fields['genres'] = ', '.join(movie['genres'])
-            if year:
-                fields['year'] = str(year)
-            if language:
-                fields['language'] = language
-            if quality:
-                fields['quality'] = quality
-            if movie.get('imdb_code'):
-                fields['imdb_code'] = movie['imdb_code']
-            if torrent.get('video_codec'):
-                fields['video_codec'] = torrent['video_codec']
-            if torrent.get('audio_channels'):
-                fields['audio_channels'] = torrent['audio_channels']
+            fields = self._build_fields(movie, torrent, year, language,
+                                        quality)
 
             # Construct page URL from movie URL or ID
             page_url = movie.get('url')

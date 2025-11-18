@@ -86,6 +86,40 @@ class NyaaProvider(BaseSearchProvider):
         except ET.ParseError as e:
             raise Exception(f"Failed to parse RSS feed: {e}")
 
+    def _build_fields(self, item: ET.Element, ns: dict[str, str],
+                      nyaa_category: str | None) -> dict[str, str]:
+        """Build provider-specific fields dictionary.
+
+        Args:
+            item: XML Element representing an RSS item
+            ns: XML namespace dict
+            nyaa_category: Nyaa category string
+
+        Returns:
+            Dictionary of provider-specific fields
+        """
+        fields = {}
+        downloads_elem = item.find('nyaa:downloads', ns)
+        if downloads_elem is not None and downloads_elem.text:
+            fields['downloads'] = downloads_elem.text
+
+        comments_elem = item.find('nyaa:comments', ns)
+        if comments_elem is not None and comments_elem.text:
+            fields['comments'] = comments_elem.text
+
+        trusted_elem = item.find('nyaa:trusted', ns)
+        if trusted_elem is not None and trusted_elem.text:
+            fields['trusted'] = trusted_elem.text
+
+        remake_elem = item.find('nyaa:remake', ns)
+        if remake_elem is not None and remake_elem.text:
+            fields['remake'] = remake_elem.text
+
+        if nyaa_category:
+            fields['nyaa_category'] = nyaa_category
+
+        return fields
+
     def _parse_item(self, item: ET.Element,
                     ns: dict[str, str]) -> SearchResultDTO | None:
         """Parse a single RSS item from Nyaa feed.
@@ -156,25 +190,7 @@ class NyaaProvider(BaseSearchProvider):
                 page_url = link_elem.text
 
             # Build provider-specific fields
-            fields = {}
-            downloads_elem = item.find('nyaa:downloads', ns)
-            if downloads_elem is not None and downloads_elem.text:
-                fields['downloads'] = downloads_elem.text
-
-            comments_elem = item.find('nyaa:comments', ns)
-            if comments_elem is not None and comments_elem.text:
-                fields['comments'] = comments_elem.text
-
-            trusted_elem = item.find('nyaa:trusted', ns)
-            if trusted_elem is not None and trusted_elem.text:
-                fields['trusted'] = trusted_elem.text
-
-            remake_elem = item.find('nyaa:remake', ns)
-            if remake_elem is not None and remake_elem.text:
-                fields['remake'] = remake_elem.text
-
-            if nyaa_category:
-                fields['nyaa_category'] = nyaa_category
+            fields = self._build_fields(item, ns, nyaa_category)
 
             return SearchResultDTO(
                 title=title,
