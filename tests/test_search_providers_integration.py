@@ -120,7 +120,7 @@ class BaseProviderIntegrationTest(ABC):
         else:
             # For TorrentsCSV, explicitly check NO trackers
             provider = self.get_provider()
-            if provider.name == "torrentscsv":
+            if provider.short_name == "T-CSV":
                 assert '&tr=' not in magnet_link, \
                     "TorrentsCSV magnet links should not have trackers"
 

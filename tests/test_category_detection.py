@@ -8,12 +8,12 @@ class DummyProvider(BaseSearchProvider):
     """Dummy provider for testing base class functionality."""
 
     @property
-    def name(self) -> str:
-        return "dummy"
+    def short_name(self) -> str:
+        return "Dummy"
 
     @property
-    def display_name(self) -> str:
-        return "Dummy"
+    def full_name(self) -> str:
+        return "Dummy Provider"
 
     def _search_impl(self, query: str) -> list[SearchResultDTO]:
         """Dummy implementation - not used in these tests."""

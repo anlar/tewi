@@ -17,12 +17,12 @@ class TPBProvider(BaseSearchProvider):
     API_URL = "https://apibay.org/q.php"
 
     @property
-    def name(self) -> str:
-        return "tpb"
+    def short_name(self) -> str:
+        return "TPB"
 
     @property
-    def display_name(self) -> str:
-        return "TPB"
+    def full_name(self) -> str:
+        return "The Pirate Bay"
 
     @log_time
     def _search_impl(self, query: str) -> list[SearchResultDTO]:
@@ -123,7 +123,7 @@ class TPBProvider(BaseSearchProvider):
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,
-                provider=self.display_name,
+                provider=self.short_name,
                 page_url=page_url,
                 fields=fields
             )

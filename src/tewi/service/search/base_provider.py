@@ -48,14 +48,14 @@ class BaseSearchProvider(ABC):
 
     @property
     @abstractmethod
-    def name(self) -> str:
-        """Return the provider internal name."""
+    def short_name(self) -> str:
+        """Return the provider short name for results list."""
         pass
 
     @property
     @abstractmethod
-    def display_name(self) -> str:
-        """Return the provider display name for UI."""
+    def full_name(self) -> str:
+        """Return the provider full name for details view."""
         pass
 
     def _build_magnet_link(self, info_hash: str, name: str,
@@ -190,7 +190,7 @@ class BaseSearchProvider(ABC):
             Markdown-formatted string with common details
         """
         md = "## General\n"
-        md += f"- **Provider:** {result.provider}\n"
+        md += f"- **Provider:** {self.full_name}\n"
         md += f"- **Category:** {result.category.value}\n"
         md += f"- **Info Hash:** `{result.info_hash}`\n"
 

@@ -158,7 +158,7 @@ class TorrentWebSearch(Static):
         # Find the provider instance that matches the result
         provider = None
         for p in self.providers:
-            if p.display_name == result.provider:
+            if p.short_name == result.provider:
                 provider = p
                 break
 
@@ -264,7 +264,7 @@ class TorrentWebSearch(Static):
                     all_results.extend(provider_results)
                 except Exception as e:
                     # Log error but continue with other providers
-                    errors.append(f"{provider.display_name}: {str(e)}")
+                    errors.append(f"{provider.short_name}: {str(e)}")
 
         # Deduplicate by info_hash, keeping result with highest seeders
         best_results = {}

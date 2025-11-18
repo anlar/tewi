@@ -33,12 +33,12 @@ class YTSProvider(BaseSearchProvider):
     ]
 
     @property
-    def name(self) -> str:
-        return "yts"
+    def short_name(self) -> str:
+        return "YTS"
 
     @property
-    def display_name(self) -> str:
-        return "YTS"
+    def full_name(self) -> str:
+        return self.short_name
 
     @log_time
     def _search_impl(self, query: str) -> list[SearchResultDTO]:
@@ -213,7 +213,7 @@ class YTSProvider(BaseSearchProvider):
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,
-                provider=self.display_name,
+                provider=self.short_name,
                 page_url=page_url,
                 fields=fields
             )

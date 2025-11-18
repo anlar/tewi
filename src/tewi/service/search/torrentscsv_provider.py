@@ -21,12 +21,12 @@ class TorrentsCsvProvider(BaseSearchProvider):
     API_URL = "https://torrents-csv.com/service/search"
 
     @property
-    def name(self) -> str:
-        return "torrentscsv"
+    def short_name(self) -> str:
+        return "T-CSV"
 
     @property
-    def display_name(self) -> str:
-        return "T-CSV"
+    def full_name(self) -> str:
+        return "Torrents-CSV"
 
     @log_time
     def _search_impl(self, query: str) -> list[SearchResultDTO]:
@@ -115,7 +115,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,
-                provider=self.display_name,
+                provider=self.short_name,
                 page_url=None,
                 fields=fields
             )
