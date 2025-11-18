@@ -141,6 +141,12 @@ class BaseProviderIntegrationTest(ABC):
         assert result.leechers >= 0, \
             f"Leechers should be non-negative, got {result.leechers}"
 
+        # Page URL should be None or valid URL
+        if result.page_url is not None:
+            assert result.page_url.startswith(('http://', 'https://')), \
+                f"Page URL should start with http:// or https://, " \
+                f"got {result.page_url}"
+
     def validate_upload_date(self, upload_date):
         """Validate upload date if present.
 

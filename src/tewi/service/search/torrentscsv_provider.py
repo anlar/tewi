@@ -116,6 +116,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 info_hash=info_hash,
                 upload_date=upload_date,
                 provider=self.display_name,
+                page_url=None,
                 fields=fields
             )
 

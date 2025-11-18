@@ -149,6 +149,12 @@ class NyaaProvider(BaseSearchProvider):
                 trackers=self.TRACKERS
             )
 
+            # Extract page URL from link element
+            page_url = None
+            link_elem = item.find('link')
+            if link_elem is not None and link_elem.text:
+                page_url = link_elem.text
+
             # Build provider-specific fields
             fields = {}
             downloads_elem = item.find('nyaa:downloads', ns)
@@ -181,6 +187,7 @@ class NyaaProvider(BaseSearchProvider):
                 info_hash=info_hash,
                 upload_date=upload_date,
                 provider=self.display_name,
+                page_url=page_url,
                 fields=fields
             )
 

@@ -147,6 +147,11 @@ class YTSProvider(BaseSearchProvider):
             if torrent.get('audio_channels'):
                 fields['audio_channels'] = torrent['audio_channels']
 
+            # Construct page URL from movie URL or ID
+            page_url = movie.get('url')
+            if not page_url and movie.get('id'):
+                page_url = f"https://yts.mx/movies/{movie['id']}"
+
             return SearchResultDTO(
                 title=full_title,
                 category=TorrentCategory.VIDEO,
@@ -158,6 +163,7 @@ class YTSProvider(BaseSearchProvider):
                 info_hash=info_hash,
                 upload_date=upload_date,
                 provider=self.display_name,
+                page_url=page_url,
                 fields=fields
             )
 

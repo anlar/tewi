@@ -107,6 +107,12 @@ class TPBProvider(BaseSearchProvider):
             if imdb:
                 fields['imdb'] = imdb
 
+            # Construct page URL from torrent ID
+            page_url = None
+            torrent_id = torrent.get('id')
+            if torrent_id:
+                page_url = f"https://apibay.org/t.php?id={torrent_id}"
+
             return SearchResultDTO(
                 title=name,
                 category=self._get_category(category_code),
@@ -118,6 +124,7 @@ class TPBProvider(BaseSearchProvider):
                 info_hash=info_hash,
                 upload_date=upload_date,
                 provider=self.display_name,
+                page_url=page_url,
                 fields=fields
             )
 
