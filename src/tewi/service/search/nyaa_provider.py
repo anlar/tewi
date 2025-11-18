@@ -143,7 +143,8 @@ class NyaaProvider(BaseSearchProvider):
             # Build magnet link
             magnet_link = self._build_magnet_link(
                 info_hash=info_hash,
-                name=title
+                name=title,
+                trackers=self.TRACKERS
             )
 
             return SearchResultDTO(
@@ -218,23 +219,3 @@ class NyaaProvider(BaseSearchProvider):
                     else "Applications"
             case _:
                 return "Other"
-
-    def _build_magnet_link(self, info_hash: str, name: str) -> str:
-        """Build a magnet link from hash and name.
-
-        Args:
-            info_hash: Torrent info hash (hex format)
-            name: Display name for the torrent
-
-        Returns:
-            Magnet URI string
-        """
-        encoded_name = urllib.parse.quote(name)
-
-        magnet = f"magnet:?xt=urn:btih:{info_hash}&dn={encoded_name}"
-
-        for tracker in self.TRACKERS:
-            encoded_tracker = urllib.parse.quote(tracker, safe='/:')
-            magnet += f"&tr={encoded_tracker}"
-
-        return magnet

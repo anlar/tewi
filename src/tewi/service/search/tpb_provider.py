@@ -125,19 +125,3 @@ class TPBProvider(BaseSearchProvider):
                 return 'Other'
             case _:
                 return None
-
-    def _build_magnet_link(self, info_hash: str, name: str) -> str:
-        """Build a magnet link from hash and name.
-
-        Args:
-            info_hash: Torrent info hash
-            name: Display name for the torrent
-
-        Returns:
-            Magnet URI string (DHT only, no trackers)
-        """
-        encoded_name = urllib.parse.quote(name)
-
-        magnet = f"magnet:?xt=urn:btih:{info_hash}&dn={encoded_name}"
-
-        return magnet
