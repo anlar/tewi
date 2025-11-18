@@ -109,7 +109,7 @@ class TorrentWebSearch(Static):
                 r.leechers,
                 print_size(r.size),
                 r.files_count or '-',
-                r.category or '-',
+                r.category.value,
                 r.title,
                 key=r.info_hash
             )

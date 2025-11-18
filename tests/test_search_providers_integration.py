@@ -14,7 +14,7 @@ from src.tewi.service.search.yts_provider import YTSProvider
 from src.tewi.service.search.tpb_provider import TPBProvider
 from src.tewi.service.search.torrentscsv_provider import TorrentsCsvProvider
 from src.tewi.service.search.nyaa_provider import NyaaProvider
-from src.tewi.common import SearchResultDTO
+from src.tewi.common import SearchResultDTO, TorrentCategory
 
 
 # Mark all tests in this module as integration tests
@@ -217,7 +217,7 @@ class TestYTSProviderIntegration(BaseProviderIntegrationTest):
         return "matrix"
 
     def get_valid_categories(self) -> set:
-        return {"Video"}
+        return {TorrentCategory.VIDEO}
 
     def requires_trackers(self) -> bool:
         return True
@@ -233,7 +233,10 @@ class TestTPBProviderIntegration(BaseProviderIntegrationTest):
         return "ubuntu"
 
     def get_valid_categories(self) -> set:
-        return {"Audio", "Video", "Applications", "Games", "XXX", "Other", None}
+        return {TorrentCategory.AUDIO, TorrentCategory.VIDEO,
+                TorrentCategory.SOFTWARE, TorrentCategory.GAMES,
+                TorrentCategory.XXX, TorrentCategory.OTHER,
+                TorrentCategory.UNKNOWN}
 
     def requires_trackers(self) -> bool:
         return False
@@ -249,7 +252,7 @@ class TestTorrentsCsvProviderIntegration(BaseProviderIntegrationTest):
         return "debian"
 
     def get_valid_categories(self) -> set:
-        return {None}
+        return {TorrentCategory.UNKNOWN}
 
     def requires_trackers(self) -> bool:
         return False
@@ -266,7 +269,9 @@ class TestNyaaProviderIntegration(BaseProviderIntegrationTest):
 
     def get_valid_categories(self) -> set:
         # Nyaa categories are now mapped to basic categories
-        return {"Audio", "Video", "Applications", "Games", "Other", None}
+        return {TorrentCategory.AUDIO, TorrentCategory.VIDEO,
+                TorrentCategory.SOFTWARE, TorrentCategory.GAMES,
+                TorrentCategory.OTHER, TorrentCategory.UNKNOWN}
 
     def requires_trackers(self) -> bool:
         return True

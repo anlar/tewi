@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO
+from ...common import SearchResultDTO, TorrentCategory
 from ...util.decorator import log_time
 
 
@@ -96,7 +96,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
             return SearchResultDTO(
                 title=name,
-                category=None,
+                category=TorrentCategory.UNKNOWN,
                 seeders=torrent.get('seeders', 0),
                 leechers=torrent.get('leechers', 0),
                 size=size,

@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO
+from ...common import SearchResultDTO, TorrentCategory
 from ...util.decorator import log_time
 
 
@@ -193,17 +193,17 @@ class NyaaProvider(BaseSearchProvider):
 
         return int(value * multipliers.get(unit, 1))
 
-    def _map_category(self, nyaa_category: str) -> str:
+    def _map_category(self, nyaa_category: str) -> TorrentCategory:
         """Map Nyaa-specific category to basic category.
 
         Args:
             nyaa_category: Nyaa category string (e.g., "Anime - Raw")
 
         Returns:
-            Basic category string compatible with other providers
+            Basic category enum compatible with other providers
         """
         if nyaa_category is None:
-            return None
+            return TorrentCategory.UNKNOWN
 
         # Extract prefix before " - "
         prefix = nyaa_category.split(" - ")[0] \
@@ -211,13 +211,13 @@ class NyaaProvider(BaseSearchProvider):
 
         match prefix:
             case "Anime" | "Live Action":
-                return "Video"
+                return TorrentCategory.VIDEO
             case "Audio":
-                return "Audio"
+                return TorrentCategory.AUDIO
             case "Literature" | "Pictures":
-                return "Other"
+                return TorrentCategory.OTHER
             case "Software":
-                return "Games" if "Games" in nyaa_category \
-                    else "Applications"
+                return TorrentCategory.GAMES if "Games" in nyaa_category \
+                    else TorrentCategory.SOFTWARE
             case _:
-                return "Other"
+                return TorrentCategory.OTHER

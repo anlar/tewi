@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO
+from ...common import SearchResultDTO, TorrentCategory
 from ...util.decorator import log_time
 
 
@@ -109,21 +109,21 @@ class TPBProvider(BaseSearchProvider):
         except (KeyError, ValueError, TypeError):
             return None
 
-    def _get_category(self, code: str) -> str:
+    def _get_category(self, code: str) -> TorrentCategory:
         c = code // 100
 
         match c:
             case 1:
-                return 'Audio'
+                return TorrentCategory.AUDIO
             case 2:
-                return 'Video'
+                return TorrentCategory.VIDEO
             case 3:
-                return 'Applications'
+                return TorrentCategory.SOFTWARE
             case 4:
-                return 'Games'
+                return TorrentCategory.GAMES
             case 5:
-                return 'XXX'
+                return TorrentCategory.XXX
             case 6:
-                return 'Other'
+                return TorrentCategory.OTHER
             case _:
-                return None
+                return TorrentCategory.UNKNOWN

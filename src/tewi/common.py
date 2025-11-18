@@ -57,6 +57,29 @@ class PeerState(Enum):
     """No active interest or transfer state."""
 
 
+class TorrentCategory(Enum):
+    AUDIO = 'Audio'
+    """Audio content (music, podcasts, audiobooks)."""
+
+    VIDEO = 'Video'
+    """Video content (movies, TV shows, videos)."""
+
+    SOFTWARE = 'Software'
+    """Software and applications."""
+
+    GAMES = 'Games'
+    """Games and gaming content."""
+
+    XXX = 'XXX'
+    """Adult content."""
+
+    OTHER = 'Other'
+    """Other content types."""
+
+    UNKNOWN = '-'
+    """Unknown or unspecified category."""
+
+
 @dataclass(frozen=True)
 class PeerDTO:
     """Data Transfer Object for peer information.
@@ -98,7 +121,7 @@ class SearchResultDTO:
     Note: All size fields are in bytes.
     """
     title: str
-    category: str | None
+    category: TorrentCategory
     seeders: int
     leechers: int
     size: int  # bytes
