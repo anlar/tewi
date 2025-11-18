@@ -162,7 +162,7 @@ class TPBProvider(BaseSearchProvider):
         if not result.fields:
             return ""
 
-        md = "## Uploader Information\n"
+        md = "## Uploader\n"
 
         if 'username' in result.fields:
             md += f"- **Username:** {result.fields['username']}\n"
@@ -173,8 +173,12 @@ class TPBProvider(BaseSearchProvider):
                 md += "- **Status:** VIP Uploader\n"
             elif status == 'trusted':
                 md += "- **Status:** Trusted Uploader\n"
+            else:
+                md += "- **Status:** {status}\n"
 
         if 'imdb' in result.fields and result.fields['imdb']:
+            md += "## Movie\n"
+
             imdb_code = result.fields['imdb']
             imdb_url = f"https://www.imdb.com/title/{imdb_code}/"
             md += f"- **IMDB:** {imdb_url}\n"

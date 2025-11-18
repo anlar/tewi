@@ -189,7 +189,7 @@ class BaseSearchProvider(ABC):
         Returns:
             Markdown-formatted string with common details
         """
-        md = "## General Information\n"
+        md = "## General\n"
         md += f"- **Provider:** {result.provider}\n"
         md += f"- **Category:** {result.category.value}\n"
         md += f"- **Info Hash:** `{result.info_hash}`\n"

@@ -93,8 +93,8 @@ class YTSProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
 
-    def _build_fields(self, movie: dict[str, Any], torrent: dict[str, Any],
-                      year: str, language: str, quality: str) -> dict[str, str]:
+    def _build_movie_fields(self, movie: dict[str, Any], torrent: dict[str, Any],
+                            year: str, language: str, quality: str) -> dict[str, str]:
         """Build provider-specific fields dictionary.
 
         Args:
@@ -122,10 +122,40 @@ class YTSProvider(BaseSearchProvider):
             fields['quality'] = quality
         if movie.get('imdb_code'):
             fields['imdb_code'] = movie['imdb_code']
+        if movie.get('summary'):
+            fields['summary'] = movie['summary']
+        if movie.get('yt_trailer_code'):
+            fields['yt_trailer_code'] = movie['yt_trailer_code']
+
+        return fields
+
+    def _build_quality_fields(self, movie: dict[str, Any], torrent: dict[str, Any],
+                              year: str, language: str, quality: str) -> dict[str, str]:
+        """Build provider-specific fields dictionary.
+
+        Args:
+            movie: Movie data from API
+            torrent: Torrent data from API
+            year: Movie year
+            language: Movie language
+            quality: Torrent quality
+
+        Returns:
+            Dictionary of provider-specific fields
+        """
+        fields = {}
+
         if torrent.get('video_codec'):
             fields['video_codec'] = torrent['video_codec']
         if torrent.get('audio_channels'):
             fields['audio_channels'] = torrent['audio_channels']
+        if torrent.get('type'):
+            fields['type'] = torrent['type']
+        if torrent.get('is_repack'):
+            fields['is_repack'] = 'Yes' if int(torrent['is_repack']) else 'No'
+        if torrent.get('bit_depth'):
+            fields['bit_depth'] = torrent['bit_depth']
+
         return fields
 
     def _parse_torrent(self, movie: dict[str, Any],
@@ -141,6 +171,7 @@ class YTSProvider(BaseSearchProvider):
             year = movie.get('year', '')
             language = movie.get('language', '').upper()
             quality = torrent.get('quality', '')
+
             full_title = f"{title} ({year})"
             if quality:
                 full_title += f" [{quality}]"
@@ -162,8 +193,10 @@ class YTSProvider(BaseSearchProvider):
                 upload_date = datetime.fromtimestamp(date_uploaded_unix)
 
             # Build provider-specific fields
-            fields = self._build_fields(movie, torrent, year, language,
-                                        quality)
+            fields = self._build_movie_fields(movie, torrent, year,
+                                              language, quality)
+            fields.update(self._build_quality_fields(movie, torrent, year,
+                                                     language, quality))
 
             # Construct page URL from movie URL or ID
             page_url = movie.get('url')
@@ -190,13 +223,17 @@ class YTSProvider(BaseSearchProvider):
 
     def _add_movie_info(self, md: str, fields: dict[str, str]) -> str:
         """Add movie information section to markdown."""
-        md += "## Movie Information\n"
+        md += "## Movie\n"
         field_mappings = [
             ('rating', 'Rating', lambda v: f"{v}/10"),
             ('year', 'Year', None),
             ('runtime', 'Runtime', None),
             ('genres', 'Genres', None),
             ('language', 'Language', None),
+            ('summary', 'Summary', None),
+            ('imdb_code', 'IMDB', lambda v: f"https://www.imdb.com/title/{v}"),
+            ('yt_trailer_code', 'Trailer',
+             lambda v: f"https://www.youtube.com/watch?v={v}"),
         ]
         for key, label, formatter in field_mappings:
             if key in fields:
@@ -208,18 +245,17 @@ class YTSProvider(BaseSearchProvider):
         """Add quality information section to markdown."""
         md += "## Quality Information\n"
         field_mappings = [
+            ('type', 'Type'),
             ('quality', 'Quality'),
             ('video_codec', 'Video Codec'),
-            ('audio_channels', 'Audio'),
+            ('bit_depth', 'Bit Depth'),
+            ('audio_channels', 'Audio Channels'),
+            ('is_repack', 'Repack'),
         ]
         for key, label in field_mappings:
             if key in fields:
                 md += f"- **{label}:** {fields[key]}\n"
 
-        if 'imdb_code' in fields:
-            imdb_code = fields['imdb_code']
-            imdb_url = f"https://www.imdb.com/title/{imdb_code}/"
-            md += f"- **IMDB:** {imdb_url}\n"
         return md
 
     def details_extended(self, result: SearchResultDTO) -> str:
