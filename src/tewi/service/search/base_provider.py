@@ -2,7 +2,7 @@
 
 import urllib.parse
 from abc import ABC, abstractmethod
-from ...common import SearchResultDTO
+from ...common import SearchResultDTO, TorrentCategory
 
 
 class BaseSearchProvider(ABC):
@@ -13,8 +13,8 @@ class BaseSearchProvider(ABC):
     """
 
     @abstractmethod
-    def search(self, query: str) -> list[SearchResultDTO]:
-        """Search for torrents matching the query.
+    def _search_impl(self, query: str) -> list[SearchResultDTO]:
+        """Provider-specific search implementation.
 
         Args:
             query: Search term
@@ -26,6 +26,24 @@ class BaseSearchProvider(ABC):
             Exception: If search fails
         """
         pass
+
+    def search(self, query: str) -> list[SearchResultDTO]:
+        """Search for torrents and refine unknown categories.
+
+        This method calls the provider-specific implementation and
+        automatically refines UNKNOWN categories by analyzing torrent names.
+
+        Args:
+            query: Search term
+
+        Returns:
+            List of SearchResultDTO objects with refined categories
+
+        Raises:
+            Exception: If search fails
+        """
+        results = self._search_impl(query)
+        return self._refine_results(results)
 
     @property
     @abstractmethod
@@ -60,3 +78,101 @@ class BaseSearchProvider(ABC):
                 magnet += f"&tr={encoded_tracker}"
 
         return magnet
+
+    def _detect_category_from_name(self, name: str) -> TorrentCategory | None:
+        """Detect category from torrent name using pattern matching.
+
+        Args:
+            name: Torrent name/title
+
+        Returns:
+            Detected TorrentCategory or None if no pattern matches
+        """
+        name_lower = name.lower()
+
+        # AUDIO: Check for audio file extensions and keywords
+        audio_patterns = [
+            '.mp3', '.flac', '.wav', '.aac', '.ogg', '.m4a', '.wma', '.alac',
+            'album', 'discography', 'soundtrack', 'ost', 'music',
+        ]
+        if any(pattern in name_lower for pattern in audio_patterns):
+            return TorrentCategory.AUDIO
+
+        # VIDEO: Check for video file extensions and keywords
+        video_patterns = [
+            '.mkv', '.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v',
+            'movie', 'film', '1080p', '720p', '2160p', '4k', 'bluray',
+            'webrip', 'hdtv', 'x264', 'x265', 'hevc', 'dvdrip',
+        ]
+        if any(pattern in name_lower for pattern in video_patterns):
+            return TorrentCategory.VIDEO
+
+        # OTHER: Check for documents, archives, and other content FIRST
+        # (before SOFTWARE to avoid "ebook" matching "app" in application)
+        other_patterns = [
+            '.pdf', '.epub', '.mobi', '.azw', '.doc', '.txt',
+            '.zip', '.rar', '.7z', '.tar',
+            ' book', 'ebook', 'magazine', 'comic', 'tutorial',
+        ]
+        if any(pattern in name_lower for pattern in other_patterns):
+            return TorrentCategory.OTHER
+
+        # SOFTWARE: Check for software extensions and keywords
+        software_patterns = [
+            '.exe', '.msi', '.dmg', '.pkg', '.deb', '.rpm', '.app',
+            'software', 'program', 'application', 'installer', 'setup',
+            'patch', 'crack', 'keygen', 'portable',
+        ]
+        if any(pattern in name_lower for pattern in software_patterns):
+            return TorrentCategory.SOFTWARE
+
+        # GAMES: Check for game-related keywords
+        games_patterns = [
+            'game', 'repack', 'fitgirl', 'codex', 'skidrow', 'plaza',
+            'gog', 'steam', 'gameplay', 'pc game', 'ps4', 'ps5',
+            'xbox', 'switch', 'nintendo',
+        ]
+        if any(pattern in name_lower for pattern in games_patterns):
+            return TorrentCategory.GAMES
+
+        # XXX: Check for adult content keywords
+        xxx_patterns = ['xxx', 'adult', '18+', 'nsfw', 'porn']
+        if any(pattern in name_lower for pattern in xxx_patterns):
+            return TorrentCategory.XXX
+
+        # No pattern matched
+        return None
+
+    def _refine_results(self,
+                        results: list[SearchResultDTO]) -> list[SearchResultDTO]:
+        """Refine UNKNOWN categories by detecting from torrent names.
+
+        Creates new DTOs with refined categories where detection succeeds,
+        preserving immutability of SearchResultDTO.
+
+        Args:
+            results: List of search results
+
+        Returns:
+            List with refined categories (new DTOs where category changed)
+        """
+        refined_results = []
+        for result in results:
+            if result.category == TorrentCategory.UNKNOWN:
+                detected = self._detect_category_from_name(result.title)
+                if detected:
+                    # Create new DTO with refined category
+                    result = SearchResultDTO(
+                        title=result.title,
+                        category=detected,
+                        seeders=result.seeders,
+                        leechers=result.leechers,
+                        size=result.size,
+                        files_count=result.files_count,
+                        magnet_link=result.magnet_link,
+                        info_hash=result.info_hash,
+                        upload_date=result.upload_date,
+                        provider=result.provider
+                    )
+            refined_results.append(result)
+        return refined_results

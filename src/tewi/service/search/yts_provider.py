@@ -41,7 +41,7 @@ class YTSProvider(BaseSearchProvider):
         return "YTS"
 
     @log_time
-    def search(self, query: str) -> list[SearchResultDTO]:
+    def _search_impl(self, query: str) -> list[SearchResultDTO]:
         """Search YTS.mx for movie torrents.
 
         Args:

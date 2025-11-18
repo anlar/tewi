@@ -25,7 +25,7 @@ class TPBProvider(BaseSearchProvider):
         return "TPB"
 
     @log_time
-    def search(self, query: str) -> list[SearchResultDTO]:
+    def _search_impl(self, query: str) -> list[SearchResultDTO]:
         """Search The Pirate Bay for torrents.
 
         Args:

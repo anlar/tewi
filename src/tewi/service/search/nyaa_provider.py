@@ -38,7 +38,7 @@ class NyaaProvider(BaseSearchProvider):
         return "Nyaa"
 
     @log_time
-    def search(self, query: str) -> list[SearchResultDTO]:
+    def _search_impl(self, query: str) -> list[SearchResultDTO]:
         """Search Nyaa.si for torrents via RSS feed.
 
         Args:

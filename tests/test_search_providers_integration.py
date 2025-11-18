@@ -252,7 +252,12 @@ class TestTorrentsCsvProviderIntegration(BaseProviderIntegrationTest):
         return "debian"
 
     def get_valid_categories(self) -> set:
-        return {TorrentCategory.UNKNOWN}
+        # TorrentsCSV returns UNKNOWN, but category refinement may detect
+        # other categories from torrent names
+        return {TorrentCategory.UNKNOWN, TorrentCategory.AUDIO,
+                TorrentCategory.VIDEO, TorrentCategory.SOFTWARE,
+                TorrentCategory.GAMES, TorrentCategory.XXX,
+                TorrentCategory.OTHER}
 
     def requires_trackers(self) -> bool:
         return False

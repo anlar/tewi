@@ -29,7 +29,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
         return "T-CSV"
 
     @log_time
-    def search(self, query: str) -> list[SearchResultDTO]:
+    def _search_impl(self, query: str) -> list[SearchResultDTO]:
         """Search torrents-csv.com for torrents.
 
         Args:
