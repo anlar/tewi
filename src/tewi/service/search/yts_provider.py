@@ -225,11 +225,11 @@ class YTSProvider(BaseSearchProvider):
         """Add movie information section to markdown."""
         md += "## Movie\n"
         field_mappings = [
-            ('rating', 'Rating', lambda v: f"{v}/10"),
             ('year', 'Year', None),
             ('runtime', 'Runtime', None),
             ('genres', 'Genres', None),
             ('language', 'Language', None),
+            ('rating', 'Rating', lambda v: f"{v}/10"),
             ('summary', 'Summary', None),
             ('imdb_code', 'IMDB', lambda v: f"https://www.imdb.com/title/{v}"),
             ('yt_trailer_code', 'Trailer',

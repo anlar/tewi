@@ -279,7 +279,7 @@ class NyaaProvider(BaseSearchProvider):
         if not result.fields:
             return ""
 
-        md = "## Nyaa Information\n"
+        md = "## Information\n"
 
         if 'nyaa_category' in result.fields:
             md += f"- **Category:** {result.fields['nyaa_category']}\n"

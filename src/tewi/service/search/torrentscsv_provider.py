@@ -135,7 +135,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
         if not result.fields:
             return ""
 
-        md = "## Torrent Statistics\n"
+        md = "## Information\n"
 
         if 'completed' in result.fields:
             completed = result.fields['completed']
