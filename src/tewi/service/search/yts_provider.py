@@ -8,6 +8,7 @@ from typing import Any
 
 from .base_provider import BaseSearchProvider
 from ...common import SearchResultDTO
+from ...util.decorator import log_time
 
 
 class YTSProvider(BaseSearchProvider):
@@ -39,6 +40,7 @@ class YTSProvider(BaseSearchProvider):
     def display_name(self) -> str:
         return "YTS"
 
+    @log_time
     def search(self, query: str) -> list[SearchResultDTO]:
         """Search YTS.mx for movie torrents.
 

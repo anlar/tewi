@@ -8,6 +8,7 @@ from datetime import datetime
 
 from .base_provider import BaseSearchProvider
 from ...common import SearchResultDTO
+from ...util.decorator import log_time
 
 
 class NyaaProvider(BaseSearchProvider):
@@ -36,6 +37,7 @@ class NyaaProvider(BaseSearchProvider):
     def display_name(self) -> str:
         return "Nyaa"
 
+    @log_time
     def search(self, query: str) -> list[SearchResultDTO]:
         """Search Nyaa.si for torrents via RSS feed.
 

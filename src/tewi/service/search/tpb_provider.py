@@ -8,6 +8,7 @@ from typing import Any
 
 from .base_provider import BaseSearchProvider
 from ...common import SearchResultDTO
+from ...util.decorator import log_time
 
 
 class TPBProvider(BaseSearchProvider):
@@ -23,6 +24,7 @@ class TPBProvider(BaseSearchProvider):
     def display_name(self) -> str:
         return "TPB"
 
+    @log_time
     def search(self, query: str) -> list[SearchResultDTO]:
         """Search The Pirate Bay for torrents.
 

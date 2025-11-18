@@ -8,6 +8,7 @@ from typing import Any
 
 from .base_provider import BaseSearchProvider
 from ...common import SearchResultDTO
+from ...util.decorator import log_time
 
 
 class TorrentsCsvProvider(BaseSearchProvider):
@@ -27,6 +28,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
     def display_name(self) -> str:
         return "T-CSV"
 
+    @log_time
     def search(self, query: str) -> list[SearchResultDTO]:
         """Search torrents-csv.com for torrents.
 
