@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Start web search with query via `-s/--search` CLI option
 - Web search for torrents on public trackers (YTS, TPB, Torrents-CSV, Nyaa)
+- Torrent details view in search results (press 'i' to view details with provider-specific metadata)
 - Configuration file support with INI format stored in XDG_CONFIG_HOME or ~/.config
 - Display download and upload state (interested/choked) for peers
 

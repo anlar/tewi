@@ -149,6 +149,27 @@ class NyaaProvider(BaseSearchProvider):
                 trackers=self.TRACKERS
             )
 
+            # Build provider-specific fields
+            fields = {}
+            downloads_elem = item.find('nyaa:downloads', ns)
+            if downloads_elem is not None and downloads_elem.text:
+                fields['downloads'] = downloads_elem.text
+
+            comments_elem = item.find('nyaa:comments', ns)
+            if comments_elem is not None and comments_elem.text:
+                fields['comments'] = comments_elem.text
+
+            trusted_elem = item.find('nyaa:trusted', ns)
+            if trusted_elem is not None and trusted_elem.text:
+                fields['trusted'] = trusted_elem.text
+
+            remake_elem = item.find('nyaa:remake', ns)
+            if remake_elem is not None and remake_elem.text:
+                fields['remake'] = remake_elem.text
+
+            if nyaa_category:
+                fields['nyaa_category'] = nyaa_category
+
             return SearchResultDTO(
                 title=title,
                 category=category,
@@ -159,7 +180,8 @@ class NyaaProvider(BaseSearchProvider):
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,
-                provider=self.display_name
+                provider=self.display_name,
+                fields=fields
             )
 
         except (KeyError, ValueError, TypeError, AttributeError):
@@ -221,3 +243,36 @@ class NyaaProvider(BaseSearchProvider):
                     else TorrentCategory.SOFTWARE
             case _:
                 return TorrentCategory.OTHER
+
+    def details_extended(self, result: SearchResultDTO) -> str:
+        """Generate Nyaa-specific details for right column.
+
+        Args:
+            result: Search result to format
+
+        Returns:
+            Markdown-formatted string with Nyaa-specific details
+        """
+        if not result.fields:
+            return ""
+
+        md = "## Nyaa Information\n"
+
+        if 'nyaa_category' in result.fields:
+            md += f"- **Category:** {result.fields['nyaa_category']}\n"
+
+        if 'downloads' in result.fields:
+            md += f"- **Downloads:** {result.fields['downloads']}\n"
+
+        if 'comments' in result.fields:
+            md += f"- **Comments:** {result.fields['comments']}\n"
+
+        if 'trusted' in result.fields:
+            trusted_val = result.fields['trusted']
+            md += f"- **Trusted:** {trusted_val}\n"
+
+        if 'remake' in result.fields:
+            remake_val = result.fields['remake']
+            md += f"- **Remake:** {remake_val}\n"
+
+        return md

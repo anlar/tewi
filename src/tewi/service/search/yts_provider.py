@@ -126,6 +126,27 @@ class YTSProvider(BaseSearchProvider):
             if date_uploaded_unix:
                 upload_date = datetime.fromtimestamp(date_uploaded_unix)
 
+            # Build provider-specific fields
+            fields = {}
+            if movie.get('rating'):
+                fields['rating'] = str(movie['rating'])
+            if movie.get('runtime'):
+                fields['runtime'] = f"{movie['runtime']} min"
+            if movie.get('genres'):
+                fields['genres'] = ', '.join(movie['genres'])
+            if year:
+                fields['year'] = str(year)
+            if language:
+                fields['language'] = language
+            if quality:
+                fields['quality'] = quality
+            if movie.get('imdb_code'):
+                fields['imdb_code'] = movie['imdb_code']
+            if torrent.get('video_codec'):
+                fields['video_codec'] = torrent['video_codec']
+            if torrent.get('audio_channels'):
+                fields['audio_channels'] = torrent['audio_channels']
+
             return SearchResultDTO(
                 title=full_title,
                 category=TorrentCategory.VIDEO,
@@ -136,8 +157,60 @@ class YTSProvider(BaseSearchProvider):
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,
-                provider=self.display_name
+                provider=self.display_name,
+                fields=fields
             )
 
         except (KeyError, ValueError, TypeError):
             return None
+
+    def _add_movie_info(self, md: str, fields: dict[str, str]) -> str:
+        """Add movie information section to markdown."""
+        md += "## Movie Information\n"
+        field_mappings = [
+            ('rating', 'Rating', lambda v: f"{v}/10"),
+            ('year', 'Year', None),
+            ('runtime', 'Runtime', None),
+            ('genres', 'Genres', None),
+            ('language', 'Language', None),
+        ]
+        for key, label, formatter in field_mappings:
+            if key in fields:
+                value = formatter(fields[key]) if formatter else fields[key]
+                md += f"- **{label}:** {value}\n"
+        return md
+
+    def _add_quality_info(self, md: str, fields: dict[str, str]) -> str:
+        """Add quality information section to markdown."""
+        md += "## Quality Information\n"
+        field_mappings = [
+            ('quality', 'Quality'),
+            ('video_codec', 'Video Codec'),
+            ('audio_channels', 'Audio'),
+        ]
+        for key, label in field_mappings:
+            if key in fields:
+                md += f"- **{label}:** {fields[key]}\n"
+
+        if 'imdb_code' in fields:
+            imdb_code = fields['imdb_code']
+            imdb_url = f"https://www.imdb.com/title/{imdb_code}/"
+            md += f"- **IMDB:** [{imdb_code}]({imdb_url})\n"
+        return md
+
+    def details_extended(self, result: SearchResultDTO) -> str:
+        """Generate YTS-specific details for right column.
+
+        Args:
+            result: Search result to format
+
+        Returns:
+            Markdown-formatted string with movie details
+        """
+        if not result.fields:
+            return ""
+
+        md = ""
+        md = self._add_movie_info(md, result.fields)
+        md = self._add_quality_info(md, result.fields)
+        return md

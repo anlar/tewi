@@ -94,6 +94,17 @@ class TorrentsCsvProvider(BaseSearchProvider):
             if created_unix:
                 upload_date = datetime.fromtimestamp(created_unix)
 
+            # Build provider-specific fields
+            fields = {}
+            completed = torrent.get('completed')
+            if completed is not None:
+                fields['completed'] = str(completed)
+
+            scraped_date = torrent.get('scraped_date')
+            if scraped_date:
+                scraped_dt = datetime.fromtimestamp(scraped_date)
+                fields['scraped_date'] = scraped_dt.strftime('%Y-%m-%d %H:%M')
+
             return SearchResultDTO(
                 title=name,
                 category=TorrentCategory.UNKNOWN,
@@ -104,8 +115,32 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,
-                provider=self.display_name
+                provider=self.display_name,
+                fields=fields
             )
 
         except (KeyError, ValueError, TypeError):
             return None
+
+    def details_extended(self, result: SearchResultDTO) -> str:
+        """Generate TorrentsCSV-specific details for right column.
+
+        Args:
+            result: Search result to format
+
+        Returns:
+            Markdown-formatted string with statistics
+        """
+        if not result.fields:
+            return ""
+
+        md = "## Torrent Statistics\n"
+
+        if 'completed' in result.fields:
+            completed = result.fields['completed']
+            md += f"- **Completed Downloads:** {completed}\n"
+
+        if 'scraped_date' in result.fields:
+            md += f"- **Last Scraped:** {result.fields['scraped_date']}\n"
+
+        return md

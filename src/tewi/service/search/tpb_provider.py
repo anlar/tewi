@@ -93,6 +93,20 @@ class TPBProvider(BaseSearchProvider):
             if added:
                 upload_date = datetime.fromtimestamp(int(added))
 
+            # Build provider-specific fields
+            fields = {}
+            username = torrent.get('username')
+            if username:
+                fields['username'] = username
+
+            status = torrent.get('status')
+            if status:
+                fields['status'] = status
+
+            imdb = torrent.get('imdb')
+            if imdb:
+                fields['imdb'] = imdb
+
             return SearchResultDTO(
                 title=name,
                 category=self._get_category(category_code),
@@ -103,7 +117,8 @@ class TPBProvider(BaseSearchProvider):
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,
-                provider=self.display_name
+                provider=self.display_name,
+                fields=fields
             )
 
         except (KeyError, ValueError, TypeError):
@@ -127,3 +142,34 @@ class TPBProvider(BaseSearchProvider):
                 return TorrentCategory.OTHER
             case _:
                 return TorrentCategory.UNKNOWN
+
+    def details_extended(self, result: SearchResultDTO) -> str:
+        """Generate TPB-specific details for right column.
+
+        Args:
+            result: Search result to format
+
+        Returns:
+            Markdown-formatted string with uploader details
+        """
+        if not result.fields:
+            return ""
+
+        md = "## Uploader Information\n"
+
+        if 'username' in result.fields:
+            md += f"- **Username:** {result.fields['username']}\n"
+
+        if 'status' in result.fields:
+            status = result.fields['status']
+            if status == 'vip':
+                md += "- **Status:** VIP Uploader\n"
+            elif status == 'trusted':
+                md += "- **Status:** Trusted Uploader\n"
+
+        if 'imdb' in result.fields and result.fields['imdb']:
+            imdb_code = result.fields['imdb']
+            imdb_url = f"https://www.imdb.com/title/{imdb_code}/"
+            md += f"- **IMDB:** [{imdb_code}]({imdb_url})\n"
+
+        return md
