@@ -79,6 +79,10 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
+    def capable(self, capability_code: str) -> bool:
+        pass
+
+    @abstractmethod
     def meta(self) -> ClientMeta:
         """Get daemon name and version.
 

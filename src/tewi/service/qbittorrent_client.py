@@ -54,6 +54,13 @@ class QBittorrentClient(BaseClient):
         except Exception as e:
             raise ClientError(f"Failed to authenticate with qBittorrent: {e}")
 
+    def capable(self, capability_code: str) -> bool:
+        match capability_code:
+            case 'set_priority':
+                return False
+
+        return True
+
     @log_time
     def meta(self) -> ClientMeta:
         """Get daemon name and version."""

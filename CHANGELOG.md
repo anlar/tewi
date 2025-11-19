@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Sort files alphabetically by name in torrent details
 - Shorten column names in trackers table
 - Change hotkey for torrent status toggle from 'p' to 'Space'
+- Create capabilities system to hide actions unsupported by client
 
 ### Removed
 

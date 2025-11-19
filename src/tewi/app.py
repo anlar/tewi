@@ -137,7 +137,9 @@ class MainApp(App):
             with ContentSwitcher(initial="torrent-list"):
                 yield TorrentListViewPanel(id="torrent-list",
                                            page_size=self.page_size,
-                                           view_mode=self.view_mode).data_bind(r_torrents=MainApp.r_torrents)
+                                           view_mode=self.view_mode,
+                                           capability_set_priority=self.client.capable('set_priority')
+                                           ).data_bind(r_torrents=MainApp.r_torrents)
                 yield TorrentInfoPanel(has_separate_id=self.client.has_separate_id(), id="torrent-info")
                 yield TorrentWebSearch(id="torrent-websearch")
 

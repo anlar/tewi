@@ -25,6 +25,9 @@ class TransmissionClient(BaseClient):
                                             username=username,
                                             password=password)
 
+    def capable(self, capability_code: str) -> bool:
+        return True
+
     @log_time
     def meta(self) -> ClientMeta:
         return {

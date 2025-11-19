@@ -68,9 +68,13 @@ class TorrentListViewPanel(ListView):
     search_active = False
 
     @log_time
-    def __init__(self, id: str, page_size: str, view_mode: str) -> None:
+    def __init__(self, id: str, page_size: str, view_mode: str,
+                 capability_set_priority: bool) -> None:
+
         self.page_size = page_size
         self.view_mode = view_mode
+        self.capability_set_priority = capability_set_priority
+
         super().__init__(id=id)
 
     @log_time
@@ -220,6 +224,16 @@ class TorrentListViewPanel(ListView):
             item = TorrentItemOneline(torrent)
 
         return item
+
+    # Actions
+
+    def check_action(self, action: str,
+                     parameters: tuple[object, ...]) -> bool | None:
+        """Check if an action may run."""
+        if action == "change_priority":
+            return self.capability_set_priority
+
+        return True
 
     # Actions: movement
 
