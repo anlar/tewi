@@ -272,6 +272,8 @@ class TorrentInfoPanel(ScrollableContainer):
     @log_time
     def draw_file_table(self, table, node, prefix="", is_last=True) -> None:
         items = [(k, v) for k, v in node.items() if k != '__is_file__']
+        # Sort items by name (case-insensitive)
+        items.sort(key=lambda x: x[0].lower())
 
         for i, (name, subtree) in enumerate(items):
             is_last_item = i == len(items) - 1

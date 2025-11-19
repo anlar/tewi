@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use short country names for qbittorrent peers
 - Merge priority and select columns in files (shorten rows)
 - Change Progress column to Done in files (shorten rows)
+- Sort files by name it torrent details
 
 ### Removed
 
