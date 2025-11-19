@@ -169,12 +169,17 @@ class TPBProvider(BaseSearchProvider):
 
         if 'status' in result.fields:
             status = result.fields['status']
-            if status == 'vip':
-                md += "- **Status:** VIP Uploader\n"
-            elif status == 'trusted':
-                md += "- **Status:** Trusted Uploader\n"
-            else:
-                md += "- **Status:** {status}\n"
+            md += "- **Status:** "
+
+            match status:
+                case 'vip':
+                    md += "VIP Uploader\n"
+                case 'trusted':
+                    md += "Trusted Uploader\n"
+                case 'member':
+                    md += "Member\n"
+                case _:
+                    md += f"{status}\n"
 
         if 'imdb' in result.fields and result.fields['imdb']:
             md += "## Movie\n"
