@@ -369,8 +369,3 @@ class TransmissionClient(BaseClient):
             torrent_ids = [torrent_ids]
 
         self.client.change_torrent(torrent_ids, bandwidth_priority=priority)
-
-    @log_time
-    def has_separate_id(self) -> bool:
-        """Transmission uses integer IDs separate from hash."""
-        return True

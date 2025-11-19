@@ -265,12 +265,3 @@ class BaseClient(ABC):
             priority: Priority level (-1=low, 0=normal, 1=high)
         """
         pass
-
-    @abstractmethod
-    def has_separate_id(self) -> bool:
-        """Return True if this client has a separate ID field distinct from hash.
-
-        Returns:
-            True if ID should be displayed separately from hash, False otherwise
-        """
-        pass

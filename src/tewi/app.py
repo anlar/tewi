@@ -140,7 +140,7 @@ class MainApp(App):
                                            view_mode=self.view_mode,
                                            capability_set_priority=self.client.capable('set_priority')
                                            ).data_bind(r_torrents=MainApp.r_torrents)
-                yield TorrentInfoPanel(has_separate_id=self.client.has_separate_id(), id="torrent-info")
+                yield TorrentInfoPanel(capability_torrent_id=self.client.capable('torrent_id'), id="torrent-info")
                 yield TorrentWebSearch(id="torrent-websearch")
 
         yield StatePanel().data_bind(r_session=MainApp.r_session,

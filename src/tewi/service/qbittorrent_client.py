@@ -56,6 +56,8 @@ class QBittorrentClient(BaseClient):
 
     def capable(self, capability_code: str) -> bool:
         match capability_code:
+            case 'torrent_id':
+                return False
             case 'set_priority':
                 return False
 
@@ -506,11 +508,6 @@ class QBittorrentClient(BaseClient):
         is a no-op for qBittorrent.
         """
         pass
-
-    @log_time
-    def has_separate_id(self) -> bool:
-        """qBittorrent uses hash as ID, no separate ID field."""
-        return False
 
     @log_time
     def _ids_to_hashes(self, ids: list[int | str]) -> list[str]:

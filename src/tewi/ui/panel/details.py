@@ -30,9 +30,9 @@ class TorrentInfoPanel(ScrollableContainer):
             ]
 
     @log_time
-    def __init__(self, has_separate_id: bool = True, **kwargs):
+    def __init__(self, capability_torrent_id: bool, **kwargs):
         super().__init__(**kwargs)
-        self.has_separate_id = has_separate_id
+        self.capability_torrent_id = capability_torrent_id
 
     r_torrent = reactive(None)
 
@@ -75,7 +75,7 @@ class TorrentInfoPanel(ScrollableContainer):
                             yield Static("Name:", classes="name")
                             yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_name)
                             # Only show ID if client has separate ID field (not same as hash)
-                            if self.has_separate_id:
+                            if self.capability_torrent_id:
                                 yield Static("ID:", classes="name")
                                 yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_id)
                             yield Static("Hash:", classes="name")
