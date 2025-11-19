@@ -168,7 +168,7 @@ class TorrentInfoPanel(ScrollableContainer):
                           "Status", "Country", "Address", "Port", "Client")
 
         table = self.query_one("#trackers")
-        table.add_columns("Tier", "Host", "Status", "Peers", "Seeders", "Leechers", "Downloads", "Message")
+        table.add_columns("Tier", "Host", "Status", "P", "S", "L", "DL", "Message")
 
     @log_time
     def watch_r_torrent(self, new_r_torrent):
