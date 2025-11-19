@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import NamedTuple
-from enum import Enum
+from enum import Enum, auto
 
 
 @dataclass(frozen=True)
@@ -32,6 +32,13 @@ class TorrentDTO:
     labels: list[str] = field(default_factory=list)
 
 
+class FilePriority(Enum):
+    NOT_DOWNLOADING = auto()
+    LOW = auto()
+    MEDIUM = auto()
+    HIGH = auto()
+
+
 @dataclass(frozen=True)
 class FileDTO:
     """Data Transfer Object for torrent file information.
@@ -42,8 +49,7 @@ class FileDTO:
     name: str
     size: int  # bytes
     completed: int  # bytes
-    selected: bool
-    priority: int
+    priority: FilePriority
 
 
 class PeerState(Enum):

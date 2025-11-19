@@ -12,6 +12,7 @@ from ..widget.common import ReactiveLabel
 from ...util.print import print_size, print_speed, print_time_ago
 from ...util.decorator import log_time
 from ...util.geoip import get_country
+from ...common import FilePriority
 
 
 class TorrentInfoPanel(ScrollableContainer):
@@ -160,7 +161,7 @@ class TorrentInfoPanel(ScrollableContainer):
     @log_time
     def on_mount(self):
         table = self.query_one("#files")
-        table.add_columns("ID", "Size", "Progress", "Selected", "Priority", "Name")
+        table.add_columns("ID", "Size", "Progress", "P", "Name")
 
         table = self.query_one("#peers")
         table.add_columns("Encrypted", "Up", "Down", "UL State", "DL State", "Progress", "Connection", "Direction",
@@ -290,12 +291,10 @@ class TorrentInfoPanel(ScrollableContainer):
                 table.add_row(f.id,
                               print_size(f.size),
                               f'{completion:.0f}%',
-                              'Yes' if f.selected else 'No',
                               self.print_priority(f.priority),
                               f"{current_prefix}{symbol}{name}")
             else:
                 table.add_row(None,
-                              None,
                               None,
                               None,
                               None,
@@ -323,12 +322,15 @@ class TorrentInfoPanel(ScrollableContainer):
 
     @log_time
     def print_priority(self, priority) -> str:
-        if priority == -1:
-            return 'Low'
-        elif priority == 1:
-            return 'High'
-        else:
-            return 'Normal'
+        match priority:
+            case FilePriority.NOT_DOWNLOADING:
+                return "[dim]-[/]"
+            case FilePriority.LOW:
+                return "[dim yellow]↓[/]"
+            case FilePriority.MEDIUM:
+                return '→'
+            case FilePriority.HIGH:
+                return '[bold red]↑[/]'
 
     @log_time
     def action_view_list(self):

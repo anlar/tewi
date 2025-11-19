@@ -8,7 +8,7 @@ from transmission_rpc import Client as TransmissionRPCClient
 
 from ..util.misc import is_torrent_link
 from ..util.decorator import log_time
-from ..common import SortOrder, TorrentDTO, TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO, PeerState
+from ..common import SortOrder, TorrentDTO, TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO, PeerState, FilePriority
 from .base_client import BaseClient, ClientMeta, ClientStats, ClientSession
 
 
@@ -144,13 +144,24 @@ class TransmissionClient(BaseClient):
     @log_time
     def _file_to_dto(self, file) -> FileDTO:
         """Convert transmission-rpc File to FileDTO."""
+
+        if file.selected:
+            match file.priority:
+                case -1:
+                    priority = FilePriority.LOW
+                case 0:
+                    priority = FilePriority.MEDIUM
+                case 1:
+                    priority = FilePriority.HIGH
+        else:
+            priority = FilePriority.NOT_DOWNLOADING
+
         return FileDTO(
             id=file.id,
             name=file.name,
             size=file.size,
             completed=file.completed,
-            selected=file.selected,
-            priority=file.priority,
+            priority=priority,
         )
 
     @log_time

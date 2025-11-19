@@ -7,7 +7,7 @@ from qbittorrentapi import Client as QBittorrentAPIClient
 
 from ..util.misc import is_torrent_link
 from ..util.decorator import log_time
-from ..common import SortOrder, TorrentDTO, TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO, PeerState
+from ..common import SortOrder, TorrentDTO, TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO, PeerState, FilePriority
 from .base_client import BaseClient, ClientMeta, ClientStats, ClientSession, ClientError
 
 
@@ -34,21 +34,6 @@ class QBittorrentClient(BaseClient):
         'forcedDL': 'downloading',
         'forcedUP': 'seeding',
         'moving': 'stopped',
-    }
-
-    # Priority mapping from qBittorrent (0, 1, 6, 7) to Transmission (-1, 0, 1)
-    PRIORITY_TO_TRANSMISSION = {
-        0: -1,   # Do not download -> Low
-        1: 0,    # Normal -> Normal
-        6: 1,    # High -> High
-        7: 1,    # Maximum -> High
-    }
-
-    # Priority mapping from Transmission to qBittorrent
-    PRIORITY_FROM_TRANSMISSION = {
-        -1: 0,   # Low -> Do not download
-        0: 1,    # Normal -> Normal
-        1: 6,    # High -> High
     }
 
     @log_time
@@ -239,15 +224,22 @@ class QBittorrentClient(BaseClient):
     @log_time
     def _file_to_dto(self, file, torrent_hash: str) -> FileDTO:
         """Convert qBittorrent file to FileDTO."""
-        # Map qBittorrent priority (0, 1, 6, 7) to Transmission (-1, 0, 1)
-        priority = self.PRIORITY_TO_TRANSMISSION.get(file.priority, 0)
+
+        match file.priority:
+            case 0:
+                priority = FilePriority.NOT_DOWNLOADING
+            case 1:
+                priority = FilePriority.LOW
+            case 6:
+                priority = FilePriority.MEDIUM
+            case 7:
+                priority = FilePriority.HIGH
 
         return FileDTO(
             id=file.index,
             name=file.name,
             size=file.size,
             completed=int(file.size * file.progress),
-            selected=file.priority > 0,  # In qBittorrent, priority 0 means "do not download"
             priority=priority,
         )
 
