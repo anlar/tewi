@@ -32,6 +32,9 @@ docker-remove:
 docker-init:
 	./docker/init-torrents.sh
 
+docker-init-full:
+	./docker/init-torrents.sh 10
+
 run-transmission:
 	PYTHONPATH=src textual run --dev tewi.app:create_app -- --client-type transmission --port 9092
 
