@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix wrong order of upload and download speed columns in peers
 - Use short country names for qbittorrent peers
 - Merge priority and select columns in files (shorten rows)
+- Change Progress column to Done in files (shorten rows)
 
 ### Removed
 
