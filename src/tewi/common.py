@@ -118,6 +118,10 @@ class TrackerDTO:
     status: str
     message: str
     peer_count: int
+    last_announce: datetime | None = None
+    next_announce: datetime | None = None
+    last_scrape: datetime | None = None
+    next_scrape: datetime | None = None
 
 
 @dataclass(frozen=True)

@@ -2,6 +2,7 @@
 
 import os
 import pathlib
+from datetime import datetime
 
 from transmission_rpc import Torrent
 from transmission_rpc import Client as TransmissionRPCClient
@@ -224,6 +225,12 @@ class TransmissionClient(BaseClient):
         # Get peer count from last announce
         peer_count = tracker.last_announce_peer_count if tracker.last_announce_peer_count >= 0 else -1
 
+        # Convert Unix timestamps to datetime objects
+        last_announce = datetime.fromtimestamp(tracker.last_announce_time) if tracker.last_announce_time > 0 else None
+        next_announce = datetime.fromtimestamp(tracker.next_announce_time) if tracker.next_announce_time > 0 else None
+        last_scrape = datetime.fromtimestamp(tracker.last_scrape_time) if tracker.last_scrape_time > 0 else None
+        next_scrape = datetime.fromtimestamp(tracker.next_scrape_time) if tracker.next_scrape_time > 0 else None
+
         return TrackerDTO(
             host=tracker.host,
             tier=tracker.tier,
@@ -233,6 +240,10 @@ class TransmissionClient(BaseClient):
             status=status,
             message=message,
             peer_count=peer_count,
+            last_announce=last_announce,
+            next_announce=next_announce,
+            last_scrape=last_scrape,
+            next_scrape=next_scrape,
         )
 
     @log_time

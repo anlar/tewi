@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Torrent details view in search results (press 'i' to view details with provider-specific metadata)
 - Configuration file support with INI format stored in XDG_CONFIG_HOME or ~/.config
 - Display download and upload state (interested/choked) for peers
+- Display tracker timing information in trackers table (last/next announce and scrape times, Transmission only)
 
 ### Changed
 
@@ -25,8 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use short country names for qbittorrent peers
 - Merge priority and select columns in files (shorten rows)
 - Change Progress column to Done in files (shorten rows)
-- Sort files by name it torrent details
-- Shorten column names in trackers table
+- Sort files alphabetically by name in torrent details
+ Shorten column names in trackers table
 
 ### Removed
 

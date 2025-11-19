@@ -168,7 +168,8 @@ class TorrentInfoPanel(ScrollableContainer):
                           "Status", "Country", "Address", "Port", "Client")
 
         table = self.query_one("#trackers")
-        table.add_columns("Tier", "Host", "Status", "P", "S", "L", "DL", "Message")
+        table.add_columns("Tier", "Host", "Status", "P", "S", "L", "DL", "Announced",
+                          "Next", "Scraped", "Next", "Message")
 
     @log_time
     def watch_r_torrent(self, new_r_torrent):
@@ -244,6 +245,10 @@ class TorrentInfoPanel(ScrollableContainer):
                               self.print_count(t.seeder_count),
                               self.print_count(t.leecher_count),
                               self.print_count(t.download_count),
+                              self.print_tracker_datetime(t.last_announce),
+                              self.print_tracker_next_time(t.next_announce),
+                              self.print_tracker_datetime(t.last_scrape),
+                              self.print_tracker_next_time(t.next_scrape),
                               t.message)
 
     @log_time
@@ -333,6 +338,55 @@ class TorrentInfoPanel(ScrollableContainer):
                 return '→'
             case FilePriority.HIGH:
                 return '[bold red]↑[/]'
+
+    @log_time
+    def print_tracker_datetime(self, value: datetime) -> str:
+        """Format tracker datetime as 'HH:MM:SS (Xm)' or '-'."""
+        if value:
+            now = datetime.now()
+            diff = now - value
+            total_seconds = diff.total_seconds()
+
+            # Calculate time ago in compact format
+            if total_seconds < 60:
+                ago = "<1m"
+            elif total_seconds < 3600:
+                minutes = int(total_seconds / 60)
+                ago = f"{minutes}m"
+            elif total_seconds < 86400:
+                hours = int(total_seconds / 3600)
+                ago = f"{hours}h"
+            else:
+                days = int(total_seconds / 86400)
+                ago = f"{days}d"
+
+            return f"{value.strftime('%H:%M:%S')} ({ago})"
+        else:
+            return "-"
+
+    @log_time
+    def print_tracker_next_time(self, value: datetime) -> str:
+        """Format tracker next time as 'Xm' or '-'."""
+        if value:
+            now = datetime.now()
+            delta = value - now
+            total_seconds = delta.total_seconds()
+
+            if total_seconds < 0:
+                return "overdue"
+            elif total_seconds < 60:
+                return "<1m"
+            elif total_seconds < 3600:
+                minutes = int(total_seconds / 60)
+                return f"{minutes}m"
+            elif total_seconds < 86400:
+                hours = int(total_seconds / 3600)
+                return f"{hours}h"
+            else:
+                days = int(total_seconds / 86400)
+                return f"{days}d"
+        else:
+            return "-"
 
     @log_time
     def action_view_list(self):
