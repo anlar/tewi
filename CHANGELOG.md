@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Change torrent bandwidth priority with 'p' hotkey (cycles through high/low/normal, Transmission only)
 - Start web search with query via `-s/--search` CLI option
 - Web search for torrents on public trackers (YTS, TPB, Torrents-CSV, Nyaa)
 - Torrent details view in search results (press 'i' to view details with provider-specific metadata)
@@ -27,7 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Merge priority and select columns in files (shorten rows)
 - Change Progress column to Done in files (shorten rows)
 - Sort files alphabetically by name in torrent details
- Shorten column names in trackers table
+- Shorten column names in trackers table
+- Change hotkey for torrent status toggle from 'p' to 'Space'
 
 ### Removed
 

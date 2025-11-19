@@ -360,6 +360,14 @@ class TransmissionClient(BaseClient):
         return not alt_speed_enabled
 
     @log_time
+    def set_priority(self, torrent_ids: int | str | list[int | str], priority: int) -> None:
+        """Set bandwidth priority for one or more torrents."""
+        if isinstance(torrent_ids, (int, str)):
+            torrent_ids = [torrent_ids]
+
+        self.client.change_torrent(torrent_ids, bandwidth_priority=priority)
+
+    @log_time
     def has_separate_id(self) -> bool:
         """Transmission uses integer IDs separate from hash."""
         return True

@@ -253,6 +253,16 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
+    def set_priority(self, torrent_ids: int | str | list[int | str], priority: int) -> None:
+        """Set bandwidth priority for one or more torrents.
+
+        Args:
+            torrent_ids: Single torrent ID or list of IDs
+            priority: Priority level (-1=low, 0=normal, 1=high)
+        """
+        pass
+
+    @abstractmethod
     def has_separate_id(self) -> bool:
         """Return True if this client has a separate ID field distinct from hash.
 

@@ -81,6 +81,14 @@ class StopAllTorrentsCommand(Message):
     pass
 
 
+class ChangeTorrentPriorityCommand(Message):
+
+    def __init__(self, torrent_id: int, current_priority: int | None) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+        self.current_priority = current_priority
+
+
 class OpenSearchCommand(Message):
     pass
 

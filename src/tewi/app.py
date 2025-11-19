@@ -40,7 +40,7 @@ from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpda
         OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
         RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
         StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenWebSearchCommand, \
-        AddTorrentFromWebSearchCommand, WebSearchQuerySubmitted
+        AddTorrentFromWebSearchCommand, WebSearchQuerySubmitted, ChangeTorrentPriorityCommand
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -255,6 +255,23 @@ class MainApp(App):
     def handle_reannounce_torrent_command(self, event: ReannounceTorrentCommand) -> None:
         self.client.reannounce_torrent(event.torrent_id)
         self.post_message(Notification("Torrent reannounce started"))
+
+    @log_time
+    @on(ChangeTorrentPriorityCommand)
+    def handle_change_torrent_priority_command(self, event: ChangeTorrentPriorityCommand) -> None:
+        # Cycle through priorities: None/0 -> 1 (high) -> -1 (low) -> 0 (normal) -> 1 (high)...
+        if event.current_priority is None or event.current_priority == 0:
+            new_priority = 1
+            priority_label = "High"
+        elif event.current_priority == 1:
+            new_priority = -1
+            priority_label = "Low"
+        else:  # -1
+            new_priority = 0
+            priority_label = "Normal"
+
+        self.client.set_priority(event.torrent_id, new_priority)
+        self.post_message(Notification(f"Torrent priority set to {priority_label}"))
 
     @log_time
     @on(SearchCompletedEvent)
