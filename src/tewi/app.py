@@ -571,8 +571,15 @@ def create_app():
 @log_time
 def cli():
     """CLI entry point. Creates and runs the MainApp."""
+
+    # set terminal title
+    print('\33]0;Tewi\a', end='', flush=True)
+
     app = create_app()
     app.run()
+
+    # clean terminal title
+    print('\33]0;\a', end='', flush=True)
 
 
 if __name__ == "__main__":

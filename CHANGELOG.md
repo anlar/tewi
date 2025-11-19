@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Configuration file support with INI format stored in XDG_CONFIG_HOME or ~/.config
 - Display download and upload state (interested/choked) for peers
 - Display tracker timing information in trackers table (last/next announce and scrape times, Transmission only)
+- Set terminal title [#95](https://github.com/anlar/tewi/issues/95)
 
 ### Changed
 
