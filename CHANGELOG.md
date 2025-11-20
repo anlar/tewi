@@ -9,19 +9,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Change torrent bandwidth priority with 'p' hotkey (cycles through high/low/normal, Transmission only)
-- Start web search with query via `-s/--search` CLI option
 - Web search for torrents on public trackers (YTS, TPB, Torrents-CSV, Nyaa)
-- Torrent details view in search results (press 'i' to view details with provider-specific metadata)
-- Configuration file support with INI format stored in XDG_CONFIG_HOME or ~/.config
+- Start web search with query via `-s/--search` CLI option
+- Torrent details view in search results ('i' hotkey)
+- Change torrent bandwidth priority with 'p' hotkey (cycles through high/low/normal, Transmission only)
+- Configuration file support with INI format stored in XDG_CONFIG_HOME or ~/.config [#98](https://github.com/anlar/tewi/issues/98)
 - Display download and upload state (interested/choked) for peers
 - Display tracker timing information in trackers table (last/next announce and scrape times, Transmission only)
 - Set terminal title [#95](https://github.com/anlar/tewi/issues/95)
 
 ### Changed
 
-- Run all web search providers in parallel for faster results
-- Display "-" instead of "<not found in database>" for peers with unrecognized IP addresses
+- Display "-" instead of `"<not found in database>"` for peers with unrecognized IP addresses
 - Load peer country from qBittorrent details
 - Unified naming scheme for peer connection types
 - Fix wrong order of upload and download speed columns in peers
