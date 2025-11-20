@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Removed
+
+## [1.1.0] - 2025-11-20 - Moon Rabbit
+
+### Added
+
 - Web search for torrents on public trackers (YTS, TPB, Torrents-CSV, Nyaa)
 - Start web search with query via `-s/--search` CLI option
 - Torrent details view in search results ('i' hotkey)
@@ -31,8 +39,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shorten column names in trackers table
 - Change hotkey for torrent status toggle from 'p' to 'Space'
 - Create capabilities system to hide actions unsupported by client
-
-### Removed
 
 ## [1.0.0] - 2025-11-14 - Silver Whiskers
 
