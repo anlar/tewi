@@ -29,10 +29,12 @@ Features:
 - Different view modes: card, compact, oneline
 - Display torrent details: overview, files, trackers, peers
 - Add new torrents
-- Torrent actions: start/pause, remove/trash, verify, reannounce
+- Torrent actions: start/pause, remove/trash, verify, reannounce, change priority
 - View and toggle alternative speed limits
 - View session statistics
+- View torrent client preferences
 - Dark and light color themes
+- Search torrents on popular trackers
 
 ### Built With
 
@@ -40,6 +42,7 @@ Features:
 * [Textual](https://textual.textualize.io/)
 * [transmission-rpc](https://github.com/Trim21/transmission-rpc)
 * [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api)
+* [pyperclip](https://github.com/asweigart/pyperclip)
 
 ## Getting Started
 
