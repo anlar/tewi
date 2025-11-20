@@ -1,5 +1,7 @@
 """Torrent details dialog for web search results."""
 
+import webbrowser
+
 from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.widgets import Static, Markdown
@@ -14,6 +16,7 @@ class TorrentDetailsDialog(ModalScreen[None]):
 
     BINDINGS = [
         Binding("a", "add_torrent", "[Action] Add Torrent"),
+        Binding("o", "open_link", "[Action] Open Link"),
 
         Binding("x,escape", "close", "[Navigation] Close"),
 
@@ -26,7 +29,9 @@ class TorrentDetailsDialog(ModalScreen[None]):
 
     @log_time
     def __init__(self, title: str, common_content: str,
-                 extended_content: str, magnet_link: str | None = None) -> None:
+                 extended_content: str,
+                 site_link: str | None = None,
+                 magnet_link: str | None = None) -> None:
         """Initialize the dialog with torrent details.
 
         Args:
@@ -39,6 +44,7 @@ class TorrentDetailsDialog(ModalScreen[None]):
         self.title = title
         self.common_content = common_content
         self.extended_content = extended_content
+        self.site_link = site_link
         self.magnet_link = magnet_link
 
     @log_time
@@ -77,6 +83,11 @@ class TorrentDetailsDialog(ModalScreen[None]):
                 "warning"))
 
     @log_time
+    def action_open_link(self) -> None:
+        if self.site_link:
+            webbrowser.open(self.site_link)
+
+    @log_time
     def action_close(self) -> None:
         """Close the dialog."""
         self.dismiss()
@@ -113,4 +124,4 @@ class TorrentDetailsWidget(Static):
     def on_mount(self) -> None:
         """Set border title and subtitle, focus left column."""
         self.border_title = 'Torrent Details'
-        self.border_subtitle = '(A) Add / (X) Close'
+        self.border_subtitle = '(A) Add / (O) Open Link / (X) Close'

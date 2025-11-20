@@ -1,5 +1,7 @@
 """Web search results panel for public torrent trackers."""
 
+import webbrowser
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import ClassVar
 
@@ -31,6 +33,7 @@ class TorrentWebSearch(Static):
 
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding("a", "add_torrent", "[Action] Add Torrent"),
+        Binding("o", "open_link", "[Action] Open Link"),
         Binding("enter", "show_details", "[Action] Show Details"),
 
         Binding("x,escape", "close", "[Navigation] Close"),
@@ -175,7 +178,7 @@ class TorrentWebSearch(Static):
         # Show the details dialog
         self.app.push_screen(TorrentDetailsDialog(
             result.title, common_content, extended_content,
-            result.magnet_link))
+            result.page_url, result.magnet_link))
 
     @log_time
     def action_add_torrent(self) -> None:
@@ -200,6 +203,29 @@ class TorrentWebSearch(Static):
 
         # Post command to add torrent
         self.post_message(AddTorrentFromWebSearchCommand(result.magnet_link))
+
+    @log_time
+    def action_open_link(self) -> None:
+        table = self.query_one("#websearch-results", DataTable)
+
+        if not self.r_results:
+            return
+
+        # Get selected row
+        if table.cursor_row is None or table.cursor_row < 0:
+            self.post_message(Notification(
+                "No torrent selected",
+                "warning"))
+            return
+
+        # Find the corresponding result
+        if table.cursor_row >= len(self.r_results):
+            return
+
+        result = self.r_results[table.cursor_row]
+
+        if result.page_url:
+            webbrowser.open(result.page_url)
 
     @log_time
     def action_cursor_down(self) -> None:
