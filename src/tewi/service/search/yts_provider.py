@@ -1,4 +1,4 @@
-"""YTS.mx torrent search provider implementation."""
+"""YTS torrent search provider implementation."""
 
 import urllib.request
 import urllib.parse
@@ -12,15 +12,18 @@ from ...util.decorator import log_time
 
 
 class YTSProvider(BaseSearchProvider):
-    """Search provider for YTS.mx (movie torrents).
+    """Search provider for YTS (movie torrents).
 
-    YTS.mx provides a public API for searching movie torrents.
-    Documentation: https://yts.mx/api
+    YTS provides a public API for searching movie torrents.
+    Documentation: https://yts.lt/api
+    Status: https://yifystatus.com/
+    Domains: https://gosites.org/yts
     """
 
-    API_URL = "https://yts.mx/api/v2/list_movies.json"
+    DOMAIN = "yts.lt"
+    API_URL = f"https://{DOMAIN}/api/v2/list_movies.json"
 
-    # Recommended trackers from YTS.mx documentation
+    # Recommended trackers from YTS documentation
     TRACKERS = [
         "udp://open.demonii.com:1337/announce",
         "udp://tracker.openbittorrent.com:80",
@@ -42,7 +45,7 @@ class YTSProvider(BaseSearchProvider):
 
     @log_time
     def _search_impl(self, query: str) -> list[SearchResultDTO]:
-        """Search YTS.mx for movie torrents.
+        """Search YTS for movie torrents.
 
         Args:
             query: Movie name to search for
@@ -201,7 +204,7 @@ class YTSProvider(BaseSearchProvider):
             # Construct page URL from movie URL or ID
             page_url = movie.get('url')
             if not page_url and movie.get('id'):
-                page_url = f"https://yts.mx/movies/{movie['id']}"
+                page_url = f"https://{self.DOMAIN}/movies/{movie['id']}"
 
             return SearchResultDTO(
                 title=full_title,
