@@ -32,6 +32,7 @@ class TorrentInfoPanel(ScrollableContainer):
     def __init__(self, capability_torrent_id: bool, **kwargs):
         super().__init__(**kwargs)
         self.capability_torrent_id = capability_torrent_id
+        self.file_count = None
 
     r_torrent = reactive(None)
 
@@ -161,7 +162,11 @@ class TorrentInfoPanel(ScrollableContainer):
     @log_time
     def on_mount(self):
         table = self.query_one("#files")
-        table.add_columns("ID", "Size", "Done", "P", "Name")
+        table.add_columns(("ID", "ID"),
+                          ("Size", "Size"),
+                          ("Done", "Done"),
+                          ("P", "P"),
+                          ("Name", "Name"))
 
         table = self.query_one("#peers")
         table.add_columns("Encrypted", "Up", "Down", "UL State", "DL State", "Progress", "Connection", "Direction",
@@ -209,12 +214,15 @@ class TorrentInfoPanel(ScrollableContainer):
             self.t_peers_down = str(torrent.peers_getting_from_us)
 
             table = self.query_one("#files")
-            selected_row = self.selected_row(table)
-            table.clear()
-
             file_tree = self.create_file_tree(self.r_torrent.files)
-            self.draw_file_table(table, file_tree)
-            self.select_row(table, selected_row)
+
+            if self.file_count is None or self.file_count != len(self.r_torrent.files):
+                table.clear()
+                self.draw_file_table(table, file_tree)
+            else:
+                self.update_file_table(table, file_tree)
+
+            self.file_count = len(self.r_torrent.files)
 
             table = self.query_one("#peers")
             selected_row = self.selected_row(table)
@@ -302,6 +310,71 @@ class TorrentInfoPanel(ScrollableContainer):
         return tree
 
     @log_time
+    def update_file_table(self, table, node) -> None:
+        # Flatten the tree into a list in the same order as draw_file_table
+        items_list = []
+
+        def flatten_tree(node, prefix="", is_last=True):
+            items = [(k, v) for k, v in node.items() if k != '__is_file__']
+            items.sort(key=lambda x: x[0].lower())
+
+            for i, (name, subtree) in enumerate(items):
+                is_last_item = i == len(items) - 1
+
+                if prefix == "":
+                    current_prefix = ""
+                    symbol = ""
+                else:
+                    symbol = "├─ " if not is_last_item else "└─ "
+                    current_prefix = prefix
+
+                display_name = f"{current_prefix}{symbol}{name}"
+
+                if subtree.get('__is_file__', False):
+                    f = subtree['file']
+                    completion = (f.completed / f.size) * 100
+                    items_list.append({
+                        'is_file': True,
+                        'display_name': display_name,
+                        'id': f.id,
+                        'size': print_size(f.size),
+                        'done': f'{completion:.0f}%',
+                        'priority': self.print_priority(f.priority)
+                    })
+                else:
+                    items_list.append({
+                        'is_file': False,
+                        'display_name': display_name
+                    })
+
+                    extension = "│  " if not is_last_item else "  "
+                    new_prefix = current_prefix + extension
+                    flatten_tree(subtree, new_prefix, is_last_item)
+
+        flatten_tree(node)
+
+        # Update each row in the table
+        row_keys = list(table.rows.keys())
+        for row_idx, item in enumerate(items_list):
+            if row_idx >= len(row_keys):
+                break
+
+            row_key = row_keys[row_idx]
+
+            if item['is_file']:
+                table.update_cell(row_key, "ID", item['id'])
+                table.update_cell(row_key, "Size", item['size'])
+                table.update_cell(row_key, "Done", item['done'])
+                table.update_cell(row_key, "P", item['priority'])
+                table.update_cell(row_key, "Name", item['display_name'])
+            else:
+                table.update_cell(row_key, "ID", None)
+                table.update_cell(row_key, "Size", None)
+                table.update_cell(row_key, "Done", None)
+                table.update_cell(row_key, "P", None)
+                table.update_cell(row_key, "Name", item['display_name'])
+
+    @log_time
     def draw_file_table(self, table, node, prefix="", is_last=True) -> None:
         items = [(k, v) for k, v in node.items() if k != '__is_file__']
         # Sort items by name (case-insensitive)
@@ -319,7 +392,6 @@ class TorrentInfoPanel(ScrollableContainer):
                 current_prefix = prefix
 
             display_name = f"{current_prefix}{symbol}{name}"
-            fullname = subtree.get('fullname')
 
             if subtree.get('__is_file__', False):
                 f = subtree['file']
@@ -329,15 +401,13 @@ class TorrentInfoPanel(ScrollableContainer):
                               print_size(f.size),
                               f'{completion:.0f}%',
                               self.print_priority(f.priority),
-                              display_name,
-                              key=fullname)
+                              display_name)
             else:
                 table.add_row(None,
                               None,
                               None,
                               None,
-                              display_name,
-                              key=fullname)
+                              display_name)
 
                 # print directory content
                 extension = "│  " if not is_last_item else "  "
