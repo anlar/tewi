@@ -156,6 +156,8 @@ class MainApp(App):
             self.post_message(WebSearchQuerySubmitted(
                 self.initial_search_query))
 
+        self.query_one(TorrentListViewPanel).focus()
+
     @log_time
     @work(exclusive=True, thread=True)
     async def load_tdata(self) -> None:

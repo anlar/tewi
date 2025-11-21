@@ -400,7 +400,7 @@ class TorrentInfoPanel(ScrollableContainer):
         tab_id = event.pane.id
 
         if tab_id == 'tab-overview':
-            pass
+            self.query_one('#overview').focus()
         elif tab_id == 'tab-files':
             self.query_one('#files').focus()
         elif tab_id == 'tab-peers':
