@@ -214,6 +214,7 @@ class TorrentInfoPanel(ScrollableContainer):
             self.draw_file_table(table, file_tree)
 
             table = self.query_one("#peers")
+            old_row_key = self.table_selected_row_key(table)
             table.clear()
 
             for p in self.r_torrent.peers:
@@ -230,7 +231,10 @@ class TorrentInfoPanel(ScrollableContainer):
                               p.country or (get_country(p.address) or "-"),
                               p.address,
                               self.print_count(p.port),
-                              p.client_name)
+                              p.client_name,
+                              key=p.address+str(p.port))
+
+            self.select_table_row(table, old_row_key)
 
             table = self.query_one("#trackers")
             table.clear()
@@ -249,6 +253,22 @@ class TorrentInfoPanel(ScrollableContainer):
                               self.print_tracker_datetime(t.last_scrape),
                               self.print_tracker_next_time(t.next_scrape),
                               t.message)
+
+    def table_selected_row_key(self, table):
+        cursor_row = table.cursor_row
+        try:
+            cell_key = table.coordinate_to_cell_key((cursor_row, 0))
+            row_key = cell_key.row_key
+        except Exception:
+            row_key = None
+
+        return row_key
+
+    def select_table_row(self, table, row_key):
+        if row_key in table.rows:
+            row = table.get_row_index(row_key)
+            if row:
+                table.move_cursor(row=row)
 
     @log_time
     def create_file_tree(self, torrents) -> dict:

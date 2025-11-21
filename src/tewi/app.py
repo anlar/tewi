@@ -161,7 +161,8 @@ class MainApp(App):
     @log_time
     @work(exclusive=True, thread=True)
     async def load_tdata(self) -> None:
-        if self.query_one(ContentSwitcher).current == 'torrent-list':
+        current_pane = self.query_one(ContentSwitcher).current
+        if current_pane == 'torrent-list':
             logging.info("Start loading data from torrent client...")
 
             torrents = self.client.torrents_test(self.test_mode) if self.test_mode else self.client.torrents()
@@ -171,6 +172,14 @@ class MainApp(App):
                           reverse=not self.sort_order_asc)
 
             self.call_from_thread(self.set_tdata, torrents, session)
+        elif current_pane == 'torrent-info':
+            info_panel = self.query_one(TorrentInfoPanel)
+            torrent = self.client.torrent(info_panel.r_torrent.id)
+            self.call_from_thread(self.set_tdata2, torrent)
+
+    @log_time
+    def set_tdata2(self, torrent: TorrentDTO) -> None:
+        self.query_one(TorrentInfoPanel).r_torrent = torrent
 
     @log_time
     def set_tdata(self, torrents: list[TorrentDTO], session) -> None:
