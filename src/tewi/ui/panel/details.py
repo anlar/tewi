@@ -5,11 +5,11 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import ScrollableContainer, Horizontal, Container, Vertical
 from textual.reactive import reactive
-from textual.widgets import Static, DataTable, TabbedContent, TabPane
+from textual.widgets import Static, TabbedContent, TabPane
 
 from ...message import OpenTorrentListCommand
 
-from ..widget.common import ReactiveLabel
+from ..widget.common import ReactiveLabel, VimDataTable
 from ...util.print import print_size, print_speed, print_time_ago
 from ...util.decorator import log_time
 from ...util.geoip import get_country
@@ -140,21 +140,21 @@ class TorrentInfoPanel(ScrollableContainer):
 
             with TabPane("Files", id='tab-files'):
                 with Container():
-                    yield DataTable(id='files',
-                                    cursor_type="row",
-                                    zebra_stripes=True)
+                    yield VimDataTable(id='files',
+                                       cursor_type="row",
+                                       zebra_stripes=True)
 
             with TabPane("Peers", id='tab-peers'):
                 with Container():
-                    yield DataTable(id='peers',
-                                    cursor_type="row",
-                                    zebra_stripes=True)
+                    yield VimDataTable(id='peers',
+                                       cursor_type="row",
+                                       zebra_stripes=True)
 
             with TabPane("Trackers", id='tab-trackers'):
                 with Container():
-                    yield DataTable(id='trackers',
-                                    cursor_type="row",
-                                    zebra_stripes=True)
+                    yield VimDataTable(id='trackers',
+                                       cursor_type="row",
+                                       zebra_stripes=True)
 
     @log_time
     def on_mount(self):

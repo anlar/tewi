@@ -1,7 +1,19 @@
+from textual.binding import Binding
 from textual.reactive import reactive
-from textual.widgets import Static, Label
+from textual.widgets import Static, Label, DataTable
 from ...util.decorator import log_time
 from ...util.print import print_speed
+
+
+class VimDataTable(DataTable):
+    BINDINGS = [
+        Binding("k", "cursor_up", "Cursor up", show=False),
+        Binding("j", "cursor_down", "Cursor down", show=False),
+        Binding("l", "cursor_right", "Cursor right", show=False),
+        Binding("h", "cursor_left", "Cursor left", show=False),
+        Binding("g", "scroll_top", "Home", show=False),
+        Binding("G", "scroll_bottom", "End", show=False),
+    ]
 
 
 class ReactiveLabel(Label):
