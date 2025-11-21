@@ -1,14 +1,15 @@
 from datetime import datetime
 
+from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import ScrollableContainer, Horizontal, Container, Vertical
 from textual.reactive import reactive
-from textual.widgets import Static, DataTable, TabbedContent, TabPane
+from textual.widgets import Static, TabbedContent, TabPane
 
 from ...message import OpenTorrentListCommand
 
-from ..widget.common import ReactiveLabel
+from ..widget.common import ReactiveLabel, VimDataTable
 from ...util.print import print_size, print_speed, print_time_ago
 from ...util.decorator import log_time
 from ...util.geoip import get_country
@@ -18,15 +19,12 @@ from ...common import FilePriority
 class TorrentInfoPanel(ScrollableContainer):
 
     BINDINGS = [
-            Binding("enter", "view_list", "[Navigation] View torrent list"),
-            Binding("h,left", "go_left", "[Navigation] Go left"),
-            Binding("l,right", "go_right", "[Navigation] Go right"),
+            Binding("o,1", "open_tab('tab-overview')", "[Navigation] Open Overview"),
+            Binding("f,2", "open_tab('tab-files')", "[Navigation] Open Files"),
+            Binding("p,3", "open_tab('tab-peers')", "[Navigation] Open Peers"),
+            Binding("t,4", "open_tab('tab-trackers')", "[Navigation] Open Trackers"),
 
-            Binding("k,up", "scroll_up", "[Navigation] Scroll up"),
-            Binding("j,down", "scroll_down", "[Navigation] Scroll down"),
-
-            Binding("g", "scroll_top", "[Navigation] Scroll to the top"),
-            Binding("G", "scroll_bottom", "[Navigation] Scroll to the bottom"),
+            Binding("x,esc", "close", "[Navigation] Close"),
             ]
 
     @log_time
@@ -65,8 +63,9 @@ class TorrentInfoPanel(ScrollableContainer):
 
     @log_time
     def compose(self) -> ComposeResult:
+        self.border_subtitle = '(1/O) Overview / (2/F) Files / (3/P) Peers / (4/T) Trackers / (X) Close'
         with TabbedContent():
-            with TabPane("Overview", id="tab-overview"):
+            with TabPane("[u]O[/]verview", id="tab-overview"):
                 with ScrollableContainer(id="overview"):
                     with Vertical():
                         with Container(classes="overview-block") as block:
@@ -140,23 +139,23 @@ class TorrentInfoPanel(ScrollableContainer):
                                 yield Static("Downloading:", classes="name")
                                 yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_peers_down)
 
-            with TabPane("Files", id='tab-files'):
+            with TabPane("[u]F[/]iles", id='tab-files'):
                 with Container():
-                    yield DataTable(id='files',
-                                    cursor_type="none",
-                                    zebra_stripes=True)
+                    yield VimDataTable(id='files',
+                                       cursor_type="row",
+                                       zebra_stripes=True)
 
-            with TabPane("Peers", id='tab-peers'):
+            with TabPane("[u]P[/]eers", id='tab-peers'):
                 with Container():
-                    yield DataTable(id='peers',
-                                    cursor_type="none",
-                                    zebra_stripes=True)
+                    yield VimDataTable(id='peers',
+                                       cursor_type="row",
+                                       zebra_stripes=True)
 
-            with TabPane("Trackers", id='tab-trackers'):
+            with TabPane("[u]T[/]rackers", id='tab-trackers'):
                 with Container():
-                    yield DataTable(id='trackers',
-                                    cursor_type="none",
-                                    zebra_stripes=True)
+                    yield VimDataTable(id='trackers',
+                                       cursor_type="row",
+                                       zebra_stripes=True)
 
     @log_time
     def on_mount(self):
@@ -389,67 +388,26 @@ class TorrentInfoPanel(ScrollableContainer):
             return "-"
 
     @log_time
-    def action_view_list(self):
+    def action_open_tab(self, tab_id: str):
+        self.query_one(TabbedContent).active = tab_id
+
+    @log_time
+    def action_close(self):
         self.post_message(OpenTorrentListCommand())
 
     @log_time
-    def action_go_left(self):
-        tabs = self.query_one(TabbedContent)
-        active = tabs.active
+    @on(TabbedContent.TabActivated)
+    def handle_tab_activated(self, event: TabbedContent.TabActivated) -> None:
+        tab_id = event.pane.id
 
-        if active == 'tab-overview':
-            self.post_message(OpenTorrentListCommand())
-        elif active == 'tab-files':
-            tabs.active = 'tab-overview'
-        elif active == 'tab-peers':
-            tabs.active = 'tab-files'
-        elif active == 'tab-trackers':
-            tabs.active = 'tab-peers'
+        if tab_id == 'tab-overview':
+            self.query_one('#overview').focus()
+        elif tab_id == 'tab-files':
+            self.query_one('#files').focus()
+        elif tab_id == 'tab-peers':
+            self.query_one('#peers').focus()
+        elif tab_id == 'tab-trackers':
+            self.query_one('#trackers').focus()
 
-    @log_time
-    def action_go_right(self):
-        tabs = self.query_one(TabbedContent)
-        active = tabs.active
-
-        if active == 'tab-overview':
-            tabs.active = 'tab-files'
-        elif active == 'tab-files':
-            tabs.active = 'tab-peers'
-        elif active == 'tab-peers':
-            tabs.active = 'tab-trackers'
-
-    @log_time
-    def action_scroll_up(self):
-        if self.query_one(TabbedContent).active == 'tab-files':
-            self.query_one("#files").scroll_up()
-        elif self.query_one(TabbedContent).active == 'tab-peers':
-            self.query_one("#peers").scroll_up()
-        elif self.query_one(TabbedContent).active == 'tab-trackers':
-            self.query_one("#trackers").scroll_up()
-
-    @log_time
-    def action_scroll_down(self):
-        if self.query_one(TabbedContent).active == 'tab-files':
-            self.query_one("#files").scroll_down()
-        elif self.query_one(TabbedContent).active == 'tab-peers':
-            self.query_one("#peers").scroll_down()
-        elif self.query_one(TabbedContent).active == 'tab-trackers':
-            self.query_one("#trackers").scroll_up()
-
-    @log_time
-    def action_scroll_top(self):
-        if self.query_one(TabbedContent).active == 'tab-files':
-            self.query_one("#files").action_scroll_top()
-        elif self.query_one(TabbedContent).active == 'tab-peers':
-            self.query_one("#peers").action_scroll_top()
-        elif self.query_one(TabbedContent).active == 'tab-trackers':
-            self.query_one("#trackers").scroll_up()
-
-    @log_time
-    def action_scroll_bottom(self):
-        if self.query_one(TabbedContent).active == 'tab-files':
-            self.query_one("#files").action_scroll_bottom()
-        elif self.query_one(TabbedContent).active == 'tab-peers':
-            self.query_one("#peers").action_scroll_bottom()
-        elif self.query_one(TabbedContent).active == 'tab-trackers':
-            self.query_one("#trackers").scroll_up()
+    def active_tab_id(self) -> str:
+        return self.query_one(TabbedContent).active
