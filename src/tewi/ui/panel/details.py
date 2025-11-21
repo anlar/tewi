@@ -63,8 +63,9 @@ class TorrentInfoPanel(ScrollableContainer):
 
     @log_time
     def compose(self) -> ComposeResult:
+        self.border_subtitle = '(1/O) Overview / (2/F) Files / (3/P) Peers / (4/T) Trackers / (X) Close'
         with TabbedContent():
-            with TabPane("Overview", id="tab-overview"):
+            with TabPane("[u]O[/]verview", id="tab-overview"):
                 with ScrollableContainer(id="overview"):
                     with Vertical():
                         with Container(classes="overview-block") as block:
@@ -138,19 +139,19 @@ class TorrentInfoPanel(ScrollableContainer):
                                 yield Static("Downloading:", classes="name")
                                 yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_peers_down)
 
-            with TabPane("Files", id='tab-files'):
+            with TabPane("[u]F[/]iles", id='tab-files'):
                 with Container():
                     yield VimDataTable(id='files',
                                        cursor_type="row",
                                        zebra_stripes=True)
 
-            with TabPane("Peers", id='tab-peers'):
+            with TabPane("[u]P[/]eers", id='tab-peers'):
                 with Container():
                     yield VimDataTable(id='peers',
                                        cursor_type="row",
                                        zebra_stripes=True)
 
-            with TabPane("Trackers", id='tab-trackers'):
+            with TabPane("[u]T[/]rackers", id='tab-trackers'):
                 with Container():
                     yield VimDataTable(id='trackers',
                                        cursor_type="row",
