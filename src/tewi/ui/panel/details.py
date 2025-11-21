@@ -6,6 +6,7 @@ from textual.binding import Binding
 from textual.containers import ScrollableContainer, Horizontal, Container, Vertical
 from textual.reactive import reactive
 from textual.widgets import Static, TabbedContent, TabPane
+from textual.widgets.data_table import RowKey
 
 from ...message import OpenTorrentListCommand
 
@@ -208,13 +209,15 @@ class TorrentInfoPanel(ScrollableContainer):
             self.t_peers_down = str(torrent.peers_getting_from_us)
 
             table = self.query_one("#files")
+            selected_row = self.selected_row(table)
             table.clear()
 
             file_tree = self.create_file_tree(self.r_torrent.files)
             self.draw_file_table(table, file_tree)
+            self.select_row(table, selected_row)
 
             table = self.query_one("#peers")
-            old_row_key = self.table_selected_row_key(table)
+            selected_row = self.selected_row(table)
             table.clear()
 
             for p in self.r_torrent.peers:
@@ -234,9 +237,10 @@ class TorrentInfoPanel(ScrollableContainer):
                               p.client_name,
                               key=p.address+str(p.port))
 
-            self.select_table_row(table, old_row_key)
+            self.select_row(table, selected_row)
 
             table = self.query_one("#trackers")
+            selected_row = self.selected_row(table)
             table.clear()
 
             for t in self.r_torrent.trackers:
@@ -252,19 +256,22 @@ class TorrentInfoPanel(ScrollableContainer):
                               self.print_tracker_next_time(t.next_announce),
                               self.print_tracker_datetime(t.last_scrape),
                               self.print_tracker_next_time(t.next_scrape),
-                              t.message)
+                              t.message,
+                              key=t.host)
 
-    def table_selected_row_key(self, table):
+            self.select_row(table, selected_row)
+
+    def selected_row(self, table: VimDataTable) -> RowKey | None:
+        '''Return selected row key (or None) from table'''
         cursor_row = table.cursor_row
-        try:
-            cell_key = table.coordinate_to_cell_key((cursor_row, 0))
-            row_key = cell_key.row_key
-        except Exception:
-            row_key = None
+        # Check if cursor is at a valid position
+        if cursor_row is None or cursor_row < 0 or cursor_row >= table.row_count:
+            return None
 
-        return row_key
+        return table.coordinate_to_cell_key((cursor_row, 0)).row_key
 
-    def select_table_row(self, table, row_key):
+    def select_row(self, table: VimDataTable, row_key: RowKey) -> None:
+        '''Select row by its key if it present in table'''
         if row_key in table.rows:
             row = table.get_row_index(row_key)
             if row:
@@ -310,6 +317,8 @@ class TorrentInfoPanel(ScrollableContainer):
                 symbol = "├─ " if not is_last_item else "└─ "
                 current_prefix = prefix
 
+            filename = f"{current_prefix}{symbol}{name}"
+
             if subtree.get('__is_file__', False):
                 f = subtree['torrent']
 
@@ -318,13 +327,15 @@ class TorrentInfoPanel(ScrollableContainer):
                               print_size(f.size),
                               f'{completion:.0f}%',
                               self.print_priority(f.priority),
-                              f"{current_prefix}{symbol}{name}")
+                              filename,
+                              key=filename)
             else:
                 table.add_row(None,
                               None,
                               None,
                               None,
-                              f"{current_prefix}{symbol}{name}")
+                              filename,
+                              key=filename)
 
                 # print directory content
                 extension = "│  " if not is_last_item else "  "
