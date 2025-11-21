@@ -278,12 +278,12 @@ class TorrentInfoPanel(ScrollableContainer):
                 table.move_cursor(row=row)
 
     @log_time
-    def create_file_tree(self, torrents) -> dict:
+    def create_file_tree(self, files) -> dict:
         # Build the tree structure
         tree = {}
 
-        for torrent in torrents:
-            parts = torrent.name.split('/')
+        for file in files:
+            parts = file.name.split('/')
             current = tree
 
             # Navigate/create the path in the tree
@@ -294,7 +294,8 @@ class TorrentInfoPanel(ScrollableContainer):
                 # If this is the last part (filename), mark it as a file
                 if i == len(parts) - 1:
                     current[part]['__is_file__'] = True
-                    current[part]['torrent'] = torrent
+                    current[part]['file'] = file
+                    current[part]['fullname'] = file.name
 
                 current = current[part]
 
@@ -317,25 +318,26 @@ class TorrentInfoPanel(ScrollableContainer):
                 symbol = "├─ " if not is_last_item else "└─ "
                 current_prefix = prefix
 
-            filename = f"{current_prefix}{symbol}{name}"
+            display_name = f"{current_prefix}{symbol}{name}"
+            fullname = subtree.get('fullname')
 
             if subtree.get('__is_file__', False):
-                f = subtree['torrent']
+                f = subtree['file']
 
                 completion = (f.completed / f.size) * 100
                 table.add_row(f.id,
                               print_size(f.size),
                               f'{completion:.0f}%',
                               self.print_priority(f.priority),
-                              filename,
-                              key=filename)
+                              display_name,
+                              key=fullname)
             else:
                 table.add_row(None,
                               None,
                               None,
                               None,
-                              filename,
-                              key=filename)
+                              display_name,
+                              key=fullname)
 
                 # print directory content
                 extension = "│  " if not is_last_item else "  "
