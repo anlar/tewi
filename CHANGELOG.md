@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Changed navigation hotkeys in torrent details to 'ofpt1234', allowed navigation in tables
+- Refresh torrent list only when it is visible
 
 ### Removed
 
