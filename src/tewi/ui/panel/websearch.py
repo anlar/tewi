@@ -73,7 +73,10 @@ class TorrentWebSearch(Static):
     @log_time
     def on_mount(self) -> None:
         self.border_title = "Search Results"
-        self.border_subtitle = "(A) Add / (Enter) Details / (X) Close"
+        self.border_subtitle = ("(A) Add / "
+                                "(O) Open Link / "
+                                "(Enter) Details / "
+                                "(X) Close")
 
         table = self.query_one("#websearch-results", DataTable)
 
