@@ -10,11 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Action to open web link in torrent search results ('o' hotkey)
+- Automatically refresh torrent details screen [#101](https://github.com/anlar/tewi/issues/101)
 
 ### Changed
 
 - Changed navigation hotkeys in torrent details to 'ofpt1234', allowed navigation in tables
-- Refresh torrent list only when it is visible
 
 ### Removed
 
