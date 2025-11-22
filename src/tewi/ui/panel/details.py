@@ -296,34 +296,20 @@ class TorrentInfoPanel(ScrollableContainer):
 
             row_key = row_keys[row_idx]
 
-            if item['is_file']:
-                table.update_cell(row_key, "ID", item['id'])
-                table.update_cell(row_key, "Size", item['size'])
-                table.update_cell(row_key, "Done", item['done'])
-                table.update_cell(row_key, "P", item['priority'])
-                table.update_cell(row_key, "Name", item['display_name'])
-            else:
-                table.update_cell(row_key, "ID", None)
-                table.update_cell(row_key, "Size", None)
-                table.update_cell(row_key, "Done", None)
-                table.update_cell(row_key, "P", None)
-                table.update_cell(row_key, "Name", item['display_name'])
+            table.update_cell(row_key, "ID", item['id'])
+            table.update_cell(row_key, "Size", item['size'])
+            table.update_cell(row_key, "Done", item['done'])
+            table.update_cell(row_key, "P", item['priority'])
+            table.update_cell(row_key, "Name", item['display_name'])
 
     @log_time
     def draw_file_table(self, table, file_list) -> None:
         for item in file_list:
-            if item['is_file']:
-                table.add_row(item['id'],
-                              item['size'],
-                              item['done'],
-                              item['priority'],
-                              item['display_name'])
-            else:
-                table.add_row(None,
-                              None,
-                              None,
-                              None,
-                              item['display_name'])
+            table.add_row(item['id'],
+                          item['size'],
+                          item['done'],
+                          item['priority'],
+                          item['display_name'])
 
     @log_time
     def print_count(self, value: int) -> str:

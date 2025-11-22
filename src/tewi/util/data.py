@@ -96,7 +96,11 @@ def get_file_list(files: list[FileDTO]) -> list:
             else:
                 items_list.append({
                     'is_file': False,
-                    'display_name': display_name
+                    'display_name': display_name,
+                    'id': None,
+                    'size': None,
+                    'done': None,
+                    'priority': None,
                 })
 
                 extension = "│  " if not is_last_item else "  "
