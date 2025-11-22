@@ -209,44 +209,47 @@ class TransmissionClient(BaseClient):
             ul_state=ul_state,
         )
 
+    TRACKER_ANNOUNCE_STATE: dict[int, str] = {
+        0: "Inactive",
+        1: "Waiting",
+        2: "Queued",
+        3: "Active"
+    }
+    """Maps tracker announce state codes to human-readable status labels."""
+
     @log_time
-    def _tracker_to_dto(self, tracker) -> TrackerDTO:
+    def _tracker_to_dto(self, t) -> TrackerDTO:
         """Convert transmission-rpc Tracker to TrackerDTO."""
-        # Map announce_state to readable status
-        # 0 = inactive, 1 = waiting, 2 = queued, 3 = active
-        announce_state_map = {
-            0: "Inactive",
-            1: "Waiting",
-            2: "Queued",
-            3: "Active"
-        }
-        status = announce_state_map.get(tracker.announce_state, "Unknown")
-
-        # Use last_announce_result for message, fallback to empty string
-        message = tracker.last_announce_result if tracker.last_announce_result else ""
-
-        # Get peer count from last announce
-        peer_count = tracker.last_announce_peer_count if tracker.last_announce_peer_count >= 0 else -1
-
-        # Convert Unix timestamps to datetime objects
-        last_announce = datetime.fromtimestamp(tracker.last_announce_time) if tracker.last_announce_time > 0 else None
-        next_announce = datetime.fromtimestamp(tracker.next_announce_time) if tracker.next_announce_time > 0 else None
-        last_scrape = datetime.fromtimestamp(tracker.last_scrape_time) if tracker.last_scrape_time > 0 else None
-        next_scrape = datetime.fromtimestamp(tracker.next_scrape_time) if tracker.next_scrape_time > 0 else None
 
         return TrackerDTO(
-            host=tracker.host,
-            tier=tracker.tier,
-            seeder_count=tracker.seeder_count,
-            leecher_count=tracker.leecher_count,
-            download_count=tracker.download_count,
-            status=status,
-            message=message,
-            peer_count=peer_count,
-            last_announce=last_announce,
-            next_announce=next_announce,
-            last_scrape=last_scrape,
-            next_scrape=next_scrape,
+            host=t.host,
+            tier=t.tier,
+            seeder_count=t.seeder_count if t.seeder_count >= 0 else None,
+            leecher_count=t.leecher_count if t.leecher_count >= 0 else None,
+            download_count=t.download_count if t.download_count >= 0 else None,
+            peer_count=t.last_announce_peer_count if t.last_announce_peer_count >= 0 else None,
+            status=self.TRACKER_ANNOUNCE_STATE.get(t.announce_state, "Unknown"),
+            message=t.last_announce_result,
+            last_announce=(
+                datetime.fromtimestamp(t.last_announce_time)
+                if t.last_announce_time > 0
+                else None
+                ),
+            next_announce=(
+                datetime.fromtimestamp(t.next_announce_time)
+                if t.next_announce_time > 0
+                else None
+                ),
+            last_scrape=(
+                datetime.fromtimestamp(t.last_scrape_time)
+                if t.last_scrape_time > 0
+                else None
+                ),
+            next_scrape=(
+                datetime.fromtimestamp(t.next_scrape_time)
+                if t.next_scrape_time > 0
+                else None
+                ),
         )
 
     @log_time

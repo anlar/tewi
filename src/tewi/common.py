@@ -112,12 +112,12 @@ class TrackerDTO:
     """Data Transfer Object for tracker information."""
     host: str
     tier: int
-    seeder_count: int
-    leecher_count: int
-    download_count: int
+    seeder_count: int | None
+    leecher_count: int | None
+    download_count: int | None
     status: str
     message: str
-    peer_count: int
+    peer_count: int | None
     last_announce: datetime | None = None
     next_announce: datetime | None = None
     last_scrape: datetime | None = None
