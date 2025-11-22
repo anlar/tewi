@@ -14,13 +14,15 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .decorator import log_time
+from functools import cache
 
+from .decorator import log_time
 from .print import print_size
 from ..common import FileDTO, FilePriority
 
 
 @log_time
+@cache
 def print_priority(priority: str) -> str:
     match priority:
         case FilePriority.NOT_DOWNLOADING:
