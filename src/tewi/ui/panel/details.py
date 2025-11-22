@@ -181,6 +181,8 @@ class TorrentInfoPanel(ScrollableContainer):
         if new_r_torrent:
             torrent = new_r_torrent
 
+            prev_t_id = self.t_id
+
             self.t_id = str(torrent.id)
             self.t_hash = torrent.hash_string
             self.t_name = torrent.name
@@ -269,6 +271,11 @@ class TorrentInfoPanel(ScrollableContainer):
                               key=t.host)
 
             self.select_row(table, selected_row)
+
+            # case when details were opened second time on different torrent
+            # ensure that old tab selection is gone
+            if prev_t_id != self.t_id:
+                self.action_open_tab('tab-overview')
 
     def selected_row(self, table: VimDataTable) -> RowKey | None:
         '''Return selected row key (or None) from table'''
