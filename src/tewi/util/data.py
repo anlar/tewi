@@ -15,58 +15,24 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from functools import cache
+from typing import Any
 
+from ..common import FileDTO, FilePriority
 from .decorator import log_time
 from .print import print_size
-from ..common import FileDTO, FilePriority
 
 
 @log_time
-@cache
-def print_priority(priority: str) -> str:
-    match priority:
-        case FilePriority.NOT_DOWNLOADING:
-            return "[dim]-[/]"
-        case FilePriority.LOW:
-            return "[dim yellow]↓[/]"
-        case FilePriority.MEDIUM:
-            return '→'
-        case FilePriority.HIGH:
-            return '[bold red]↑[/]'
-
-
-@log_time
-def create_file_tree(files: list[FileDTO]) -> dict:
-    # Build the tree structure
-    tree = {}
-
-    for file in files:
-        parts = file.name.split('/')
-        current = tree
-
-        # Navigate/create the path in the tree
-        for i, part in enumerate(parts):
-            if part not in current:
-                current[part] = {}
-
-            # If this is the last part (filename), mark it as a file
-            if i == len(parts) - 1:
-                current[part]['__is_file__'] = True
-                current[part]['file'] = file
-                current[part]['fullname'] = file.name
-
-            current = current[part]
-
-    return tree
-
-
-@log_time
-def get_file_list(files: list[FileDTO]) -> list:
+def get_file_list(files: list[FileDTO]) -> list[dict[str, Any]]:
+    """Convert file list to flattened tree structure with display formatting."""
     node = create_file_tree(files)
 
-    items_list = []
+    items_list: list[dict[str, Any]] = []
 
-    def flatten_tree(node, prefix="", is_last=True):
+    def flatten_tree(
+            node: dict[str, Any], prefix: str = "", is_last: bool = True
+    ) -> None:
+        """Recursively flatten tree structure into list with tree symbols."""
         items = [(k, v) for k, v in node.items() if k != '__is_file__']
         # Sort items by name (case-insensitive)
         items.sort(key=lambda x: x[0].lower())
@@ -112,3 +78,42 @@ def get_file_list(files: list[FileDTO]) -> list:
     flatten_tree(node)
 
     return items_list
+
+
+@log_time
+def create_file_tree(files: list[FileDTO]) -> dict[str, Any]:
+    """Build hierarchical tree structure from flat list of files."""
+    tree: dict[str, Any] = {}
+
+    for file in files:
+        parts = file.name.split('/')
+        current = tree
+
+        # Navigate/create the path in the tree
+        for i, part in enumerate(parts):
+            if part not in current:
+                current[part] = {}
+
+            # If this is the last part (filename), mark it as a file
+            if i == len(parts) - 1:
+                current[part]['__is_file__'] = True
+                current[part]['file'] = file
+
+            current = current[part]
+
+    return tree
+
+
+@log_time
+@cache
+def print_priority(priority: FilePriority) -> str:
+    """Convert file priority to Rich markup string with visual indicator."""
+    match priority:
+        case FilePriority.NOT_DOWNLOADING:
+            return "[dim]-[/]"
+        case FilePriority.LOW:
+            return "[dim yellow]↓[/]"
+        case FilePriority.MEDIUM:
+            return '→'
+        case FilePriority.HIGH:
+            return '[bold red]↑[/]'
