@@ -6,6 +6,7 @@ from textual.binding import Binding
 from textual.containers import ScrollableContainer, Horizontal, Container, Vertical
 from textual.reactive import reactive
 from textual.widgets import Static, TabbedContent, TabPane
+from textual.widgets.data_table import RowKey
 
 from ...message import OpenTorrentListCommand
 
@@ -13,7 +14,7 @@ from ..widget.common import ReactiveLabel, VimDataTable
 from ...util.print import print_size, print_speed, print_time_ago
 from ...util.decorator import log_time
 from ...util.geoip import get_country
-from ...common import FilePriority
+from ...util.data import get_file_list
 
 
 class TorrentInfoPanel(ScrollableContainer):
@@ -31,6 +32,7 @@ class TorrentInfoPanel(ScrollableContainer):
     def __init__(self, capability_torrent_id: bool, **kwargs):
         super().__init__(**kwargs)
         self.capability_torrent_id = capability_torrent_id
+        self.file_count = 0
 
     r_torrent = reactive(None)
 
@@ -160,7 +162,11 @@ class TorrentInfoPanel(ScrollableContainer):
     @log_time
     def on_mount(self):
         table = self.query_one("#files")
-        table.add_columns("ID", "Size", "Done", "P", "Name")
+        table.add_columns(("ID", "ID"),
+                          ("Size", "Size"),
+                          ("Done", "Done"),
+                          ("P", "P"),
+                          ("Name", "Name"))
 
         table = self.query_one("#peers")
         table.add_columns("Encrypted", "Up", "Down", "UL State", "DL State", "Progress", "Connection", "Direction",
@@ -174,6 +180,8 @@ class TorrentInfoPanel(ScrollableContainer):
     def watch_r_torrent(self, new_r_torrent):
         if new_r_torrent:
             torrent = new_r_torrent
+
+            prev_t_id = self.t_id
 
             self.t_id = str(torrent.id)
             self.t_hash = torrent.hash_string
@@ -208,12 +216,19 @@ class TorrentInfoPanel(ScrollableContainer):
             self.t_peers_down = str(torrent.peers_getting_from_us)
 
             table = self.query_one("#files")
-            table.clear()
 
-            file_tree = self.create_file_tree(self.r_torrent.files)
-            self.draw_file_table(table, file_tree)
+            file_list = get_file_list(self.r_torrent.files)
+
+            if self.file_count != len(file_list):
+                table.clear()
+                self.draw_file_table(table, file_list)
+            else:
+                self.update_file_table(table, file_list)
+
+            self.file_count = len(file_list)
 
             table = self.query_one("#peers")
+            selected_row = self.selected_row(table)
             table.clear()
 
             for p in self.r_torrent.peers:
@@ -230,9 +245,13 @@ class TorrentInfoPanel(ScrollableContainer):
                               p.country or (get_country(p.address) or "-"),
                               p.address,
                               self.print_count(p.port),
-                              p.client_name)
+                              p.client_name,
+                              key=p.address+str(p.port))
+
+            self.select_row(table, selected_row)
 
             table = self.query_one("#trackers")
+            selected_row = self.selected_row(table)
             table.clear()
 
             for t in self.r_torrent.trackers:
@@ -248,68 +267,56 @@ class TorrentInfoPanel(ScrollableContainer):
                               self.print_tracker_next_time(t.next_announce),
                               self.print_tracker_datetime(t.last_scrape),
                               self.print_tracker_next_time(t.next_scrape),
-                              t.message)
+                              t.message,
+                              key=t.host)
+
+            self.select_row(table, selected_row)
+
+            # case when details were opened second time on different torrent
+            # ensure that old tab selection is gone
+            if prev_t_id != self.t_id:
+                self.action_open_tab('tab-overview')
+
+    def selected_row(self, table: VimDataTable) -> RowKey | None:
+        '''Return selected row key (or None) from table'''
+        cursor_row = table.cursor_row
+        # Check if cursor is at a valid position
+        if cursor_row is None or cursor_row < 0 or cursor_row >= table.row_count:
+            return None
+
+        return table.coordinate_to_cell_key((cursor_row, 0)).row_key
+
+    def select_row(self, table: VimDataTable, row_key: RowKey) -> None:
+        '''Select row by its key if it present in table'''
+        if row_key in table.rows:
+            row = table.get_row_index(row_key)
+            if row:
+                table.move_cursor(row=row)
 
     @log_time
-    def create_file_tree(self, torrents) -> dict:
-        # Build the tree structure
-        tree = {}
+    def update_file_table(self, table, file_list) -> None:
+        row_keys = list(table.rows.keys())
 
-        for torrent in torrents:
-            parts = torrent.name.split('/')
-            current = tree
+        for row_idx, item in enumerate(file_list):
+            if row_idx >= len(row_keys):
+                break
 
-            # Navigate/create the path in the tree
-            for i, part in enumerate(parts):
-                if part not in current:
-                    current[part] = {}
+            row_key = row_keys[row_idx]
 
-                # If this is the last part (filename), mark it as a file
-                if i == len(parts) - 1:
-                    current[part]['__is_file__'] = True
-                    current[part]['torrent'] = torrent
-
-                current = current[part]
-
-        return tree
+            table.update_cell(row_key, "ID", item['id'])
+            table.update_cell(row_key, "Size", item['size'])
+            table.update_cell(row_key, "Done", item['done'])
+            table.update_cell(row_key, "P", item['priority'])
+            table.update_cell(row_key, "Name", item['display_name'])
 
     @log_time
-    def draw_file_table(self, table, node, prefix="", is_last=True) -> None:
-        items = [(k, v) for k, v in node.items() if k != '__is_file__']
-        # Sort items by name (case-insensitive)
-        items.sort(key=lambda x: x[0].lower())
-
-        for i, (name, subtree) in enumerate(items):
-            is_last_item = i == len(items) - 1
-
-            # Choose the appropriate tree characters
-            if prefix == "":
-                current_prefix = ""
-                symbol = ""  # No prefix for first level files
-            else:
-                symbol = "├─ " if not is_last_item else "└─ "
-                current_prefix = prefix
-
-            if subtree.get('__is_file__', False):
-                f = subtree['torrent']
-
-                completion = (f.completed / f.size) * 100
-                table.add_row(f.id,
-                              print_size(f.size),
-                              f'{completion:.0f}%',
-                              self.print_priority(f.priority),
-                              f"{current_prefix}{symbol}{name}")
-            else:
-                table.add_row(None,
-                              None,
-                              None,
-                              None,
-                              f"{current_prefix}{symbol}{name}")
-
-                # print directory content
-                extension = "│  " if not is_last_item else "  "
-                new_prefix = current_prefix + extension
-                self.draw_file_table(table, subtree, new_prefix, is_last_item)
+    def draw_file_table(self, table, file_list) -> None:
+        for item in file_list:
+            table.add_row(item['id'],
+                          item['size'],
+                          item['done'],
+                          item['priority'],
+                          item['display_name'])
 
     @log_time
     def print_count(self, value: int) -> str:
@@ -325,18 +332,6 @@ class TorrentInfoPanel(ScrollableContainer):
             return f"{value.strftime('%Y-%m-%d %H:%M:%S')} ({time_ago})"
         else:
             return "Never"
-
-    @log_time
-    def print_priority(self, priority) -> str:
-        match priority:
-            case FilePriority.NOT_DOWNLOADING:
-                return "[dim]-[/]"
-            case FilePriority.LOW:
-                return "[dim yellow]↓[/]"
-            case FilePriority.MEDIUM:
-                return '→'
-            case FilePriority.HIGH:
-                return '[bold red]↑[/]'
 
     @log_time
     def print_tracker_datetime(self, value: datetime) -> str:
