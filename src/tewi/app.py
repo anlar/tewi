@@ -78,7 +78,7 @@ class MainApp(App):
 
             Binding("W", "open_websearch", "[Search] Web search"),
 
-            Binding('"', "screenshot", "[App] Screenshot"),
+            Binding('"', "screenshot", "[App] Screenshot", priority=True),
 
             Binding("d", "toggle_dark", "[UI] Toggle theme", priority=True),
             Binding("?", "help", "[App] Help"),
