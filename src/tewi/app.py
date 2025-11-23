@@ -40,7 +40,8 @@ from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpda
         OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
         RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
         StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenWebSearchCommand, \
-        AddTorrentFromWebSearchCommand, WebSearchQuerySubmitted, ChangeTorrentPriorityCommand
+        AddTorrentFromWebSearchCommand, WebSearchQuerySubmitted, ChangeTorrentPriorityCommand, \
+        ToggleFileDownloadCommand
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -286,6 +287,14 @@ class MainApp(App):
 
         self.client.set_priority(event.torrent_id, new_priority)
         self.post_message(Notification(f"Torrent priority set to {priority_label}"))
+
+    @log_time
+    @on(ToggleFileDownloadCommand)
+    def handle_toggle_file_download_command(self, event: ToggleFileDownloadCommand) -> None:
+        self.client.set_file_priority(event.torrent_id, event.file_ids, event.priority)
+        # Refresh torrent details to show updated file priorities
+        torrent = self.client.torrent(event.torrent_id)
+        self.query_one(TorrentInfoPanel).r_torrent = torrent
 
     @log_time
     @on(SearchCompletedEvent)

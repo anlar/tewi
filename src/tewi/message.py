@@ -89,6 +89,15 @@ class ChangeTorrentPriorityCommand(Message):
         self.current_priority = current_priority
 
 
+class ToggleFileDownloadCommand(Message):
+
+    def __init__(self, torrent_id: int | str, file_ids: list[int], priority) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+        self.file_ids = file_ids
+        self.priority = priority
+
+
 class OpenSearchCommand(Message):
     pass
 

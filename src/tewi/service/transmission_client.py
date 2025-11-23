@@ -372,3 +372,26 @@ class TransmissionClient(BaseClient):
             torrent_ids = [torrent_ids]
 
         self.client.change_torrent(torrent_ids, bandwidth_priority=priority)
+
+    @log_time
+    def set_file_priority(self, torrent_id: int | str, file_ids: list[int], priority: FilePriority) -> None:
+        """Set download priority for files within a torrent."""
+        # Transmission uses different arguments based on priority:
+        # - files_wanted/files_unwanted for selection
+        # - priority_high/priority_low/priority_normal for priority
+        args = {}
+
+        match priority:
+            case FilePriority.NOT_DOWNLOADING:
+                args['files_unwanted'] = file_ids
+            case FilePriority.LOW:
+                args['files_wanted'] = file_ids
+                args['priority_low'] = file_ids
+            case FilePriority.MEDIUM:
+                args['files_wanted'] = file_ids
+                args['priority_normal'] = file_ids
+            case FilePriority.HIGH:
+                args['files_wanted'] = file_ids
+                args['priority_high'] = file_ids
+
+        self.client.change_torrent(torrent_id, **args)

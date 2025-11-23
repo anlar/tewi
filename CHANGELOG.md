@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Toggle file download status in torrent details with 'space' key (files not downloading are dimmed)
 - Action to open web link in torrent search results ('o' hotkey)
 - Automatically refresh torrent details screen [#101](https://github.com/anlar/tewi/issues/101)
 

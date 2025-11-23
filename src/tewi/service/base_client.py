@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from dataclasses import replace
 from typing import TypedDict
 
-from ..common import SortOrder, TorrentDTO
+from ..common import FilePriority, SortOrder, TorrentDTO
 
 
 class ClientMeta(TypedDict):
@@ -263,5 +263,16 @@ class BaseClient(ABC):
         Args:
             torrent_ids: Single torrent ID or list of IDs
             priority: Priority level (-1=low, 0=normal, 1=high)
+        """
+        pass
+
+    @abstractmethod
+    def set_file_priority(self, torrent_id: int | str, file_ids: list[int], priority: FilePriority) -> None:
+        """Set download priority for files within a torrent.
+
+        Args:
+            torrent_id: The torrent ID
+            file_ids: List of file IDs to update
+            priority: FilePriority enum value
         """
         pass

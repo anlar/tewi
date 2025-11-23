@@ -8,7 +8,8 @@ from textual.reactive import reactive
 from textual.widgets import Static, TabbedContent, TabPane
 from textual.widgets.data_table import RowKey
 
-from ...message import OpenTorrentListCommand
+from ...message import OpenTorrentListCommand, ToggleFileDownloadCommand
+from ...common import FilePriority
 
 from ..widget.common import ReactiveLabel, VimDataTable
 from ...util.print import print_size, print_speed, print_time_ago
@@ -25,6 +26,8 @@ class TorrentInfoPanel(ScrollableContainer):
             Binding("p,3", "open_tab('tab-peers')", "[Navigation] Open Peers"),
             Binding("t,4", "open_tab('tab-trackers')", "[Navigation] Open Trackers"),
 
+            Binding("space", "toggle_file_download", "[Files] Toggle download", show=False),
+
             Binding("x,esc", "close", "[Navigation] Close"),
             ]
 
@@ -33,6 +36,7 @@ class TorrentInfoPanel(ScrollableContainer):
         super().__init__(**kwargs)
         self.capability_torrent_id = capability_torrent_id
         self.file_count = 0
+        self.file_list = []
 
     r_torrent = reactive(None)
 
@@ -217,15 +221,16 @@ class TorrentInfoPanel(ScrollableContainer):
 
             table = self.query_one("#files")
 
-            file_list = get_file_list(self.r_torrent.files)
+            # Store for toggle action
+            self.file_list = get_file_list(self.r_torrent.files)
 
-            if self.file_count != len(file_list):
+            if self.file_count != len(self.file_list):
                 table.clear()
-                self.draw_file_table(table, file_list)
+                self.draw_file_table(table, self.file_list)
             else:
-                self.update_file_table(table, file_list)
+                self.update_file_table(table, self.file_list)
 
-            self.file_count = len(file_list)
+            self.file_count = len(self.file_list)
 
             table = self.query_one("#peers")
             selected_row = self.selected_row(table)
@@ -303,20 +308,36 @@ class TorrentInfoPanel(ScrollableContainer):
 
             row_key = row_keys[row_idx]
 
-            table.update_cell(row_key, "ID", item['id'])
-            table.update_cell(row_key, "Size", item['size'])
-            table.update_cell(row_key, "Done", item['done'])
-            table.update_cell(row_key, "P", item['priority'])
-            table.update_cell(row_key, "Name", item['display_name'])
+            # Apply dim styling for not-downloading files
+            if item.get('file_priority') == FilePriority.NOT_DOWNLOADING:
+                table.update_cell(row_key, "ID", f"[dim]{item['id']}[/dim]")
+                table.update_cell(row_key, "Size", f"[dim]{item['size']}[/dim]")
+                table.update_cell(row_key, "Done", f"[dim]{item['done']}[/dim]")
+                table.update_cell(row_key, "P", item['priority'])
+                table.update_cell(row_key, "Name", f"[dim]{item['display_name']}[/dim]")
+            else:
+                table.update_cell(row_key, "ID", item['id'])
+                table.update_cell(row_key, "Size", item['size'])
+                table.update_cell(row_key, "Done", item['done'])
+                table.update_cell(row_key, "P", item['priority'])
+                table.update_cell(row_key, "Name", item['display_name'])
 
     @log_time
     def draw_file_table(self, table, file_list) -> None:
         for item in file_list:
-            table.add_row(item['id'],
-                          item['size'],
-                          item['done'],
-                          item['priority'],
-                          item['display_name'])
+            # Apply dim styling for not-downloading files
+            if item.get('file_priority') == FilePriority.NOT_DOWNLOADING:
+                table.add_row(f"[dim]{item['id']}[/dim]",
+                              f"[dim]{item['size']}[/dim]",
+                              f"[dim]{item['done']}[/dim]",
+                              item['priority'],
+                              f"[dim]{item['display_name']}[/dim]")
+            else:
+                table.add_row(item['id'],
+                              item['size'],
+                              item['done'],
+                              item['priority'],
+                              item['display_name'])
 
     @log_time
     def print_count(self, value: int) -> str:
@@ -386,6 +407,75 @@ class TorrentInfoPanel(ScrollableContainer):
     @log_time
     def action_close(self):
         self.post_message(OpenTorrentListCommand())
+
+    @log_time
+    def _get_folder_child_file_ids(self, folder_path: str) -> list[int]:
+        """Collect all child file IDs using path-based detection.
+
+        Args:
+            folder_path: The folder path (e.g., "docs/api")
+
+        Returns:
+            List of file IDs that are children of this folder
+        """
+        file_ids = []
+        # Use path prefix matching on the original file list
+        folder_prefix = f"{folder_path}/"
+
+        for file in self.r_torrent.files:
+            if file.name.startswith(folder_prefix):
+                file_ids.append(file.id)
+
+        return file_ids
+
+    @log_time
+    def _determine_target_priority(self, file_ids: list[int]) -> FilePriority:
+        """Determine target priority by checking first file's current priority."""
+        first_file = next((f for f in self.r_torrent.files if f.id == file_ids[0]), None)
+        if not first_file:
+            return FilePriority.MEDIUM
+
+        if first_file.priority == FilePriority.NOT_DOWNLOADING:
+            return FilePriority.MEDIUM
+        else:
+            return FilePriority.NOT_DOWNLOADING
+
+    @log_time
+    def action_toggle_file_download(self):
+        """Toggle download status for selected file or folder."""
+        # Only handle if we're on the files tab
+        if self.active_tab_id() != 'tab-files' or not self.r_torrent or not self.file_list:
+            return
+
+        table = self.query_one("#files")
+        cursor_row = table.cursor_row
+
+        # Check if cursor is at a valid position
+        if cursor_row is None or cursor_row < 0 or cursor_row >= len(self.file_list):
+            return
+
+        selected_item = self.file_list[cursor_row]
+
+        # Collect file IDs to toggle
+        if selected_item['is_file']:
+            file_ids = [selected_item['id']]
+        else:
+            folder_path = selected_item.get('folder_path')
+            if not folder_path:
+                return  # No valid folder path
+            file_ids = self._get_folder_child_file_ids(folder_path)
+
+        if not file_ids:
+            return
+
+        target_priority = self._determine_target_priority(file_ids)
+
+        # Post command to toggle files
+        self.post_message(ToggleFileDownloadCommand(
+            torrent_id=self.r_torrent.id,
+            file_ids=file_ids,
+            priority=target_priority
+        ))
 
     @log_time
     @on(TabbedContent.TabActivated)

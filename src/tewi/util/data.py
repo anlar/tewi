@@ -30,7 +30,7 @@ def get_file_list(files: list[FileDTO]) -> list[dict[str, Any]]:
     items_list: list[dict[str, Any]] = []
 
     def flatten_tree(
-            node: dict[str, Any], prefix: str = "", is_last: bool = True
+            node: dict[str, Any], prefix: str = "", is_last: bool = True, depth: int = 0, current_path: str = ""
     ) -> None:
         """Recursively flatten tree structure into list with tree symbols."""
         items = [(k, v) for k, v in node.items() if k != '__is_file__']
@@ -50,6 +50,9 @@ def get_file_list(files: list[FileDTO]) -> list[dict[str, Any]]:
 
             display_name = f"{current_prefix}{symbol}{name}"
 
+            # Build the path for this item
+            item_path = f"{current_path}{name}" if current_path else name
+
             if subtree.get('__is_file__', False):
                 f = subtree['file']
                 completion = (f.completed / f.size) * 100
@@ -59,7 +62,10 @@ def get_file_list(files: list[FileDTO]) -> list[dict[str, Any]]:
                     'id': f.id,
                     'size': print_size(f.size),
                     'done': f'{completion:.0f}%',
-                    'priority': print_priority(f.priority)
+                    'priority': print_priority(f.priority),
+                    'file_priority': f.priority,  # Store raw priority for styling
+                    'depth': depth,  # Track tree depth
+                    'folder_path': None  # Files don't have folder_path
                 })
             else:
                 items_list.append({
@@ -69,11 +75,16 @@ def get_file_list(files: list[FileDTO]) -> list[dict[str, Any]]:
                     'size': None,
                     'done': None,
                     'priority': None,
+                    'file_priority': None,
+                    'depth': depth,  # Track tree depth
+                    'folder_path': item_path  # Store folder path for child detection
                 })
 
                 extension = "│  " if not is_last_item else "  "
                 new_prefix = current_prefix + extension
-                flatten_tree(subtree, new_prefix, is_last_item)
+                # Pass folder path with trailing slash for next level
+                next_path = f"{item_path}/"
+                flatten_tree(subtree, new_prefix, is_last_item, depth + 1, next_path)
 
     flatten_tree(node)
 

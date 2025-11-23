@@ -510,6 +510,29 @@ class QBittorrentClient(BaseClient):
         pass
 
     @log_time
+    def set_file_priority(self, torrent_id: int | str, file_ids: list[int], priority: FilePriority) -> None:
+        """Set download priority for files within a torrent."""
+        # Map FilePriority enum to qBittorrent priority values
+        priority_map = {
+            FilePriority.NOT_DOWNLOADING: 0,
+            FilePriority.LOW: 1,
+            FilePriority.MEDIUM: 6,
+            FilePriority.HIGH: 7,
+        }
+
+        qb_priority = priority_map[priority]
+
+        # qBittorrent uses hash as torrent ID
+        torrent_hash = str(torrent_id)
+
+        # Set priority for each file
+        self.client.torrents.file_priority(
+            torrent_hash=torrent_hash,
+            file_ids=file_ids,
+            priority=qb_priority
+        )
+
+    @log_time
     def _ids_to_hashes(self, ids: list[int | str]) -> list[str]:
         """Convert torrent IDs to qBittorrent hashes."""
         # For qBittorrent, IDs are already hash strings
