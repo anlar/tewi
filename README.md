@@ -17,6 +17,7 @@
   <img src="https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-3.png" width="200"/>
   <img src="https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-4.png" width="200"/>
   <img src="https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-5.png" width="200"/>
+  <img src="https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-6.png" width="200"/>
 </p>
 
 Tewi is a TUI (text user interface) for BitTorrent clients, supporting both
