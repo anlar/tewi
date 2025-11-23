@@ -321,7 +321,7 @@ class QBittorrentClient(BaseClient):
 
         return TrackerDTO(
             host=t.url,
-            tier=t.tier,
+            tier=t.tier if t.tier >= 0 else None,
             status=self.TRACKER_STATUS.get(t.status,
                                            self.TRACKER_STATUS_UNKNOWN),
             message=t.msg,

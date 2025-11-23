@@ -111,7 +111,7 @@ class PeerDTO:
 class TrackerDTO:
     """Data Transfer Object for tracker information."""
     host: str
-    tier: int
+    tier: int | None
     seeder_count: int | None
     leecher_count: int | None
     download_count: int | None

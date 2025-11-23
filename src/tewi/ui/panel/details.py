@@ -261,8 +261,7 @@ class TorrentInfoPanel(ScrollableContainer):
             table.clear()
 
             for t in self.r_torrent.trackers:
-                # Both clients number tiers from 0, display as 1-indexed
-                table.add_row(t.tier + 1,
+                table.add_row(self.print_count(t.tier),
                               t.host,
                               t.status,
                               self.print_count(t.peer_count),
