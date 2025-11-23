@@ -346,6 +346,9 @@ class MainApp(App):
 
         self.query_one(ContentSwitcher).current = "torrent-info"
         self.query_one(TorrentInfoPanel).r_torrent = torrent
+        # Ensure that correct tab is opened,
+        # because tab panel stores previously selected tab.
+        self.query_one(TorrentInfoPanel).open_default_tab()
 
     @log_time
     @on(OpenTorrentListCommand)
