@@ -336,8 +336,8 @@ class TorrentInfoPanel(ScrollableContainer):
                               item['display_name'])
 
     @log_time
-    def print_count(self, value: int) -> str:
-        return value if value else '-'
+    def print_count(self, value: int) -> int:
+        return value if value is not None else '-'
 
     @log_time
     def print_datetime(self, value: datetime) -> str:

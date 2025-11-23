@@ -228,7 +228,8 @@ class TransmissionClient(BaseClient):
             leecher_count=t.leecher_count if t.leecher_count >= 0 else None,
             download_count=t.download_count if t.download_count >= 0 else None,
             peer_count=t.last_announce_peer_count if t.last_announce_peer_count >= 0 else None,
-            status=self.TRACKER_ANNOUNCE_STATE.get(t.announce_state, "Unknown"),
+            status=self.TRACKER_ANNOUNCE_STATE.get(t.announce_state,
+                                                   self.TRACKER_STATUS_UNKNOWN),
             message=t.last_announce_result,
             last_announce=(
                 datetime.fromtimestamp(t.last_announce_time)

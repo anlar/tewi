@@ -4,6 +4,7 @@ import os
 from datetime import datetime, timedelta
 
 from qbittorrentapi import Client as QBittorrentAPIClient
+from qbittorrentapi.torrents import Tracker
 
 from ..util.misc import is_torrent_link
 from ..util.decorator import log_time
@@ -297,35 +298,37 @@ class QBittorrentClient(BaseClient):
             ul_state=ul_state,
         )
 
+    TRACKER_STATUS: dict[int, str] = {
+        0: "Disabled",
+        1: "Not contacted",
+        2: "Working",
+        3: "Updating",
+        4: "Not working"
+    }
+    """
+    Maps tracker status codes to human-readable status labels.
+
+    0 - Tracker is disabled (used for DHT, PeX, and LSD)
+    1 - Tracker has not been contacted yet
+    2 - Tracker has been contacted and is working
+    3 - Tracker is updating
+    4 - Tracker has been contacted, but it is not working (or doesn't send proper replies)
+    """
+
     @log_time
-    def _tracker_to_dto(self, tracker) -> TrackerDTO:
+    def _tracker_to_dto(self, t: Tracker) -> TrackerDTO:
         """Convert qBittorrent tracker to TrackerDTO."""
-        # Map qBittorrent status to readable text
-        # 0 = disabled, 1 = not contacted, 2 = working, 3 = updating, 4 = not working
-        status_map = {
-            0: "Disabled",
-            1: "Not contacted",
-            2: "Working",
-            3: "Updating",
-            4: "Not working"
-        }
-        status = status_map.get(tracker.status, "Unknown")
-
-        # Get message (error or status message from tracker)
-        message = tracker.msg if hasattr(tracker, 'msg') and tracker.msg else ""
-
-        # Get peer count reported by tracker
-        peer_count = tracker.num_peers if hasattr(tracker, 'num_peers') else -1
 
         return TrackerDTO(
-            host=tracker.url,
-            tier=tracker.tier,
-            seeder_count=tracker.num_seeds,
-            leecher_count=tracker.num_leeches,
-            download_count=tracker.num_downloaded,
-            status=status,
-            message=message,
-            peer_count=peer_count,
+            host=t.url,
+            tier=t.tier,
+            status=self.TRACKER_STATUS.get(t.status,
+                                           self.TRACKER_STATUS_UNKNOWN),
+            message=t.msg,
+            peer_count=t.num_peers if t.num_peers >= 0 else None,
+            seeder_count=t.num_seeds if t.num_seeds >= 0 else None,
+            leecher_count=t.num_leeches if t.num_leeches >= 0 else None,
+            download_count=t.num_downloaded if t.num_downloaded >= 0 else None,
         )
 
     @log_time

@@ -66,6 +66,8 @@ class ClientError(Exception):
 class BaseClient(ABC):
     """Abstract base class defining the interface for all torrent clients."""
 
+    TRACKER_STATUS_UNKNOWN = 'Unknown'
+
     @abstractmethod
     def __init__(self, host: str, port: str, username: str = None, password: str = None):
         """Initialize the client connection.
