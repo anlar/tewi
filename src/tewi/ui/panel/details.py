@@ -26,7 +26,10 @@ class TorrentInfoPanel(ScrollableContainer):
             Binding("p,3", "open_tab('tab-peers')", "[Navigation] Open Peers"),
             Binding("t,4", "open_tab('tab-trackers')", "[Navigation] Open Trackers"),
 
-            Binding("space", "toggle_file_download", "[Files] Toggle download", show=False),
+            Binding("space", "toggle_file_download(None)", "[Files] Toggle file download"),
+            Binding("H", "toggle_file_download('high')", "[Files] Set High file priority"),
+            Binding("M", "toggle_file_download('medium')", "[Files] Set Medium file priority"),
+            Binding("L", "toggle_file_download('low')", "[Files] Set Low file priority"),
 
             Binding("x,esc", "close", "[Navigation] Close"),
             ]
@@ -441,7 +444,7 @@ class TorrentInfoPanel(ScrollableContainer):
             return FilePriority.NOT_DOWNLOADING
 
     @log_time
-    def action_toggle_file_download(self):
+    def action_toggle_file_download(self, action_code: str | None):
         """Toggle download status for selected file or folder."""
         # Only handle if we're on the files tab
         if self.active_tab_id() != 'tab-files' or not self.r_torrent or not self.file_list:
@@ -468,7 +471,15 @@ class TorrentInfoPanel(ScrollableContainer):
         if not file_ids:
             return
 
-        target_priority = self._determine_target_priority(file_ids)
+        match action_code:
+            case 'high':
+                target_priority = FilePriority.HIGH
+            case 'medium':
+                target_priority = FilePriority.MEDIUM
+            case 'low':
+                target_priority = FilePriority.LOW
+            case _:
+                target_priority = self._determine_target_priority(file_ids)
 
         # Post command to toggle files
         self.post_message(ToggleFileDownloadCommand(
