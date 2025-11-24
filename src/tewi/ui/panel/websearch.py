@@ -1,7 +1,5 @@
 """Web search results panel for public torrent trackers."""
 
-import webbrowser
-
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import ClassVar
 
@@ -228,7 +226,7 @@ class TorrentWebSearch(Static):
         result = self.r_results[table.cursor_row]
 
         if result.page_url:
-            webbrowser.open(result.page_url)
+            self.app.open_url(result.page_url)
 
     @log_time
     def action_cursor_down(self) -> None:
