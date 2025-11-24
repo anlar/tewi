@@ -77,17 +77,7 @@ class TorrentWebSearch(Static):
                                 "(O) Open Link / "
                                 "(Enter) Details / "
                                 "(X) Close")
-
-        table = self.query_one("#websearch-results", DataTable)
-
-        table.add_column("Source", key="source")
-        table.add_column("Uploaded", key="uploaded")
-        table.add_column("S ↓", key="seeders")
-        table.add_column("L", key="leechers")
-        table.add_column("Size", key="size")
-        table.add_column("Files", key="files")
-        table.add_column("Category", key="category")
-        table.add_column("Name", key="name")
+        self.create_table_columns()
 
     @log_time
     def execute_search(self, query: str) -> None:
@@ -107,7 +97,8 @@ class TorrentWebSearch(Static):
         """Update the table when results change."""
         table = self.query_one("#websearch-results", DataTable)
 
-        table.clear()
+        table.clear(columns=True)
+        self.create_table_columns()
 
         if not results:
             self.r_search_status = "No results found"
@@ -132,6 +123,19 @@ class TorrentWebSearch(Static):
             )
 
         table.focus()
+
+    @log_time
+    def create_table_columns(self) -> None:
+        table = self.query_one("#websearch-results", DataTable)
+
+        table.add_column("Source", key="source")
+        table.add_column("Uploaded", key="uploaded")
+        table.add_column("S ↓", key="seeders")
+        table.add_column("L", key="leechers")
+        table.add_column("Size", key="size")
+        table.add_column("Files", key="files")
+        table.add_column("Category", key="category")
+        table.add_column("Name", key="name")
 
     # Actions
 

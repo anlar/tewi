@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changed navigation hotkeys in torrent details to 'ofpt1234', allowed navigation in tables
 - Display '-' instead of 'N/A' for missing tracker fields
 - Start tracker tier number from 0 instead of 1
+- Fix column resize in torrent search results table [#107](https://github.com/anlar/tewi/issues/107)
 
 ### Removed
 
