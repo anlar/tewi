@@ -55,6 +55,11 @@
     padding: 0 1;
 }
 
+StatePanel > .search {
+    dock: left;
+    background: $primary;
+}
+
 #state-panel > .page {
     color: $warning;
     padding: 0;

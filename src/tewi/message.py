@@ -190,6 +190,14 @@ class PageChangedEvent(Message):
         self.state = state
 
 
+class SearchStateChangedEvent(Message):
+
+    def __init__(self, current: int = None, total: int = None) -> None:
+        super().__init__()
+        self.current = current
+        self.total = total
+
+
 class WebSearchCompletedEvent(Message):
 
     def __init__(self, results: list) -> None:

@@ -2,7 +2,7 @@ import math
 
 from typing import ClassVar, Optional
 
-from textual import on
+from textual import on, events
 
 from textual.binding import Binding, BindingType
 from textual.widgets import ListView, ListItem
@@ -17,7 +17,7 @@ from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorr
         VerifyTorrentCommand, ReannounceTorrentCommand, RemoveTorrentCommand, TorrentRemovedEvent, \
         TrashTorrentCommand, TorrentTrashedEvent, Notification, OpenSearchCommand, \
         StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenSortOrderCommand, \
-        PageChangedEvent, ChangeTorrentPriorityCommand, OpenEditTorrentCommand
+        PageChangedEvent, SearchStateChangedEvent, ChangeTorrentPriorityCommand, OpenEditTorrentCommand
 
 
 class TorrentListItem(ListItem):
@@ -65,7 +65,9 @@ class TorrentListViewPanel(ListView):
     r_torrents: list[TorrentDTO] | None = reactive(None)
 
     # Search state
+    # TODO
     search_term = ""
+    search_idx = 0
     search_active = False
 
     @log_time
@@ -340,8 +342,7 @@ class TorrentListViewPanel(ListView):
     @log_time
     def action_search(self) -> None:
         # Reset search state when opening search dialog
-        self.search_active = False
-        self.search_term = ""
+        self._reset_search()
         self.post_message(OpenSearchCommand())
 
     @log_time
@@ -384,20 +385,42 @@ class TorrentListViewPanel(ListView):
             range1 = range(current_idx - 1, -1, -1)
             range2 = range(len(self.r_torrents) - 1, current_idx, -1)
 
+        # TODO
+        total = 0
+        for i in self.r_torrents:
+            if search_term in i.name.lower():
+                total += 1
+
         # First search range
         for i in range1:
             if search_term in self.r_torrents[i].name.lower():
                 self._select_found_torrent(i)
+                self._update_search_idx(total, forward)
+                self.post_message(SearchStateChangedEvent(self.search_idx, total))
                 return
 
         # Second search range (wrap around)
         for i in range2:
             if search_term in self.r_torrents[i].name.lower():
                 self._select_found_torrent(i)
+                self._update_search_idx(total, forward)
+                self.post_message(SearchStateChangedEvent(self.search_idx, total))
                 return
 
         # If no match found, show notification
         self.post_message(Notification(f"No torrents matching '{search_term}'"))
+
+    def _update_search_idx(self, total: int, forward: bool) -> None:
+        if forward:
+            if self.search_idx == total:
+                self.search_idx = 1
+            else:
+                self.search_idx += 1
+        else:
+            if self.search_idx == 1:
+                self.search_idx = total
+            else:
+                self.search_idx -= 1
 
     @log_time
     def _select_found_torrent(self, index: int) -> None:
@@ -409,6 +432,19 @@ class TorrentListViewPanel(ListView):
             self.search_term = search_term
             self.search_active = True
             self._search_torrent(search_term, forward=True)
+
+    @log_time
+    def _reset_search(self) -> None:
+        self.search_active = False
+        self.search_idx = 0
+        self.search_term = ""
+
+    @log_time
+    def on_key(self, event: events.Key) -> None:
+        """Reset search status on any key press that are not search-related"""
+        if event.key != 'n' and event.key != 'N':
+            self._reset_search()
+            self.post_message(SearchStateChangedEvent())
 
     # Handlers
 
