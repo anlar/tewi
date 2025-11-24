@@ -29,6 +29,7 @@ class TorrentDTO:
     added_date: datetime
     activity_date: datetime
     queue_position: int | None
+    download_dir: str
     labels: list[str] = field(default_factory=list)
 
 

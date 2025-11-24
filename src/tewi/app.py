@@ -41,13 +41,14 @@ from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpda
         RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
         StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenWebSearchCommand, \
         AddTorrentFromWebSearchCommand, WebSearchQuerySubmitted, ChangeTorrentPriorityCommand, \
-        ToggleFileDownloadCommand
+        ToggleFileDownloadCommand, OpenEditTorrentCommand, EditTorrentCommand
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
 from .ui.dialog.preferences import PreferencesDialog
 from .ui.dialog.statistics import StatisticsDialog
 from .ui.dialog.torrent.add import AddTorrentDialog
+from .ui.dialog.torrent.edit import EditTorrentDialog
 from .ui.dialog.torrent.label import UpdateTorrentLabelsDialog
 from .ui.dialog.torrent.search import SearchDialog
 from .ui.dialog.torrent.sort import SortOrderDialog
@@ -260,6 +261,11 @@ class MainApp(App):
         self.push_screen(UpdateTorrentLabelsDialog(event.torrent, None))
 
     @log_time
+    @on(OpenEditTorrentCommand)
+    def handle_open_edit_torrent_command(self, event: OpenEditTorrentCommand) -> None:
+        self.push_screen(EditTorrentDialog(event.torrent))
+
+    @log_time
     @on(VerifyTorrentCommand)
     def handle_verify_torrent_command(self, event: VerifyTorrentCommand) -> None:
         self.client.verify_torrent(event.torrent_id)
@@ -321,6 +327,17 @@ class MainApp(App):
 
             self.post_message(Notification(
                 f"Removed torrent labels ({count_label})"))
+
+    @log_time
+    @on(EditTorrentCommand)
+    def handle_edit_torrent_command(self, event: EditTorrentCommand) -> None:
+        try:
+            self.client.edit_torrent(event.torrent_id, event.name,
+                                     event.location)
+            self.post_message(Notification("Torrent updated successfully"))
+        except Exception as e:
+            self.post_message(Notification(
+                f"Failed to update torrent: {str(e)}", "error"))
 
     @log_time
     @on(SortOrderUpdatedEvent)

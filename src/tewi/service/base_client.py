@@ -250,6 +250,17 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
+    def edit_torrent(self, torrent_id: int | str, name: str, location: str) -> None:
+        """Edit torrent name and location.
+
+        Args:
+            torrent_id: The torrent ID
+            name: New torrent name
+            location: New download location path
+        """
+        pass
+
+    @abstractmethod
     def toggle_alt_speed(self) -> bool:
         """Toggle alternative speed limits.
 

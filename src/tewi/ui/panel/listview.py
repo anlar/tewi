@@ -17,7 +17,7 @@ from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorr
         VerifyTorrentCommand, ReannounceTorrentCommand, RemoveTorrentCommand, TorrentRemovedEvent, \
         TrashTorrentCommand, TorrentTrashedEvent, Notification, OpenSearchCommand, \
         StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenSortOrderCommand, \
-        PageChangedEvent, ChangeTorrentPriorityCommand
+        PageChangedEvent, ChangeTorrentPriorityCommand, OpenEditTorrentCommand
 
 
 class TorrentListItem(ListItem):
@@ -42,6 +42,7 @@ class TorrentListViewPanel(ListView):
             Binding("enter,l,right", "select_cursor", "[Navigation] Open"),
 
             Binding("a", "add_torrent", "[Torrent] Add"),
+            Binding("e", "edit_torrent", "[Torrent] Edit"),
             Binding("L", "update_torrent_labels", "[Torrent] Update labels"),
             Binding("s", "sort_order", "[Torrent] Sort order"),
             Binding("p", "change_priority", "[Torrent] Change priority"),
@@ -266,6 +267,11 @@ class TorrentListViewPanel(ListView):
             super().action_cursor_up()
 
     # Actions: torrent
+
+    @log_time
+    def action_edit_torrent(self) -> None:
+        if (torrent := self.get_hl_torrent()) is not None:
+            self.post_message(OpenEditTorrentCommand(torrent))
 
     @log_time
     def action_update_torrent_labels(self) -> None:

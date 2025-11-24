@@ -143,6 +143,7 @@ class TransmissionClient(BaseClient):
             activity_date=torrent.activity_date,
             queue_position=torrent.queue_position,
             labels=list(torrent.labels) if torrent.labels else [],
+            download_dir=torrent.download_dir,
         )
 
     @log_time
@@ -298,7 +299,7 @@ class TransmissionClient(BaseClient):
                            'addedDate', 'activityDate', 'queuePosition',
                            'peersConnected', 'peersGettingFromUs',
                            'peersSendingToUs', 'bandwidthPriority', 'uploadedEver',
-                           'labels']
+                           'labels', 'downloadDir']
                 )
         return [self._torrent_to_dto(t) for t in torrents]
 
@@ -359,6 +360,20 @@ class TransmissionClient(BaseClient):
 
         self.client.change_torrent(torrent_ids,
                                    labels=labels)
+
+    @log_time
+    def edit_torrent(self, torrent_id: int | str,
+                     name: str, location: str) -> None:
+
+        torrent = self.torrent(torrent_id)
+
+        if name != torrent.name:
+            self.client.rename_torrent_path(torrent_id,
+                                            torrent.name,
+                                            name)
+
+        if location != torrent.download_dir:
+            self.client.move_torrent_data(torrent_id, location)
 
     @log_time
     def toggle_alt_speed(self) -> bool:
