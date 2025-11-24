@@ -12,7 +12,7 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v6
     - name: Generate changelog for release
       run: ./package/extract-changelog.sh "$GITHUB_REF_NAME" | tee release-notes.md
     - uses: ncipollo/release-action@v1
