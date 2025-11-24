@@ -211,6 +211,7 @@ class QBittorrentClient(BaseClient):
                            if torrent.last_activity > 0 else datetime.now()),
             queue_position=torrent.priority if torrent.priority > 0 else None,
             labels=[tag.strip() for tag in torrent.tags.split(',')] if torrent.tags else [],
+            download_dir=torrent.save_path,
         )
 
     @log_time
@@ -492,6 +493,20 @@ class QBittorrentClient(BaseClient):
                     self.client.torrents_add_tags(tags=tags_str, torrent_hashes=hash_str)
                 except Exception:
                     pass  # Ignore if tag addition fails
+
+    @log_time
+    def edit_torrent(self, torrent_id: int | str, name: str,
+                     location: str) -> None:
+
+        torrent = self.torrent(torrent_id)
+
+        if name != torrent.name:
+            self.client.torrents.rename(torrent_hash=torrent_id,
+                                        new_torrent_name=name)
+
+        if location != torrent.download_dir:
+            self.client.torrents.set_location(torrent_hashes=torrent_id,
+                                              location=location)
 
     @log_time
     def toggle_alt_speed(self) -> bool:

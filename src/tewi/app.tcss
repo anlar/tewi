@@ -417,6 +417,27 @@ UpdateTorrentLabelsWidget> TextArea {
     padding: 0;
 }
 
+/* SCREEN: EDIT TORRENT */
+
+EditTorrentDialog {
+    align: center middle;
+}
+
+EditTorrentWidget {
+    width: 100%;
+    height: auto;
+
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
+EditTorrentWidget > Input {
+    height: auto;
+    border: none;
+    margin: 1;
+}
+
 /* SCREEN: SEARCH DIALOG */
 
 SearchDialog {
