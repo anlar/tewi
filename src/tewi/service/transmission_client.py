@@ -296,7 +296,7 @@ class TransmissionClient(BaseClient):
         )
 
     @log_time
-    def torrents(self, filter_option: FilterOption) -> list[TorrentDTO]:
+    def torrents(self) -> list[TorrentDTO]:
         torrents = self.client.get_torrents(
                 arguments=['id', 'name', 'status', 'totalSize', 'left_until_done',
                            'percentDone', 'eta', 'rateUpload', 'rateDownload',
@@ -306,9 +306,7 @@ class TransmissionClient(BaseClient):
                            'peersSendingToUs', 'bandwidthPriority', 'uploadedEver',
                            'labels', 'downloadDir']
                 )
-        dtos = [self._torrent_to_dto(t) for t in torrents]
-        # Apply client-side filtering
-        return [dto for dto in dtos if filter_option.filter_func(dto)]
+        return [self._torrent_to_dto(t) for t in torrents]
 
     @log_time
     def torrent(self, id: int | str) -> TorrentDetailDTO:

@@ -176,10 +176,17 @@ class MainApp(App):
             if self.test_mode:
                 torrents = self.client.torrents_test(self.test_mode)
             else:
-                torrents = self.client.torrents(self.filter_option)
+                torrents = self.client.torrents()
+
+            # Load session with full list of torrents (before filtering)
             session = self.client.session(torrents, self.sort_order,
                                           self.sort_order_asc,
                                           self.filter_option)
+
+            # Apply filter if not 'all'
+            if self.filter_option.id != 'all':
+                torrents = [t for t in torrents
+                            if self.filter_option.filter_func(t)]
 
             torrents.sort(key=self.sort_order.sort_func,
                           reverse=not self.sort_order_asc)

@@ -220,11 +220,9 @@ class QBittorrentClient(BaseClient):
         )
 
     @log_time
-    def torrents(self, filter_option: FilterOption) -> list[TorrentDTO]:
-        """Get list of torrents filtered by the given filter option."""
-        qb_torrents = self.client.torrents.info(
-            status_filter=filter_option.qbt_filter
-        )
+    def torrents(self) -> list[TorrentDTO]:
+        """Get list of all torrents."""
+        qb_torrents = self.client.torrents.info()
         return [self._torrent_to_dto(t) for t in qb_torrents]
 
     @log_time

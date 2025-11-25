@@ -130,14 +130,11 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def torrents(self, filter_option: FilterOption) -> list[TorrentDTO]:
-        """Get list of torrents filtered by the given filter option.
-
-        Args:
-            filter_option: Filter to apply to the torrent list
+    def torrents(self) -> list[TorrentDTO]:
+        """Get list of all torrents.
 
         Returns:
-            List of filtered TorrentDTO objects
+            List of TorrentDTO objects
         """
         pass
 

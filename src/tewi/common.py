@@ -228,28 +228,21 @@ class FilterOption(NamedTuple):
     name: str
     key: str
     filter_func: None
-    qbt_filter: str
 
 
 filter_options = [
         FilterOption('all', 'All', '1',
-                     lambda t: True,
-                     'all'),
+                     lambda t: True),
         FilterOption('active', 'Active', '2',
-                     lambda t: t.rate_download > 0 or t.rate_upload > 0,
-                     'active'),
+                     lambda t: t.rate_download > 0 or t.rate_upload > 0),
         FilterOption('downloading', 'Downloading', '3',
-                     lambda t: t.status == 'downloading',
-                     'downloading'),
+                     lambda t: t.status == 'downloading'),
         FilterOption('seeding', 'Seeding', '4',
-                     lambda t: t.status == 'seeding',
-                     'seeding'),
+                     lambda t: t.status == 'seeding'),
         FilterOption('paused', 'Paused', '5',
-                     lambda t: t.status == 'stopped',
-                     'paused'),
+                     lambda t: t.status == 'stopped'),
         FilterOption('finished', 'Finished', '6',
-                     lambda t: t.percent_done >= 1.0,
-                     'completed'),
+                     lambda t: t.percent_done >= 1.0),
         ]
 
 
