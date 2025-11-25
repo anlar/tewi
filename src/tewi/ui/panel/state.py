@@ -40,7 +40,7 @@ class StatePanel(Static):
                     name=StatePanel.r_stats_size)
             yield ReactiveLabel(classes="column sort").data_bind(
                     name=StatePanel.r_sort)
-            yield ReactiveLabel(classes="column filter").data_bind(
+            yield ReactiveLabel(id='filter', classes="column filter").data_bind(
                     name=StatePanel.r_filter)
             yield Static("", classes="column")
             yield ReactiveLabel(id="alt-speed", classes="column alt-speed").data_bind(
@@ -101,6 +101,13 @@ class StatePanel(Static):
             self.remove_class("alt-speed-none")
         else:
             self.add_class("alt-speed-none")
+
+    @log_time
+    def watch_r_filter(self, new_value):
+        if new_value:
+            self.remove_class("filter-none")
+        else:
+            self.add_class("filter-none")
 
     @log_time
     def print_stats(self, session) -> str:
