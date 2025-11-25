@@ -14,6 +14,7 @@ class StatePanel(Static):
     r_session = reactive(None)
 
     # recompose whole line to update blocks width
+    r_search = reactive(None, recompose=True)
     r_page = reactive(None, recompose=True)
     r_stats = reactive('', recompose=True)
     r_sort = reactive('', recompose=True)
@@ -27,6 +28,8 @@ class StatePanel(Static):
 
     @log_time
     def compose(self) -> ComposeResult:
+        yield ReactiveLabel(classes="search").data_bind(
+                            name=StatePanel.r_search)
         with Grid(id="state-panel"):
             yield PageIndicator(classes="column page").data_bind(
                     state=StatePanel.r_page)

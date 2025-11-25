@@ -41,7 +41,7 @@ from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpda
         RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
         StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenWebSearchCommand, \
         AddTorrentFromWebSearchCommand, WebSearchQuerySubmitted, ChangeTorrentPriorityCommand, \
-        ToggleFileDownloadCommand, OpenEditTorrentCommand, EditTorrentCommand
+        ToggleFileDownloadCommand, OpenEditTorrentCommand, EditTorrentCommand, SearchStateChangedEvent
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -89,6 +89,7 @@ class MainApp(App):
     r_torrents: list[TorrentDTO] | None = reactive(None)
     r_session = reactive(None)
     r_page = reactive(None)
+    r_search = reactive(None)
 
     @log_time
     def __init__(self, client_type: str, host: str, port: str,
@@ -146,7 +147,8 @@ class MainApp(App):
                 yield TorrentWebSearch(id="torrent-websearch")
 
         yield StatePanel().data_bind(r_session=MainApp.r_session,
-                                     r_page=MainApp.r_page)
+                                     r_page=MainApp.r_page,
+                                     r_search=MainApp.r_search)
 
     @log_time
     def on_mount(self) -> None:
@@ -353,6 +355,16 @@ class MainApp(App):
     @on(PageChangedEvent)
     def handle_page_changed_event(self, event: PageChangedEvent) -> None:
         self.r_page = event.state
+
+    @log_time
+    @on(SearchStateChangedEvent)
+    def handle_search_state_changed_event(self,
+                                          event: SearchStateChangedEvent) -> None:
+
+        if event.current and event.total:
+            self.r_search = f" Found: {event.current} / {event.total} "
+        else:
+            self.r_search = None
 
     # refactored
 
