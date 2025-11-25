@@ -227,21 +227,22 @@ class FilterOption(NamedTuple):
     id: str
     name: str
     key: str
+    display_name: str
     filter_func: None
 
 
 filter_options = [
-        FilterOption('all', 'All', '1',
+        FilterOption('all', 'All', 'a', '[u]A[/]ll',
                      lambda t: True),
-        FilterOption('active', 'Active', '2',
+        FilterOption('active', 'Active', 'c', 'A[u]c[/]tive',
                      lambda t: t.rate_download > 0 or t.rate_upload > 0),
-        FilterOption('downloading', 'Downloading', '3',
+        FilterOption('downloading', 'Downloading', 'd', '[u]D[/]ownloading',
                      lambda t: t.status == 'downloading'),
-        FilterOption('seeding', 'Seeding', '4',
+        FilterOption('seeding', 'Seeding', 's', '[u]S[/]eeding',
                      lambda t: t.status == 'seeding'),
-        FilterOption('stopped', 'Stopped', '5',
+        FilterOption('paused', 'Paused', 'p', '[u]P[/]aused',
                      lambda t: t.status == 'stopped'),
-        FilterOption('finished', 'Finished', '6',
+        FilterOption('finished', 'Finished', 'f', '[u]F[/]inished',
                      lambda t: t.percent_done >= 1.0),
         ]
 

@@ -83,7 +83,7 @@ class MainApp(App):
 
             Binding('"', "screenshot", "[App] Screenshot", priority=True),
 
-            Binding("d", "toggle_dark", "[UI] Toggle theme", priority=True),
+            Binding("d", "toggle_dark", "[UI] Toggle theme"),
             Binding("?", "help", "[App] Help"),
             Binding("q", "quit", "[App] Quit", priority=True),
             ]

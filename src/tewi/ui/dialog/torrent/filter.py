@@ -37,8 +37,8 @@ class FilterWidget(Static):
         table.add_columns("Filter", "Key")
 
         for f in filter_options:
-            table.add_row(f.name,
-                          Text(str(f'   {f.key}'), justify="center"))
+            table.add_row(f.display_name,
+                          Text(str(f'{f.key}'), justify="center"))
 
             b = Binding(f.key, f"select_filter('{f.id}')")
             self._bindings._add_binding(b)
