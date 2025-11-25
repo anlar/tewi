@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Action to open web link in torrent search results ('o' hotkey)
 - Automatically refresh torrent details screen [#101](https://github.com/anlar/tewi/issues/101)
 - Edit torrent name and location [#103](https://github.com/anlar/tewi/issues/103)
+- Display search hits in status panel [#104](https://github.com/anlar/tewi/issues/104)
 
 ### Changed
 

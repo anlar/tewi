@@ -362,7 +362,7 @@ class MainApp(App):
                                           event: SearchStateChangedEvent) -> None:
 
         if event.current and event.total:
-            self.r_search = f" Found: [{event.current}/{event.total}] "
+            self.r_search = f" Found: {event.current} / {event.total} "
         else:
             self.r_search = None
 

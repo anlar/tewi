@@ -65,9 +65,8 @@ class TorrentListViewPanel(ListView):
     r_torrents: list[TorrentDTO] | None = reactive(None)
 
     # Search state
-    # TODO
     search_term = ""
-    search_idx = 0
+    search_idx = 0  # search hits starts with 1
     search_active = False
 
     @log_time
@@ -385,11 +384,7 @@ class TorrentListViewPanel(ListView):
             range1 = range(current_idx - 1, -1, -1)
             range2 = range(len(self.r_torrents) - 1, current_idx, -1)
 
-        # TODO
-        total = 0
-        for i in self.r_torrents:
-            if search_term in i.name.lower():
-                total += 1
+        total = sum(1 for i in self.r_torrents if search_term in i.name.lower())
 
         # First search range
         for i in range1:
