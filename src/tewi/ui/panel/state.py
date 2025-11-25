@@ -74,7 +74,9 @@ class StatePanel(Static):
 
             filter_option = new_r_session['filter_option']
             if filter_option.id != 'all':
-                self.r_filter = f'Filter: {filter_option.name}'
+                filtered_count = new_r_session['filtered_torrents_count']
+                self.r_filter = (f'Filter: {filter_option.name} '
+                                 f'({filtered_count})')
             else:
                 self.r_filter = ''
 

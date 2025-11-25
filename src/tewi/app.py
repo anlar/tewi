@@ -188,6 +188,9 @@ class MainApp(App):
                 torrents = [t for t in torrents
                             if self.filter_option.filter_func(t)]
 
+            # Add filtered count to session for display
+            session['filtered_torrents_count'] = len(torrents)
+
             torrents.sort(key=self.sort_order.sort_func,
                           reverse=not self.sort_order_asc)
 
