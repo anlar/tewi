@@ -239,7 +239,7 @@ filter_options = [
                      lambda t: t.status == 'downloading'),
         FilterOption('seeding', 'Seeding', '4',
                      lambda t: t.status == 'seeding'),
-        FilterOption('paused', 'Paused', '5',
+        FilterOption('stopped', 'Stopped', '5',
                      lambda t: t.status == 'stopped'),
         FilterOption('finished', 'Finished', '6',
                      lambda t: t.percent_done >= 1.0),
