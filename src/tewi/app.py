@@ -183,10 +183,8 @@ class MainApp(App):
                                           self.sort_order_asc,
                                           self.filter_option)
 
-            # Apply filter if not 'all'
-            if self.filter_option.id != 'all':
-                torrents = [t for t in torrents
-                            if self.filter_option.filter_func(t)]
+            torrents = [t for t in torrents
+                        if self.filter_option.filter_func(t)]
 
             # Add filtered count to session for display
             session['filtered_torrents_count'] = len(torrents)
