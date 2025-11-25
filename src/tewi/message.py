@@ -1,5 +1,5 @@
 from textual.message import Message
-from .common import PageState
+from .common import FilterOption, PageState
 
 
 # Commands
@@ -27,6 +27,10 @@ class AddTorrentCommand(Message):
 
 
 class OpenSortOrderCommand(Message):
+    pass
+
+
+class OpenFilterCommand(Message):
     pass
 
 
@@ -181,6 +185,13 @@ class SortOrderUpdatedEvent(Message):
         super().__init__()
         self.order = order
         self.is_asc = is_asc
+
+
+class FilterUpdatedEvent(Message):
+
+    def __init__(self, filter_option: FilterOption) -> None:
+        super().__init__()
+        self.filter_option = filter_option
 
 
 class PageChangedEvent(Message):

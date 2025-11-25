@@ -45,8 +45,8 @@
 /* STATE PANEL */
 
 #state-panel {
-    grid-size: 11;
-    grid-columns: auto auto auto auto 1fr auto auto auto 10 auto 13;
+    grid-size: 12;
+    grid-columns: auto auto auto auto auto 1fr auto auto auto 10 auto 13;
     height: 1;
     background: $secondary;
 }
@@ -502,6 +502,25 @@ SortOrderWidget {
 }
 
 SortOrderWidget > DataTable {
+    height: auto;
+    width: auto;
+}
+
+/* SCREEN: FILTER DIALOG */
+
+FilterDialog {
+    align: center middle;
+}
+
+FilterWidget {
+    width: auto;
+    height: auto;
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
+FilterWidget > DataTable {
     height: auto;
     width: auto;
 }

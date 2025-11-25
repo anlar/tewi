@@ -221,3 +221,51 @@ sort_orders = [
         SortOrder('leechers', 'Leechers', 'l', 'L',
                   lambda t: t.peers_getting_from_us),
         ]
+
+
+class FilterOption(NamedTuple):
+    id: str
+    name: str
+    key: str
+    filter_func: None
+    qbt_filter: str
+
+
+filter_options = [
+        FilterOption('all', 'All', '1',
+                     lambda t: True,
+                     'all'),
+        FilterOption('active', 'Active', '2',
+                     lambda t: t.rate_download > 0 or t.rate_upload > 0,
+                     'active'),
+        FilterOption('downloading', 'Downloading', '3',
+                     lambda t: t.status == 'downloading',
+                     'downloading'),
+        FilterOption('seeding', 'Seeding', '4',
+                     lambda t: t.status == 'seeding',
+                     'seeding'),
+        FilterOption('paused', 'Paused', '5',
+                     lambda t: t.status == 'stopped',
+                     'paused'),
+        FilterOption('finished', 'Finished', '6',
+                     lambda t: t.percent_done >= 1.0,
+                     'completed'),
+        ]
+
+
+def get_filter_by_id(filter_id: str) -> FilterOption:
+    """Get filter option by ID.
+
+    Args:
+        filter_id: The filter ID to search for
+
+    Returns:
+        FilterOption matching the ID
+
+    Raises:
+        ValueError: If filter_id is not found
+    """
+    for filter_option in filter_options:
+        if filter_option.id == filter_id:
+            return filter_option
+    raise ValueError(f"Unknown filter ID: {filter_id}")

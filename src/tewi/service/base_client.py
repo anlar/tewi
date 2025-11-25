@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from dataclasses import replace
 from typing import TypedDict
 
-from ..common import FilePriority, SortOrder, TorrentDTO
+from ..common import FilePriority, FilterOption, SortOrder, TorrentDTO
 
 
 class ClientMeta(TypedDict):
@@ -56,6 +56,7 @@ class ClientSession(TypedDict):
 
     sort_order: SortOrder
     sort_order_asc: bool
+    filter_option: FilterOption
 
 
 class ClientError(Exception):
@@ -103,13 +104,16 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def session(self, torrents: list[TorrentDTO], sort_order: SortOrder, sort_order_asc: bool) -> ClientSession:
+    def session(self, torrents: list[TorrentDTO], sort_order: SortOrder,
+                sort_order_asc: bool,
+                filter_option: FilterOption) -> ClientSession:
         """Get session information with computed torrent counts.
 
         Args:
             torrents: List of torrents to compute counts from
             sort_order: Current sort order
             sort_order_asc: Whether sort order is ascending
+            filter_option: Current filter option
 
         Returns:
             ClientSession with speeds, settings, and torrent counts
@@ -126,11 +130,14 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def torrents(self) -> list[TorrentDTO]:
-        """Get list of all torrents.
+    def torrents(self, filter_option: FilterOption) -> list[TorrentDTO]:
+        """Get list of torrents filtered by the given filter option.
+
+        Args:
+            filter_option: Filter to apply to the torrent list
 
         Returns:
-            List of TorrentDTO objects
+            List of filtered TorrentDTO objects
         """
         pass
 

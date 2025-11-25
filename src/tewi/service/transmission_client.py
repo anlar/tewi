@@ -9,7 +9,9 @@ from transmission_rpc import Client as TransmissionRPCClient
 
 from ..util.misc import is_torrent_link
 from ..util.decorator import log_time
-from ..common import SortOrder, TorrentDTO, TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO, PeerState, FilePriority
+from ..common import (FilterOption, SortOrder, TorrentDTO,
+                      TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO,
+                      PeerState, FilePriority)
 from .base_client import BaseClient, ClientMeta, ClientStats, ClientSession
 
 
@@ -64,7 +66,9 @@ class TransmissionClient(BaseClient):
         }
 
     @log_time
-    def session(self, torrents: list[TorrentDTO], sort_order: SortOrder, sort_order_asc: bool) -> ClientSession:
+    def session(self, torrents: list[TorrentDTO], sort_order: SortOrder,
+                sort_order_asc: bool,
+                filter_option: FilterOption) -> ClientSession:
         s = self.client.get_session()
         stats = self.client.session_stats()
 
@@ -109,6 +113,7 @@ class TransmissionClient(BaseClient):
 
                 'sort_order': sort_order,
                 'sort_order_asc': sort_order_asc,
+                'filter_option': filter_option,
         }
 
     @log_time
@@ -291,7 +296,7 @@ class TransmissionClient(BaseClient):
         )
 
     @log_time
-    def torrents(self) -> list[TorrentDTO]:
+    def torrents(self, filter_option: FilterOption) -> list[TorrentDTO]:
         torrents = self.client.get_torrents(
                 arguments=['id', 'name', 'status', 'totalSize', 'left_until_done',
                            'percentDone', 'eta', 'rateUpload', 'rateDownload',
@@ -301,7 +306,9 @@ class TransmissionClient(BaseClient):
                            'peersSendingToUs', 'bandwidthPriority', 'uploadedEver',
                            'labels', 'downloadDir']
                 )
-        return [self._torrent_to_dto(t) for t in torrents]
+        dtos = [self._torrent_to_dto(t) for t in torrents]
+        # Apply client-side filtering
+        return [dto for dto in dtos if filter_option.filter_func(dto)]
 
     @log_time
     def torrent(self, id: int | str) -> TorrentDetailDTO:

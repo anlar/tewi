@@ -8,7 +8,9 @@ from qbittorrentapi.torrents import Tracker
 
 from ..util.misc import is_torrent_link
 from ..util.decorator import log_time
-from ..common import SortOrder, TorrentDTO, TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO, PeerState, FilePriority
+from ..common import (FilterOption, SortOrder, TorrentDTO,
+                      TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO,
+                      PeerState, FilePriority)
 from .base_client import BaseClient, ClientMeta, ClientStats, ClientSession, ClientError
 
 
@@ -110,7 +112,9 @@ class QBittorrentClient(BaseClient):
         }
 
     @log_time
-    def session(self, torrents: list[TorrentDTO], sort_order: SortOrder, sort_order_asc: bool) -> ClientSession:
+    def session(self, torrents: list[TorrentDTO], sort_order: SortOrder,
+                sort_order_asc: bool,
+                filter_option: FilterOption) -> ClientSession:
         transfer_info = self.client.transfer.info
         prefs = self.client.app.preferences
 
@@ -163,6 +167,7 @@ class QBittorrentClient(BaseClient):
             'torrents_stop': torrents_stop,
             'sort_order': sort_order,
             'sort_order_asc': sort_order_asc,
+            'filter_option': filter_option,
         }
 
     @log_time
@@ -215,9 +220,11 @@ class QBittorrentClient(BaseClient):
         )
 
     @log_time
-    def torrents(self) -> list[TorrentDTO]:
-        """Get list of all torrents."""
-        qb_torrents = self.client.torrents.info()
+    def torrents(self, filter_option: FilterOption) -> list[TorrentDTO]:
+        """Get list of torrents filtered by the given filter option."""
+        qb_torrents = self.client.torrents.info(
+            status_filter=filter_option.qbt_filter
+        )
         return [self._torrent_to_dto(t) for t in qb_torrents]
 
     @log_time

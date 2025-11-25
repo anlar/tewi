@@ -18,6 +18,7 @@ class StatePanel(Static):
     r_page = reactive(None, recompose=True)
     r_stats = reactive('', recompose=True)
     r_sort = reactive('', recompose=True)
+    r_filter = reactive('', recompose=True)
     r_alt_speed = reactive('', recompose=True)
     r_alt_delimiter = reactive('', recompose=True)
 
@@ -39,6 +40,8 @@ class StatePanel(Static):
                     name=StatePanel.r_stats_size)
             yield ReactiveLabel(classes="column sort").data_bind(
                     name=StatePanel.r_sort)
+            yield ReactiveLabel(classes="column filter").data_bind(
+                    name=StatePanel.r_filter)
             yield Static("", classes="column")
             yield ReactiveLabel(id="alt-speed", classes="column alt-speed").data_bind(
                     name=StatePanel.r_alt_speed)
@@ -68,6 +71,12 @@ class StatePanel(Static):
             sort_order_asc = new_r_session['sort_order_asc']
             sort_arrow = '' if sort_order_asc else '↑'
             self.r_sort = f'Sort: {sort_order}{sort_arrow}'
+
+            filter_option = new_r_session['filter_option']
+            if filter_option.id != 'all':
+                self.r_filter = f'Filter: {filter_option.name}'
+            else:
+                self.r_filter = ''
 
             self.r_upload_speed = new_r_session['upload_speed']
             self.r_download_speed = new_r_session['download_speed']
