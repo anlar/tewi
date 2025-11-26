@@ -352,7 +352,7 @@ StatisticsDialog {
 
 StatisticsWidget {
     height: auto;
-    width: 40;
+    width: 48;
 
     layout: grid;
     grid-size: 2;

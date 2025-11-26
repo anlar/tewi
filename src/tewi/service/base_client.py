@@ -33,6 +33,15 @@ class ClientStats(TypedDict):
     total_active_seconds: int | None
     total_started_count: int | None
 
+    cache_read_hits: float | None
+    cache_total_buffers_size: int | None
+
+    perf_write_cache_overload: int | None
+    perf_read_cache_overload: int | None
+    perf_queued_io_jobs: int | None
+    perf_average_time_queue: int | None
+    perf_total_queued_size: int | None
+
 
 class ClientSession(TypedDict):
     """Session information including speeds, settings, and torrent counts.

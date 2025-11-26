@@ -65,6 +65,13 @@ class TransmissionClient(BaseClient):
                 'total_ratio': total_ratio,
                 'total_active_seconds': s.cumulative_stats.seconds_active,
                 'total_started_count': s.cumulative_stats.session_count,
+                'cache_read_hits': None,  # Not available in Transmission
+                'cache_total_buffers_size': None,  # Not available in Transmission
+                'perf_write_cache_overload': None,  # Not available in Transmission
+                'perf_read_cache_overload': None,  # Not available in Transmission
+                'perf_queued_io_jobs': None,  # Not available in Transmission
+                'perf_average_time_queue': None,  # Not available in Transmission
+                'perf_total_queued_size': None,  # Not available in Transmission
         }
 
     @log_time

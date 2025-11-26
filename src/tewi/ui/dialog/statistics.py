@@ -36,15 +36,26 @@ class StatisticsWidget(Static):
 
     @log_time
     def compose(self) -> ComposeResult:
+        yield from self._compose_current_session()
+        yield from self._compose_total()
+        yield from self._compose_cache_stats()
+        yield from self._compose_performance_stats()
+
+    @log_time
+    def on_mount(self) -> None:
+        self.border_title = 'Statistics'
+        self.border_subtitle = '(X) Close'
+
+    def _compose_current_session(self) -> ComposeResult:
         yield Static("Current Session", classes="title")
         yield Static("  Uploaded:")
-        yield Label("N/A" if self.stats['current_uploaded_bytes'] is None
+        yield Label("-" if self.stats['current_uploaded_bytes'] is None
                     else print_size(self.stats['current_uploaded_bytes']))
         yield Static("  Downloaded:")
-        yield Label("N/A" if self.stats['current_downloaded_bytes'] is None
+        yield Label("-" if self.stats['current_downloaded_bytes'] is None
                     else print_size(self.stats['current_downloaded_bytes']))
         yield Static("  Ratio:")
-        yield Label("N/A" if self.stats['current_ratio'] is None
+        yield Label("-" if self.stats['current_ratio'] is None
                     else print_ratio(self.stats['current_ratio']))
         if self.stats['current_active_seconds'] is not None:
             yield Static("  Running Time:")
@@ -56,17 +67,17 @@ class StatisticsWidget(Static):
             yield Static("  Connected Peers:")
             yield Label(str(self.stats['current_connected_peers']))
 
+    def _compose_total(self) -> ComposeResult:
         yield Static(" ", classes="title")
-
         yield Static("Total", classes="title")
         yield Static("  Uploaded:")
-        yield Label("N/A" if self.stats['total_uploaded_bytes'] is None
+        yield Label("-" if self.stats['total_uploaded_bytes'] is None
                     else print_size(self.stats['total_uploaded_bytes']))
         yield Static("  Downloaded:")
-        yield Label("N/A" if self.stats['total_downloaded_bytes'] is None
+        yield Label("-" if self.stats['total_downloaded_bytes'] is None
                     else print_size(self.stats['total_downloaded_bytes']))
         yield Static("  Ratio:")
-        yield Label("N/A" if self.stats['total_ratio'] is None
+        yield Label("-" if self.stats['total_ratio'] is None
                     else print_ratio(self.stats['total_ratio']))
         if self.stats['total_active_seconds'] is not None:
             yield Static("  Running Time:")
@@ -75,7 +86,41 @@ class StatisticsWidget(Static):
             yield Static("  Started:")
             yield Label(f"{self.stats['total_started_count']} times")
 
-    @log_time
-    def on_mount(self) -> None:
-        self.border_title = 'Statistics'
-        self.border_subtitle = '(X) Close'
+    def _compose_cache_stats(self) -> ComposeResult:
+        """Render Cache statistics block (qBittorrent only)."""
+        if (self.stats['cache_read_hits'] is not None or
+                self.stats['cache_total_buffers_size'] is not None):
+            yield Static(" ", classes="title")
+            yield Static("Cache", classes="title")
+            if self.stats['cache_read_hits'] is not None:
+                yield Static("  Read Cache Hits:")
+                yield Label(f"{self.stats['cache_read_hits']:.1f}%")
+            if self.stats['cache_total_buffers_size'] is not None:
+                yield Static("  Total Buffer Size:")
+                yield Label(print_size(
+                    self.stats['cache_total_buffers_size']))
+
+    def _compose_performance_stats(self) -> ComposeResult:
+        """Render Performance statistics block (qBittorrent only)."""
+        if (self.stats['perf_write_cache_overload'] is not None or
+                self.stats['perf_read_cache_overload'] is not None or
+                self.stats['perf_queued_io_jobs'] is not None or
+                self.stats['perf_average_time_queue'] is not None or
+                self.stats['perf_total_queued_size'] is not None):
+            yield Static(" ", classes="title")
+            yield Static("Performance", classes="title")
+            if self.stats['perf_write_cache_overload'] is not None:
+                yield Static("  Write Cache Overload:")
+                yield Label(str(self.stats['perf_write_cache_overload']))
+            if self.stats['perf_read_cache_overload'] is not None:
+                yield Static("  Read Cache Overload:")
+                yield Label(str(self.stats['perf_read_cache_overload']))
+            if self.stats['perf_queued_io_jobs'] is not None:
+                yield Static("  Queued I/O Jobs:")
+                yield Label(str(self.stats['perf_queued_io_jobs']))
+            if self.stats['perf_average_time_queue'] is not None:
+                yield Static("  Average Time in Queue:")
+                yield Label(print_time(self.stats['perf_average_time_queue']))
+            if self.stats['perf_total_queued_size'] is not None:
+                yield Static("  Total Queued Size:")
+                yield Label(print_size(self.stats['perf_total_queued_size']))

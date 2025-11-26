@@ -103,6 +103,21 @@ class QBittorrentClient(BaseClient):
         current_waste = getattr(server_state, 'total_wasted_session', None)
         current_connected_peers = getattr(server_state, 'total_peer_connections', None)
 
+        # Cache statistics (qBittorrent-specific)
+        cache_read_hits_raw = getattr(server_state, 'read_cache_hits', None)
+        cache_read_hits = (
+            float(cache_read_hits_raw) if cache_read_hits_raw is not None
+            else None
+        )
+        cache_total_buffers_size = getattr(server_state, 'total_buffers_size', None)
+
+        # Performance statistics (qBittorrent-specific)
+        perf_write_cache_overload = getattr(server_state, 'write_cache_overload', None)
+        perf_read_cache_overload = getattr(server_state, 'read_cache_overload', None)
+        perf_queued_io_jobs = getattr(server_state, 'queued_io_jobs', None)
+        perf_average_time_queue = getattr(server_state, 'average_time_queue', None)
+        perf_total_queued_size = getattr(server_state, 'total_queued_size', None)
+
         return {
             'current_uploaded_bytes': current_uploaded,
             'current_downloaded_bytes': current_downloaded,
@@ -115,6 +130,13 @@ class QBittorrentClient(BaseClient):
             'total_ratio': total_ratio,
             'total_active_seconds': None,  # qBittorrent doesn't provide this
             'total_started_count': None,  # qBittorrent doesn't provide this
+            'cache_read_hits': cache_read_hits,
+            'cache_total_buffers_size': cache_total_buffers_size,
+            'perf_write_cache_overload': perf_write_cache_overload,
+            'perf_read_cache_overload': perf_read_cache_overload,
+            'perf_queued_io_jobs': perf_queued_io_jobs,
+            'perf_average_time_queue': perf_average_time_queue,
+            'perf_total_queued_size': perf_total_queued_size,
         }
 
     @log_time
