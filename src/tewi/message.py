@@ -48,6 +48,13 @@ class OpenEditTorrentCommand(Message):
         self.torrent = torrent
 
 
+class OpenUpdateTorrentCategoryCommand(Message):
+
+    def __init__(self, torrent):
+        super().__init__()
+        self.torrent = torrent
+
+
 class EditTorrentCommand(Message):
 
     def __init__(self, torrent_id: int | str, name: str,
@@ -56,6 +63,14 @@ class EditTorrentCommand(Message):
         self.torrent_id = torrent_id
         self.name = name
         self.location = location
+
+
+class UpdateTorrentCategoryCommand(Message):
+
+    def __init__(self, torrent_id: int | str, category: str | None) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+        self.category = category
 
 
 class RemoveTorrentCommand(Message):
@@ -177,6 +192,14 @@ class TorrentEditedEvent(Message):
     def __init__(self, torrent_id: int | str) -> None:
         super().__init__()
         self.torrent_id = torrent_id
+
+
+class TorrentCategoryUpdatedEvent(Message):
+
+    def __init__(self, torrent_id: int | str, category: str | None) -> None:
+        super().__init__()
+        self.torrent_id = torrent_id
+        self.category = category
 
 
 class SortOrderUpdatedEvent(Message):

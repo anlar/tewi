@@ -452,6 +452,26 @@ EditTorrentWidget > Input {
     margin: 1;
 }
 
+/* SCREEN: EDIT CATEGORY */
+
+UpdateTorrentCategoryDialog {
+    align: center middle;
+}
+
+UpdateTorrentCategoryWidget {
+    width: 30%;
+    height: auto;
+
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
+UpdateTorrentCategoryWidget > Select {
+    height: auto;
+    border: none;
+}
+
 /* SCREEN: SEARCH DIALOG */
 
 SearchDialog {

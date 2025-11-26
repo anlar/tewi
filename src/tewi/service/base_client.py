@@ -265,6 +265,25 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
+    def get_categories(self) -> list[str]:
+        """Get list of available torrent categories.
+
+        Returns:
+            List of category names
+        """
+        pass
+
+    @abstractmethod
+    def set_category(self, torrent_ids: int | str | list[int | str], category: str | None) -> None:
+        """Set category for one or more torrents.
+
+        Args:
+            torrent_ids: Single torrent ID or list of IDs
+            category: Category name or None to clear category
+        """
+        pass
+
+    @abstractmethod
     def edit_torrent(self, torrent_id: int | str, name: str, location: str) -> None:
         """Edit torrent name and location.
 

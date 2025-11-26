@@ -53,6 +53,7 @@ class TorrentInfoPanel(ScrollableContainer):
     t_comment = reactive(None)
     t_creator = reactive(None)
     t_labels = reactive(None)
+    t_category = reactive(None)
 
     t_status = reactive(None)
     t_location = reactive(None)
@@ -104,6 +105,8 @@ class TorrentInfoPanel(ScrollableContainer):
                             yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_creator)
                             yield Static("Labels:", classes="name")
                             yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_labels)
+                            yield Static("Category:", classes="name")
+                            yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_category)
                             yield Static("Location:", classes="name")
                             yield ReactiveLabel().data_bind(name=TorrentInfoPanel.t_location)
                             yield Static("Error:", classes="name")
@@ -203,6 +206,7 @@ class TorrentInfoPanel(ScrollableContainer):
             self.t_comment = torrent.comment if torrent.comment else "None"
             self.t_creator = torrent.creator if torrent.creator else "None"
             self.t_labels = ", ".join(torrent.labels) if len(torrent.labels) > 0 else "None"
+            self.t_category = torrent.category if torrent.category else "None"
 
             self.t_status = torrent.status.title()
             self.t_location = torrent.download_dir

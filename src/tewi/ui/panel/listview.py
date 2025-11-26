@@ -18,7 +18,7 @@ from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorr
         TrashTorrentCommand, TorrentTrashedEvent, Notification, OpenSearchCommand, \
         StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenSortOrderCommand, \
         OpenFilterCommand, PageChangedEvent, SearchStateChangedEvent, ChangeTorrentPriorityCommand, \
-        OpenEditTorrentCommand
+        OpenEditTorrentCommand, OpenUpdateTorrentCategoryCommand
 
 
 class TorrentListItem(ListItem):
@@ -45,6 +45,7 @@ class TorrentListViewPanel(ListView):
             Binding("a", "add_torrent", "[Torrent] Add"),
             Binding("e", "edit_torrent", "[Torrent] Edit"),
             Binding("L", "update_torrent_labels", "[Torrent] Update labels"),
+            Binding("C", "update_torrent_category", "[Torrent] Set category"),
             Binding("s", "sort_order", "[Torrent] Sort order"),
             Binding("f", "filter", "[Torrent] Filter"),
             Binding("p", "change_priority", "[Torrent] Change priority"),
@@ -73,11 +74,12 @@ class TorrentListViewPanel(ListView):
 
     @log_time
     def __init__(self, id: str, page_size: str, view_mode: str,
-                 capability_set_priority: bool) -> None:
+                 capability_set_priority: bool, capability_category: bool) -> None:
 
         self.page_size = page_size
         self.view_mode = view_mode
         self.capability_set_priority = capability_set_priority
+        self.capability_category = capability_category
 
         super().__init__(id=id)
 
@@ -239,6 +241,9 @@ class TorrentListViewPanel(ListView):
         if action == "change_priority":
             return self.capability_set_priority
 
+        if action == "update_torrent_category":
+            return self.capability_category
+
         return True
 
     # Actions: movement
@@ -282,6 +287,11 @@ class TorrentListViewPanel(ListView):
     def action_update_torrent_labels(self) -> None:
         if (torrent := self.get_hl_torrent()) is not None:
             self.post_message(OpenUpdateTorrentLabelsCommand(torrent))
+
+    @log_time
+    def action_update_torrent_category(self) -> None:
+        if (torrent := self.get_hl_torrent()) is not None:
+            self.post_message(OpenUpdateTorrentCategoryCommand(torrent))
 
     @log_time
     def action_verify_torrent(self) -> None:

@@ -28,6 +28,10 @@ class TransmissionClient(BaseClient):
                                             password=password)
 
     def capable(self, capability_code: str) -> bool:
+        match capability_code:
+            case 'category':
+                return False
+
         return True
 
     @log_time
@@ -156,8 +160,9 @@ class TransmissionClient(BaseClient):
             added_date=torrent.added_date,
             activity_date=torrent.activity_date,
             queue_position=torrent.queue_position,
-            labels=list(torrent.labels) if torrent.labels else [],
             download_dir=torrent.download_dir,
+            category=None,  # Transmission does not support categories
+            labels=list(torrent.labels) if torrent.labels else [],
         )
 
     @log_time
@@ -286,6 +291,7 @@ class TransmissionClient(BaseClient):
             comment=torrent.comment if torrent.comment else "",
             creator=torrent.creator if torrent.creator else "",
             labels=list(torrent.labels) if torrent.labels else [],
+            category=None,  # Transmission does not support categories
             status=torrent.status,
             download_dir=torrent.download_dir,
             downloaded_ever=torrent.downloaded_ever,
@@ -374,6 +380,22 @@ class TransmissionClient(BaseClient):
 
         self.client.change_torrent(torrent_ids,
                                    labels=labels)
+
+    @log_time
+    def get_categories(self) -> list[str]:
+        """Get list of available torrent categories.
+
+        Note: Transmission does not support categories.
+        """
+        return []
+
+    @log_time
+    def set_category(self, torrent_ids: int | str | list[int | str], category: str | None) -> None:
+        """Set category for one or more torrents.
+
+        Note: Transmission does not support categories. This is a no-op.
+        """
+        pass
 
     @log_time
     def edit_torrent(self, torrent_id: int | str,
