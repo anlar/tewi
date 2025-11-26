@@ -59,8 +59,8 @@ class PageIndicator(Static):
 
     @log_time
     def render(self) -> str:
-        # hide indicator when single page
-        if self.state is None or self.state.total == 1:
+        # hide indicator when single page or none (no torrents)
+        if self.state is None or self.state.total <= 1:
             return ''
         else:
             # include padding by spaces

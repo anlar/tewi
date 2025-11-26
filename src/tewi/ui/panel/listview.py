@@ -17,7 +17,8 @@ from ...message import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorr
         VerifyTorrentCommand, ReannounceTorrentCommand, RemoveTorrentCommand, TorrentRemovedEvent, \
         TrashTorrentCommand, TorrentTrashedEvent, Notification, OpenSearchCommand, \
         StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenSortOrderCommand, \
-        PageChangedEvent, SearchStateChangedEvent, ChangeTorrentPriorityCommand, OpenEditTorrentCommand
+        OpenFilterCommand, PageChangedEvent, SearchStateChangedEvent, ChangeTorrentPriorityCommand, \
+        OpenEditTorrentCommand
 
 
 class TorrentListItem(ListItem):
@@ -45,6 +46,7 @@ class TorrentListViewPanel(ListView):
             Binding("e", "edit_torrent", "[Torrent] Edit"),
             Binding("L", "update_torrent_labels", "[Torrent] Update labels"),
             Binding("s", "sort_order", "[Torrent] Sort order"),
+            Binding("f", "filter", "[Torrent] Filter"),
             Binding("p", "change_priority", "[Torrent] Change priority"),
 
             Binding("space", "toggle_torrent", "[Torrent] Toggle state"),
@@ -83,6 +85,8 @@ class TorrentListViewPanel(ListView):
     def watch_r_torrents(self, new_r_torrents):
         if new_r_torrents:
             self.update_page(torrents=new_r_torrents)
+        else:
+            self.update_page(torrents=[])
 
     @log_time
     def is_equal_to_page(self, torrents) -> bool:
@@ -319,6 +323,10 @@ class TorrentListViewPanel(ListView):
     @log_time
     def action_sort_order(self) -> None:
         self.post_message(OpenSortOrderCommand())
+
+    @log_time
+    def action_filter(self) -> None:
+        self.post_message(OpenFilterCommand())
 
     @log_time
     def action_change_priority(self) -> None:

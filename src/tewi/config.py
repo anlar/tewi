@@ -107,6 +107,9 @@ def _load_ui_section(parser: configparser.ConfigParser,
     val = _get_int_option(parser, 'ui', 'limit_torrents')
     if val is not None:
         config['limit_torrents'] = val
+    val = _get_string_option(parser, 'ui', 'filter')
+    if val:
+        config['filter'] = val
 
 
 def _load_debug_section(parser: configparser.ConfigParser,
@@ -191,6 +194,9 @@ refresh_interval =
 # Maximum number of torrents to display
 limit_torrents =
 
+# Filter torrents by status: all, active, downloading, seeding, paused, finished
+filter =
+
 [debug]
 # Enable verbose logs: boolean (saved to tewi_<timestamp>.log file)
 logs =
@@ -222,6 +228,7 @@ def merge_config_with_args(config: dict, args: Namespace) -> None:
         'refresh_interval': 5,
         'limit_torrents': None,
         'page_size': 30,
+        'filter': 'all',
         'host': 'localhost',
         'port': '9091',
         'username': None,

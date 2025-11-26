@@ -31,12 +31,13 @@ from textual.containers import Horizontal
 from textual.reactive import reactive
 from textual.widgets import ContentSwitcher
 
-from .common import sort_orders, TorrentDTO
+from .common import get_filter_by_id, sort_orders, TorrentDTO
 from .config import get_config_path, load_config, create_default_config, \
     merge_config_with_args
 from .service import create_client, ClientError
 from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpdatedEvent, Notification, Confirm, \
-        OpenSortOrderCommand, OpenSearchCommand, PageChangedEvent, VerifyTorrentCommand, ReannounceTorrentCommand, \
+        OpenSortOrderCommand, OpenFilterCommand, FilterUpdatedEvent, OpenSearchCommand, PageChangedEvent, \
+        VerifyTorrentCommand, ReannounceTorrentCommand, \
         OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
         RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
         StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenWebSearchCommand, \
@@ -51,6 +52,7 @@ from .ui.dialog.torrent.add import AddTorrentDialog
 from .ui.dialog.torrent.edit import EditTorrentDialog
 from .ui.dialog.torrent.label import UpdateTorrentLabelsDialog
 from .ui.dialog.torrent.search import SearchDialog
+from .ui.dialog.torrent.filter import FilterDialog
 from .ui.dialog.torrent.sort import SortOrderDialog
 from .ui.dialog.websearch_query import WebSearchQueryDialog
 from .ui.panel.info import InfoPanel
@@ -81,7 +83,7 @@ class MainApp(App):
 
             Binding('"', "screenshot", "[App] Screenshot", priority=True),
 
-            Binding("d", "toggle_dark", "[UI] Toggle theme", priority=True),
+            Binding("d", "toggle_dark", "[UI] Toggle theme"),
             Binding("?", "help", "[App] Help"),
             Binding("q", "quit", "[App] Quit", priority=True),
             ]
@@ -100,7 +102,8 @@ class MainApp(App):
                  limit_torrents: int,
                  test_mode: int,
                  version: str,
-                 search_query: str = None):
+                 search_query: str = None,
+                 filter: str = 'all'):
 
         super().__init__()
 
@@ -127,6 +130,7 @@ class MainApp(App):
 
         self.sort_order = sort_orders[0]
         self.sort_order_asc = True
+        self.filter_option = get_filter_by_id(filter)
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -169,8 +173,21 @@ class MainApp(App):
         if current_pane == 'torrent-list':
             logging.info("Start loading data from torrent client...")
 
-            torrents = self.client.torrents_test(self.test_mode) if self.test_mode else self.client.torrents()
-            session = self.client.session(torrents, self.sort_order, self.sort_order_asc)
+            if self.test_mode:
+                torrents = self.client.torrents_test(self.test_mode)
+            else:
+                torrents = self.client.torrents()
+
+            # Load session with full list of torrents (before filtering)
+            session = self.client.session(torrents, self.sort_order,
+                                          self.sort_order_asc,
+                                          self.filter_option)
+
+            torrents = [t for t in torrents
+                        if self.filter_option.filter_func(t)]
+
+            # Add filtered count to session for display
+            session['filtered_torrents_count'] = len(torrents)
 
             torrents.sort(key=self.sort_order.sort_func,
                           reverse=not self.sort_order_asc)
@@ -236,6 +253,11 @@ class MainApp(App):
     @on(OpenSortOrderCommand)
     def handle_open_sort_order_command(self, event: OpenSortOrderCommand) -> None:
         self.push_screen(SortOrderDialog())
+
+    @log_time
+    @on(OpenFilterCommand)
+    def handle_open_filter_command(self, event: OpenFilterCommand) -> None:
+        self.push_screen(FilterDialog())
 
     @log_time
     @on(OpenSearchCommand)
@@ -350,6 +372,14 @@ class MainApp(App):
         direction = 'ASC' if event.is_asc else 'DESC'
         self.post_message(Notification(
             f"Selected sort order: {event.order.name} {direction}"))
+
+    @log_time
+    @on(FilterUpdatedEvent)
+    def handle_filter_updated_event(self, event: FilterUpdatedEvent) -> None:
+        self.filter_option = event.filter_option
+
+        self.post_message(Notification(
+            f"Selected filter: {event.filter_option.name}"))
 
     @log_time
     @on(PageChangedEvent)
@@ -501,6 +531,10 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
                         help=argparse.SUPPRESS)
     parser.add_argument('--page-size', type=int, default=30,
                         help='Number of torrents displayed per page')
+    parser.add_argument('--filter', type=str, default='all',
+                        choices=['all', 'active', 'downloading', 'seeding',
+                                 'paused', 'finished'],
+                        help='Filter torrents by status')
     parser.add_argument('--host', type=str, default='localhost',
                         help='BitTorrent daemon host for connection')
     parser.add_argument('--port', type=str, default='9091',
@@ -610,7 +644,8 @@ def create_app():
                       limit_torrents=args.limit_torrents,
                       test_mode=args.test_mode,
                       version=tewi_version,
-                      search_query=args.search)
+                      search_query=args.search,
+                      filter=args.filter)
         return app
     except ClientError as e:
         print(f"Failed to connect to {args.client_type} daemon at "

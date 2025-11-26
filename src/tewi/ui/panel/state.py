@@ -18,6 +18,7 @@ class StatePanel(Static):
     r_page = reactive(None, recompose=True)
     r_stats = reactive('', recompose=True)
     r_sort = reactive('', recompose=True)
+    r_filter = reactive('', recompose=True)
     r_alt_speed = reactive('', recompose=True)
     r_alt_delimiter = reactive('', recompose=True)
 
@@ -39,6 +40,8 @@ class StatePanel(Static):
                     name=StatePanel.r_stats_size)
             yield ReactiveLabel(classes="column sort").data_bind(
                     name=StatePanel.r_sort)
+            yield ReactiveLabel(id='filter', classes="column filter").data_bind(
+                    name=StatePanel.r_filter)
             yield Static("", classes="column")
             yield ReactiveLabel(id="alt-speed", classes="column alt-speed").data_bind(
                     name=StatePanel.r_alt_speed)
@@ -69,6 +72,14 @@ class StatePanel(Static):
             sort_arrow = '' if sort_order_asc else '↑'
             self.r_sort = f'Sort: {sort_order}{sort_arrow}'
 
+            filter_option = new_r_session['filter_option']
+            if filter_option.id != 'all':
+                filtered_count = new_r_session['filtered_torrents_count']
+                self.r_filter = (f'Filter: {filter_option.name} '
+                                 f'({filtered_count})')
+            else:
+                self.r_filter = ''
+
             self.r_upload_speed = new_r_session['upload_speed']
             self.r_download_speed = new_r_session['download_speed']
             alt_speed_enabled = new_r_session['alt_speed_enabled']
@@ -90,6 +101,13 @@ class StatePanel(Static):
             self.remove_class("alt-speed-none")
         else:
             self.add_class("alt-speed-none")
+
+    @log_time
+    def watch_r_filter(self, new_value):
+        if new_value:
+            self.remove_class("filter-none")
+        else:
+            self.add_class("filter-none")
 
     @log_time
     def print_stats(self, session) -> str:
