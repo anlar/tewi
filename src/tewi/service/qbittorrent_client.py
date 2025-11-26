@@ -538,7 +538,7 @@ class QBittorrentClient(BaseClient):
             categories_dict = self.client.torrents_categories()
             categories = []
             for name, data in categories_dict.items():
-                save_path = data.get('savePath', '')
+                save_path = data.get('savePath') or None
                 categories.append(CategoryDTO(name=name, save_path=save_path))
             return sorted(categories, key=lambda c: c.name)
         except Exception:

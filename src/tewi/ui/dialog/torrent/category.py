@@ -64,7 +64,7 @@ class UpdateTorrentCategoryWidget(Static):
         cursor_row = 0
 
         for idx, cat in enumerate(self.categories):
-            table.add_row(cat.name, cat.save_path, key=cat.name)
+            table.add_row(cat.name, cat.save_path or "", key=cat.name)
             # Track which row has the current category
             if current_category == cat.name:
                 cursor_row = idx + 1  # +1 because "No category" is first row

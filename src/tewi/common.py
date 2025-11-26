@@ -69,7 +69,7 @@ class PeerState(Enum):
 class CategoryDTO:
     """Data Transfer Object for torrent categories (immutable)."""
     name: str
-    save_path: str
+    save_path: str | None
 
 
 class TorrentCategory(Enum):
