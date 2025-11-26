@@ -99,11 +99,17 @@ class QBittorrentClient(BaseClient):
             else total_uploaded / total_downloaded
         )
 
+        # Session waste and connected peers (qBittorrent-specific)
+        current_waste = getattr(server_state, 'total_wasted_session', None)
+        current_connected_peers = getattr(server_state, 'total_peer_connections', None)
+
         return {
             'current_uploaded_bytes': current_uploaded,
             'current_downloaded_bytes': current_downloaded,
             'current_ratio': current_ratio,
             'current_active_seconds': None,  # qBittorrent doesn't provide this
+            'current_waste': current_waste,
+            'current_connected_peers': current_connected_peers,
             'total_uploaded_bytes': total_uploaded,
             'total_downloaded_bytes': total_downloaded,
             'total_ratio': total_ratio,

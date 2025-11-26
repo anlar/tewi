@@ -46,10 +46,18 @@ class StatisticsWidget(Static):
         yield Static("  Ratio:")
         yield Label("N/A" if self.stats['current_ratio'] is None
                     else print_ratio(self.stats['current_ratio']))
-        yield Static("  Running Time:")
-        yield Label("N/A" if self.stats['current_active_seconds'] is None
-                    else print_time(self.stats['current_active_seconds']))
+        if self.stats['current_active_seconds'] is not None:
+            yield Static("  Running Time:")
+            yield Label(print_time(self.stats['current_active_seconds']))
+        if self.stats['current_waste'] is not None:
+            yield Static("  Waste:")
+            yield Label(print_size(self.stats['current_waste']))
+        if self.stats['current_connected_peers'] is not None:
+            yield Static("  Connected Peers:")
+            yield Label(str(self.stats['current_connected_peers']))
+
         yield Static(" ", classes="title")
+
         yield Static("Total", classes="title")
         yield Static("  Uploaded:")
         yield Label("N/A" if self.stats['total_uploaded_bytes'] is None
@@ -60,12 +68,12 @@ class StatisticsWidget(Static):
         yield Static("  Ratio:")
         yield Label("N/A" if self.stats['total_ratio'] is None
                     else print_ratio(self.stats['total_ratio']))
-        yield Static("  Running Time:")
-        yield Label("N/A" if self.stats['total_active_seconds'] is None
-                    else print_time(self.stats['total_active_seconds']))
-        yield Static("  Started:")
-        yield Label("N/A" if self.stats['total_started_count'] is None
-                    else f"{self.stats['total_started_count']} times")
+        if self.stats['total_active_seconds'] is not None:
+            yield Static("  Running Time:")
+            yield Label(print_time(self.stats['total_active_seconds']))
+        if self.stats['total_started_count'] is not None:
+            yield Static("  Started:")
+            yield Label(f"{self.stats['total_started_count']} times")
 
     @log_time
     def on_mount(self) -> None:

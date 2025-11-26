@@ -24,6 +24,8 @@ class ClientStats(TypedDict):
     current_downloaded_bytes: int | None
     current_ratio: float | None
     current_active_seconds: int | None
+    current_waste: int | None
+    current_connected_peers: int | None
 
     total_uploaded_bytes: int | None
     total_downloaded_bytes: int | None

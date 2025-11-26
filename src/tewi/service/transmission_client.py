@@ -58,6 +58,8 @@ class TransmissionClient(BaseClient):
                 'current_downloaded_bytes': s.current_stats.downloaded_bytes,
                 'current_ratio': current_ratio,
                 'current_active_seconds': s.current_stats.seconds_active,
+                'current_waste': None,  # Not available in Transmission
+                'current_connected_peers': None,  # Not available in Transmission
                 'total_uploaded_bytes': s.cumulative_stats.uploaded_bytes,
                 'total_downloaded_bytes': s.cumulative_stats.downloaded_bytes,
                 'total_ratio': total_ratio,
