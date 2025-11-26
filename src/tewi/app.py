@@ -42,13 +42,15 @@ from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpda
         RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
         StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenWebSearchCommand, \
         AddTorrentFromWebSearchCommand, WebSearchQuerySubmitted, ChangeTorrentPriorityCommand, \
-        ToggleFileDownloadCommand, OpenEditTorrentCommand, EditTorrentCommand, SearchStateChangedEvent
+        ToggleFileDownloadCommand, OpenEditTorrentCommand, EditTorrentCommand, SearchStateChangedEvent, \
+        OpenUpdateTorrentCategoryCommand, UpdateTorrentCategoryCommand
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
 from .ui.dialog.preferences import PreferencesDialog
 from .ui.dialog.statistics import StatisticsDialog
 from .ui.dialog.torrent.add import AddTorrentDialog
+from .ui.dialog.torrent.category import UpdateTorrentCategoryDialog
 from .ui.dialog.torrent.edit import EditTorrentDialog
 from .ui.dialog.torrent.label import UpdateTorrentLabelsDialog
 from .ui.dialog.torrent.search import SearchDialog
@@ -145,7 +147,8 @@ class MainApp(App):
                 yield TorrentListViewPanel(id="torrent-list",
                                            page_size=self.page_size,
                                            view_mode=self.view_mode,
-                                           capability_set_priority=self.client.capable('set_priority')
+                                           capability_set_priority=self.client.capable('set_priority'),
+                                           capability_category=self.client.capable('category')
                                            ).data_bind(r_torrents=MainApp.r_torrents)
                 yield TorrentInfoPanel(capability_torrent_id=self.client.capable('torrent_id'), id="torrent-info")
                 yield TorrentWebSearch(id="torrent-websearch")
@@ -362,6 +365,23 @@ class MainApp(App):
         except Exception as e:
             self.post_message(Notification(
                 f"Failed to update torrent: {str(e)}", "error"))
+
+    @log_time
+    @on(OpenUpdateTorrentCategoryCommand)
+    def handle_open_update_torrent_category_command(self, event: OpenUpdateTorrentCategoryCommand) -> None:
+        categories = self.client.get_categories()
+        self.push_screen(UpdateTorrentCategoryDialog(event.torrent, categories))
+
+    @log_time
+    @on(UpdateTorrentCategoryCommand)
+    def handle_update_torrent_category_command(self, event: UpdateTorrentCategoryCommand) -> None:
+        try:
+            self.client.set_category(event.torrent_id, event.category)
+            category_name = event.category if event.category else "None"
+            self.post_message(Notification(f"Category set to: {category_name}"))
+        except Exception as e:
+            self.post_message(Notification(
+                f"Failed to set category: {str(e)}", "error"))
 
     @log_time
     @on(SortOrderUpdatedEvent)

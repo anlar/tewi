@@ -30,6 +30,7 @@ class TorrentDTO:
     activity_date: datetime
     queue_position: int | None
     download_dir: str
+    category: str | None = None
     labels: list[str] = field(default_factory=list)
 
 
@@ -62,6 +63,13 @@ class PeerState(Enum):
 
     NONE = '-'
     """No active interest or transfer state."""
+
+
+@dataclass(frozen=True)
+class CategoryDTO:
+    """Data Transfer Object for torrent categories (immutable)."""
+    name: str
+    save_path: str | None
 
 
 class TorrentCategory(Enum):
@@ -162,6 +170,7 @@ class TorrentDetailDTO:
     comment: str
     creator: str
     labels: list[str]
+    category: str | None
     status: str
     download_dir: str
     downloaded_ever: int  # bytes

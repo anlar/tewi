@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Edit torrent name and location [#103](https://github.com/anlar/tewi/issues/103)
 - Display search hits in status panel [#104](https://github.com/anlar/tewi/issues/104)
 - Display qBittorrent-specific statistics (waste, connected peers, cache, performance) [#106](https://github.com/anlar/tewi/issues/106)
+- Set torrent category with 'C' hotkey (qBittorrent only) [#105](https://github.com/anlar/tewi/issues/105)
 
 ### Changed
 

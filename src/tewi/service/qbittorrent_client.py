@@ -8,7 +8,7 @@ from qbittorrentapi.torrents import Tracker
 
 from ..util.misc import is_torrent_link
 from ..util.decorator import log_time
-from ..common import (FilterOption, SortOrder, TorrentDTO,
+from ..common import (CategoryDTO, FilterOption, SortOrder, TorrentDTO,
                       TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO,
                       PeerState, FilePriority)
 from .base_client import BaseClient, ClientMeta, ClientStats, ClientSession, ClientError
@@ -63,6 +63,8 @@ class QBittorrentClient(BaseClient):
                 return False
             case 'set_priority':
                 return False
+            case 'category':
+                return True
 
         return True
 
@@ -243,8 +245,9 @@ class QBittorrentClient(BaseClient):
             activity_date=(datetime.fromtimestamp(torrent.last_activity)
                            if torrent.last_activity > 0 else datetime.now()),
             queue_position=torrent.priority if torrent.priority > 0 else None,
-            labels=[tag.strip() for tag in torrent.tags.split(',')] if torrent.tags else [],
             download_dir=torrent.save_path,
+            category=torrent.category if torrent.category else None,
+            labels=[tag.strip() for tag in torrent.tags.split(',')] if torrent.tags else [],
         )
 
     @log_time
@@ -403,6 +406,7 @@ class QBittorrentClient(BaseClient):
             comment=torrent.comment if torrent.comment else "",
             creator=torrent.created_by if hasattr(torrent, 'created_by') else "",
             labels=[tag.strip() for tag in torrent.tags.split(',')] if torrent.tags else [],
+            category=torrent.category if torrent.category else None,
             status=self._normalize_status(torrent.state),
             download_dir=torrent.save_path,
             downloaded_ever=torrent.downloaded,
@@ -526,6 +530,34 @@ class QBittorrentClient(BaseClient):
                     self.client.torrents_add_tags(tags=tags_str, torrent_hashes=hash_str)
                 except Exception:
                     pass  # Ignore if tag addition fails
+
+    @log_time
+    def get_categories(self) -> list[CategoryDTO]:
+        """Get list of available torrent categories."""
+        try:
+            categories_dict = self.client.torrents_categories()
+            categories = []
+            for name, data in categories_dict.items():
+                save_path = data.get('savePath') or None
+                categories.append(CategoryDTO(name=name, save_path=save_path))
+            return sorted(categories, key=lambda c: c.name)
+        except Exception:
+            return []
+
+    @log_time
+    def set_category(self, torrent_ids: int | str | list[int | str], category: str | None) -> None:
+        """Set category for one or more torrents."""
+        if isinstance(torrent_ids, (int, str)):
+            torrent_ids = [torrent_ids]
+
+        # Convert IDs back to hashes
+        hashes = self._ids_to_hashes(torrent_ids)
+
+        # qBittorrent API accepts empty string for clearing category
+        category_value = category if category else ''
+
+        for hash_str in hashes:
+            self.client.torrents_set_category(category=category_value, torrent_hashes=hash_str)
 
     @log_time
     def edit_torrent(self, torrent_id: int | str, name: str,
