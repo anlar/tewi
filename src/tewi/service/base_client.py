@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from dataclasses import replace
 from typing import TypedDict
 
-from ..common import FilePriority, FilterOption, SortOrder, TorrentDTO
+from ..common import CategoryDTO, FilePriority, FilterOption, SortOrder, TorrentDTO
 
 
 class ClientMeta(TypedDict):
@@ -265,11 +265,11 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def get_categories(self) -> list[str]:
+    def get_categories(self) -> list[CategoryDTO]:
         """Get list of available torrent categories.
 
         Returns:
-            List of category names
+            List of CategoryDTO objects with name and save_path
         """
         pass
 

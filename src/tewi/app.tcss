@@ -459,17 +459,14 @@ UpdateTorrentCategoryDialog {
 }
 
 UpdateTorrentCategoryWidget {
-    width: 30%;
-    height: auto;
-
+    width: auto;
     border-title-align: center;
     border: round $warning;
     padding: 1;
 }
 
-UpdateTorrentCategoryWidget > Select {
-    height: auto;
-    border: none;
+UpdateTorrentCategoryWidget > DataTable {
+    width: auto;
 }
 
 /* SCREEN: SEARCH DIALOG */

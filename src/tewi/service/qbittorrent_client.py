@@ -8,7 +8,7 @@ from qbittorrentapi.torrents import Tracker
 
 from ..util.misc import is_torrent_link
 from ..util.decorator import log_time
-from ..common import (FilterOption, SortOrder, TorrentDTO,
+from ..common import (CategoryDTO, FilterOption, SortOrder, TorrentDTO,
                       TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO,
                       PeerState, FilePriority)
 from .base_client import BaseClient, ClientMeta, ClientStats, ClientSession, ClientError
@@ -532,11 +532,15 @@ class QBittorrentClient(BaseClient):
                     pass  # Ignore if tag addition fails
 
     @log_time
-    def get_categories(self) -> list[str]:
+    def get_categories(self) -> list[CategoryDTO]:
         """Get list of available torrent categories."""
         try:
             categories_dict = self.client.torrents_categories()
-            return sorted(categories_dict.keys())
+            categories = []
+            for name, data in categories_dict.items():
+                save_path = data.get('savePath', '')
+                categories.append(CategoryDTO(name=name, save_path=save_path))
+            return sorted(categories, key=lambda c: c.name)
         except Exception:
             return []
 

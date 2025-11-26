@@ -65,6 +65,13 @@ class PeerState(Enum):
     """No active interest or transfer state."""
 
 
+@dataclass(frozen=True)
+class CategoryDTO:
+    """Data Transfer Object for torrent categories (immutable)."""
+    name: str
+    save_path: str
+
+
 class TorrentCategory(Enum):
     AUDIO = 'Audio'
     """Audio content (music, podcasts, audiobooks)."""
