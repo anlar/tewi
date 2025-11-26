@@ -1,7 +1,6 @@
 from textual.binding import Binding
 from textual.screen import ModalScreen
-from textual.widgets import Static, Select, Button, Label
-from textual.containers import Vertical
+from textual.widgets import Static, Select, Button
 from textual.app import ComposeResult
 
 from ....message import UpdateTorrentCategoryCommand
