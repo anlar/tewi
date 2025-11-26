@@ -24,12 +24,23 @@ class ClientStats(TypedDict):
     current_downloaded_bytes: int | None
     current_ratio: float | None
     current_active_seconds: int | None
+    current_waste: int | None
+    current_connected_peers: int | None
 
     total_uploaded_bytes: int | None
     total_downloaded_bytes: int | None
     total_ratio: float | None
     total_active_seconds: int | None
     total_started_count: int | None
+
+    cache_read_hits: float | None
+    cache_total_buffers_size: int | None
+
+    perf_write_cache_overload: int | None
+    perf_read_cache_overload: int | None
+    perf_queued_io_jobs: int | None
+    perf_average_time_queue: int | None
+    perf_total_queued_size: int | None
 
 
 class ClientSession(TypedDict):
