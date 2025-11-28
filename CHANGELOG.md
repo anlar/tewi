@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Removed
+
+## [1.2.0] - 2025-11-28 - Sharing Krolik
+
+### Added
+
 - Filter torrents by status with 'f' hotkey (all, active, downloading, seeding, paused, finished) [#102](https://github.com/anlar/tewi/issues/102)
 - Toggle file download status in torrent details with 'space' key (files not downloading are dimmed)
 - Change file download priority in torrent details with 'L', 'M', 'H' keys
@@ -25,8 +33,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Display '-' instead of 'N/A' for missing tracker fields
 - Start tracker tier number from 0 instead of 1
 - Fix column resize in torrent search results table [#107](https://github.com/anlar/tewi/issues/107)
-
-### Removed
 
 ## [1.1.0] - 2025-11-20 - Moon Rabbit
 
