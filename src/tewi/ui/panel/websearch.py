@@ -97,6 +97,8 @@ class TorrentWebSearch(Static):
         """Update the table when results change."""
         table = self.query_one("#websearch-results", DataTable)
 
+        # Re-create columns after each search to force them to fit to the new
+        # content. See: https://github.com/Textualize/textual/issues/6247
         table.clear(columns=True)
         self.create_table_columns()
 
