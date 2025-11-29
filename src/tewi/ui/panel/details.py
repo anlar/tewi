@@ -267,7 +267,7 @@ class TorrentInfoPanel(ScrollableContainer):
             for t in self.r_torrent.trackers:
                 table.add_row(self.print_count(t.tier),
                               t.host,
-                              t.status,
+                              t.status or "-",
                               self.print_count(t.peer_count),
                               self.print_count(t.seeder_count),
                               self.print_count(t.leecher_count),
@@ -276,7 +276,7 @@ class TorrentInfoPanel(ScrollableContainer):
                               self.print_tracker_next_time(t.next_announce),
                               self.print_tracker_datetime(t.last_scrape),
                               self.print_tracker_next_time(t.next_scrape),
-                              t.message,
+                              t.message or "-",
                               key=t.host)
 
             self.select_row(table, selected_row)

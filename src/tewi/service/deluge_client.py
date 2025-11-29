@@ -41,7 +41,7 @@ class DelugeClient(BaseClient):
             "num_pieces", "piece_length",
             "private", "comment", "tracker_host",
             "total_done", "total_uploaded",
-            "message", "peers"
+            "message", "peers", "trackers"
         ]
 
     @log_time
@@ -349,22 +349,27 @@ class DelugeClient(BaseClient):
         )
 
     @log_time
-    def _tracker_to_dto(self, tracker_data: dict) -> TrackerDTO:
+    def _tracker_to_dto(self, tracker: dict) -> TrackerDTO:
         """Convert Deluge tracker data to TrackerDTO."""
+
         return TrackerDTO(
-            host=tracker_data.get("url", "Unknown"),
-            tier=tracker_data.get("tier", 0),
-            seeder_count=None,  # Not provided by Deluge
-            leecher_count=None,
-            download_count=None,
-            peer_count=None,
-            status="Unknown",
-            message=tracker_data.get("message", ""),
-            last_announce=None,
-            next_announce=None,
-            last_scrape=None,
-            next_scrape=None,
-        )
+                host=tracker.get("url"),
+                tier=tracker.get("tier"),
+                seeder_count=tracker.get("scrape_complete"),
+                leecher_count=tracker.get("scrape_incomplete"),
+                download_count=tracker.get("scrape_downloaded"),
+                peer_count=None,
+                status=None,
+                message=tracker.get("message"),
+                last_announce=None,
+                next_announce=(
+                    datetime.fromtimestamp(tracker.get("next_announce"))
+                    if tracker.get("next_announce")
+                    else None
+                    ),
+                last_scrape=None,
+                next_scrape=None,
+                )
 
     @log_time
     def torrent(self, id: int | str) -> TorrentDetailDTO:
