@@ -11,9 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-Fix bug when adding new torrent from UI
-
 ### Removed
+
+## [1.2.1] - 2025-11-30 - Sharing Krolik
+
+### Changed
+
+Fix bug when adding new torrent from UI
 
 ## [1.2.0] - 2025-11-28 - Sharing Krolik
 
