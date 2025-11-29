@@ -535,11 +535,11 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
             prog='tewi',
             description='Text-based interface for BitTorrent clients '
-                        '(Transmission and qBittorrent)',
+                        '(Transmission, qBittorrent, and Deluge)',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--client-type', type=str, default='transmission',
-                        choices=['transmission', 'qbittorrent'],
+                        choices=['transmission', 'qbittorrent', 'deluge'],
                         help='Type of BitTorrent client to connect to')
     parser.add_argument('--view-mode', type=str, default='card',
                         choices=['card', 'compact', 'oneline'],
