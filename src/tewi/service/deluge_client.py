@@ -29,6 +29,21 @@ class DelugeClient(BaseClient):
         'Active': 'downloading',  # Generic active state
     }
 
+    FIELDS_LIST = [
+            "name", "hash", "state", "progress", "total_size", "total_wanted",
+            "total_remaining", "download_payload_rate",
+            "upload_payload_rate", "num_seeds", "num_peers", "ratio",
+            "total_uploaded", "priority", "time_added", "queue",
+            "save_path", "label", "active_time"
+        ]
+
+    FIELDS_DETAIL = FIELDS_LIST + [
+            "num_pieces", "piece_length",
+            "private", "comment", "tracker_host",
+            "total_done", "total_uploaded",
+            "message", "peers"
+        ]
+
     @log_time
     def __init__(self,
                  host: str, port: str,
@@ -276,15 +291,8 @@ class DelugeClient(BaseClient):
     def torrents(self) -> list[TorrentDTO]:
         """Get list of all torrents."""
         # Define fields to retrieve
-        fields = [
-            "name", "state", "progress", "total_size", "total_wanted",
-            "total_remaining", "download_payload_rate",
-            "upload_payload_rate", "num_seeds", "num_peers", "ratio",
-            "total_uploaded", "priority", "time_added", "queue",
-            "save_path", "label"
-        ]
-
-        torrents_data = self._call("core.get_torrents_status", [{}, fields])
+        torrents_data = self._call("core.get_torrents_status",
+                                   [{}, self.FIELDS_LIST])
 
         if not torrents_data:
             return []
@@ -319,41 +327,25 @@ class DelugeClient(BaseClient):
         )
 
     @log_time
-    def _peer_to_dto(self, peer_data: dict) -> PeerDTO:
+    def _peer_to_dto(self, peer: dict) -> PeerDTO:
         """Convert Deluge peer data to PeerDTO."""
-        # Deluge peer flags are different from Transmission
-        # Parse client and address
-        client = peer_data.get("client", "Unknown")
-        ip = peer_data.get("ip", "0.0.0.0")
 
-        # Determine download/upload state based on rates
-        down_speed = peer_data.get("down_speed", 0)
-        up_speed = peer_data.get("up_speed", 0)
-
-        if down_speed > 0:
-            dl_state = PeerState.INTERESTED
-        else:
-            dl_state = PeerState.NONE
-
-        if up_speed > 0:
-            ul_state = PeerState.INTERESTED
-        else:
-            ul_state = PeerState.NONE
+        address, port = peer.get("ip").split(":", 1)
 
         return PeerDTO(
-            address=ip,
-            client_name=client,
-            progress=peer_data.get("progress", 0.0),
-            is_encrypted=peer_data.get("seed", False),  # Approximation
-            rate_to_client=down_speed,
-            rate_to_peer=up_speed,
-            flag_str="",  # Deluge doesn't provide flag strings
-            port=-1,  # Not readily available
-            connection_type="TCP",  # Default assumption
-            direction="Unknown",
-            country=peer_data.get("country", None),
-            dl_state=dl_state,
-            ul_state=ul_state,
+            address=address,
+            port=port,
+            client_name=peer.get("client"),
+            progress=peer.get("progress"),
+            is_encrypted=None,
+            rate_to_client=peer.get("down_speed"),
+            rate_to_peer=peer.get("up_speed"),
+            flag_str=None,
+            connection_type=None,
+            direction=None,
+            country=peer.get("country", None),
+            dl_state=PeerState.NONE,
+            ul_state=PeerState.NONE,
         )
 
     @log_time
@@ -378,15 +370,8 @@ class DelugeClient(BaseClient):
     def torrent(self, id: int | str) -> TorrentDetailDTO:
         """Get detailed information about a specific torrent."""
         # Get torrent status
-        fields = [
-            "name", "hash", "total_size", "num_pieces", "piece_length",
-            "private", "comment", "tracker_host", "label", "state",
-            "save_path", "total_done", "total_uploaded", "ratio",
-            "message", "time_added", "active_time", "num_peers",
-            "num_seeds"
-        ]
-
-        torrent_data = self._call("core.get_torrent_status", [id, fields])
+        torrent_data = self._call("core.get_torrent_status",
+                                  [id, self.FIELDS_DETAIL])
 
         if not torrent_data:
             raise ClientError(f"Torrent with ID {id} not found")
@@ -407,6 +392,8 @@ class DelugeClient(BaseClient):
 
         # Get peers - Deluge web API doesn't easily expose peer list
         peers = []
+        for p in torrent_data.get("peers", []):
+            peers.append(self._peer_to_dto(p))
 
         # Get trackers
         tracker_data = self._call("core.get_torrent_status",
