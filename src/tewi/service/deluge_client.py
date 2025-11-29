@@ -280,7 +280,11 @@ class DelugeClient(BaseClient):
             priority=torrent_data.get("priority", 0),
             added_date=added_date,
             activity_date=added_date,  # Use added_date as fallback
-            queue_position=torrent_data.get("queue", None),
+            queue_position=(
+                torrent_data.get("queue")
+                if torrent_data.get("queue") > -1
+                else None
+                ),
             download_dir=torrent_data.get("save_path", ""),
             category=None,  # Deluge doesn't support categories
             labels=(list(torrent_data.get("label", []))
