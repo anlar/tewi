@@ -54,9 +54,10 @@ class DelugeClient(BaseClient):
         self.password = password or "deluge"
         self._request_id = 0
 
-        # Authenticate
+        # Authenticate and connect to daemon
         try:
             self._login()
+            self._connect_daemon()
         except Exception as e:
             raise ClientError(f"Failed to authenticate with Deluge: {e}")
 
@@ -70,6 +71,26 @@ class DelugeClient(BaseClient):
         response = self._call("auth.login", [self.password])
         if not response:
             raise ClientError("Login failed")
+
+    def _connect_daemon(self) -> None:
+        """Connect to Deluge daemon.
+
+        The Web API requires connecting to a daemon before most
+        core/daemon methods are available.
+        """
+        # Check if already connected
+        connected = self._call("web.connected")
+        if connected:
+            return
+
+        # Get available hosts
+        hosts = self._call("web.get_hosts")
+        if not hosts or len(hosts) == 0:
+            raise ClientError("No Deluge daemon hosts available")
+
+        # Connect to first available host
+        host_id = hosts[0][0]  # First element is host ID
+        self._call("web.connect", [host_id])
 
     def _call(self, method: str, params: list = None) -> Any:
         """Make RPC call to Deluge Web API.
