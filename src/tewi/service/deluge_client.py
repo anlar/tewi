@@ -545,8 +545,9 @@ class DelugeClient(BaseClient):
         if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
 
-        for torrent_id in torrent_ids:
-            self._call("core.resume_torrent", [[str(torrent_id)]])
+        # Convert to strings and use batch API
+        torrent_ids = [str(tid) for tid in torrent_ids]
+        self._call("core.resume_torrent", [torrent_ids])
 
     @log_time
     def stop_torrent(self, torrent_ids: int | str | list[int | str]
@@ -555,8 +556,9 @@ class DelugeClient(BaseClient):
         if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
 
-        for torrent_id in torrent_ids:
-            self._call("core.pause_torrent", [[str(torrent_id)]])
+        # Convert to strings and use batch API
+        torrent_ids = [str(tid) for tid in torrent_ids]
+        self._call("core.pause_torrent", [torrent_ids])
 
     @log_time
     def remove_torrent(self, torrent_ids: int | str | list[int | str],
@@ -592,8 +594,9 @@ class DelugeClient(BaseClient):
         if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
 
-        for torrent_id in torrent_ids:
-            self._call("core.force_recheck", [[str(torrent_id)]])
+        # Convert to strings and use batch API
+        torrent_ids = [str(tid) for tid in torrent_ids]
+        self._call("core.force_recheck", [torrent_ids])
 
     @log_time
     def reannounce_torrent(self, torrent_ids: int | str | list[int | str]
@@ -602,8 +605,9 @@ class DelugeClient(BaseClient):
         if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
 
-        for torrent_id in torrent_ids:
-            self._call("core.force_reannounce", [[str(torrent_id)]])
+        # Convert to strings and use batch API
+        torrent_ids = [str(tid) for tid in torrent_ids]
+        self._call("core.force_reannounce", [torrent_ids])
 
     @log_time
     def start_all_torrents(self) -> None:
