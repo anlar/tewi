@@ -1,5 +1,6 @@
 """Deluge torrent client implementation."""
 
+import base64
 import os
 from datetime import datetime, timedelta
 from typing import Any
@@ -534,7 +535,6 @@ class DelugeClient(BaseClient):
         else:
             file = os.path.expanduser(value)
             with open(file, 'rb') as f:
-                import base64
                 file_data = base64.b64encode(f.read()).decode('utf-8')
                 self._call("core.add_torrent_file", ["", file_data, {}])
 
@@ -608,16 +608,16 @@ class DelugeClient(BaseClient):
     @log_time
     def start_all_torrents(self) -> None:
         """Start all torrents."""
-        torrents = self.torrents()
-        torrent_ids = [t.id for t in torrents]
+        torrents_data = self._call("core.get_torrents_status", [{}, ['hash']])
+        torrent_ids = list(torrents_data.keys())
         if torrent_ids:
             self._call("core.resume_torrent", [torrent_ids])
 
     @log_time
     def stop_all_torrents(self) -> None:
         """Stop all torrents."""
-        torrents = self.torrents()
-        torrent_ids = [t.id for t in torrents]
+        torrents_data = self._call("core.get_torrents_status", [{}, ['hash']])
+        torrent_ids = list(torrents_data.keys())
         if torrent_ids:
             self._call("core.pause_torrent", [torrent_ids])
 
