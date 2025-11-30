@@ -583,15 +583,28 @@ class DelugeClient(BaseClient):
 
         Note: Deluge uses labels which function as categories.
         Each torrent can have one label selected from a predefined list.
+        Labels can have a 'move_completed_path' which is used as save_path.
         """
         try:
             # Get all labels from the Label plugin
             labels = self._call("label.get_labels", [])
 
-            # Convert labels to CategoryDTO
-            # Deluge labels don't have save_path, so set to None
-            return [CategoryDTO(name=label, save_path=None)
-                    for label in labels]
+            # Get options for each label to retrieve move_completed_path
+            categories = []
+            for label in labels:
+                # Get label options
+                options = self._call("label.get_options", [label])
+
+                # Use move_completed_path as save_path if it's set
+                # Only include path if move_completed is enabled
+                save_path = None
+                if (options.get("apply_move_completed") and
+                        options.get("move_completed_path")):
+                    save_path = options["move_completed_path"]
+
+                categories.append(CategoryDTO(name=label, save_path=save_path))
+
+            return categories
         except Exception:
             # If Label plugin is not enabled, return empty list
             return []
