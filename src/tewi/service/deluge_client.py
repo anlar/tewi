@@ -529,8 +529,25 @@ class DelugeClient(BaseClient):
         if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
 
-        for torrent_id in torrent_ids:
-            self._call("core.remove_torrent", [str(torrent_id), delete_data])
+        # Convert to strings
+        torrent_ids = [str(tid) for tid in torrent_ids]
+
+        # Deluge has a batch remove API: core.remove_torrents
+        # This is more efficient and handles errors better than
+        # calling core.remove_torrent multiple times
+        try:
+            self._call("core.remove_torrents", [torrent_ids, delete_data])
+        except Exception:
+            # If batch remove fails, try removing one by one
+            # This can happen with older Deluge versions
+            for torrent_id in torrent_ids:
+                try:
+                    self._call("core.remove_torrent",
+                               [torrent_id, delete_data])
+                except Exception:
+                    # Ignore errors for individual torrents that can't be
+                    # removed (e.g., already removed, or protected by plugin)
+                    pass
 
     @log_time
     def verify_torrent(self, torrent_ids: int | str | list[int | str]
