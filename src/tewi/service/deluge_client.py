@@ -160,7 +160,6 @@ class DelugeClient(BaseClient):
         stats = self._call("core.get_session_status", [[
             "total_upload",
             "total_download",
-            "num_connections"
             "peer.num_peers_connected",
             "ses.waste_piece_timed_out",
             "ses.waste_piece_cancelled",
