@@ -46,7 +46,26 @@ services:
       - downloads:/downloads
       - watch:/watch
 
+  deluge:
+    image: lscr.io/linuxserver/deluge:latest
+    container_name: deluge
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+      - DELUGE_LOGLEVEL=error #optional
+    volumes:
+      - deluge-config:/config
+      - downloads:/downloads
+    ports:
+      - 8112:8112
+      - 6882:6881
+      - 6882:6881/udp
+      - 58846:58846 #optional
+    restart: unless-stopped
+
 volumes:
   downloads:
   watch:
+  deluge-config:
   qbittorrent-config:

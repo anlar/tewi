@@ -243,15 +243,15 @@ class TorrentInfoPanel(ScrollableContainer):
 
             for p in self.r_torrent.peers:
                 progress = p.progress * 100
-                table.add_row("Yes" if p.is_encrypted else "No",
+                table.add_row("-" if p.is_encrypted is None else ("Yes" if p.is_encrypted else "No"),
                               print_speed(p.rate_to_peer, print_secs=True, dash_for_zero=True),
                               print_speed(p.rate_to_client, print_secs=True, dash_for_zero=True),
                               p.ul_state.value,
                               p.dl_state.value,
                               f'{progress:.0f}%',
-                              p.connection_type,
-                              p.direction,
-                              p.flag_str,
+                              p.connection_type or "-",
+                              p.direction or "-",
+                              p.flag_str or "-",
                               p.country or (get_country(p.address) or "-"),
                               p.address,
                               self.print_count(p.port),
@@ -267,7 +267,7 @@ class TorrentInfoPanel(ScrollableContainer):
             for t in self.r_torrent.trackers:
                 table.add_row(self.print_count(t.tier),
                               t.host,
-                              t.status,
+                              t.status or "-",
                               self.print_count(t.peer_count),
                               self.print_count(t.seeder_count),
                               self.print_count(t.leecher_count),
@@ -276,7 +276,7 @@ class TorrentInfoPanel(ScrollableContainer):
                               self.print_tracker_next_time(t.next_announce),
                               self.print_tracker_datetime(t.last_scrape),
                               self.print_tracker_next_time(t.next_scrape),
-                              t.message,
+                              t.message or "-",
                               key=t.host)
 
             self.select_row(table, selected_row)

@@ -5,7 +5,7 @@
 
   <h1>Tewi</h1>
 
-  <p>Text-based interface for BitTorrent clients (Transmission & qBittorrent)</p>
+  <p>Text-based interface for BitTorrent clients (Transmission, qBittorrent, Deluge)</p>
 </div>
 
 ## About
@@ -20,12 +20,12 @@
   <img src="https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-6.png" width="200"/>
 </p>
 
-Tewi is a TUI (text user interface) for BitTorrent clients, supporting both
-Transmission and qBittorrent daemons.
+Tewi is a TUI (text user interface) for BitTorrent clients, supporting
+Transmission, qBittorrent and Deluge daemons.
 
 Features:
 
-- Connect to Transmission or qBittorrent daemon by credentials
+- Connect to Transmission/qBittorrent/Deluge daemon by credentials
 - Browse torrents list
 - Different view modes: card, compact, oneline
 - Display torrent details: overview, files, trackers, peers

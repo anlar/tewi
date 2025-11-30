@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Support for Deluge torrent client (via Web API) [#110](https://github.com/anlar/tewi/issues/110)
+
 ### Changed
 
 Fix position sorting with empty queue numbers

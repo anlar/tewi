@@ -148,6 +148,7 @@ class MainApp(App):
                                            page_size=self.page_size,
                                            view_mode=self.view_mode,
                                            capability_set_priority=self.client.capable('set_priority'),
+                                           capability_label=self.client.capable('label'),
                                            capability_category=self.client.capable('category')
                                            ).data_bind(r_torrents=MainApp.r_torrents)
                 yield TorrentInfoPanel(capability_torrent_id=self.client.capable('torrent_id'), id="torrent-info")
@@ -530,17 +531,25 @@ class MainApp(App):
                 f"Failed to add torrent:\n{e}",
                 "warning"))
 
+    def check_action(self, action: str,
+                     parameters: tuple[object, ...]) -> bool | None:
+        """Check if an action may run."""
+        if action == "toggle_alt_speed":
+            return self.client.capable("toggle_alt_speed")
+
+        return True
+
 
 def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     """Set up and return the argument parser."""
     parser = argparse.ArgumentParser(
             prog='tewi',
             description='Text-based interface for BitTorrent clients '
-                        '(Transmission and qBittorrent)',
+                        '(Transmission, qBittorrent, and Deluge)',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument('--client-type', type=str, default='transmission',
-                        choices=['transmission', 'qbittorrent'],
+                        choices=['transmission', 'qbittorrent', 'deluge'],
                         help='Type of BitTorrent client to connect to')
     parser.add_argument('--view-mode', type=str, default='card',
                         choices=['card', 'compact', 'oneline'],
