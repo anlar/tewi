@@ -132,10 +132,6 @@ class DelugeClient(BaseClient):
         match capability_code:
             case 'torrent_id':
                 return False  # Deluge uses hash strings as IDs
-            case 'category':
-                return False  # Deluge doesn't support categories
-            case 'set_priority':
-                return True
 
         return True
 
@@ -575,38 +571,48 @@ class DelugeClient(BaseClient):
                       labels: list[str]) -> None:
         """Update labels/tags for one or more torrents.
 
-        Note: Deluge label support depends on the Label plugin being enabled.
+        Note: Deluge supports labels that acts like categories.
         """
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
-
-        # Deluge's label API is plugin-based and limited
-        # This is a basic implementation
-        for torrent_id in torrent_ids:
-            if labels:
-                # Set first label (Deluge typically supports single label)
-                try:
-                    self._call("label.set_torrent",
-                               [str(torrent_id), labels[0]])
-                except Exception:
-                    pass  # Label plugin may not be available
+        pass
 
     @log_time
     def get_categories(self) -> list[CategoryDTO]:
         """Get list of available torrent categories.
 
-        Note: Deluge does not support categories.
+        Note: Deluge uses labels which function as categories.
+        Each torrent can have one label selected from a predefined list.
         """
-        return []
+        try:
+            # Get all labels from the Label plugin
+            labels = self._call("label.get_labels", [])
+
+            # Convert labels to CategoryDTO
+            # Deluge labels don't have save_path, so set to None
+            return [CategoryDTO(name=label, save_path=None)
+                    for label in labels]
+        except Exception:
+            # If Label plugin is not enabled, return empty list
+            return []
 
     @log_time
     def set_category(self, torrent_ids: int | str | list[int | str],
                      category: str | None) -> None:
         """Set category for one or more torrents.
 
-        Note: Deluge does not support categories. This is a no-op.
+        Note: Deluge uses labels which function as categories.
         """
-        pass
+
+        if not isinstance(torrent_ids, list):
+            torrent_ids = [torrent_ids]
+
+        try:
+            for torrent_id in torrent_ids:
+                label_value = category if category else ""
+                self._call("label.set_torrent",
+                           [str(torrent_id), label_value])
+        except Exception:
+            # If Label plugin is not enabled, silently fail
+            pass
 
     @log_time
     def edit_torrent(self, torrent_id: int | str, name: str, location: str
