@@ -308,9 +308,9 @@ class DelugeClient(BaseClient):
                 else None
                 ),
             download_dir=torrent_data.get("save_path", ""),
-            category=None,  # Deluge doesn't support categories
-            labels=(list(torrent_data.get("label", []))
-                    if torrent_data.get("label") else []),
+            # Deluge has single label value that acts like category
+            category=torrent_data.get("label", None),
+            labels=[],
         )
 
     @log_time
@@ -470,9 +470,8 @@ class DelugeClient(BaseClient):
             is_private=torrent_data.get("private", False),
             comment=torrent_data.get("comment", ""),
             creator="",  # Not provided by Deluge
-            labels=(list(torrent_data.get("label", []))
-                    if torrent_data.get("label") else []),
-            category=None,
+            labels=[],
+            category=torrent_data.get("label", None),
             status=self._normalize_status(
                 torrent_data.get("state", "Unknown")),
             download_dir=torrent_data.get("save_path", ""),
