@@ -132,6 +132,8 @@ class DelugeClient(BaseClient):
         match capability_code:
             case 'torrent_id':
                 return False  # Deluge uses hash strings as IDs
+            case 'label':
+                return False
 
         return True
 

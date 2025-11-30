@@ -74,11 +74,14 @@ class TorrentListViewPanel(ListView):
 
     @log_time
     def __init__(self, id: str, page_size: str, view_mode: str,
-                 capability_set_priority: bool, capability_category: bool) -> None:
+                 capability_set_priority: bool,
+                 capability_label: bool,
+                 capability_category: bool) -> None:
 
         self.page_size = page_size
         self.view_mode = view_mode
         self.capability_set_priority = capability_set_priority
+        self.capability_label = capability_label
         self.capability_category = capability_category
 
         super().__init__(id=id)
@@ -240,6 +243,9 @@ class TorrentListViewPanel(ListView):
         """Check if an action may run."""
         if action == "change_priority":
             return self.capability_set_priority
+
+        if action == "update_torrent_labels":
+            return self.capability_label
 
         if action == "update_torrent_category":
             return self.capability_category
