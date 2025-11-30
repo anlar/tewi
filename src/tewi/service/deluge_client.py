@@ -16,7 +16,11 @@ from .base_client import (BaseClient, ClientMeta, ClientStats,
 
 
 class DelugeClient(BaseClient):
-    """Deluge client implementation using Web API."""
+    """Deluge client implementation using Web API.
+
+    Documentation: https://deluge.readthedocs.io/en/latest/reference/webapi.html
+    Source: https://github.com/deluge-torrent/deluge/blob/develop/deluge/core/core.py
+    """
 
     # Status mapping from Deluge to normalized status
     STATUS_MAP = {
