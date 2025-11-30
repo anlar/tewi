@@ -41,7 +41,8 @@ class DelugeClient(BaseClient):
             "num_pieces", "piece_length",
             "private", "comment", "tracker_host",
             "total_done", "total_uploaded",
-            "message", "peers", "trackers"
+            "message", "peers", "trackers",
+            "files", "file_priorities","file_progress"
         ]
 
     @log_time
@@ -328,15 +329,15 @@ class DelugeClient(BaseClient):
     @log_time
     def _file_to_dto(self, file_data: dict) -> FileDTO:
         """Convert Deluge file data to FileDTO."""
-        # Deluge file priorities: 0=Do not download, 1=Normal, 2-7=Higher
-        priority_value = file_data.get("priority", 1)
+        # Deluge file priorities: 0=Skip, 1=Low, 4=Normal, 7=High
+        priority_value = file_data.get("priority", 4)
 
         if priority_value == 0:
             priority = FilePriority.NOT_DOWNLOADING
         elif priority_value == 1:
-            priority = FilePriority.MEDIUM
-        elif priority_value <= 3:
             priority = FilePriority.LOW
+        elif priority_value <= 4:
+            priority = FilePriority.MEDIUM
         else:
             priority = FilePriority.HIGH
 
@@ -406,18 +407,38 @@ class DelugeClient(BaseClient):
         if not torrent_data:
             raise ClientError(f"Torrent with ID {id} not found")
 
-        # Get files
-        files_data = self._call("core.get_torrent_status", [id, ["files"]])
         files = []
-        if files_data and "files" in files_data:
-            for idx, file_info in enumerate(files_data["files"]):
+        if torrent_data:
+            file_list = torrent_data.get("files", [])
+            file_priorities = torrent_data.get("file_priorities", [])
+            file_progress = torrent_data.get("file_progress", [])
+
+            for idx, file_info in enumerate(file_list):
+                # Get priority for this file (default to 1/normal if not available)
+                priority_value = (file_priorities[idx]
+                                  if idx < len(file_priorities) else 1)
+
+                # Map Deluge file priorities to FilePriority enum
+                # Deluge uses 0=Skip, 1=Low, 4=Normal, 7=High
+                if priority_value == 0:
+                    priority = FilePriority.NOT_DOWNLOADING
+                elif priority_value == 1:
+                    priority = FilePriority.LOW
+                elif priority_value <= 4:
+                    priority = FilePriority.MEDIUM
+                else:
+                    priority = FilePriority.HIGH
+
+                size = file_info.get("size", 0)
+                progress = (file_progress[idx]
+                            if idx < len(file_progress) else 0.0)
+
                 files.append(FileDTO(
                     id=idx,
                     name=file_info.get("path", "Unknown"),
-                    size=file_info.get("size", 0),
-                    completed=int(file_info.get("size", 0) *
-                                  file_info.get("progress", 0.0)),
-                    priority=FilePriority.MEDIUM,  # Simplified
+                    size=size,
+                    completed=int(size * progress),
+                    priority=priority,
                 ))
 
         # Get peers - Deluge web API doesn't easily expose peer list
@@ -626,10 +647,11 @@ class DelugeClient(BaseClient):
                           priority: FilePriority) -> None:
         """Set download priority for files within a torrent."""
         # Map FilePriority enum to Deluge priority values
+        # Deluge uses 0=Skip, 1=Low, 4=Normal, 7=High
         priority_map = {
             FilePriority.NOT_DOWNLOADING: 0,
             FilePriority.LOW: 1,
-            FilePriority.MEDIUM: 1,  # Deluge's normal priority
+            FilePriority.MEDIUM: 4,
             FilePriority.HIGH: 7,
         }
 
