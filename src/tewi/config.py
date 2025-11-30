@@ -170,7 +170,7 @@ def create_default_config(path: Path) -> None:
 # This file uses INI format. Empty values use defaults.
 
 [client]
-# BitTorrent client type: transmission or qbittorrent
+# BitTorrent client type: transmission, qbittorrent, or deluge
 type =
 
 # Daemon connection settings
