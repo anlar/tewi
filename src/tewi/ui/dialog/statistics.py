@@ -68,23 +68,29 @@ class StatisticsWidget(Static):
             yield Label(str(self.stats['current_connected_peers']))
 
     def _compose_total(self) -> ComposeResult:
-        yield Static(" ", classes="title")
-        yield Static("Total", classes="title")
-        yield Static("  Uploaded:")
-        yield Label("-" if self.stats['total_uploaded_bytes'] is None
-                    else print_size(self.stats['total_uploaded_bytes']))
-        yield Static("  Downloaded:")
-        yield Label("-" if self.stats['total_downloaded_bytes'] is None
-                    else print_size(self.stats['total_downloaded_bytes']))
-        yield Static("  Ratio:")
-        yield Label("-" if self.stats['total_ratio'] is None
-                    else print_ratio(self.stats['total_ratio']))
-        if self.stats['total_active_seconds'] is not None:
-            yield Static("  Running Time:")
-            yield Label(print_time(self.stats['total_active_seconds']))
-        if self.stats['total_started_count'] is not None:
-            yield Static("  Started:")
-            yield Label(f"{self.stats['total_started_count']} times")
+        if (self.stats['total_uploaded_bytes'] is not None or
+                self.stats['total_downloaded_bytes'] is not None or
+                self.stats['total_ratio'] is not None or
+                self.stats['total_active_seconds'] is not None or
+                self.stats['total_started_count'] is not None):
+
+            yield Static(" ", classes="title")
+            yield Static("Total", classes="title")
+            yield Static("  Uploaded:")
+            yield Label("-" if self.stats['total_uploaded_bytes'] is None
+                        else print_size(self.stats['total_uploaded_bytes']))
+            yield Static("  Downloaded:")
+            yield Label("-" if self.stats['total_downloaded_bytes'] is None
+                        else print_size(self.stats['total_downloaded_bytes']))
+            yield Static("  Ratio:")
+            yield Label("-" if self.stats['total_ratio'] is None
+                        else print_ratio(self.stats['total_ratio']))
+            if self.stats['total_active_seconds'] is not None:
+                yield Static("  Running Time:")
+                yield Label(print_time(self.stats['total_active_seconds']))
+            if self.stats['total_started_count'] is not None:
+                yield Static("  Started:")
+                yield Label(f"{self.stats['total_started_count']} times")
 
     def _compose_cache_stats(self) -> ComposeResult:
         """Render Cache statistics block (qBittorrent only)."""

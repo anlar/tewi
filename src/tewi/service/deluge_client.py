@@ -153,30 +153,44 @@ class DelugeClient(BaseClient):
     @log_time
     def stats(self) -> ClientStats:
         """Get current and cumulative session statistics."""
-        stats = self._call("core.get_session_status", [
-            ["upload_rate", "download_rate", "total_upload",
-             "total_download", "num_connections"]
-        ])
+        stats = self._call("core.get_session_status", [[
+            "total_upload",
+            "total_download",
+            "num_connections"
+            "peer.num_peers_connected",
+            "ses.waste_piece_timed_out",
+            "ses.waste_piece_cancelled",
+            "ses.waste_piece_unknown",
+            "ses.waste_piece_seed",
+            "ses.waste_piece_end_game",
+            "ses.waste_piece_closing",
+            ]])
 
-        # Deluge tracks all-time stats but not per-session stats separately
-        total_uploaded = stats.get("total_upload", 0)
-        total_downloaded = stats.get("total_download", 0)
-        total_ratio = (
+        # Deluge tracks session stats only
+        current_uploaded = stats.get("total_upload", 0)
+        current_downloaded = stats.get("total_download", 0)
+        current_ratio = (
             float('inf')
-            if total_downloaded == 0
-            else total_uploaded / total_downloaded
+            if current_downloaded == 0
+            else current_uploaded / current_downloaded
+        )
+
+        current_waste = sum(
+            (stats.get(key) or 0)
+            for key in stats
+            if key.startswith("ses.waste_piece_")
         )
 
         return {
-            'current_uploaded_bytes': None,
-            'current_downloaded_bytes': None,
-            'current_ratio': None,
+            'current_uploaded_bytes': current_uploaded,
+            'current_downloaded_bytes': current_downloaded,
+            'current_ratio': current_ratio,
             'current_active_seconds': None,
-            'current_waste': None,
-            'current_connected_peers': stats.get("num_connections"),
-            'total_uploaded_bytes': total_uploaded,
-            'total_downloaded_bytes': total_downloaded,
-            'total_ratio': total_ratio,
+            'current_waste': current_waste,
+            'current_connected_peers': stats.get("peer.num_peers_connected"),
+            'total_uploaded_bytes': None,
+            'total_downloaded_bytes': None,
+            'total_ratio': None,
             'total_active_seconds': None,
             'total_started_count': None,
             'cache_read_hits': None,
