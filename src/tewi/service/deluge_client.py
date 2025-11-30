@@ -134,6 +134,8 @@ class DelugeClient(BaseClient):
                 return False  # Deluge uses hash strings as IDs
             case 'set_priority':
                 return False
+            case 'toggle_alt_speed':
+                return False
             case 'label':
                 return False
 

@@ -531,6 +531,14 @@ class MainApp(App):
                 f"Failed to add torrent:\n{e}",
                 "warning"))
 
+    def check_action(self, action: str,
+                     parameters: tuple[object, ...]) -> bool | None:
+        """Check if an action may run."""
+        if action == "toggle_alt_speed":
+            return self.client.capable("toggle_alt_speed")
+
+        return True
+
 
 def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     """Set up and return the argument parser."""
