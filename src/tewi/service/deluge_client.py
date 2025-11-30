@@ -38,7 +38,7 @@ class DelugeClient(BaseClient):
             "total_remaining", "download_payload_rate",
             "upload_payload_rate", "num_seeds", "num_peers", "ratio",
             "total_uploaded", "priority", "time_added", "queue",
-            "save_path", "label", "active_time", "eta"
+            "save_path", "label", "active_time", "eta", "time_since_transfer"
             ]
 
     FIELDS_DETAIL = FIELDS_LIST + [
@@ -337,7 +337,11 @@ class DelugeClient(BaseClient):
             uploaded_ever=t.get("total_uploaded"),
             priority=None,
             added_date=datetime.fromtimestamp(t.get("time_added")),
-            activity_date=None,
+            activity_date=(
+                datetime.now() - timedelta(seconds=t.get("time_since_transfer"))
+                if t.get("time_since_transfer") > 0
+                else None
+            ),
             queue_position=(
                 t.get("queue")
                 if t.get("queue") > -1
@@ -505,8 +509,16 @@ class DelugeClient(BaseClient):
             error_string=(t.get("message") if t.get("message") != "OK" else None),
             added_date=(datetime.fromtimestamp(t.get("time_added"))),
             start_date=None,
-            done_date=(datetime.fromtimestamp(t.get("completed_time"))),
-            activity_date=None,
+            done_date=(
+                datetime.fromtimestamp(t.get("completed_time"))
+                if t.get("completed_time")
+                else None
+            ),
+            activity_date=(
+                datetime.now() - timedelta(seconds=t.get("time_since_transfer"))
+                if t.get("time_since_transfer") > 0
+                else None
+            ),
             peers_connected=(t.get("num_peers") + t.get("num_seeds")),
             peers_sending_to_us=t.get("num_seeds"),
             peers_getting_from_us=t.get("num_peers"),
