@@ -249,11 +249,47 @@ class DelugeClient(BaseClient):
             'filter_option': filter_option,
         }
 
+    def _flatten_dict(self, data: dict, parent_key: str = ''
+                      ) -> dict[str, str]:
+        """Flatten nested dictionary structures into key-value pairs.
+
+        Args:
+            data: Dictionary to flatten
+            parent_key: Prefix for nested keys
+
+        Returns:
+            Flattened dictionary with dot notation for dict keys
+        """
+        items = []
+
+        for key, value in data.items():
+            new_key = f"{parent_key}.{key}" if parent_key else key
+
+            if isinstance(value, dict):
+                # Recursively flatten nested dicts
+                items.extend(self._flatten_dict(value, new_key).items())
+            else:
+                # Keep all other types (including lists) as-is
+                items.append((new_key, str(value)))
+
+        return dict(items)
+
     @log_time
     def preferences(self) -> dict[str, str]:
         """Get session preferences as key-value pairs."""
         config = self._call("core.get_config")
-        return {k: str(v) for k, v in sorted(config.items())}
+        result = {}
+
+        for key, value in config.items():
+            if isinstance(value, dict):
+                # Flatten nested dictionaries
+                flattened = self._flatten_dict(value, key)
+                result.update(flattened)
+            else:
+                # Keep all other types as-is (including lists)
+                result[key] = str(value)
+
+        return dict(sorted(result.items()))
 
     @log_time
     def _normalize_status(self, deluge_status: str) -> str:
