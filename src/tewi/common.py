@@ -214,7 +214,7 @@ sort_orders = [
         SortOrder('priority', 'Priority', 'i', 'I',
                   lambda t: t.priority),
         SortOrder('queue_order', 'Queue Order', 'o', 'O',
-                  lambda t: t.queue_position),
+                  lambda t: t.queue_position if t.queue_position is not None else float('inf')),
         SortOrder('ratio', 'Ratio', 'r', 'R',
                   lambda t: t.ratio),
         SortOrder('progress', 'Progress', 'p', 'P',
