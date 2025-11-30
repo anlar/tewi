@@ -659,7 +659,23 @@ class DelugeClient(BaseClient):
 
         deluge_priority = priority_map[priority]
 
-        # Deluge's file priority API
+        # Deluge's set_torrent_file_priorities expects a complete list
+        # of priorities for all files, so we need to:
+        # 1. Get current file priorities
+        # 2. Update only the specified files
+        # 3. Send the complete list back
+
+        # Get current file priorities
+        torrent_data = self._call("core.get_torrent_status",
+                                  [str(torrent_id), ["file_priorities"]])
+        current_priorities = torrent_data.get("file_priorities", [])
+
+        # Update priorities for specified files
+        new_priorities = list(current_priorities)
         for file_id in file_ids:
-            self._call("core.set_torrent_file_priorities",
-                       [str(torrent_id), {file_id: deluge_priority}])
+            if file_id < len(new_priorities):
+                new_priorities[file_id] = deluge_priority
+
+        # Set all file priorities
+        self._call("core.set_torrent_file_priorities",
+                   [str(torrent_id), new_priorities])
