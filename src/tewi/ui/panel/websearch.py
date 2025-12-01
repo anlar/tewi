@@ -18,8 +18,9 @@ from ...message import (
     AddTorrentFromWebSearchCommand,
     Notification
 )
-from ...service.search import YTSProvider, TorrentsCsvProvider, \
-    TPBProvider, NyaaProvider
+from ...service.search import (YTSProvider, TorrentsCsvProvider,
+                               TPBProvider, NyaaProvider,
+                               JackettProvider)
 from ...util.decorator import log_time
 from ...util.print import print_size
 
@@ -51,10 +52,16 @@ class TorrentWebSearch(Static):
     # to cover case when search executes on the same query twice
     r_results: list[SearchResultDTO] = reactive(list, always_update=True)
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self,
+                 jackett_url: str | None = None,
+                 jackett_api_key: str | None = None,
+                 **kwargs) -> None:
         super().__init__(**kwargs)
-        self.providers = [YTSProvider(), TorrentsCsvProvider(),
-                          TPBProvider(), NyaaProvider()]
+        self.providers = [YTSProvider(),
+                          TorrentsCsvProvider(),
+                          TPBProvider(),
+                          NyaaProvider(),
+                          JackettProvider(jackett_url, jackett_api_key)]
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -171,6 +178,13 @@ class TorrentWebSearch(Static):
             if p.short_name == result.provider:
                 provider = p
                 break
+
+        # TODO: fix provider name search
+        if not provider:
+            for p in self.providers:
+                if "Jackett" == p.short_name:
+                    provider = p
+                    break
 
         if not provider:
             self.post_message(Notification(

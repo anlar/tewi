@@ -11,6 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for Deluge torrent client (via Web API) [#110](https://github.com/anlar/tewi/issues/110)
 - Configuration profiles support (`--profile` option to load profile configs, `--profiles` to list available profiles) [#108](https://github.com/anlar/tewi/issues/108)
+- Jackett search provider support for searching multiple indexers
+- Configuration options `jackett_url` and `jackett_api_key` in [search] section
 
 ### Changed
 

@@ -165,6 +165,20 @@ def _load_debug_section(parser: configparser.ConfigParser,
         config['test_mode'] = val
 
 
+def _load_search_section(parser: configparser.ConfigParser,
+                         config: dict) -> None:
+    """Load [search] section options into config dict."""
+    if not parser.has_section('search'):
+        return
+
+    val = _get_string_option(parser, 'search', 'jackett_url')
+    if val:
+        config['jackett_url'] = val
+    val = _get_string_option(parser, 'search', 'jackett_api_key')
+    if val:
+        config['jackett_api_key'] = val
+
+
 def _load_config_file(config_path: Path, config: dict) -> None:
     """
     Load configuration from a single INI file and merge into config dict.
@@ -188,6 +202,7 @@ def _load_config_file(config_path: Path, config: dict) -> None:
     _load_client_section(parser, config)
     _load_ui_section(parser, config)
     _load_debug_section(parser, config)
+    _load_search_section(parser, config)
 
 
 def load_config(profile: str | None = None) -> dict:
@@ -268,6 +283,14 @@ filter =
 [debug]
 # Enable verbose logs: boolean (saved to tewi_<timestamp>.log file)
 logs =
+
+[search]
+# Jackett server configuration for torrent search
+# URL of your Jackett instance (default: http://localhost:9117)
+jackett_url =
+
+# API key for Jackett authentication
+jackett_api_key =
 """
 
     try:
@@ -303,9 +326,16 @@ def merge_config_with_args(config: dict, args: Namespace) -> None:
         'password': None,
         'logs': False,
         'test_mode': None,
+        'jackett_url': None,
+        'jackett_api_key': None,
     }
 
     # Apply config values only for args that are at default values
     for key, default_val in defaults.items():
-        if key in config and getattr(args, key) == default_val:
+        # Initialize attribute if it doesn't exist (for non-CLI config opts)
+        current_val = getattr(args, key, default_val)
+        if key in config and current_val == default_val:
             setattr(args, key, config[key])
+        elif not hasattr(args, key):
+            # Set default if attribute doesn't exist
+            setattr(args, key, default_val)

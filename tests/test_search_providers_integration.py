@@ -14,6 +14,7 @@ from src.tewi.service.search.yts_provider import YTSProvider
 from src.tewi.service.search.tpb_provider import TPBProvider
 from src.tewi.service.search.torrentscsv_provider import TorrentsCsvProvider
 from src.tewi.service.search.nyaa_provider import NyaaProvider
+from src.tewi.service.search.jackett_provider import JackettProvider
 from src.tewi.common import SearchResultDTO, TorrentCategory
 
 
@@ -287,3 +288,65 @@ class TestNyaaProviderIntegration(BaseProviderIntegrationTest):
 
     def requires_trackers(self) -> bool:
         return True
+
+
+class TestJackettProviderIntegration(BaseProviderIntegrationTest):
+    """Integration tests for Jackett provider.
+
+    Note: Requires local Jackett instance running at configured URL
+    with valid API key. Uses environment variables for configuration.
+    """
+
+    def get_provider(self):
+        import os
+        jackett_url = os.environ.get(
+            'TEST_JACKETT_URL',
+            'http://localhost:9117'
+        )
+        api_key = os.environ.get(
+            'TEST_JACKETT_API_KEY',
+            '66uf0ahso78pjke00t09bzlf93ufq3we'
+        )
+        return JackettProvider(jackett_url, api_key)
+
+    def get_search_query(self) -> str:
+        return "ubuntu"
+
+    def get_valid_categories(self) -> set:
+        # Jackett can return any category
+        return set(TorrentCategory)
+
+    def requires_trackers(self) -> bool:
+        # Jackett may or may not have trackers depending on indexer
+        return False
+
+    def test_missing_config(self):
+        """Test behavior when configuration is missing."""
+        # Test with no URL
+        provider = JackettProvider(None, "test_key")
+        with pytest.raises(Exception) as exc_info:
+            provider.search("test")
+        assert "URL not configured" in str(exc_info.value)
+
+        # Test with no API key
+        provider = JackettProvider("http://localhost:9117", None)
+        with pytest.raises(Exception) as exc_info:
+            provider.search("test")
+        assert "API key not configured" in str(exc_info.value)
+
+    def test_indexer_name_in_provider(self):
+        """Test that provider field contains indexer name."""
+        provider = self.get_provider()
+        results = provider.search(self.get_search_query())
+
+        if results:
+            # Check format: "Jackett(IndexerName)"
+            for result in results:
+                assert result.provider.startswith("Jackett("), \
+                    f"Provider should start with 'Jackett(', " \
+                    f"got {result.provider}"
+                assert result.provider.endswith(")"), \
+                    f"Provider should end with ')', got {result.provider}"
+                # Extract indexer name
+                indexer = result.provider[8:-1]
+                assert len(indexer) > 0, "Indexer name should not be empty"

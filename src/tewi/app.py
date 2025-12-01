@@ -104,6 +104,8 @@ class MainApp(App):
                  limit_torrents: int,
                  test_mode: int,
                  version: str,
+                 jackett_url: str = None,
+                 jackett_api_key: str = None,
                  search_query: str = None,
                  filter: str = 'all'):
 
@@ -119,6 +121,8 @@ class MainApp(App):
 
         self.tewi_version = version
         self.initial_search_query = search_query
+        self.jackett_url = jackett_url
+        self.jackett_api_key = jackett_api_key
 
         self.c_type = client_type
         self.c_host = host
@@ -152,7 +156,11 @@ class MainApp(App):
                                            capability_category=self.client.capable('category')
                                            ).data_bind(r_torrents=MainApp.r_torrents)
                 yield TorrentInfoPanel(capability_torrent_id=self.client.capable('torrent_id'), id="torrent-info")
-                yield TorrentWebSearch(id="torrent-websearch")
+                yield TorrentWebSearch(
+                    jackett_url=self.jackett_url,
+                    jackett_api_key=self.jackett_api_key,
+                    id="torrent-websearch"
+                )
 
         yield StatePanel().data_bind(r_session=MainApp.r_session,
                                      r_page=MainApp.r_page,
@@ -704,6 +712,8 @@ def create_app():
                       limit_torrents=args.limit_torrents,
                       test_mode=args.test_mode,
                       version=tewi_version,
+                      jackett_url=args.jackett_url,
+                      jackett_api_key=args.jackett_api_key,
                       search_query=args.search,
                       filter=args.filter)
         return app
