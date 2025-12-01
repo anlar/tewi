@@ -10,10 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for Deluge torrent client (via Web API) [#110](https://github.com/anlar/tewi/issues/110)
+- Configuration profiles support (`--profile` option to load profile configs, `--profiles` to list available profiles) [#108](https://github.com/anlar/tewi/issues/108)
 
 ### Changed
 
-Fix position sorting with empty queue numbers
+- Fix position sorting with empty queue numbers
+- Configuration directory moved from `~/.config/` to `~/.config/tewi/`
 
 ### Removed
 
