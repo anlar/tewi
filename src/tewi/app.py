@@ -33,7 +33,7 @@ from textual.widgets import ContentSwitcher
 
 from .common import get_filter_by_id, sort_orders, TorrentDTO
 from .config import get_config_path, load_config, create_default_config, \
-    merge_config_with_args
+    merge_config_with_args, get_available_profiles
 from .service import create_client, ClientError
 from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpdatedEvent, Notification, Confirm, \
         OpenSortOrderCommand, OpenFilterCommand, FilterUpdatedEvent, OpenSearchCommand, PageChangedEvent, \
@@ -580,6 +580,11 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     parser.add_argument('--version', action='version',
                         version='%(prog)s ' + version,
                         help='Show version and exit')
+    parser.add_argument('--profile', type=str,
+                        help='Load configuration profile from '
+                             'tewi-PROFILE.conf')
+    parser.add_argument('--profiles', action='store_true',
+                        help='List available configuration profiles and exit')
     parser.add_argument('--create-config', action='store_true',
                         help='Create default configuration file and exit')
     parser.add_argument('-a', '--add-torrent', type=str,
@@ -619,6 +624,29 @@ def _handle_add_torrent_mode(args) -> None:
         sys.exit(1)
 
 
+def _handle_profiles_command():
+    """Handle --profiles command to list available profiles."""
+    profiles = get_available_profiles()
+    if profiles:
+        print("Available profiles:")
+        for profile in profiles:
+            print(f"  - {profile}")
+    else:
+        print("No profiles found")
+    sys.exit(0)
+
+
+def _handle_create_config_command(profile: str | None):
+    """Handle --create-config command to create config file."""
+    config_path = get_config_path(profile)
+    create_default_config(config_path)
+    if profile:
+        print(f"Profile config file created: {config_path}")
+    else:
+        print(f"Config file created: {config_path}")
+    sys.exit(0)
+
+
 @log_time
 def create_app():
     """Create and return a MainApp instance."""
@@ -627,15 +655,17 @@ def create_app():
     parser = _setup_argument_parser(tewi_version)
     args = parser.parse_args()
 
+    # Handle --profiles (list available profiles and exit)
+    if args.profiles:
+        _handle_profiles_command()
+
     # Handle --create-config (must happen before other processing)
     if args.create_config:
-        config_path = get_config_path()
-        create_default_config(config_path)
-        print(f"Config file created: {config_path}")
-        sys.exit(0)
+        _handle_create_config_command(getattr(args, 'profile', None))
 
     # Load config file and merge with CLI arguments
-    config = load_config()
+    profile = getattr(args, 'profile', None)
+    config = load_config(profile)
     merge_config_with_args(config, args)
 
     if args.logs:

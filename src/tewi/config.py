@@ -23,17 +23,56 @@ from pathlib import Path
 from argparse import Namespace
 
 
-def get_config_path() -> Path:
+def get_config_dir() -> Path:
     """
-    Get the configuration file path following XDG Base Directory spec.
+    Get the configuration directory path following XDG Base Directory spec.
 
-    Returns path to tewi.conf in XDG_CONFIG_HOME or ~/.config if not set.
+    Returns path to tewi directory in XDG_CONFIG_HOME/tewi or
+    ~/.config/tewi if not set.
     """
     config_home = os.environ.get('XDG_CONFIG_HOME')
     if config_home:
-        return Path(config_home) / 'tewi.conf'
+        return Path(config_home) / 'tewi'
     else:
-        return Path.home() / '.config' / 'tewi.conf'
+        return Path.home() / '.config' / 'tewi'
+
+
+def get_config_path(profile: str | None = None) -> Path:
+    """
+    Get the configuration file path.
+
+    Args:
+        profile: Optional profile name. If provided, returns path to
+                 tewi-PROFILE.conf, otherwise returns tewi.conf
+
+    Returns:
+        Path to the configuration file
+    """
+    config_dir = get_config_dir()
+    if profile:
+        return config_dir / f'tewi-{profile}.conf'
+    else:
+        return config_dir / 'tewi.conf'
+
+
+def get_available_profiles() -> list[str]:
+    """
+    Get list of available configuration profiles.
+
+    Returns:
+        List of profile names (without tewi- prefix and .conf suffix)
+    """
+    config_dir = get_config_dir()
+    if not config_dir.exists():
+        return []
+
+    profiles = []
+    for config_file in config_dir.glob('tewi-*.conf'):
+        # Extract profile name from tewi-PROFILE.conf
+        profile_name = config_file.stem.removeprefix('tewi-')
+        profiles.append(profile_name)
+
+    return sorted(profiles)
 
 
 def _get_string_option(parser: configparser.ConfigParser,
@@ -126,17 +165,16 @@ def _load_debug_section(parser: configparser.ConfigParser,
         config['test_mode'] = val
 
 
-def load_config() -> dict:
+def _load_config_file(config_path: Path, config: dict) -> None:
     """
-    Load configuration from INI file.
+    Load configuration from a single INI file and merge into config dict.
 
-    Returns dictionary with config values. Returns empty dict if file
-    doesn't exist or on parsing errors.
+    Args:
+        config_path: Path to the config file
+        config: Dictionary to merge config values into
     """
-    config_path = get_config_path()
-
     if not config_path.exists():
-        return {}
+        return
 
     parser = configparser.ConfigParser()
     try:
@@ -145,12 +183,42 @@ def load_config() -> dict:
         print(f"Warning: Failed to parse config file "
               f"{config_path}: {e}", file=sys.stderr)
         print("Continuing with default values...", file=sys.stderr)
-        return {}
+        return
 
-    config = {}
     _load_client_section(parser, config)
     _load_ui_section(parser, config)
     _load_debug_section(parser, config)
+
+
+def load_config(profile: str | None = None) -> dict:
+    """
+    Load configuration from INI file(s).
+
+    If profile is specified, loads base config (tewi.conf) first, then
+    overlays profile config (tewi-PROFILE.conf) on top.
+
+    Args:
+        profile: Optional profile name. If provided, also loads
+                 tewi-PROFILE.conf after tewi.conf
+
+    Returns:
+        Dictionary with config values. Returns empty dict if files
+        don't exist or on parsing errors.
+    """
+    config = {}
+
+    # Load base config first
+    base_config_path = get_config_path()
+    _load_config_file(base_config_path, config)
+
+    # If profile is specified, load and overlay profile config
+    if profile:
+        profile_config_path = get_config_path(profile)
+        if not profile_config_path.exists():
+            print(f"Error: Profile config not found: {profile_config_path}",
+                  file=sys.stderr)
+            sys.exit(1)
+        _load_config_file(profile_config_path, config)
 
     return config
 
