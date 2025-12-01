@@ -240,7 +240,8 @@ To execute linting use command: `make check`.
 
 ## Changelog
 
-All changes should be added to `CHANGELOG.md`. Its format is based on
+All changes should be added to `CHANGELOG.md` to **Unreleased** section after
+already existing changes. Its format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## Key Utilities
