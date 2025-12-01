@@ -69,7 +69,7 @@ def get_available_profiles() -> list[str]:
     profiles = []
     for config_file in config_dir.glob('tewi-*.conf'):
         # Extract profile name from tewi-PROFILE.conf
-        profile_name = config_file.stem[5:]  # Remove 'tewi-' prefix
+        profile_name = config_file.stem.removeprefix('tewi-')
         profiles.append(profile_name)
 
     return sorted(profiles)
