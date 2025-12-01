@@ -48,7 +48,7 @@ services:
 
   deluge:
     image: lscr.io/linuxserver/deluge:latest
-    container_name: deluge
+    container_name: tewi-deluge-dev
     environment:
       - PUID=1000
       - PGID=1000
@@ -62,7 +62,18 @@ services:
       - 6882:6881
       - 6882:6881/udp
       - 58846:58846 #optional
-    restart: unless-stopped
+    restart: "no"
+
+  jackett:
+    image: lscr.io/linuxserver/jackett:latest
+    container_name: tewi-jackett-dev
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    ports:
+      - 9117:9117
+    restart: "no"
 
 volumes:
   downloads:
