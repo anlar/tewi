@@ -604,6 +604,10 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
                         help='Start web search with the given query')
     parser.add_argument('--test-mode', type=int, default=None,
                         help=argparse.SUPPRESS)
+    parser.add_argument('--jackett-url', type=str, default='http://localhost:9117',
+                        help='URL of your Jackett instance')
+    parser.add_argument('--jackett-api-key', type=str,
+                        help='API key for Jackett authentication')
 
     return parser
 

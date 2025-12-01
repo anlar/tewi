@@ -326,7 +326,7 @@ def merge_config_with_args(config: dict, args: Namespace) -> None:
         'password': None,
         'logs': False,
         'test_mode': None,
-        'jackett_url': None,
+        'jackett_url': 'http://localhost:9117',
         'jackett_api_key': None,
     }
 
