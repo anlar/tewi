@@ -18,8 +18,9 @@ from ...message import (
     AddTorrentFromWebSearchCommand,
     Notification
 )
-from ...service.search import YTSProvider, TorrentsCsvProvider, \
-    TPBProvider, NyaaProvider
+from ...service.search import (YTSProvider, TorrentsCsvProvider,
+                               TPBProvider, NyaaProvider,
+                               JackettProvider)
 from ...util.decorator import log_time
 from ...util.print import print_size
 
@@ -51,10 +52,16 @@ class TorrentWebSearch(Static):
     # to cover case when search executes on the same query twice
     r_results: list[SearchResultDTO] = reactive(list, always_update=True)
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self,
+                 jackett_url: str | None = None,
+                 jackett_api_key: str | None = None,
+                 **kwargs) -> None:
         super().__init__(**kwargs)
-        self.providers = [YTSProvider(), TorrentsCsvProvider(),
-                          TPBProvider(), NyaaProvider()]
+        self.providers = [YTSProvider(),
+                          TorrentsCsvProvider(),
+                          TPBProvider(),
+                          NyaaProvider(),
+                          JackettProvider(jackett_url, jackett_api_key)]
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -165,16 +172,16 @@ class TorrentWebSearch(Static):
 
         result = self.r_results[table.cursor_row]
 
-        # Find the provider instance that matches the result
+        # Find the provider instance using provider_id
         provider = None
         for p in self.providers:
-            if p.short_name == result.provider:
+            if p.id() == result.provider_id:
                 provider = p
                 break
 
         if not provider:
             self.post_message(Notification(
-                f"Provider {result.provider} not found",
+                f"Provider with ID '{result.provider_id}' not found",
                 "error"))
             return
 
@@ -185,7 +192,7 @@ class TorrentWebSearch(Static):
         # Show the details dialog
         self.app.push_screen(TorrentDetailsDialog(
             result.title, common_content, extended_content,
-            result.page_url, result.magnet_link))
+            result.page_url, result.magnet_link, result.torrent_link))
 
     @log_time
     def action_add_torrent(self) -> None:
@@ -209,7 +216,14 @@ class TorrentWebSearch(Static):
         result = self.r_results[table.cursor_row]
 
         # Post command to add torrent
-        self.post_message(AddTorrentFromWebSearchCommand(result.magnet_link))
+        if result.magnet_link:
+            self.post_message(AddTorrentFromWebSearchCommand(result.magnet_link))
+        elif result.torrent_link:
+            self.post_message(AddTorrentFromWebSearchCommand(result.torrent_link))
+        else:
+            self.post_message(Notification(
+                "No magnet/torrent link available for this torrent",
+                "warning"))
 
     @log_time
     def action_open_link(self) -> None:
@@ -302,7 +316,13 @@ class TorrentWebSearch(Static):
         # Deduplicate by info_hash, keeping result with highest seeders
         best_results = {}
         for result in all_results:
-            hash_key = result.info_hash
+            # Use info_hash as key; fall back to title:size for results without
+            if result.info_hash:
+                hash_key = result.info_hash
+            else:
+                # Deduplicate by title + size when hash unavailable
+                hash_key = f"__no_hash__{result.title}:{result.size}"
+
             if hash_key not in best_results:
                 best_results[hash_key] = result
             else:

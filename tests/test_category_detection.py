@@ -7,6 +7,9 @@ from src.tewi.common import TorrentCategory, SearchResultDTO
 class DummyProvider(BaseSearchProvider):
     """Dummy provider for testing base class functionality."""
 
+    def id(self) -> str:
+        return "dummy"
+
     @property
     def short_name(self) -> str:
         return "Dummy"
@@ -212,7 +215,9 @@ class TestResultsRefinement:
                 magnet_link="magnet:?xt=urn:btih:abc123",
                 info_hash="abc123",
                 upload_date=None,
-                provider="Test"
+                provider="Test",
+                provider_id="test",
+                torrent_link=None
             ),
             SearchResultDTO(
                 title="Music Album [FLAC]",
@@ -224,7 +229,9 @@ class TestResultsRefinement:
                 magnet_link="magnet:?xt=urn:btih:def456",
                 info_hash="def456",
                 upload_date=None,
-                provider="Test"
+                provider="Test",
+                provider_id="test",
+                torrent_link=None
             ),
         ]
 
@@ -252,7 +259,9 @@ class TestResultsRefinement:
                 magnet_link="magnet:?xt=urn:btih:abc123",
                 info_hash="abc123",
                 upload_date=None,
-                provider="Test"
+                provider="Test",
+                provider_id="test",
+                torrent_link=None
             ),
         ]
 
@@ -274,7 +283,9 @@ class TestResultsRefinement:
                 magnet_link="magnet:?xt=urn:btih:xyz789",
                 info_hash="xyz789",
                 upload_date=None,
-                provider="Test"
+                provider="Test",
+                provider_id="test",
+                torrent_link=None
             ),
         ]
 
@@ -296,7 +307,9 @@ class TestResultsRefinement:
                 magnet_link="magnet:?xt=urn:btih:abc123",
                 info_hash="abc123",
                 upload_date=None,
-                provider="Test"
+                provider="Test",
+                provider_id="test",
+                torrent_link=None
             ),
         ]
 
@@ -313,3 +326,5 @@ class TestResultsRefinement:
         assert refined[0].info_hash == "abc123"
         assert refined[0].upload_date is None
         assert refined[0].provider == "Test"
+        assert refined[0].provider_id == "test"
+        assert refined[0].torrent_link is None

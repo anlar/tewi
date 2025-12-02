@@ -20,6 +20,9 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
     API_URL = "https://torrents-csv.com/service/search"
 
+    def id(self) -> str:
+        return "torrentscsv"
+
     @property
     def short_name(self) -> str:
         return "T-CSV"
@@ -116,7 +119,9 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 info_hash=info_hash,
                 upload_date=upload_date,
                 provider=self.short_name,
+                provider_id=self.id(),
                 page_url=None,
+                torrent_link=None,
                 fields=fields
             )
 

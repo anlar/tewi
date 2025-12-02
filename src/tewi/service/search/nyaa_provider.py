@@ -29,6 +29,9 @@ class NyaaProvider(BaseSearchProvider):
         "http://nyaa.tracker.wf:7777/announce",
     ]
 
+    def id(self) -> str:
+        return "nyaa"
+
     @property
     def short_name(self) -> str:
         return "Nyaa"
@@ -203,7 +206,9 @@ class NyaaProvider(BaseSearchProvider):
                 info_hash=info_hash,
                 upload_date=upload_date,
                 provider=self.short_name,
+                provider_id=self.id(),
                 page_url=page_url,
+                torrent_link=None,
                 fields=fields
             )
 

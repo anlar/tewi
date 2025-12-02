@@ -52,7 +52,7 @@ class BaseSearchProvider(ABC):
         results = self._search_impl(query)
         return self._refine_results(results)
 
-    def _urlopen(self, url: str, timeout: int = 10):
+    def _urlopen(self, url: str, timeout: int = 30):
         """Open URL with User-Agent header.
 
         Creates a Request object with User-Agent header set to imitate
@@ -71,6 +71,15 @@ class BaseSearchProvider(ABC):
         request = urllib.request.Request(url)
         request.add_header('User-Agent', self.USER_AGENT)
         return urllib.request.urlopen(request, timeout=timeout)
+
+    @abstractmethod
+    def id(self) -> str:
+        """Return unique provider identifier for internal use.
+
+        Returns:
+            Unique string identifier (e.g., 'yts', 'jackett', 'tpb')
+        """
+        pass
 
     @property
     @abstractmethod
@@ -201,6 +210,9 @@ class BaseSearchProvider(ABC):
                         info_hash=result.info_hash,
                         upload_date=result.upload_date,
                         provider=result.provider,
+                        provider_id=result.provider_id,
+                        page_url=result.page_url,
+                        torrent_link=result.torrent_link,
                         fields=result.fields
                     )
             refined_results.append(result)

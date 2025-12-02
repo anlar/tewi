@@ -66,5 +66,22 @@ services:
     volumes:
       - downloads:/downloads
 
+  jackett:
+    image: lscr.io/linuxserver/jackett:latest
+    container_name: tewi-jackett-dev
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    ports:
+      - 9117:9117
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9117/UI/Dashboard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
 volumes:
   downloads:

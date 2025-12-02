@@ -14,6 +14,7 @@ from src.tewi.service.search.yts_provider import YTSProvider
 from src.tewi.service.search.tpb_provider import TPBProvider
 from src.tewi.service.search.torrentscsv_provider import TorrentsCsvProvider
 from src.tewi.service.search.nyaa_provider import NyaaProvider
+from src.tewi.service.search.jackett_provider import JackettProvider
 from src.tewi.common import SearchResultDTO, TorrentCategory
 
 
@@ -84,16 +85,18 @@ class BaseProviderIntegrationTest(ABC):
             f"Result should be SearchResultDTO, got {type(result)}"
         assert result.title is not None, "Title should not be None"
         assert len(result.title) > 0, "Title should not be empty"
-        assert result.info_hash is not None, "Info hash should not be None"
+        # info_hash can now be None - removed assertion
         assert result.magnet_link is not None, \
             "Magnet link should not be None"
 
-    def validate_info_hash(self, info_hash: str):
-        """Validate info hash format (40 hex characters).
+    def validate_info_hash(self, info_hash: str | None):
+        """Validate info hash format (40 hex characters) if present.
 
         Args:
-            info_hash: Info hash string
+            info_hash: Info hash string or None
         """
+        if info_hash is None:
+            return  # Allow None
         assert len(info_hash) == 40, \
             f"Info hash should be 40 chars, got {len(info_hash)}"
         assert all(c in '0123456789abcdefABCDEF' for c in info_hash), \
@@ -287,3 +290,48 @@ class TestNyaaProviderIntegration(BaseProviderIntegrationTest):
 
     def requires_trackers(self) -> bool:
         return True
+
+
+class TestJackettProviderIntegration(BaseProviderIntegrationTest):
+    """Integration tests for Jackett provider.
+
+    Note: Requires local Jackett instance running at configured URL
+    with valid API key. Uses environment variables for configuration.
+    """
+
+    def get_provider(self):
+        import os
+        jackett_url = os.environ.get(
+            'TEST_JACKETT_URL',
+            'http://localhost:9117'
+        )
+        api_key = os.environ.get(
+            'TEST_JACKETT_API_KEY',
+            '66uf0ahso78pjke00t09bzlf93ufq3we'
+        )
+        return JackettProvider(jackett_url, api_key)
+
+    def get_search_query(self) -> str:
+        return "ubuntu"
+
+    def get_valid_categories(self) -> set:
+        # Jackett can return any category
+        return set(TorrentCategory)
+
+    def requires_trackers(self) -> bool:
+        # Jackett may or may not have trackers depending on indexer
+        return False
+
+    def test_missing_config(self):
+        """Test behavior when configuration is missing."""
+        # Test with no URL
+        provider = JackettProvider(None, "test_key")
+        with pytest.raises(Exception) as exc_info:
+            provider.search("test")
+        assert "URL not configured" in str(exc_info.value)
+
+        # Test with no API key
+        provider = JackettProvider("http://localhost:9117", None)
+        with pytest.raises(Exception) as exc_info:
+            provider.search("test")
+        assert "API key not configured" in str(exc_info.value)

@@ -147,10 +147,12 @@ class SearchResultDTO:
     size: int  # bytes
     files_count: int | None
     magnet_link: str
-    info_hash: str
+    info_hash: str | None  # Optional: can be None for results without hash
     upload_date: datetime | None  # Unix timestamp from API
     provider: str  # Display name of search provider
+    provider_id: str  # Unique provider identifier
     page_url: str | None = None  # Link to torrent page on provider site
+    torrent_link: str | None = None  # HTTP/HTTPS torrent file URL
     fields: dict[str, str] | None = None  # Provider-specific metadata
 
 
