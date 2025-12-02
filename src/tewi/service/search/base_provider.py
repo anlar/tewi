@@ -52,7 +52,7 @@ class BaseSearchProvider(ABC):
         results = self._search_impl(query)
         return self._refine_results(results)
 
-    def _urlopen(self, url: str, timeout: int = 10):
+    def _urlopen(self, url: str, timeout: int = 30):
         """Open URL with User-Agent header.
 
         Creates a Request object with User-Agent header set to imitate
