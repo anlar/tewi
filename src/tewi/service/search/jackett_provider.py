@@ -442,7 +442,7 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             Tuple of (display_name, display_value)
         """
-        if key ==  'CategoryDesc':
+        if key == 'CategoryDesc':
             return 'Category', value
         elif key == 'Imdb':
             return 'IMDB', f"https://www.imdb.com/title/tt{value}/"
