@@ -429,10 +429,31 @@ class JackettProvider(BaseSearchProvider):
 
         return TorrentCategory.UNKNOWN
 
+    def _transform_field(self, key: str, value: str) -> tuple[str, str]:
+        """Transform field key and value for display.
+
+        Applies transformations like converting IDs to URLs.
+        This is a universal mechanism for enhancing field display.
+
+        Args:
+            key: Field name from Jackett response
+            value: Field value
+
+        Returns:
+            Tuple of (display_name, display_value)
+        """
+        if key ==  'CategoryDesc':
+            return 'Category', value
+        elif key == 'Imdb':
+            return 'IMDB', f"https://www.imdb.com/title/tt{value}/"
+
+        return key, value
+
     def details_extended(self, result: SearchResultDTO) -> str:
         """Generate Jackett-specific details for right column.
 
         Prints all provider-specific fields from the search result.
+        Applies transformations to enhance certain fields (e.g., IMDB).
 
         Args:
             result: Search result to format
@@ -448,8 +469,8 @@ class JackettProvider(BaseSearchProvider):
         # Print all fields in sorted order for consistent display
         for key in sorted(result.fields.keys()):
             value = result.fields[key]
-            # Format field name: convert snake_case to Title Case
-            field_name = key.replace('_', ' ').title()
-            md += f"- **{field_name}:** {value}\n"
+            # Transform field for display
+            display_name, display_value = self._transform_field(key, value)
+            md += f"- **{display_name}:** {display_value}\n"
 
         return md
