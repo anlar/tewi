@@ -20,7 +20,6 @@ services:
       start_period: 10s
     volumes:
       - downloads:/downloads
-      - watch:/watch
 
   qbittorrent:
     image: linuxserver/qbittorrent:latest
@@ -42,9 +41,7 @@ services:
       retries: 5
       start_period: 10s
     volumes:
-      - qbittorrent-config:/config
       - downloads:/downloads
-      - watch:/watch
 
   deluge:
     image: lscr.io/linuxserver/deluge:latest
@@ -54,15 +51,20 @@ services:
       - PGID=1000
       - TZ=Etc/UTC
       - DELUGE_LOGLEVEL=error #optional
-    volumes:
-      - deluge-config:/config
-      - downloads:/downloads
     ports:
       - 8112:8112
       - 6882:6881
       - 6882:6881/udp
       - 58846:58846 #optional
     restart: "no"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8112"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - downloads:/downloads
 
   jackett:
     image: lscr.io/linuxserver/jackett:latest
@@ -74,9 +76,12 @@ services:
     ports:
       - 9117:9117
     restart: "no"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9117/UI/Dashboard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   downloads:
-  watch:
-  deluge-config:
-  qbittorrent-config:
