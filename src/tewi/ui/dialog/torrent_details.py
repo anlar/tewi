@@ -9,6 +9,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal, ScrollableContainer
 
 from ...util.decorator import log_time
+from ...message import AddTorrentFromWebSearchCommand, Notification
 
 
 class TorrentDetailsDialog(ModalScreen[None]):
@@ -31,7 +32,8 @@ class TorrentDetailsDialog(ModalScreen[None]):
     def __init__(self, title: str, common_content: str,
                  extended_content: str,
                  site_link: str | None = None,
-                 magnet_link: str | None = None) -> None:
+                 magnet_link: str | None = None,
+                 torrent_link: str | None = None) -> None:
         """Initialize the dialog with torrent details.
 
         Args:
@@ -39,6 +41,7 @@ class TorrentDetailsDialog(ModalScreen[None]):
             common_content: Common details (left column)
             extended_content: Provider-specific details (right column)
             magnet_link: Optional magnet link for adding torrent
+            torrent_link: Optional torrent link for adding torrent
         """
         super().__init__()
         self.title = title
@@ -46,6 +49,7 @@ class TorrentDetailsDialog(ModalScreen[None]):
         self.extended_content = extended_content
         self.site_link = site_link
         self.magnet_link = magnet_link
+        self.torrent_link = torrent_link
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -73,13 +77,14 @@ class TorrentDetailsDialog(ModalScreen[None]):
     def action_add_torrent(self) -> None:
         """Add the torrent to the client."""
         if self.magnet_link:
-            from ...message import AddTorrentFromWebSearchCommand, Notification
             self.post_message(AddTorrentFromWebSearchCommand(self.magnet_link))
             self.dismiss()
+        elif self.torrent_link:
+            self.post_message(AddTorrentFromWebSearchCommand(self.torrent_link))
+            self.dismiss()
         else:
-            from ...message import Notification
             self.post_message(Notification(
-                "No magnet link available for this torrent",
+                "No magnet/torrent link available for this torrent",
                 "warning"))
 
     @log_time

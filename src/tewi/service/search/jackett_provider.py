@@ -161,8 +161,18 @@ class JackettProvider(BaseSearchProvider):
             SearchResultDTO or None if parsing fails
         """
         try:
-            info_hash = result.get('InfoHash', '')
-            if not info_hash:
+            # Allow None for info_hash
+            info_hash_raw = result.get('InfoHash', '')
+            info_hash = info_hash_raw.strip() if info_hash_raw else None
+            if info_hash == '':
+                info_hash = None
+
+            # Extract both link types
+            magnet_link = self._extract_magnet_link(result, info_hash)
+            torrent_link = self._extract_torrent_link(result)
+
+            # Skip result only if we have NEITHER link type
+            if not magnet_link and not torrent_link:
                 return None
 
             return SearchResultDTO(
@@ -172,42 +182,62 @@ class JackettProvider(BaseSearchProvider):
                 leechers=int(result.get('Peers', 0)),
                 size=int(result.get('Size', 0)),
                 files_count=self._get_files_count(result),
-                magnet_link=self._get_magnet_link(result, info_hash),
+                magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=self._parse_upload_date(result),
                 provider=self._build_provider_name(result),
                 provider_id=self.id(),
                 page_url=self._get_page_url(result),
+                torrent_link=torrent_link,
                 fields=self._build_fields(result)
             )
         except (KeyError, ValueError, TypeError):
             return None
 
-    def _get_magnet_link(self,
-                         result: dict[str, Any],
-                         info_hash: str) -> str:
-        """Get magnet link from result, with fallbacks.
+    def _extract_magnet_link(self,
+                             result: dict[str, Any],
+                             info_hash: str | None) -> str | None:
+        """Extract or generate magnet link from result.
+
+        Priority: MagnetUri field → Generated from InfoHash → None
 
         Args:
             result: Result dict from Jackett API
-            info_hash: Torrent info hash
+            info_hash: Torrent info hash (may be None)
 
         Returns:
-            Magnet URI or HTTP(S) torrent file URL
+            Magnet URI string or None if unavailable
         """
-        magnet_link = result.get('MagnetUri', '').strip()
-        if magnet_link:
-            return magnet_link
+        magnet_uri_raw = result.get('MagnetUri', '')
+        magnet_uri = magnet_uri_raw.strip() if magnet_uri_raw else ''
+        if magnet_uri:
+            return magnet_uri
 
-        link = result.get('Link', '').strip()
-        if link:
+        # Generate magnet from info hash if available
+        if info_hash:
+            return self._build_magnet_link(
+                info_hash=info_hash,
+                name=result.get('Title', 'Unknown')
+            )
+
+        return None
+
+    def _extract_torrent_link(self,
+                              result: dict[str, Any]) -> str | None:
+        """Extract HTTP/HTTPS torrent file URL from result.
+
+        Args:
+            result: Result dict from Jackett API
+
+        Returns:
+            HTTP/HTTPS URL or None if unavailable
+        """
+        link_raw = result.get('Link', '')
+        link = link_raw.strip() if link_raw else ''
+        if link and (link.startswith('http://') or
+                     link.startswith('https://')):
             return link
-
-        # Build magnet from info hash as fallback
-        return self._build_magnet_link(
-            info_hash=info_hash,
-            name=result.get('Title', 'Unknown')
-        )
+        return None
 
     def _parse_upload_date(self,
                            result: dict[str, Any]) -> datetime | None:

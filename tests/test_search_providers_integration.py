@@ -85,16 +85,18 @@ class BaseProviderIntegrationTest(ABC):
             f"Result should be SearchResultDTO, got {type(result)}"
         assert result.title is not None, "Title should not be None"
         assert len(result.title) > 0, "Title should not be empty"
-        assert result.info_hash is not None, "Info hash should not be None"
+        # info_hash can now be None - removed assertion
         assert result.magnet_link is not None, \
             "Magnet link should not be None"
 
-    def validate_info_hash(self, info_hash: str):
-        """Validate info hash format (40 hex characters).
+    def validate_info_hash(self, info_hash: str | None):
+        """Validate info hash format (40 hex characters) if present.
 
         Args:
-            info_hash: Info hash string
+            info_hash: Info hash string or None
         """
+        if info_hash is None:
+            return  # Allow None
         assert len(info_hash) == 40, \
             f"Info hash should be 40 chars, got {len(info_hash)}"
         assert all(c in '0123456789abcdefABCDEF' for c in info_hash), \

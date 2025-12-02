@@ -208,6 +208,7 @@ class NyaaProvider(BaseSearchProvider):
                 provider=self.short_name,
                 provider_id=self.id(),
                 page_url=page_url,
+                torrent_link=None,
                 fields=fields
             )
 

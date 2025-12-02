@@ -216,7 +216,8 @@ class TestResultsRefinement:
                 info_hash="abc123",
                 upload_date=None,
                 provider="Test",
-                provider_id="test"
+                provider_id="test",
+                torrent_link=None
             ),
             SearchResultDTO(
                 title="Music Album [FLAC]",
@@ -229,7 +230,8 @@ class TestResultsRefinement:
                 info_hash="def456",
                 upload_date=None,
                 provider="Test",
-                provider_id="test"
+                provider_id="test",
+                torrent_link=None
             ),
         ]
 
@@ -258,7 +260,8 @@ class TestResultsRefinement:
                 info_hash="abc123",
                 upload_date=None,
                 provider="Test",
-                provider_id="test"
+                provider_id="test",
+                torrent_link=None
             ),
         ]
 
@@ -281,7 +284,8 @@ class TestResultsRefinement:
                 info_hash="xyz789",
                 upload_date=None,
                 provider="Test",
-                provider_id="test"
+                provider_id="test",
+                torrent_link=None
             ),
         ]
 
@@ -304,7 +308,8 @@ class TestResultsRefinement:
                 info_hash="abc123",
                 upload_date=None,
                 provider="Test",
-                provider_id="test"
+                provider_id="test",
+                torrent_link=None
             ),
         ]
 
@@ -322,3 +327,4 @@ class TestResultsRefinement:
         assert refined[0].upload_date is None
         assert refined[0].provider == "Test"
         assert refined[0].provider_id == "test"
+        assert refined[0].torrent_link is None

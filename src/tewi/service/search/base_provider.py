@@ -185,6 +185,8 @@ class BaseSearchProvider(ABC):
                         upload_date=result.upload_date,
                         provider=result.provider,
                         provider_id=result.provider_id,
+                        page_url=result.page_url,
+                        torrent_link=result.torrent_link,
                         fields=result.fields
                     )
             refined_results.append(result)

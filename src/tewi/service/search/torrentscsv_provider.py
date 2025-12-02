@@ -121,6 +121,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 provider=self.short_name,
                 provider_id=self.id(),
                 page_url=None,
+                torrent_link=None,
                 fields=fields
             )
 
