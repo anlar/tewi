@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support for Deluge torrent client (via Web API) [#110](https://github.com/anlar/tewi/issues/110)
 - Configuration profiles support (`--profile` option to load profile configs, `--profiles` to list available profiles) [#108](https://github.com/anlar/tewi/issues/108)
-- Jackett search provider support for searching multiple indexers
+- Add Jackett torrent search provider [#118](https://github.com/anlar/tewi/issues/118)
 - Configuration options `jackett_url` and `jackett_api_key` in [search] section
 - Support for HTTP/HTTPS torrent file URLs in search results
 - New `torrent_link` field in `SearchResultDTO` for torrent file URLs
@@ -22,10 +22,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Search providers now send User-Agent headers to imitate popular browsers and prevent blocking
 - Fix position sorting with empty queue numbers
 - Configuration directory moved from `~/.config/` to `~/.config/tewi/`
-- `SearchResultDTO.info_hash` is now optional to support results without InfoHash
-- Jackett search results without InfoHash are no longer discarded if Link field is present
-- Search result deduplication uses title+size fallback when InfoHash is missing
-- Jackett provider now includes all available fields from search results in details view
 
 ### Removed
 
