@@ -29,3 +29,17 @@ echo "qbt session: $qbt_session"
 
 head -n $LIMIT "$SCRIPT_DIR/magnets.txt" | xargs -I {} curl -X POST -H "Referer: http://localhost:9093" -b "SID=$qbt_session" --data-urlencode "urls={}" http://localhost:9093/api/v2/torrents/add
 
+# Deluge
+
+deluge_session=$(curl -i -X POST http://localhost:8112/json -H "Content-Type: application/json" -d '{"method": "auth.login","params": ["deluge"],"id": 1}' | grep Set-Cookie | cut -d';' -f1 | cut -d'=' -f2)
+
+echo "deluge session: $deluge_session"
+
+deluge_host=$(curl -X POST http://localhost:8112/json -H "Content-Type: application/json" -d '{"method": "web.get_hosts", "params": [], "id": 2}' --cookie "_session_id=$deluge_session" | jq -r '.result[0][0]')
+
+echo "deluge host: $deluge_host"
+
+curl -X POST http://localhost:8112/json -H "Content-Type: application/json" -d '{"method": "web.connect", "params": ["'$deluge_host'"], "id": 3}' --cookie "_session_id=$deluge_session"
+
+head -n $LIMIT "$SCRIPT_DIR/magnets.txt" | xargs -I }{ curl -X POST http://localhost:8112/json -H "Content-Type: application/json" -d '{"method": "core.add_torrent_magnet","params": ["}{", {}],"id": 1}' --cookie "_session_id=$deluge_session"
+
