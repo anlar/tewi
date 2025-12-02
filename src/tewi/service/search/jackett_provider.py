@@ -178,9 +178,9 @@ class JackettProvider(BaseSearchProvider):
             return SearchResultDTO(
                 title=result.get('Title', 'Unknown'),
                 category=self._map_jackett_category(result),
-                seeders=int(result.get('Seeders', 0)),
-                leechers=int(result.get('Peers', 0)),
-                size=int(result.get('Size', 0)),
+                seeders=int(result.get('Seeders')),
+                leechers=int(result.get('Peers')),
+                size=int(result.get('Size')),
                 files_count=self._get_files_count(result),
                 magnet_link=magnet_link,
                 info_hash=info_hash,
@@ -271,7 +271,7 @@ class JackettProvider(BaseSearchProvider):
         """
         tracker_id = result.get('TrackerId', 'Unknown')
         tracker = result.get('Tracker', tracker_id)
-        return f"Jackett({tracker})"
+        return f"J: {tracker}"
 
     def _get_page_url(self, result: dict[str, Any]) -> str | None:
         """Get page URL from result.
