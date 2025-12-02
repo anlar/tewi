@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `SearchResultDTO.info_hash` is now optional to support results without InfoHash
 - Jackett search results without InfoHash are no longer discarded if Link field is present
 - Search result deduplication uses title+size fallback when InfoHash is missing
+- Jackett provider now includes all available fields from search results in details view
 
 ### Removed
 

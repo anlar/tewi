@@ -301,20 +301,54 @@ class JackettProvider(BaseSearchProvider):
     def _build_fields(self, result: dict[str, Any]) -> dict[str, str]:
         """Build provider-specific fields dict.
 
+        Includes all fields from Jackett response except:
+        - null/empty fields
+        - fields already mapped to SearchResultDTO main attributes
+
         Args:
             result: Result dict from Jackett API
 
         Returns:
             Dictionary of provider-specific fields
         """
+        # Fields already mapped to SearchResultDTO attributes
+        excluded_fields = {
+            'Title',           # -> title
+            'Category',        # -> category (via _map_jackett_category)
+            'Seeders',         # -> seeders
+            'Peers',           # -> leechers
+            'Size',            # -> size
+            'Files',           # -> files_count
+            'MagnetUri',       # -> magnet_link
+            'InfoHash',        # -> info_hash
+            'PublishDate',     # -> upload_date
+            'Tracker',         # -> provider (via _build_provider_name)
+            'TrackerId',       # -> provider (via _build_provider_name)
+            'Details',         # -> page_url
+            'Comments',        # -> page_url (fallback)
+            'Link',            # -> torrent_link
+            'Guid',            # ignore
+            'FirstSeen'        # ignore
+        }
+
         fields = {}
-        if result.get('CategoryDesc'):
-            fields['category_desc'] = result['CategoryDesc']
-        if result.get('Grabs') is not None:
-            fields['grabs'] = str(result['Grabs'])
-        if result.get('Comments'):
-            fields['comments'] = result['Comments']
-        return fields
+        for key, value in result.items():
+            # Skip excluded fields
+            if key in excluded_fields:
+                continue
+
+            # Skip null/empty values
+            if value is None or value == '' or value == []:
+                continue
+
+            # Convert to string representation
+            if isinstance(value, (list, dict)):
+                # For complex types, convert to string
+                fields[key] = str(value)
+            else:
+                fields[key] = str(value)
+
+        return fields if fields else None
 
     def _map_jackett_category(self,
                               result: dict[str, Any]) -> TorrentCategory:
@@ -399,6 +433,8 @@ class JackettProvider(BaseSearchProvider):
     def details_extended(self, result: SearchResultDTO) -> str:
         """Generate Jackett-specific details for right column.
 
+        Prints all provider-specific fields from the search result.
+
         Args:
             result: Search result to format
 
@@ -410,10 +446,11 @@ class JackettProvider(BaseSearchProvider):
 
         md = "## Indexer Info\n"
 
-        if 'category_desc' in result.fields:
-            md += f"- **Category:** {result.fields['category_desc']}\n"
-
-        if 'grabs' in result.fields:
-            md += f"- **Grabs:** {result.fields['grabs']}\n"
+        # Print all fields in sorted order for consistent display
+        for key in sorted(result.fields.keys()):
+            value = result.fields[key]
+            # Format field name: convert snake_case to Title Case
+            field_name = key.replace('_', ' ').title()
+            md += f"- **{field_name}:** {value}\n"
 
         return md
