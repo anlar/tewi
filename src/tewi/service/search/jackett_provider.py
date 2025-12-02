@@ -52,6 +52,9 @@ class JackettProvider(BaseSearchProvider):
                     "Set jackett_api_key in [search] section.")
         return None
 
+    def id(self) -> str:
+        return "jackett"
+
     @property
     def short_name(self) -> str:
         return "Jackett"
@@ -173,6 +176,7 @@ class JackettProvider(BaseSearchProvider):
                 info_hash=info_hash,
                 upload_date=self._parse_upload_date(result),
                 provider=self._build_provider_name(result),
+                provider_id=self.id(),
                 page_url=self._get_page_url(result),
                 fields=self._build_fields(result)
             )

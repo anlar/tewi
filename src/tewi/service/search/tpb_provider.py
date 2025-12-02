@@ -16,6 +16,9 @@ class TPBProvider(BaseSearchProvider):
 
     API_URL = "https://apibay.org/q.php"
 
+    def id(self) -> str:
+        return "tpb"
+
     @property
     def short_name(self) -> str:
         return "TPB"
@@ -124,6 +127,7 @@ class TPBProvider(BaseSearchProvider):
                 info_hash=info_hash,
                 upload_date=upload_date,
                 provider=self.short_name,
+                provider_id=self.id(),
                 page_url=page_url,
                 fields=fields
             )

@@ -46,6 +46,15 @@ class BaseSearchProvider(ABC):
         results = self._search_impl(query)
         return self._refine_results(results)
 
+    @abstractmethod
+    def id(self) -> str:
+        """Return unique provider identifier for internal use.
+
+        Returns:
+            Unique string identifier (e.g., 'yts', 'jackett', 'tpb')
+        """
+        pass
+
     @property
     @abstractmethod
     def short_name(self) -> str:
@@ -175,6 +184,7 @@ class BaseSearchProvider(ABC):
                         info_hash=result.info_hash,
                         upload_date=result.upload_date,
                         provider=result.provider,
+                        provider_id=result.provider_id,
                         fields=result.fields
                     )
             refined_results.append(result)

@@ -172,23 +172,16 @@ class TorrentWebSearch(Static):
 
         result = self.r_results[table.cursor_row]
 
-        # Find the provider instance that matches the result
+        # Find the provider instance using provider_id
         provider = None
         for p in self.providers:
-            if p.short_name == result.provider:
+            if p.id() == result.provider_id:
                 provider = p
                 break
 
-        # TODO: fix provider name search
-        if not provider:
-            for p in self.providers:
-                if "Jackett" == p.short_name:
-                    provider = p
-                    break
-
         if not provider:
             self.post_message(Notification(
-                f"Provider {result.provider} not found",
+                f"Provider with ID '{result.provider_id}' not found",
                 "error"))
             return
 

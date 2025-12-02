@@ -150,6 +150,7 @@ class SearchResultDTO:
     info_hash: str
     upload_date: datetime | None  # Unix timestamp from API
     provider: str  # Display name of search provider
+    provider_id: str  # Unique provider identifier
     page_url: str | None = None  # Link to torrent page on provider site
     fields: dict[str, str] | None = None  # Provider-specific metadata
 
