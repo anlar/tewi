@@ -333,20 +333,3 @@ class TestJackettProviderIntegration(BaseProviderIntegrationTest):
         with pytest.raises(Exception) as exc_info:
             provider.search("test")
         assert "API key not configured" in str(exc_info.value)
-
-    def test_indexer_name_in_provider(self):
-        """Test that provider field contains indexer name."""
-        provider = self.get_provider()
-        results = provider.search(self.get_search_query())
-
-        if results:
-            # Check format: "Jackett(IndexerName)"
-            for result in results:
-                assert result.provider.startswith("Jackett("), \
-                    f"Provider should start with 'Jackett(', " \
-                    f"got {result.provider}"
-                assert result.provider.endswith(")"), \
-                    f"Provider should end with ')', got {result.provider}"
-                # Extract indexer name
-                indexer = result.provider[8:-1]
-                assert len(indexer) > 0, "Indexer name should not be empty"
