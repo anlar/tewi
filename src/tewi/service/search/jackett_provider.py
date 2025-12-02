@@ -1,6 +1,5 @@
 """Jackett torrent search provider implementation."""
 
-import urllib.request
 import urllib.parse
 import json
 from datetime import datetime
@@ -116,7 +115,7 @@ class JackettProvider(BaseSearchProvider):
             Exception: If request fails or response invalid
         """
         try:
-            with urllib.request.urlopen(url, timeout=15) as response:
+            with self._urlopen(url) as response:
                 return json.loads(response.read().decode('utf-8'))
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):

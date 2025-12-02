@@ -1,6 +1,6 @@
 """Nyaa.si torrent search provider implementation."""
 
-import urllib.request
+import urllib.error
 import urllib.parse
 import re
 import xml.etree.ElementTree as ET
@@ -63,7 +63,7 @@ class NyaaProvider(BaseSearchProvider):
         url = f"{self.RSS_URL}&{urllib.parse.urlencode(params)}"
 
         try:
-            with urllib.request.urlopen(url, timeout=10) as response:
+            with self._urlopen(url) as response:
                 data = response.read().decode('utf-8')
 
             # Parse RSS XML
