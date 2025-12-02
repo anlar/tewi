@@ -1,6 +1,6 @@
 """YTS torrent search provider implementation."""
 
-import urllib.request
+import urllib.error
 import urllib.parse
 import json
 from datetime import datetime
@@ -70,7 +70,7 @@ class YTSProvider(BaseSearchProvider):
         url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
 
         try:
-            with urllib.request.urlopen(url, timeout=10) as response:
+            with self._urlopen(url) as response:
                 data = json.loads(response.read().decode('utf-8'))
 
             if data.get('status') != 'ok':

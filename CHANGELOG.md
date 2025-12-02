@@ -14,6 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Search providers now send User-Agent headers to imitate popular browsers and prevent blocking
 - Fix position sorting with empty queue numbers
 - Configuration directory moved from `~/.config/` to `~/.config/tewi/`
 

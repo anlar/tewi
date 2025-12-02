@@ -1,6 +1,7 @@
 """Abstract base class for torrent search providers."""
 
 import urllib.parse
+import urllib.request
 from abc import ABC, abstractmethod
 from ...common import SearchResultDTO, TorrentCategory
 from ...util.print import print_size
@@ -12,6 +13,11 @@ class BaseSearchProvider(ABC):
     Each provider implements search functionality for a specific
     public tracker or torrent search engine.
     """
+
+    # User-Agent string to imitate a popular browser
+    USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                  "AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/131.0.0.0 Safari/537.36")
 
     @abstractmethod
     def _search_impl(self, query: str) -> list[SearchResultDTO]:
@@ -45,6 +51,26 @@ class BaseSearchProvider(ABC):
         """
         results = self._search_impl(query)
         return self._refine_results(results)
+
+    def _urlopen(self, url: str, timeout: int = 10):
+        """Open URL with User-Agent header.
+
+        Creates a Request object with User-Agent header set to imitate
+        a popular browser, preventing blocking by search providers.
+
+        Args:
+            url: URL to fetch
+            timeout: Request timeout in seconds (default: 10)
+
+        Returns:
+            HTTP response context manager
+
+        Raises:
+            urllib.error.URLError: If network request fails
+        """
+        request = urllib.request.Request(url)
+        request.add_header('User-Agent', self.USER_AGENT)
+        return urllib.request.urlopen(request, timeout=timeout)
 
     @property
     @abstractmethod
