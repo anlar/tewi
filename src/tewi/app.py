@@ -106,12 +106,12 @@ class MainApp(App):
                  limit_torrents: int,
                  test_mode: int,
                  version: str,
-                 jackett_url: str = None,
-                 jackett_api_key: str = None,
-                 search_query: str = None,
-                 filter: str = 'all',
-                 badge_max_count: int = 3,
-                 badge_max_length: int = 10):
+                 jackett_url: str,
+                 jackett_api_key: str,
+                 search_query: str,
+                 filter: str,
+                 badge_max_count: int,
+                 badge_max_length: int):
 
         super().__init__()
 
