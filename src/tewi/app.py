@@ -577,10 +577,10 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
                                  'paused', 'finished'],
                         help='Filter torrents by status')
     parser.add_argument('--badge-max-count', type=int, default=1,
-                        help='Maximum number of badges to display '
+                        help='Maximum number of badges (category and labels) to display'
                              '(-1: unlimited, 0: none, 1+: count)')
     parser.add_argument('--badge-max-length', type=int, default=0,
-                        help='Maximum length of badge text '
+                        help='Maximum length of badge (category or label) text'
                              '(0: unlimited, 1+: truncate with …)')
     parser.add_argument('--host', type=str, default='localhost',
                         help='BitTorrent daemon host for connection')

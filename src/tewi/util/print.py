@@ -158,6 +158,6 @@ def escape_markup(value: str) -> str:
 
 
 @cache
-def esc_trunk(self, s: str, n: int) -> str:
-    result = s[:n] + "…" if (n > 0 and len(s) > n) else s
+def esc_trunk(value: str, max_len: int) -> str:
+    result = value[:max_len] + "…" if (max_len > 0 and len(value) > max_len) else value
     return escape_markup(result)
