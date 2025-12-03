@@ -109,7 +109,9 @@ class MainApp(App):
                  jackett_url: str = None,
                  jackett_api_key: str = None,
                  search_query: str = None,
-                 filter: str = 'all'):
+                 filter: str = 'all',
+                 badge_max_count: int = 1,
+                 badge_max_length: int = 0):
 
         super().__init__()
 
@@ -120,6 +122,8 @@ class MainApp(App):
         self.limit_torrents = limit_torrents
         self.page_size = page_size
         self.test_mode = test_mode
+        self.badge_max_count = badge_max_count
+        self.badge_max_length = badge_max_length
 
         self.tewi_version = version
         self.initial_search_query = search_query
@@ -572,6 +576,12 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
                         choices=['all', 'active', 'downloading', 'seeding',
                                  'paused', 'finished'],
                         help='Filter torrents by status')
+    parser.add_argument('--badge-max-count', type=int, default=1,
+                        help='Maximum number of badges to display '
+                             '(-1: unlimited, 0: none, 1+: count)')
+    parser.add_argument('--badge-max-length', type=int, default=0,
+                        help='Maximum length of badge text '
+                             '(0: unlimited, 1+: truncate with …)')
     parser.add_argument('--host', type=str, default='localhost',
                         help='BitTorrent daemon host for connection')
     parser.add_argument('--port', type=str, default='9091',
@@ -718,7 +728,9 @@ def create_app():
                       jackett_url=args.jackett_url,
                       jackett_api_key=args.jackett_api_key,
                       search_query=args.search,
-                      filter=args.filter)
+                      filter=args.filter,
+                      badge_max_count=args.badge_max_count,
+                      badge_max_length=args.badge_max_length)
         return app
     except ClientError as e:
         print(f"Failed to connect to {args.client_type} daemon at "

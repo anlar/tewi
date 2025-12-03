@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New `torrent_link` field in `SearchResultDTO` for torrent file URLs
 - Automatic download and conversion of torrent files from URLs in Deluge client
 - Display category and labels in torrent card
+- Badge display options: `--badge-max-count` and `--badge-max-length` to control badge display in torrent cards
 
 ### Changed
 
