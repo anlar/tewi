@@ -149,6 +149,12 @@ def _load_ui_section(parser: configparser.ConfigParser,
     val = _get_string_option(parser, 'ui', 'filter')
     if val:
         config['filter'] = val
+    val = _get_int_option(parser, 'ui', 'badge_max_count')
+    if val is not None:
+        config['badge_max_count'] = val
+    val = _get_int_option(parser, 'ui', 'badge_max_length')
+    if val is not None:
+        config['badge_max_length'] = val
 
 
 def _load_debug_section(parser: configparser.ConfigParser,
@@ -280,6 +286,12 @@ limit_torrents =
 # Filter torrents by status: all, active, downloading, seeding, paused, finished
 filter =
 
+# Maximum number of badges to display (-1: unlimited, 0: none, 1+: count)
+badge_max_count =
+
+# Maximum length of badge text (0: unlimited, 1+: truncate with …)
+badge_max_length =
+
 [debug]
 # Enable verbose logs: boolean (saved to tewi_<timestamp>.log file)
 logs =
@@ -328,6 +340,8 @@ def merge_config_with_args(config: dict, args: Namespace) -> None:
         'test_mode': None,
         'jackett_url': 'http://localhost:9117',
         'jackett_api_key': None,
+        'badge_max_count': 3,
+        'badge_max_length': 10,
     }
 
     # Apply config values only for args that are at default values

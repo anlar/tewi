@@ -407,6 +407,116 @@ limit_torrents = abc
         assert 'Warning: Invalid limit_torrents value in config' \
             in captured.err
 
+    def test_badge_options(self):
+        """Test ui section with badge display options."""
+        config_text = """
+[ui]
+badge_max_count = 2
+badge_max_length = 10
+"""
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+
+        _load_ui_section(parser, config)
+
+        assert config == {
+            'badge_max_count': 2,
+            'badge_max_length': 10
+        }
+
+    def test_badge_options_unlimited_count(self):
+        """Test badge_max_count with unlimited (-1)."""
+        config_text = """
+[ui]
+badge_max_count = -1
+"""
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+
+        _load_ui_section(parser, config)
+
+        assert config == {
+            'badge_max_count': -1
+        }
+
+    def test_badge_options_no_badges(self):
+        """Test badge_max_count with no badges (0)."""
+        config_text = """
+[ui]
+badge_max_count = 0
+"""
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+
+        _load_ui_section(parser, config)
+
+        assert config == {
+            'badge_max_count': 0
+        }
+
+    def test_badge_options_unlimited_length(self):
+        """Test badge_max_length with unlimited (0)."""
+        config_text = """
+[ui]
+badge_max_length = 0
+"""
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+
+        _load_ui_section(parser, config)
+
+        assert config == {
+            'badge_max_length': 0
+        }
+
+    def test_invalid_badge_max_count(self, capsys):
+        """Test handling of invalid badge_max_count value."""
+        config_text = """
+[ui]
+view_mode = card
+badge_max_count = invalid
+"""
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+
+        _load_ui_section(parser, config)
+
+        # Should only include view_mode
+        assert config == {
+            'view_mode': 'card'
+        }
+        # Check that warning was printed
+        captured = capsys.readouterr()
+        assert 'Warning: Invalid badge_max_count value in config' \
+            in captured.err
+
+    def test_invalid_badge_max_length(self, capsys):
+        """Test handling of invalid badge_max_length value."""
+        config_text = """
+[ui]
+view_mode = card
+badge_max_length = abc
+"""
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+
+        _load_ui_section(parser, config)
+
+        # Should only include view_mode
+        assert config == {
+            'view_mode': 'card'
+        }
+        # Check that warning was printed
+        captured = capsys.readouterr()
+        assert 'Warning: Invalid badge_max_length value in config' \
+            in captured.err
+
 
 class TestLoadDebugSection:
     """Test cases for _load_debug_section function."""

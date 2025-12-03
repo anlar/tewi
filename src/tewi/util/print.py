@@ -155,3 +155,9 @@ def print_time_ago(dt: datetime) -> str:
 @cache
 def escape_markup(value: str) -> str:
     return value.replace('[', r'\[').replace(']', r'\]')
+
+
+@cache
+def esc_trunk(value: str, max_len: int) -> str:
+    result = value[:max_len] + "…" if (max_len > 0 and len(value) > max_len) else value
+    return escape_markup(result)
