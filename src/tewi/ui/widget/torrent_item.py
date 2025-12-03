@@ -23,7 +23,7 @@ from textual.widgets import Static, ProgressBar
 
 from ...common import TorrentDTO
 from ...util.decorator import log_time
-from ...util.print import print_size, print_time, escape_markup
+from ...util.print import print_size, print_time, esc_trunk
 from .common import ReactiveLabel, SpeedIndicator
 
 
@@ -316,45 +316,32 @@ class TorrentItemCard(TorrentItem):
     def print_badges(self, category: str | None, labels: list | None) -> str:
         badges = []
 
+        font = "$accent"
+        back_c = "$secondary-lighten-3"
+        back_l = "$secondary-lighten-2"
+
+        max_length = self.app.badge_max_length
+
         if category:
-            badges.append(escape_markup(category))
-            has_category = True
-        else:
-            has_category = False
+            badges.append((esc_trunk(category, max_length), font, back_c))
 
         if labels:
-            badges.extend(escape_markup(label) for label in sorted(labels))
+            badges.extend(
+                (esc_trunk(label, max_length), font, back_l)
+                for label in labels
+            )
 
         # Don't draw badges if there are 0 of them or they are disabled
         max_count = self.app.badge_max_count
         if max_count == 0 or not badges:
-            return ""
+            return None
 
         # Trim number of badges to max limit
         original_count = len(badges)
         if max_count > 0:
             badges = badges[:max_count]
 
-        # Apply max length to badge text
-        max_length = self.app.badge_max_length
-        if max_length > 0:
-            badges = [
-                badge if len(badge) <= max_length
-                else badge[:max_length] + '…'
-                for badge in badges
-            ]
-
-        font = "$accent"
-        back_c = "$secondary-lighten-3"
-        back_l = "$secondary-lighten-2"
-
-        # Draw first badge (category or label)
-        back = back_c if has_category else back_l
-        result = f"[{font} on {back}] {badges.pop(0)} [/]"
-
-        # Draw other badges (only labels)
-        for badge in badges:
-            result += f" [{font} on {back_l}] {badge} [/]"
+        result = " ".join(f"[{f} on {b}] {s} [/]" for s, f, b in badges)
 
         # Draw others counter (only if badge count was limited)
         if max_count > 0:
