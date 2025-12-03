@@ -318,15 +318,20 @@ class TorrentItemCard(TorrentItem):
 
         if category:
             badges.append(escape_markup(category))
+            has_category = True
+        else:
+            has_category = False
 
         if labels:
             badges.extend(escape_markup(label) for label in sorted(labels))
 
         font = "$accent"
-        back = "$secondary-lighten-2"
+        back_c = "$secondary-lighten-3"
+        back_l = "$secondary-lighten-2"
 
         if badges:
+            back = back_c if has_category else back_l
             result = f"[{font} on {back}] {badges.pop(0)} [/]"
             if badges:
-                result += f" [{font} on {back}] +{len(badges)} [/]"
+                result += f" [{font} on {back_l}] +{len(badges)} [/]"
             return result
