@@ -340,8 +340,8 @@ def merge_config_with_args(config: dict, args: Namespace) -> None:
         'test_mode': None,
         'jackett_url': 'http://localhost:9117',
         'jackett_api_key': None,
-        'badge_max_count': 1,
-        'badge_max_length': 0,
+        'badge_max_count': 3,
+        'badge_max_length': 10,
     }
 
     # Apply config values only for args that are at default values
