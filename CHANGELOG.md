@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Support for HTTP/HTTPS torrent file URLs in search results
 - New `torrent_link` field in `SearchResultDTO` for torrent file URLs
 - Automatic download and conversion of torrent files from URLs in Deluge client
+- Display category and labels in torrent card
 
 ### Changed
 

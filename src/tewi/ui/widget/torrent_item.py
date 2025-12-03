@@ -23,7 +23,7 @@ from textual.widgets import Static, ProgressBar
 
 from ...common import TorrentDTO
 from ...util.decorator import log_time
-from ...util.print import print_size, print_time
+from ...util.print import print_size, print_time, escape_markup
 from .common import ReactiveLabel, SpeedIndicator
 
 
@@ -219,6 +219,8 @@ class TorrentItemCard(TorrentItem):
 
     t_status_markup = reactive(None)
 
+    t_badges_markup = reactive(None)
+
     t_stats_uploaded = reactive('')
     t_stats_peer = reactive("")
     t_stats_seed = reactive("")
@@ -235,6 +237,8 @@ class TorrentItemCard(TorrentItem):
                     name=TorrentItemCard.t_name)
 
         with Grid(id="speed"):
+            yield ReactiveLabel(markup=True).data_bind(
+                    name=TorrentItemCard.t_badges_markup)
             yield Static(" ↑ ")
             yield SpeedIndicator().data_bind(speed=TorrentItemCard.t_upload_speed)
             yield Static(" ↓ ")
@@ -259,6 +263,9 @@ class TorrentItemCard(TorrentItem):
 
         with self.app.batch_update():
             self.t_status_markup = self.print_status(torrent.status)
+
+            self.t_badges_markup = self.print_badges(torrent.category,
+                                                     torrent.labels)
 
             self.t_eta = torrent.eta
             self.t_peers_connected = torrent.peers_connected
@@ -304,3 +311,22 @@ class TorrentItemCard(TorrentItem):
                 return '[bold $success]' + status + '[/]'
             case _:
                 return '[bold]' + status + '[/]'
+
+    @log_time
+    def print_badges(self, category: str | None, labels: list | None) -> str:
+        badges = []
+
+        if category:
+            badges.append(escape_markup(category))
+
+        if labels:
+            badges.extend(escape_markup(label) for label in sorted(labels))
+
+        font = "$accent"
+        back = "$secondary-lighten-2"
+
+        if badges:
+            result = f"[{font} on {back}] {badges.pop(0)} [/]"
+            if badges:
+                result += f" [{font} on {back}] +{len(badges)} [/]"
+            return result

@@ -257,8 +257,8 @@ ListItem.-highlight > TorrentItemCard {
 TorrentItemCard > #speed {
     dock: right;
     layer: above;
-    grid-size: 4;
-    grid-columns: auto 9 auto 9;
+    grid-size: 5;
+    grid-columns: auto auto 9 auto 9;
     width: auto;
     height: auto;
 }

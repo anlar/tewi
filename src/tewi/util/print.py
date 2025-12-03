@@ -150,3 +150,8 @@ def print_time_ago(dt: datetime) -> str:
     else:
         years = int(seconds / 31536000)
         return f"{years} year{'s' if years > 1 else ''} ago"
+
+
+@cache
+def escape_markup(value: str) -> str:
+    return value.replace('[', r'\[').replace(']', r'\]')

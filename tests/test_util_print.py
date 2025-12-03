@@ -16,7 +16,10 @@
 
 import math
 from datetime import datetime, timedelta
-from src.tewi.util.print import print_size, print_speed, print_ratio, print_time, print_time_ago
+from src.tewi.util.print import (
+    print_size, print_speed, print_ratio, print_time, print_time_ago,
+    escape_markup
+)
 
 
 class TestPrintSize:
@@ -413,3 +416,24 @@ class TestPrintTimeAgo:
         assert "2 weeks ago" == print_time_ago(now - timedelta(weeks=2))
         assert "2 months ago" == print_time_ago(now - timedelta(days=60))
         assert "2 years ago" == print_time_ago(now - timedelta(days=730))
+
+
+class TestEscapeMarkup:
+    """Test cases for escape_markup function."""
+
+    def test_no_special_characters(self):
+        """Test strings without special characters."""
+        assert escape_markup("hello") == "hello"
+        assert escape_markup("test123") == "test123"
+        assert escape_markup("") == ""
+
+    def test_escape_brackets(self):
+        """Test escaping of square brackets."""
+        assert escape_markup("[") == r"\["
+        assert escape_markup("]") == r"\]"
+        assert escape_markup("[]") == r"\[\]"
+
+    def test_mixed_content(self):
+        """Test strings with mixed content."""
+        assert escape_markup("text[with]brackets") == r"text\[with\]brackets"
+        assert escape_markup("[bold]text[/bold]") == r"\[bold\]text\[/bold\]"
