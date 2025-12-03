@@ -14,8 +14,13 @@ class WebSearchQueryDialog(ModalScreen[None]):
     """Modal dialog for entering web search query."""
 
     @log_time
+    def __init__(self, initial_query: str = None):
+        super().__init__()
+        self.initial_query = initial_query
+
+    @log_time
     def compose(self) -> ComposeResult:
-        yield WebSearchQueryWidget()
+        yield WebSearchQueryWidget(self.initial_query)
 
 
 class WebSearchQueryWidget(Static):
@@ -25,6 +30,11 @@ class WebSearchQueryWidget(Static):
         Binding("enter", "submit_query", "[Action] Search", priority=True),
         Binding("escape", "close", "[Navigation] Cancel"),
     ]
+
+    @log_time
+    def __init__(self, initial_query: str = None):
+        super().__init__()
+        self.initial_query = initial_query
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -40,6 +50,8 @@ class WebSearchQueryWidget(Static):
         self.border_subtitle = '(Enter) Search / (ESC) Close'
 
         input_widget = self.query_one("#websearch-query-input", Input)
+        if self.initial_query:
+            input_widget.value = self.initial_query
         input_widget.focus()
 
     @log_time

@@ -138,10 +138,6 @@ class OpenSearchCommand(Message):
     pass
 
 
-class OpenWebSearchCommand(Message):
-    pass
-
-
 class AddTorrentFromWebSearchCommand(Message):
 
     def __init__(self, magnet_link: str) -> None:

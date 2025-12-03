@@ -40,7 +40,7 @@ from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpda
         VerifyTorrentCommand, ReannounceTorrentCommand, \
         OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
         RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
-        StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenWebSearchCommand, \
+        StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, \
         AddTorrentFromWebSearchCommand, WebSearchQuerySubmitted, ChangeTorrentPriorityCommand, \
         ToggleFileDownloadCommand, OpenEditTorrentCommand, EditTorrentCommand, SearchStateChangedEvent, \
         OpenUpdateTorrentCategoryCommand, UpdateTorrentCategoryCommand
@@ -94,6 +94,8 @@ class MainApp(App):
     r_session = reactive(None)
     r_page = reactive(None)
     r_search = reactive(None)
+
+    last_search_query = None
 
     @log_time
     def __init__(self, client_type: str, host: str, port: str,
@@ -242,7 +244,7 @@ class MainApp(App):
 
     @log_time
     def action_open_websearch(self) -> None:
-        self.push_screen(WebSearchQueryDialog())
+        self.push_screen(WebSearchQueryDialog(self.last_search_query))
 
     @log_time
     @on(Notification)
@@ -516,13 +518,10 @@ class MainApp(App):
         self.post_message(Notification("All torrents stopped"))
 
     @log_time
-    @on(OpenWebSearchCommand)
-    def handle_open_websearch_command(self, event: OpenWebSearchCommand) -> None:
-        self.push_screen(WebSearchQueryDialog())
-
-    @log_time
     @on(WebSearchQuerySubmitted)
     def handle_websearch_query_submitted(self, event: WebSearchQuerySubmitted) -> None:
+        # Save executed search query to use it as default value on next search
+        self.last_search_query = event.query
         # Switch to results panel
         self.query_one(ContentSwitcher).current = "torrent-websearch"
         # Execute search with query
