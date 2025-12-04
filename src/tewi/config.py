@@ -20,7 +20,16 @@ import configparser
 import os
 import sys
 from pathlib import Path
-from argparse import Namespace
+from argparse import Action, Namespace
+
+
+class TrackSetAction(Action):
+
+    SET_POSTFIX = '_was_set'
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        setattr(namespace, self.dest, values)
+        setattr(namespace, f'{self.dest}{self.SET_POSTFIX}', True)
 
 
 def get_config_dir() -> Path:
@@ -277,12 +286,6 @@ view_mode =
 # Number of torrents displayed per page
 page_size =
 
-# Refresh interval in seconds for loading data from daemon
-refresh_interval =
-
-# Maximum number of torrents to display
-limit_torrents =
-
 # Filter torrents by status: all, active, downloading, seeding, paused, finished
 filter =
 
@@ -292,9 +295,8 @@ badge_max_count =
 # Maximum length of badge text (0: unlimited, 1+: truncate with …)
 badge_max_length =
 
-[debug]
-# Enable verbose logs: boolean (saved to tewi_<timestamp>.log file)
-logs =
+# Refresh interval in seconds for loading data from daemon
+refresh_interval =
 
 [search]
 # Jackett server configuration for torrent search
@@ -303,6 +305,11 @@ jackett_url =
 
 # API key for Jackett authentication
 jackett_api_key =
+
+[debug]
+# Enable verbose logs: boolean (saved to tewi_<timestamp>.log file)
+logs =
+
 """
 
     try:
@@ -318,38 +325,13 @@ def merge_config_with_args(config: dict, args: Namespace) -> None:
     Merge config file values with CLI arguments.
 
     CLI arguments take priority over config file values.
-    Modifies args in place by setting defaults from config.
+    Modifies args in place.
 
     Args:
         config: Dictionary of config values from load_config()
         args: Parsed command-line arguments from argparse
     """
-    # Default values from argparse - used to detect if CLI arg was provided
-    defaults = {
-        'client_type': 'transmission',
-        'view_mode': 'card',
-        'refresh_interval': 5,
-        'limit_torrents': None,
-        'page_size': 30,
-        'filter': 'all',
-        'host': 'localhost',
-        'port': '9091',
-        'username': None,
-        'password': None,
-        'logs': False,
-        'test_mode': None,
-        'jackett_url': 'http://localhost:9117',
-        'jackett_api_key': None,
-        'badge_max_count': 3,
-        'badge_max_length': 10,
-    }
 
-    # Apply config values only for args that are at default values
-    for key, default_val in defaults.items():
-        # Initialize attribute if it doesn't exist (for non-CLI config opts)
-        current_val = getattr(args, key, default_val)
-        if key in config and current_val == default_val:
-            setattr(args, key, config[key])
-        elif not hasattr(args, key):
-            # Set default if attribute doesn't exist
-            setattr(args, key, default_val)
+    for key, value in config.items():
+        if not hasattr(args, f"{key}{TrackSetAction.SET_POSTFIX}"):
+            setattr(args, key, value)
