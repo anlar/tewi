@@ -79,6 +79,8 @@ class WebSearchQueryWidget(Static):
         self.border_title = 'Search torrents'
         self.border_subtitle = '(Enter) Search / (Tab) Switch / (ESC) Close'
 
+        self.query_one(SelectionList).border_title = "Search indexers"
+
         input_widget = self.query_one("#websearch-query-input", Input)
         if self.initial_query:
             input_widget.value = self.initial_query
