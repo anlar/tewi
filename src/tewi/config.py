@@ -286,12 +286,6 @@ view_mode =
 # Number of torrents displayed per page
 page_size =
 
-# Refresh interval in seconds for loading data from daemon
-refresh_interval =
-
-# Maximum number of torrents to display
-limit_torrents =
-
 # Filter torrents by status: all, active, downloading, seeding, paused, finished
 filter =
 
@@ -301,9 +295,8 @@ badge_max_count =
 # Maximum length of badge text (0: unlimited, 1+: truncate with …)
 badge_max_length =
 
-[debug]
-# Enable verbose logs: boolean (saved to tewi_<timestamp>.log file)
-logs =
+# Refresh interval in seconds for loading data from daemon
+refresh_interval =
 
 [search]
 # Jackett server configuration for torrent search
@@ -312,6 +305,11 @@ jackett_url =
 
 # API key for Jackett authentication
 jackett_api_key =
+
+[debug]
+# Enable verbose logs: boolean (saved to tewi_<timestamp>.log file)
+logs =
+
 """
 
     try:

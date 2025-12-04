@@ -553,73 +553,97 @@ class MainApp(App):
 
 def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     """Set up and return the argument parser."""
-    parser = argparse.ArgumentParser(
+    p = argparse.ArgumentParser(
             prog='tewi',
             description='Text-based interface for BitTorrent clients '
                         '(Transmission, qBittorrent, and Deluge)',
             formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--client-type', type=str, default='transmission',
-                        choices=['transmission', 'qbittorrent', 'deluge'],
-                        help='Type of BitTorrent client to connect to')
-    parser.add_argument('--view-mode', type=str, default='card',
-                        choices=['card', 'compact', 'oneline'],
-                        action=TrackSetAction,
-                        help='View mode for torrents in list')
-    parser.add_argument('--refresh-interval', type=int, default=5,
-                        help='Refresh interval (in seconds) for loading '
-                             'data from daemon')
-    parser.add_argument('--limit-torrents', type=int, default=None,
-                        help=argparse.SUPPRESS)
-    parser.add_argument('--page-size', type=int, default=30,
-                        help='Number of torrents displayed per page')
-    parser.add_argument('--filter', type=str, default='all',
-                        choices=['all', 'active', 'downloading', 'seeding',
-                                 'paused', 'finished'],
-                        help='Filter torrents by status')
-    parser.add_argument('--badge-max-count', type=int, default=3,
-                        help='Maximum number of badges (category and labels) to display'
-                             '(-1: unlimited, 0: none, 1+: count)')
-    parser.add_argument('--badge-max-length', type=int, default=10,
-                        help='Maximum length of badge (category or label) text'
-                             '(0: unlimited, 1+: truncate with …)')
-    parser.add_argument('--host', type=str, default='localhost',
-                        help='BitTorrent daemon host for connection')
-    parser.add_argument('--port', type=str, default='9091',
-                        help='BitTorrent daemon port for connection')
-    parser.add_argument('--username', type=str,
-                        help='BitTorrent daemon username for connection')
-    parser.add_argument('--password', type=str,
-                        help='BitTorrent daemon password for connection')
-    parser.add_argument('--logs', default=False,
-                        action=argparse.BooleanOptionalAction,
-                        help='Enable verbose logs (added to `tewi.log` '
-                             'file)')
-    parser.add_argument('--version', action='version',
-                        version='%(prog)s ' + version,
-                        help='Show version and exit')
-    parser.add_argument('--profile', type=str,
-                        help='Load configuration profile from '
-                             'tewi-PROFILE.conf')
-    parser.add_argument('--profiles', action='store_true',
-                        help='List available configuration profiles and exit')
-    parser.add_argument('--create-config', action='store_true',
-                        help='Create default configuration file and exit')
-    parser.add_argument('-a', '--add-torrent', type=str,
-                        metavar='PATH_OR_MAGNET',
-                        help='Add torrent from file path or magnet link '
-                             'and exit')
-    parser.add_argument('-s', '--search', type=str,
-                        metavar='QUERY',
-                        help='Start web search with the given query')
-    parser.add_argument('--test-mode', type=int, default=None,
-                        help=argparse.SUPPRESS)
-    parser.add_argument('--jackett-url', type=str, default='http://localhost:9117',
-                        help='URL of your Jackett instance')
-    parser.add_argument('--jackett-api-key', type=str,
-                        help='API key for Jackett authentication')
+    # Actions
+    p.add_argument('-a', '--add-torrent', type=str,
+                   metavar='PATH_OR_MAGNET',
+                   help='Add torrent from file path or magnet link and exit')
+    p.add_argument('-s', '--search', type=str,
+                   metavar='QUERY',
+                   help='Start web search with the given query')
+    p.add_argument('--create-config',
+                   action='store_true',
+                   help='Create default configuration file and exit')
 
-    return parser
+    # Client
+    p.add_argument('--client-type', type=str, default='transmission',
+                   choices=['transmission', 'qbittorrent', 'deluge'],
+                   action=TrackSetAction,
+                   help='Type of BitTorrent client to connect to')
+    p.add_argument('--host', type=str, default='localhost',
+                   action=TrackSetAction,
+                   help='BitTorrent daemon host for connection')
+    p.add_argument('--port', type=str, default='9091',
+                   action=TrackSetAction,
+                   help='BitTorrent daemon port for connection')
+    p.add_argument('--username', type=str,
+                   action=TrackSetAction,
+                   help='BitTorrent daemon username for connection')
+    p.add_argument('--password', type=str,
+                   action=TrackSetAction,
+                   help='BitTorrent daemon password for connection')
+
+    # UI
+    p.add_argument('--view-mode', type=str, default='card',
+                   choices=['card', 'compact', 'oneline'],
+                   action=TrackSetAction,
+                   help='View mode for torrents in list')
+    p.add_argument('--page-size', type=int, default=30,
+                   action=TrackSetAction,
+                   help='Number of torrents displayed per page')
+    p.add_argument('--filter', type=str, default='all',
+                   choices=['all', 'active', 'downloading',
+                            'seeding', 'paused', 'finished'],
+                   action=TrackSetAction,
+                   help='Filter torrents by status')
+    p.add_argument('--badge-max-count', type=int, default=3,
+                   action=TrackSetAction,
+                   help='Maximum number of badges (category and labels) '
+                   'to display (-1: unlimited, 0: none, 1+: count)')
+    p.add_argument('--badge-max-length', type=int, default=10,
+                   action=TrackSetAction,
+                   help='Maximum length of badge (category or label) text'
+                   '(0: unlimited, 1+: truncate with …)')
+    p.add_argument('--refresh-interval', type=int, default=5,
+                   action=TrackSetAction,
+                   help='Refresh interval (in seconds) for loading '
+                   'data from daemon')
+
+    # Search
+    p.add_argument('--jackett-url', type=str, default='http://localhost:9117',
+                   action=TrackSetAction,
+                   help='URL of your Jackett instance')
+    p.add_argument('--jackett-api-key', type=str,
+                   action=TrackSetAction,
+                   help='API key for Jackett authentication')
+
+    # Profiles
+    p.add_argument('--profile', type=str,
+                   action=TrackSetAction,
+                   help='Load configuration profile from tewi-PROFILE.conf')
+    p.add_argument('--profiles', action='store_true',
+                   help='List available configuration profiles and exit')
+
+    # Other
+    p.add_argument('--logs', default=False,
+                   action=argparse.BooleanOptionalAction,
+                   help='Enable verbose logs (saved to `tewi_TS.log` file)')
+    p.add_argument('--version', action='version',
+                   version='%(prog)s ' + version,
+                   help='Show version and exit')
+
+    # Hidden
+    p.add_argument('--limit-torrents', type=int, default=None,
+                   help=argparse.SUPPRESS)
+    p.add_argument('--test-mode', type=int, default=None,
+                   help=argparse.SUPPRESS)
+
+    return p
 
 
 def _handle_add_torrent_mode(args) -> None:
