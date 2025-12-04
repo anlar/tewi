@@ -156,6 +156,8 @@ class TransmissionClient(BaseClient):
             self.client.add_torrent(value)
         else:
             file = os.path.expanduser(value)
+            if not os.path.exists(file):
+                raise ClientError(f"Torrent file not found: {file}")
             self.client.add_torrent(pathlib.Path(file))
 
     @log_time
@@ -413,7 +415,7 @@ class TransmissionClient(BaseClient):
 
     @log_time
     @staticmethod
-    def _calculate_ratio(self, downloaded: int, uploaded: int) -> float:
+    def _calculate_ratio(downloaded: int, uploaded: int) -> float:
         """Calculate download ratio (zero div safe)."""
         if downloaded == 0:
             return float('inf')
@@ -422,7 +424,7 @@ class TransmissionClient(BaseClient):
 
     @log_time
     @staticmethod
-    def _ts_to_dt(self, timestamp: int) -> datetime | None:
+    def _ts_to_dt(timestamp: int) -> datetime | None:
         """Convert Unix timestamp to datetime (None for invalid values)."""
         return datetime.fromtimestamp(timestamp) if timestamp > 0 else None
 
