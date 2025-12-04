@@ -32,7 +32,7 @@ from textual.reactive import reactive
 from textual.widgets import ContentSwitcher
 
 from .common import get_filter_by_id, sort_orders, TorrentDTO
-from .config import get_config_path, load_config, create_default_config, \
+from .config import DefaultAction, get_config_path, load_config, create_default_config, \
     merge_config_with_args, get_available_profiles
 from .service import create_client, ClientError
 from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpdatedEvent, Notification, Confirm, \
@@ -564,6 +564,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
                         help='Type of BitTorrent client to connect to')
     parser.add_argument('--view-mode', type=str, default='card',
                         choices=['card', 'compact', 'oneline'],
+                        action=DefaultAction,
                         help='View mode for torrents in list')
     parser.add_argument('--refresh-interval', type=int, default=5,
                         help='Refresh interval (in seconds) for loading '
