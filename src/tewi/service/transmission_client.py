@@ -16,6 +16,20 @@ from .base_client import BaseClient, ClientMeta, ClientStats, ClientSession
 
 
 class TransmissionClient(BaseClient):
+    """Transmission torrent client implementation."""
+
+    # Transmission bandwidth priority values
+    PRIORITY_LOW = -1
+    PRIORITY_NORMAL = 0
+    PRIORITY_HIGH = 1
+
+    # Tracker announce state codes to human-readable status labels
+    TRACKER_ANNOUNCE_STATE: dict[int, str] = {
+        0: "Inactive",
+        1: "Waiting",
+        2: "Queued",
+        3: "Active"
+    }
 
     @log_time
     def __init__(self,
@@ -171,11 +185,11 @@ class TransmissionClient(BaseClient):
 
         if file.selected:
             match file.priority:
-                case -1:
+                case self.PRIORITY_LOW:
                     priority = FilePriority.LOW
-                case 0:
+                case self.PRIORITY_NORMAL:
                     priority = FilePriority.MEDIUM
-                case 1:
+                case self.PRIORITY_HIGH:
                     priority = FilePriority.HIGH
         else:
             priority = FilePriority.NOT_DOWNLOADING
@@ -228,14 +242,6 @@ class TransmissionClient(BaseClient):
             dl_state=dl_state,
             ul_state=ul_state,
         )
-
-    TRACKER_ANNOUNCE_STATE: dict[int, str] = {
-        0: "Inactive",
-        1: "Waiting",
-        2: "Queued",
-        3: "Active"
-    }
-    """Maps tracker announce state codes to human-readable status labels."""
 
     @log_time
     def _tracker_to_dto(self, t) -> TrackerDTO:
