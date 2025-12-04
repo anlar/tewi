@@ -220,26 +220,7 @@ class DelugeClient(BaseClient):
         download_dir = config.get("download_location", "")
         free_space = self._call("core.get_free_space", [download_dir])
 
-        torrents_count = len(torrents)
-        torrents_down = 0
-        torrents_seed = 0
-        torrents_check = 0
-        torrents_complete_size = 0
-        torrents_total_size = 0
-
-        for t in torrents:
-            torrents_total_size += t.size_when_done
-            torrents_complete_size += t.size_when_done - t.left_until_done
-
-            if t.status == 'downloading':
-                torrents_down += 1
-            elif t.status == 'seeding':
-                torrents_seed += 1
-            elif t.status == 'checking':
-                torrents_check += 1
-
-        torrents_stop = (torrents_count - torrents_down - torrents_seed -
-                         torrents_check)
+        counts = self._count_torrents_by_status(torrents)
 
         # Deluge doesn't have built-in alt speed mode like Transmission
         # We'll report it as disabled
@@ -255,13 +236,16 @@ class DelugeClient(BaseClient):
             'alt_speed_enabled': alt_speed_enabled,
             'alt_speed_up': alt_speed_up,
             'alt_speed_down': alt_speed_down,
-            'torrents_complete_size': torrents_complete_size,
-            'torrents_total_size': torrents_total_size,
-            'torrents_count': torrents_count,
-            'torrents_down': torrents_down,
-            'torrents_seed': torrents_seed,
-            'torrents_check': torrents_check,
-            'torrents_stop': torrents_stop,
+
+            'torrents_complete_size': counts['complete_size'],
+            'torrents_total_size': counts['total_size'],
+
+            'torrents_count': counts['count'],
+            'torrents_down': counts['down'],
+            'torrents_seed': counts['seed'],
+            'torrents_check': counts['check'],
+            'torrents_stop': counts['stop'],
+
             'sort_order': sort_order,
             'sort_order_asc': sort_order_asc,
             'filter_option': filter_option,

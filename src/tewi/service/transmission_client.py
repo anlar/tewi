@@ -42,6 +42,7 @@ class TransmissionClient(BaseClient):
                                             username=username,
                                             password=password)
 
+    @log_time
     def capable(self, capability_code: str) -> bool:
         if capability_code == 'category':
             return False
@@ -93,25 +94,7 @@ class TransmissionClient(BaseClient):
         s = self.client.get_session()
         stats = self.client.session_stats()
 
-        torrents_count = len(torrents)
-        torrents_down = 0
-        torrents_seed = 0
-        torrents_check = 0
-        torrents_complete_size = 0
-        torrents_total_size = 0
-
-        for t in torrents:
-            torrents_total_size += t.size_when_done
-            torrents_complete_size += t.size_when_done - t.left_until_done
-
-            if t.status == 'downloading':
-                torrents_down += 1
-            elif t.status == 'seeding':
-                torrents_seed += 1
-            elif t.status == 'checking':
-                torrents_check += 1
-
-        torrents_stop = torrents_count - torrents_down - torrents_seed - torrents_check
+        counts = self._count_torrents_by_status(torrents)
 
         return {
                 'download_dir': s.download_dir,
@@ -123,14 +106,14 @@ class TransmissionClient(BaseClient):
                 'alt_speed_up': s.alt_speed_up * 1000,
                 'alt_speed_down': s.alt_speed_down * 1000,
 
-                'torrents_complete_size': torrents_complete_size,
-                'torrents_total_size': torrents_total_size,
+                'torrents_complete_size': counts['complete_size'],
+                'torrents_total_size': counts['total_size'],
 
-                'torrents_count': torrents_count,
-                'torrents_down': torrents_down,
-                'torrents_seed': torrents_seed,
-                'torrents_check': torrents_check,
-                'torrents_stop': torrents_stop,
+                'torrents_count': counts['count'],
+                'torrents_down': counts['down'],
+                'torrents_seed': counts['seed'],
+                'torrents_check': counts['check'],
+                'torrents_stop': counts['stop'],
 
                 'sort_order': sort_order,
                 'sort_order_asc': sort_order_asc,
@@ -350,21 +333,10 @@ class TransmissionClient(BaseClient):
 
         direction = "Incoming" if peer.get("isIncoming", False) else "Outgoing"
 
-        if peer['clientIsInterested']:
-            if peer['clientIsChoked']:
-                dl_state = PeerState.CHOKED
-            else:
-                dl_state = PeerState.INTERESTED
-        else:
-            dl_state = PeerState.NONE
-
-        if peer['peerIsInterested']:
-            if peer['peerIsChoked']:
-                ul_state = PeerState.CHOKED
-            else:
-                ul_state = PeerState.INTERESTED
-        else:
-            ul_state = PeerState.NONE
+        dl_state = self._get_peer_state(peer['clientIsInterested'],
+                                        peer['clientIsChoked'])
+        ul_state = self._get_peer_state(peer['peerIsInterested'],
+                                        peer['peerIsChoked'])
 
         return PeerDTO(
             address=peer["address"],
@@ -439,13 +411,25 @@ class TransmissionClient(BaseClient):
             trackers=trackers,
             )
 
+    @log_time
+    @staticmethod
     def _calculate_ratio(self, downloaded: int, uploaded: int) -> float:
-        """Calculate donwload ratio (zero div safe)."""
+        """Calculate download ratio (zero div safe)."""
         if downloaded == 0:
             return float('inf')
         else:
             return uploaded / downloaded
 
+    @log_time
+    @staticmethod
     def _ts_to_dt(self, timestamp: int) -> datetime | None:
         """Convert Unix timestamp to datetime (None for invalid values)."""
         return datetime.fromtimestamp(timestamp) if timestamp > 0 else None
+
+    @log_time
+    @staticmethod
+    def _get_peer_state(is_interested: bool, is_choked: bool) -> PeerState:
+        """Determine peer state from interest and choke flags."""
+        if not is_interested:
+            return PeerState.NONE
+        return PeerState.CHOKED if is_choked else PeerState.INTERESTED
