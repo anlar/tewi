@@ -148,25 +148,7 @@ class QBittorrentClient(BaseClient):
         transfer_info = self.client.transfer.info
         prefs = self.client.app.preferences
 
-        torrents_count = len(torrents)
-        torrents_down = 0
-        torrents_seed = 0
-        torrents_check = 0
-        torrents_complete_size = 0
-        torrents_total_size = 0
-
-        for t in torrents:
-            torrents_total_size += t.size_when_done
-            torrents_complete_size += t.size_when_done - t.left_until_done
-
-            if t.status == 'downloading':
-                torrents_down += 1
-            elif t.status == 'seeding':
-                torrents_seed += 1
-            elif t.status == 'checking':
-                torrents_check += 1
-
-        torrents_stop = torrents_count - torrents_down - torrents_seed - torrents_check
+        counts = self._count_torrents_by_status(torrents)
 
         # Get free space for download directory
         try:
@@ -188,13 +170,16 @@ class QBittorrentClient(BaseClient):
             # qBittorrent returns bytes/s - store as-is
             'alt_speed_up': prefs.alt_up_limit,
             'alt_speed_down': prefs.alt_dl_limit,
-            'torrents_complete_size': torrents_complete_size,
-            'torrents_total_size': torrents_total_size,
-            'torrents_count': torrents_count,
-            'torrents_down': torrents_down,
-            'torrents_seed': torrents_seed,
-            'torrents_check': torrents_check,
-            'torrents_stop': torrents_stop,
+
+            'torrents_complete_size': counts['complete_size'],
+            'torrents_total_size': counts['total_size'],
+
+            'torrents_count': counts['count'],
+            'torrents_down': counts['down'],
+            'torrents_seed': counts['seed'],
+            'torrents_check': counts['check'],
+            'torrents_stop': counts['stop'],
+
             'sort_order': sort_order,
             'sort_order_asc': sort_order_asc,
             'filter_option': filter_option,

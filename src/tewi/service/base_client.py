@@ -177,6 +177,54 @@ class BaseClient(ABC):
 
         return result
 
+    def _count_torrents_by_status(
+        self, torrents: list[TorrentDTO]
+    ) -> dict[str, int]:
+        """Count torrents by status and calculate sizes.
+
+        Args:
+            torrents: List of torrents to count
+
+        Returns:
+            Dictionary with keys:
+                - count: Total number of torrents
+                - down: Number of downloading torrents
+                - seed: Number of seeding torrents
+                - check: Number of checking torrents
+                - stop: Number of stopped torrents
+                - complete_size: Total completed bytes
+                - total_size: Total size when done in bytes
+        """
+        count = len(torrents)
+        down = 0
+        seed = 0
+        check = 0
+        complete_size = 0
+        total_size = 0
+
+        for t in torrents:
+            total_size += t.size_when_done
+            complete_size += t.size_when_done - t.left_until_done
+
+            if t.status == 'downloading':
+                down += 1
+            elif t.status == 'seeding':
+                seed += 1
+            elif t.status == 'checking':
+                check += 1
+
+        stop = count - down - seed - check
+
+        return {
+            'count': count,
+            'down': down,
+            'seed': seed,
+            'check': check,
+            'stop': stop,
+            'complete_size': complete_size,
+            'total_size': total_size,
+        }
+
     @abstractmethod
     def torrent(self, id: int | str):
         """Get detailed information about a specific torrent.

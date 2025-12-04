@@ -12,10 +12,25 @@ from ..util.decorator import log_time
 from ..common import (CategoryDTO, FilterOption, SortOrder, TorrentDTO,
                       TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO,
                       PeerState, FilePriority)
-from .base_client import BaseClient, ClientMeta, ClientStats, ClientSession
+from .base_client import (BaseClient, ClientMeta, ClientStats,
+                          ClientSession, ClientError)
 
 
 class TransmissionClient(BaseClient):
+    """Transmission torrent client implementation."""
+
+    # Transmission bandwidth priority values
+    PRIORITY_LOW = -1
+    PRIORITY_NORMAL = 0
+    PRIORITY_HIGH = 1
+
+    # Tracker announce state codes to human-readable status labels
+    TRACKER_ANNOUNCE_STATE: dict[int, str] = {
+        0: "Inactive",
+        1: "Waiting",
+        2: "Queued",
+        3: "Active"
+    }
 
     @log_time
     def __init__(self,
@@ -27,10 +42,10 @@ class TransmissionClient(BaseClient):
                                             username=username,
                                             password=password)
 
+    @log_time
     def capable(self, capability_code: str) -> bool:
-        match capability_code:
-            case 'category':
-                return False
+        if capability_code == 'category':
+            return False
 
         return True
 
@@ -45,65 +60,41 @@ class TransmissionClient(BaseClient):
     def stats(self) -> ClientStats:
         s = self.client.session_stats()
 
-        current_ratio = (
-                float('inf')
-                if s.current_stats.downloaded_bytes == 0 else
-                s.current_stats.uploaded_bytes / s.current_stats.downloaded_bytes
-        )
-
-        total_ratio = (
-                float('inf')
-                if s.cumulative_stats.downloaded_bytes == 0 else
-                s.cumulative_stats.uploaded_bytes / s.cumulative_stats.downloaded_bytes
-        )
-
         return {
                 'current_uploaded_bytes': s.current_stats.uploaded_bytes,
                 'current_downloaded_bytes': s.current_stats.downloaded_bytes,
-                'current_ratio': current_ratio,
+                'current_ratio': self._calculate_ratio(
+                    s.current_stats.downloaded_bytes,
+                    s.current_stats.uploaded_bytes),
                 'current_active_seconds': s.current_stats.seconds_active,
-                'current_waste': None,  # Not available in Transmission
-                'current_connected_peers': None,  # Not available in Transmission
+                'current_waste': None,
+                'current_connected_peers': None,
                 'total_uploaded_bytes': s.cumulative_stats.uploaded_bytes,
                 'total_downloaded_bytes': s.cumulative_stats.downloaded_bytes,
-                'total_ratio': total_ratio,
+                'total_ratio': self._calculate_ratio(
+                    s.cumulative_stats.downloaded_bytes,
+                    s.cumulative_stats.uploaded_bytes),
                 'total_active_seconds': s.cumulative_stats.seconds_active,
                 'total_started_count': s.cumulative_stats.session_count,
-                'cache_read_hits': None,  # Not available in Transmission
-                'cache_total_buffers_size': None,  # Not available in Transmission
-                'perf_write_cache_overload': None,  # Not available in Transmission
-                'perf_read_cache_overload': None,  # Not available in Transmission
-                'perf_queued_io_jobs': None,  # Not available in Transmission
-                'perf_average_time_queue': None,  # Not available in Transmission
-                'perf_total_queued_size': None,  # Not available in Transmission
-        }
+                'cache_read_hits': None,
+                'cache_total_buffers_size': None,
+                'perf_write_cache_overload': None,
+                'perf_read_cache_overload': None,
+                'perf_queued_io_jobs': None,
+                'perf_average_time_queue': None,
+                'perf_total_queued_size': None,
+                }
 
     @log_time
-    def session(self, torrents: list[TorrentDTO], sort_order: SortOrder,
+    def session(self, torrents: list[TorrentDTO],
+                sort_order: SortOrder,
                 sort_order_asc: bool,
                 filter_option: FilterOption) -> ClientSession:
+
         s = self.client.get_session()
         stats = self.client.session_stats()
 
-        torrents_count = len(torrents)
-        torrents_down = 0
-        torrents_seed = 0
-        torrents_check = 0
-        torrents_complete_size = 0
-        torrents_total_size = 0
-
-        for t in torrents:
-            torrents_total_size += t.size_when_done
-            torrents_complete_size += t.size_when_done - t.left_until_done
-
-            if t.status == 'downloading':
-                torrents_down += 1
-            elif t.status == 'seeding':
-                torrents_seed += 1
-            elif t.status == 'checking':
-                torrents_check += 1
-
-        torrents_stop = torrents_count - torrents_down - torrents_seed - torrents_check
+        counts = self._count_torrents_by_status(torrents)
 
         return {
                 'download_dir': s.download_dir,
@@ -115,14 +106,14 @@ class TransmissionClient(BaseClient):
                 'alt_speed_up': s.alt_speed_up * 1000,
                 'alt_speed_down': s.alt_speed_down * 1000,
 
-                'torrents_complete_size': torrents_complete_size,
-                'torrents_total_size': torrents_total_size,
+                'torrents_complete_size': counts['complete_size'],
+                'torrents_total_size': counts['total_size'],
 
-                'torrents_count': torrents_count,
-                'torrents_down': torrents_down,
-                'torrents_seed': torrents_seed,
-                'torrents_check': torrents_check,
-                'torrents_stop': torrents_stop,
+                'torrents_count': counts['count'],
+                'torrents_down': counts['down'],
+                'torrents_seed': counts['seed'],
+                'torrents_check': counts['check'],
+                'torrents_stop': counts['stop'],
 
                 'sort_order': sort_order,
                 'sort_order_asc': sort_order_asc,
@@ -133,9 +124,157 @@ class TransmissionClient(BaseClient):
     def preferences(self) -> dict[str, str]:
         session_dict = self.client.get_session().fields
 
-        filtered = {k: v for k, v in session_dict.items() if not k.startswith(tuple(['units', 'version']))}
+        excluded_prefixes = ('units', 'version')
+        filtered = {k: v for k, v in session_dict.items()
+                    if not k.startswith(excluded_prefixes)}
 
         return dict(sorted(filtered.items()))
+
+    @log_time
+    def torrents(self) -> list[TorrentDTO]:
+        torrents = self.client.get_torrents(
+                arguments=['id', 'name', 'status', 'totalSize', 'downloadDir',
+                           'left_until_done', 'percentDone', 'eta',
+                           'rateUpload', 'rateDownload', 'uploadRatio',
+                           'sizeWhenDone', 'leftUntilDone', 'addedDate',
+                           'activityDate', 'queuePosition', 'peersConnected',
+                           'peersGettingFromUs', 'peersSendingToUs',
+                           'bandwidthPriority', 'uploadedEver', 'labels']
+                )
+
+        return [self._torrent_to_dto(t) for t in torrents]
+
+    @log_time
+    def torrent(self, id: int | str) -> TorrentDetailDTO:
+        """Get detailed information about a specific torrent."""
+        torrent = self.client.get_torrent(id)
+        return self._torrent_detail_to_dto(torrent)
+
+    @log_time
+    def add_torrent(self, value: str) -> None:
+        if is_torrent_link(value):
+            self.client.add_torrent(value)
+        else:
+            file = os.path.expanduser(value)
+            if not os.path.exists(file):
+                raise ClientError(f"Torrent file not found: {file}")
+            self.client.add_torrent(pathlib.Path(file))
+
+    @log_time
+    def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+        self.client.start_torrent(torrent_ids)
+
+    @log_time
+    def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+        self.client.stop_torrent(torrent_ids)
+
+    @log_time
+    def remove_torrent(self,
+                       torrent_ids: int | str | list[int | str],
+                       delete_data: bool = False) -> None:
+
+        self.client.remove_torrent(torrent_ids,
+                                   delete_data=delete_data)
+
+    @log_time
+    def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+        self.client.verify_torrent(torrent_ids)
+
+    @log_time
+    def reannounce_torrent(self,
+                           torrent_ids: int | str | list[int | str]) -> None:
+
+        self.client.reannounce_torrent(torrent_ids)
+
+    @log_time
+    def start_all_torrents(self) -> None:
+        self.client.start_all()
+
+    @log_time
+    def stop_all_torrents(self) -> None:
+        torrents = self.client.get_torrents(arguments=['id'])
+        self.stop_torrent([t.id for t in torrents])
+
+    @log_time
+    def update_labels(self,
+                      torrent_ids: int | str | list[int | str],
+                      labels: list[str]) -> None:
+
+        if isinstance(torrent_ids, (int, str)):
+            torrent_ids = [torrent_ids]
+
+        self.client.change_torrent(torrent_ids,
+                                   labels=labels)
+
+    @log_time
+    def get_categories(self) -> list[CategoryDTO]:
+        """Get list of available torrent categories.
+
+        Note: Transmission does not support categories.
+        """
+        raise ClientError("Transmission doesn't support categories")
+
+    @log_time
+    def set_category(self, torrent_ids: int | str | list[int | str],
+                     category: str | None) -> None:
+        """Set category for one or more torrents.
+
+        Note: Transmission does not support categories.
+        """
+        raise ClientError("Transmission doesn't support categories")
+
+    @log_time
+    def edit_torrent(self, torrent_id: int | str,
+                     name: str, location: str) -> None:
+
+        torrent = self.torrent(torrent_id)
+
+        if name != torrent.name:
+            self.client.rename_torrent_path(torrent_id,
+                                            torrent.name,
+                                            name)
+
+        if location != torrent.download_dir:
+            self.client.move_torrent_data(torrent_id, location)
+
+    @log_time
+    def toggle_alt_speed(self) -> bool:
+        alt_speed_enabled = self.client.get_session().alt_speed_enabled
+        self.client.set_session(alt_speed_enabled=not alt_speed_enabled)
+        return not alt_speed_enabled
+
+    @log_time
+    def set_priority(self, torrent_ids: int | str | list[int | str],
+                     priority: int) -> None:
+        """Set bandwidth priority for one or more torrents."""
+        if isinstance(torrent_ids, (int, str)):
+            torrent_ids = [torrent_ids]
+
+        self.client.change_torrent(torrent_ids, bandwidth_priority=priority)
+
+    @log_time
+    def set_file_priority(self, torrent_id: int | str, file_ids: list[int],
+                          priority: FilePriority) -> None:
+        """Set download priority for files within a torrent."""
+        # Transmission uses different arguments based on priority:
+        # - files_wanted/files_unwanted for selection
+        # - priority_high/priority_low/priority_normal for priority
+        args = {}
+
+        match priority:
+            case FilePriority.NOT_DOWNLOADING:
+                args['files_unwanted'] = file_ids
+            case FilePriority.LOW:
+                args['files_wanted'] = file_ids
+                args['priority_low'] = file_ids
+            case FilePriority.MEDIUM:
+                args['files_wanted'] = file_ids
+                args['priority_normal'] = file_ids
+            case FilePriority.HIGH:
+                args['files_wanted'] = file_ids
+                args['priority_high'] = file_ids
+
+        self.client.change_torrent(torrent_id, **args)
 
     @log_time
     def _torrent_to_dto(self, torrent: Torrent) -> TorrentDTO:
@@ -171,11 +310,11 @@ class TransmissionClient(BaseClient):
 
         if file.selected:
             match file.priority:
-                case -1:
+                case self.PRIORITY_LOW:
                     priority = FilePriority.LOW
-                case 0:
+                case self.PRIORITY_NORMAL:
                     priority = FilePriority.MEDIUM
-                case 1:
+                case self.PRIORITY_HIGH:
                     priority = FilePriority.HIGH
         else:
             priority = FilePriority.NOT_DOWNLOADING
@@ -191,27 +330,15 @@ class TransmissionClient(BaseClient):
     @log_time
     def _peer_to_dto(self, peer: dict) -> PeerDTO:
         """Convert transmission-rpc peer dict to PeerDTO."""
-        # Determine connection type from isUTP flag
+
         connection_type = "μTP" if peer.get("isUTP", False) else "TCP"
 
-        # Determine direction from isIncoming flag
         direction = "Incoming" if peer.get("isIncoming", False) else "Outgoing"
 
-        if peer['clientIsInterested']:
-            if peer['clientIsChoked']:
-                dl_state = PeerState.CHOKED
-            else:
-                dl_state = PeerState.INTERESTED
-        else:
-            dl_state = PeerState.NONE
-
-        if peer['peerIsInterested']:
-            if peer['peerIsChoked']:
-                ul_state = PeerState.CHOKED
-            else:
-                ul_state = PeerState.INTERESTED
-        else:
-            ul_state = PeerState.NONE
+        dl_state = self._get_peer_state(peer['clientIsInterested'],
+                                        peer['clientIsChoked'])
+        ul_state = self._get_peer_state(peer['peerIsInterested'],
+                                        peer['peerIsChoked'])
 
         return PeerDTO(
             address=peer["address"],
@@ -229,14 +356,6 @@ class TransmissionClient(BaseClient):
             ul_state=ul_state,
         )
 
-    TRACKER_ANNOUNCE_STATE: dict[int, str] = {
-        0: "Inactive",
-        1: "Waiting",
-        2: "Queued",
-        3: "Active"
-    }
-    """Maps tracker announce state codes to human-readable status labels."""
-
     @log_time
     def _tracker_to_dto(self, t) -> TrackerDTO:
         """Convert transmission-rpc Tracker to TrackerDTO."""
@@ -251,26 +370,10 @@ class TransmissionClient(BaseClient):
             status=self.TRACKER_ANNOUNCE_STATE.get(t.announce_state,
                                                    self.TRACKER_STATUS_UNKNOWN),
             message=t.last_announce_result,
-            last_announce=(
-                datetime.fromtimestamp(t.last_announce_time)
-                if t.last_announce_time > 0
-                else None
-                ),
-            next_announce=(
-                datetime.fromtimestamp(t.next_announce_time)
-                if t.next_announce_time > 0
-                else None
-                ),
-            last_scrape=(
-                datetime.fromtimestamp(t.last_scrape_time)
-                if t.last_scrape_time > 0
-                else None
-                ),
-            next_scrape=(
-                datetime.fromtimestamp(t.next_scrape_time)
-                if t.next_scrape_time > 0
-                else None
-                ),
+            last_announce=self._ts_to_dt(t.last_announce_time),
+            next_announce=self._ts_to_dt(t.next_announce_time),
+            last_scrape=self._ts_to_dt(t.last_scrape_time),
+            next_scrape=self._ts_to_dt(t.next_scrape_time)
         )
 
     @log_time
@@ -288,8 +391,8 @@ class TransmissionClient(BaseClient):
             piece_count=torrent.piece_count,
             piece_size=torrent.piece_size,
             is_private=torrent.is_private,
-            comment=torrent.comment if torrent.comment else "",
-            creator=torrent.creator if torrent.creator else "",
+            comment=torrent.comment,
+            creator=torrent.creator,
             labels=list(torrent.labels) if torrent.labels else [],
             category=None,  # Transmission does not support categories
             status=torrent.status,
@@ -297,7 +400,7 @@ class TransmissionClient(BaseClient):
             downloaded_ever=torrent.downloaded_ever,
             uploaded_ever=torrent.uploaded_ever,
             ratio=torrent.ratio,
-            error_string=torrent.error_string if torrent.error_string else "",
+            error_string=torrent.error_string,
             added_date=torrent.added_date,
             start_date=torrent.start_date,
             done_date=torrent.done_date,
@@ -308,142 +411,27 @@ class TransmissionClient(BaseClient):
             files=files,
             peers=peers,
             trackers=trackers,
-        )
+            )
 
     @log_time
-    def torrents(self) -> list[TorrentDTO]:
-        torrents = self.client.get_torrents(
-                arguments=['id', 'name', 'status', 'totalSize', 'left_until_done',
-                           'percentDone', 'eta', 'rateUpload', 'rateDownload',
-                           'uploadRatio', 'sizeWhenDone', 'leftUntilDone',
-                           'addedDate', 'activityDate', 'queuePosition',
-                           'peersConnected', 'peersGettingFromUs',
-                           'peersSendingToUs', 'bandwidthPriority', 'uploadedEver',
-                           'labels', 'downloadDir']
-                )
-        return [self._torrent_to_dto(t) for t in torrents]
-
-    @log_time
-    def torrent(self, id: int | str) -> TorrentDetailDTO:
-        """Get detailed information about a specific torrent."""
-        torrent = self.client.get_torrent(id)
-        return self._torrent_detail_to_dto(torrent)
-
-    @log_time
-    def add_torrent(self, value: str) -> None:
-        if is_torrent_link(value):
-            self.client.add_torrent(value)
+    @staticmethod
+    def _calculate_ratio(downloaded: int, uploaded: int) -> float:
+        """Calculate download ratio (zero div safe)."""
+        if downloaded == 0:
+            return float('inf')
         else:
-            file = os.path.expanduser(value)
-            self.client.add_torrent(pathlib.Path(file))
+            return uploaded / downloaded
 
     @log_time
-    def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
-        self.client.start_torrent(torrent_ids)
+    @staticmethod
+    def _ts_to_dt(timestamp: int) -> datetime | None:
+        """Convert Unix timestamp to datetime (None for invalid values)."""
+        return datetime.fromtimestamp(timestamp) if timestamp > 0 else None
 
     @log_time
-    def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
-        self.client.stop_torrent(torrent_ids)
-
-    @log_time
-    def remove_torrent(self,
-                       torrent_ids: int | str | list[int | str],
-                       delete_data: bool = False) -> None:
-
-        self.client.remove_torrent(torrent_ids,
-                                   delete_data=delete_data)
-
-    @log_time
-    def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
-        self.client.verify_torrent(torrent_ids)
-
-    @log_time
-    def reannounce_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
-        self.client.reannounce_torrent(torrent_ids)
-
-    @log_time
-    def start_all_torrents(self) -> None:
-        self.client.start_all()
-
-    @log_time
-    def stop_all_torrents(self) -> None:
-        torrents = self.client.get_torrents(arguments=['id'])
-        self.stop_torrent([t.id for t in torrents])
-
-    @log_time
-    def update_labels(self,
-                      torrent_ids: int | str | list[int | str],
-                      labels: list[str]) -> None:
-
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
-
-        self.client.change_torrent(torrent_ids,
-                                   labels=labels)
-
-    @log_time
-    def get_categories(self) -> list[CategoryDTO]:
-        """Get list of available torrent categories.
-
-        Note: Transmission does not support categories.
-        """
-        return []
-
-    @log_time
-    def set_category(self, torrent_ids: int | str | list[int | str], category: str | None) -> None:
-        """Set category for one or more torrents.
-
-        Note: Transmission does not support categories. This is a no-op.
-        """
-        pass
-
-    @log_time
-    def edit_torrent(self, torrent_id: int | str,
-                     name: str, location: str) -> None:
-
-        torrent = self.torrent(torrent_id)
-
-        if name != torrent.name:
-            self.client.rename_torrent_path(torrent_id,
-                                            torrent.name,
-                                            name)
-
-        if location != torrent.download_dir:
-            self.client.move_torrent_data(torrent_id, location)
-
-    @log_time
-    def toggle_alt_speed(self) -> bool:
-        alt_speed_enabled = self.client.get_session().alt_speed_enabled
-        self.client.set_session(alt_speed_enabled=not alt_speed_enabled)
-        return not alt_speed_enabled
-
-    @log_time
-    def set_priority(self, torrent_ids: int | str | list[int | str], priority: int) -> None:
-        """Set bandwidth priority for one or more torrents."""
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
-
-        self.client.change_torrent(torrent_ids, bandwidth_priority=priority)
-
-    @log_time
-    def set_file_priority(self, torrent_id: int | str, file_ids: list[int], priority: FilePriority) -> None:
-        """Set download priority for files within a torrent."""
-        # Transmission uses different arguments based on priority:
-        # - files_wanted/files_unwanted for selection
-        # - priority_high/priority_low/priority_normal for priority
-        args = {}
-
-        match priority:
-            case FilePriority.NOT_DOWNLOADING:
-                args['files_unwanted'] = file_ids
-            case FilePriority.LOW:
-                args['files_wanted'] = file_ids
-                args['priority_low'] = file_ids
-            case FilePriority.MEDIUM:
-                args['files_wanted'] = file_ids
-                args['priority_normal'] = file_ids
-            case FilePriority.HIGH:
-                args['files_wanted'] = file_ids
-                args['priority_high'] = file_ids
-
-        self.client.change_torrent(torrent_id, **args)
+    @staticmethod
+    def _get_peer_state(is_interested: bool, is_choked: bool) -> PeerState:
+        """Determine peer state from interest and choke flags."""
+        if not is_interested:
+            return PeerState.NONE
+        return PeerState.CHOKED if is_choked else PeerState.INTERESTED
