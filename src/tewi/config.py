@@ -23,10 +23,13 @@ from pathlib import Path
 from argparse import Action, Namespace
 
 
-class DefaultAction(Action):
+class TrackSetAction(Action):
+
+    SET_POSTFIX = '_was_set'
+
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
-        setattr(namespace, f'{self.dest}_was_set', True)
+        setattr(namespace, f'{self.dest}{self.SET_POSTFIX}', True)
 
 
 def get_config_dir() -> Path:
@@ -332,5 +335,5 @@ def merge_config_with_args(config: dict, args: Namespace) -> None:
     """
 
     for key, value in config.items():
-        if not hasattr(args, key + '_was_set'):
+        if not hasattr(args, f"{key}{TrackSetAction.SET_POSTFIX}"):
             setattr(args, key, value)
