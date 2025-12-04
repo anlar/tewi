@@ -85,17 +85,20 @@ class TorrentWebSearch(Static):
         self.create_table_columns()
 
     @log_time
-    def execute_search(self, query: str) -> None:
+    def execute_search(self, query: str,
+                       selected_indexers: list[str] | None = None) -> None:
         """Execute search with given query.
 
         Args:
             query: Search term
+            selected_indexers: List of indexer IDs to search,
+                              or None to search all
         """
 
         self.r_query = f"Query: {query}"
 
         # Start background search
-        self.perform_search(query)
+        self.perform_search(query, selected_indexers)
 
     @log_time
     def watch_r_results(self, results: list[SearchResultDTO]) -> None:
@@ -282,25 +285,77 @@ class TorrentWebSearch(Static):
 
     # Background search
 
+    def _filter_providers(
+            self,
+            selected_indexers: list[str] | None) -> list:
+        """Filter providers based on selected indexers.
+
+        Args:
+            selected_indexers: List of indexer IDs to search,
+                              or None to search all
+
+        Returns:
+            List of providers to search
+        """
+        if selected_indexers is None:
+            # Search all providers
+            return self.providers
+
+        providers_to_search = []
+
+        # Group selected indexers by provider
+        regular_providers = set()
+        jackett_indexers = []
+
+        for indexer_id in selected_indexers:
+            if indexer_id.startswith('jackett:'):
+                # Extract jackett indexer ID (remove 'jackett:' prefix)
+                jackett_indexers.append(indexer_id[8:])
+            else:
+                # Regular provider
+                regular_providers.add(indexer_id)
+
+        # Add regular providers if selected
+        for provider in self.providers:
+            provider_id = provider.id()
+            if provider_id == 'jackett':
+                # Handle Jackett separately
+                if jackett_indexers:
+                    # Configure Jackett with selected indexers
+                    provider.set_selected_indexers(jackett_indexers)
+                    providers_to_search.append(provider)
+            elif provider_id in regular_providers:
+                # Add regular provider
+                providers_to_search.append(provider)
+
+        return providers_to_search
+
     @log_time
     @work(exclusive=True, thread=True)
-    async def perform_search(self, query: str) -> None:
-        """Perform search in background thread using all providers in parallel.
+    async def perform_search(self, query: str,
+                             selected_indexers: list[str] | None = None) -> None:
+        """Perform search in background thread using selected providers.
 
         Args:
             query: Search term
+            selected_indexers: List of indexer IDs to search,
+                              or None to search all
         """
         self.r_search_status = "Searching..."
 
         all_results = []
         errors = []
 
+        # Filter providers based on selected indexers
+        providers_to_search = self._filter_providers(selected_indexers)
+
         # Execute all provider searches in parallel
-        with ThreadPoolExecutor(max_workers=len(self.providers)) as executor:
+        with ThreadPoolExecutor(
+                max_workers=len(providers_to_search)) as executor:
             # Submit all search tasks
             future_to_provider = {
                 executor.submit(provider.search, query): provider
-                for provider in self.providers
+                for provider in providers_to_search
             }
 
             # Collect results as they complete

@@ -32,6 +32,10 @@ class NyaaProvider(BaseSearchProvider):
     def id(self) -> str:
         return "nyaa"
 
+    def indexers(self) -> list[tuple[str, str]]:
+        """Return Nyaa as a single indexer."""
+        return [(self.id(), self.short_name)]
+
     @property
     def short_name(self) -> str:
         return "Nyaa"

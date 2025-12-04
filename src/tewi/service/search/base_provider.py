@@ -81,6 +81,19 @@ class BaseSearchProvider(ABC):
         """
         pass
 
+    @abstractmethod
+    def indexers(self) -> list[tuple[str, str]]:
+        """Return list of available indexers for this provider.
+
+        For most providers, this returns a single indexer (the provider
+        itself). For meta-providers like Jackett, this returns all
+        configured indexers.
+
+        Returns:
+            List of (indexer_id, indexer_name) tuples
+        """
+        pass
+
     @property
     @abstractmethod
     def short_name(self) -> str:

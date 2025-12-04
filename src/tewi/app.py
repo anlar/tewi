@@ -248,7 +248,11 @@ class MainApp(App):
 
     @log_time
     def action_open_websearch(self) -> None:
-        self.push_screen(WebSearchQueryDialog(self.last_search_query))
+        websearch = self.query_one(TorrentWebSearch)
+        self.push_screen(WebSearchQueryDialog(
+            websearch.providers,
+            self.last_search_query
+        ))
 
     @log_time
     @on(Notification)
@@ -528,8 +532,9 @@ class MainApp(App):
         self.last_search_query = event.query
         # Switch to results panel
         self.query_one(ContentSwitcher).current = "torrent-websearch"
-        # Execute search with query
-        self.query_one(TorrentWebSearch).execute_search(event.query)
+        # Execute search with query and selected indexers
+        self.query_one(TorrentWebSearch).execute_search(
+            event.query, event.selected_indexers)
 
     @log_time
     @on(AddTorrentFromWebSearchCommand)

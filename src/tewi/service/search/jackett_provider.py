@@ -1,13 +1,18 @@
 """Jackett torrent search provider implementation."""
 
+import logging
+import urllib.error
 import urllib.parse
 import json
+import xml.etree.ElementTree as ET
 from datetime import datetime
 from typing import Any
 
 from .base_provider import BaseSearchProvider
 from ...common import SearchResultDTO, TorrentCategory
 from ...util.decorator import log_time
+
+logger = logging.getLogger('tewi')
 
 
 class JackettProvider(BaseSearchProvider):
@@ -30,6 +35,7 @@ class JackettProvider(BaseSearchProvider):
         self.jackett_url = jackett_url
         self.api_key = api_key
         self._config_error = self._validate_config(jackett_url, api_key)
+        self._selected_indexers: list[str] | None = None
 
     def _validate_config(self,
                          jackett_url: str | None,
@@ -53,6 +59,98 @@ class JackettProvider(BaseSearchProvider):
 
     def id(self) -> str:
         return "jackett"
+
+    def indexers(self) -> list[tuple[str, str]]:
+        """Return list of configured indexers from Jackett instance.
+
+        Returns:
+            List of (indexer_id, indexer_name) tuples from Jackett,
+            or empty list if not configured or error occurs
+        """
+        if self._config_error:
+            logger.debug(f"Jackett not configured: {self._config_error}")
+            return []
+
+        try:
+            url = self._build_indexers_url()
+            data = self._fetch_indexers(url)
+            indexers = self._process_indexers(data)
+            logger.info(f"Jackett: loaded {len(indexers)} indexers")
+            return indexers
+        except Exception as e:
+            # Return empty list if indexers cannot be fetched
+            logger.warning(f"Failed to load Jackett indexers: {e}")
+            return []
+
+    def _build_indexers_url(self) -> str:
+        """Build Jackett API indexers URL.
+
+        Uses Torznab API endpoint which is the correct way to list indexers.
+        The /api/v2.0/indexers endpoint is broken in recent Jackett versions.
+
+        Returns:
+            Complete URL to fetch indexers list
+        """
+        base_url = self.jackett_url.rstrip('/')
+        endpoint = f"{base_url}/api/v2.0/indexers/all/results/torznab/api"
+        params = {
+            'apikey': self.api_key,
+            't': 'indexers',
+            'configured': 'true'
+        }
+        return f"{endpoint}?{urllib.parse.urlencode(params)}"
+
+    def _fetch_indexers(self, url: str) -> ET.Element:
+        """Fetch and parse XML indexers list from Jackett Torznab API.
+
+        Args:
+            url: Complete API URL
+
+        Returns:
+            Parsed XML root element
+
+        Raises:
+            Exception: If request fails or response invalid
+        """
+        try:
+            with self._urlopen(url, timeout=10) as response:
+                xml_data = response.read().decode('utf-8')
+                return ET.fromstring(xml_data)
+        except urllib.error.HTTPError as e:
+            if e.code in (401, 403):
+                raise Exception("Invalid Jackett API key")
+            raise Exception(f"HTTP error {e.code}: {e.reason}")
+        except urllib.error.URLError as e:
+            raise Exception(
+                f"Cannot connect to Jackett at {self.jackett_url}: "
+                f"{e.reason}"
+            )
+        except ET.ParseError as e:
+            raise Exception(f"Failed to parse Jackett XML response: {e}")
+
+    def _process_indexers(self, root: ET.Element) -> list[tuple[str, str]]:
+        """Process indexers Torznab XML response.
+
+        Args:
+            root: Parsed XML root element
+
+        Returns:
+            List of (indexer_id, indexer_name) tuples
+        """
+        indexers = []
+        # Find all indexer elements
+        for indexer in root.findall('indexer'):
+            indexer_id = indexer.get('id')
+            # Only include configured indexers
+            if indexer.get('configured') == 'true' and indexer_id:
+                # Get indexer name from title element
+                title_elem = indexer.find('title')
+                indexer_name = title_elem.text if title_elem is not None \
+                    else indexer_id
+                # Prefix with jackett: to distinguish from other providers
+                full_id = f"jackett:{indexer_id}"
+                indexers.append((full_id, indexer_name))
+        return indexers
 
     @property
     def short_name(self) -> str:
@@ -85,6 +183,15 @@ class JackettProvider(BaseSearchProvider):
         data = self._fetch_results(url)
         return self._process_results(data)
 
+    def set_selected_indexers(self, indexer_ids: list[str] | None) -> None:
+        """Set which indexers to search.
+
+        Args:
+            indexer_ids: List of indexer IDs (without 'jackett:' prefix),
+                        or None to search all indexers
+        """
+        self._selected_indexers = indexer_ids
+
     def _build_search_url(self, query: str) -> str:
         """Build Jackett API search URL.
 
@@ -95,7 +202,17 @@ class JackettProvider(BaseSearchProvider):
             Complete URL with parameters
         """
         base_url = self.jackett_url.rstrip('/')
-        endpoint = f"{base_url}/api/v2.0/indexers/all/results"
+
+        # Determine which indexers to search
+        if self._selected_indexers is not None and \
+           len(self._selected_indexers) > 0:
+            # Search specific indexers
+            indexers = ','.join(self._selected_indexers)
+        else:
+            # Search all indexers
+            indexers = 'all'
+
+        endpoint = f"{base_url}/api/v2.0/indexers/{indexers}/results"
         params = {
             'apikey': self.api_key,
             'Query': query.strip(),

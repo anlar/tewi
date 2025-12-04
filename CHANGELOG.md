@@ -18,6 +18,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Automatic download and conversion of torrent files from URLs in Deluge client
 - Display category and labels in torrent card
 - Badge display options: `--badge-max-count` and `--badge-max-length` to control badge display in torrent cards
+- Indexer selection in web search dialog - select which search providers/indexers to use for each search
+- Tab navigation between search input and indexer list in web search dialog
+- Jackett indexers are loaded dynamically from Jackett instance via API
 
 ### Changed
 
@@ -25,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix position sorting with empty queue numbers
 - Configuration directory moved from `~/.config/` to `~/.config/tewi/`
 - Remember last search query in search dialog
+
+### Fixed
+
+- Jackett indexers loading - now uses Torznab API endpoint instead of broken `/api/v2.0/indexers` endpoint
 
 ### Removed
 
