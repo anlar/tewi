@@ -4,7 +4,6 @@ import logging
 import urllib.error
 import urllib.parse
 import json
-import xml.etree.ElementTree as ET
 from datetime import datetime
 from typing import Any
 
@@ -85,37 +84,35 @@ class JackettProvider(BaseSearchProvider):
     def _build_indexers_url(self) -> str:
         """Build Jackett API indexers URL.
 
-        Uses Torznab API endpoint which is the correct way to list indexers.
-        The /api/v2.0/indexers endpoint is broken in recent Jackett versions.
+        Uses search results endpoint with empty query to get indexer list.
+        This endpoint returns JSON with indexer information.
 
         Returns:
             Complete URL to fetch indexers list
         """
         base_url = self.jackett_url.rstrip('/')
-        endpoint = f"{base_url}/api/v2.0/indexers/all/results/torznab/api"
+        endpoint = f"{base_url}/api/v2.0/indexers/all/results"
         params = {
             'apikey': self.api_key,
-            't': 'indexers',
-            'configured': 'true'
+            'Query': ''
         }
         return f"{endpoint}?{urllib.parse.urlencode(params)}"
 
-    def _fetch_indexers(self, url: str) -> ET.Element:
-        """Fetch and parse XML indexers list from Jackett Torznab API.
+    def _fetch_indexers(self, url: str) -> dict:
+        """Fetch and parse JSON indexers list from Jackett API.
 
         Args:
             url: Complete API URL
 
         Returns:
-            Parsed XML root element
+            Parsed JSON data as dictionary
 
         Raises:
             Exception: If request fails or response invalid
         """
         try:
             with self._urlopen(url, timeout=10) as response:
-                xml_data = response.read().decode('utf-8')
-                return ET.fromstring(xml_data)
+                return json.loads(response.read().decode('utf-8'))
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
                 raise Exception("Invalid Jackett API key")
@@ -125,28 +122,26 @@ class JackettProvider(BaseSearchProvider):
                 f"Cannot connect to Jackett at {self.jackett_url}: "
                 f"{e.reason}"
             )
-        except ET.ParseError as e:
-            raise Exception(f"Failed to parse Jackett XML response: {e}")
+        except json.JSONDecodeError as e:
+            raise Exception(f"Failed to parse Jackett JSON response: {e}")
 
-    def _process_indexers(self, root: ET.Element) -> list[tuple[str, str]]:
-        """Process indexers Torznab XML response.
+    def _process_indexers(self, data: dict) -> list[IndexerDTO]:
+        """Process indexers JSON response.
 
         Args:
-            root: Parsed XML root element
+            data: Parsed JSON data from search endpoint
 
         Returns:
-            List of (indexer_id, indexer_name) tuples
+            List of IndexerDTO objects
         """
         indexers = []
-        # Find all indexer elements
-        for indexer in root.findall('indexer'):
-            indexer_id = indexer.get('id')
-            # Only include configured indexers
-            if indexer.get('configured') == 'true' and indexer_id:
-                # Get indexer name from title element
-                title_elem = indexer.find('title')
-                indexer_name = title_elem.text if title_elem is not None \
-                    else indexer_id
+        # Get indexers list from response
+        indexers_data = data.get('Indexers', [])
+        for indexer in indexers_data:
+            indexer_id = indexer.get('ID')
+            indexer_name = indexer.get('Name')
+            # Only include indexers with valid ID and Name
+            if indexer_id and indexer_name:
                 # Prefix with jackett: to distinguish from other providers
                 full_id = f"jackett:{indexer_id}"
                 indexers.append(IndexerDTO(
