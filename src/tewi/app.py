@@ -252,9 +252,7 @@ class MainApp(App):
 
     @log_time
     def action_open_websearch(self) -> None:
-        self.push_screen(WebSearchQueryDialog(
-            self.last_search_query
-        ))
+        self.push_screen(WebSearchQueryDialog(self.last_search_query))
 
     @log_time
     @on(Notification)

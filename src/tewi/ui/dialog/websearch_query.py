@@ -5,7 +5,6 @@ from textual.widgets import Input, Static, SelectionList
 from textual.widgets.selection_list import Selection
 from textual.app import ComposeResult
 from textual.screen import ModalScreen
-from textual.containers import Vertical
 from typing import ClassVar
 
 from ...message import WebSearchQuerySubmitted, Notification
@@ -42,15 +41,14 @@ class WebSearchQueryWidget(Static):
 
     @log_time
     def compose(self) -> ComposeResult:
-        with Vertical():
-            yield Input(
-                placeholder="Search for torrents...",
-                id="websearch-query-input"
-            )
-            yield VimSelectionList[str](
-                *self._build_indexer_selections(),
-                id="websearch-indexers-list"
-            )
+        yield Input(
+            placeholder="Search for torrents...",
+            id="websearch-query-input"
+        )
+        yield VimSelectionList[str](
+            *self._build_indexer_selections(),
+            id="websearch-indexers-list"
+        )
 
     def _build_indexer_selections(self) -> list[Selection]:
         """Build selection list from all provider indexers.
