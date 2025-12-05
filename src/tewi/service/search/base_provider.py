@@ -81,18 +81,17 @@ class BaseSearchProvider(ABC):
         """
         pass
 
-    @abstractmethod
     def indexers(self) -> list[IndexerDTO]:
         """Return list of available indexers for this provider.
 
         For most providers, this returns a single indexer (the provider
-        itself). For meta-providers like Jackett, this returns all
-        configured indexers.
+        itself) which is basic implementation. For meta-providers like
+        Jackett, this returns all configured indexers.
 
         Returns:
             List of (indexer_id, indexer_name) tuples
         """
-        pass
+        return [IndexerDTO(self.id(), f"[bold]{self.short_name}[/]")]
 
     @property
     @abstractmethod

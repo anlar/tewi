@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO, TorrentCategory, IndexerDTO
+from ...common import SearchResultDTO, TorrentCategory
 from ...util.decorator import log_time
 
 
@@ -22,10 +22,6 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
     def id(self) -> str:
         return "torrentscsv"
-
-    def indexers(self) -> list[IndexerDTO]:
-        """Return Torrents-CSV as a single indexer."""
-        return [IndexerDTO(self.id(), self.short_name)]
 
     @property
     def short_name(self) -> str:

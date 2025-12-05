@@ -149,7 +149,9 @@ class JackettProvider(BaseSearchProvider):
                     else indexer_id
                 # Prefix with jackett: to distinguish from other providers
                 full_id = f"jackett:{indexer_id}"
-                indexers.append(IndexerDTO(full_id, indexer_name))
+                indexers.append(IndexerDTO(
+                    full_id,
+                    f"[bold]{indexer_name}[/]"))
         return indexers
 
     @property
