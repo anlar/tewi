@@ -181,34 +181,104 @@ class TPBProvider(BaseSearchProvider):
         # Default to all categories
         return 0
 
-    def _get_category(self, code: str) -> list[Category]:
+    # TPB category code to Jackett category mapping
+    # Based on Jackett's thepiratebay.yml category mappings
+    TPB_CATEGORY_MAP = {
+        # Audio categories (100-199)
+        100: [JackettCategories.AUDIO],
+        101: [JackettCategories.AUDIO],
+        102: [JackettCategories.AUDIO_AUDIOBOOK],
+        103: [JackettCategories.AUDIO],
+        104: [JackettCategories.AUDIO_LOSSLESS],
+        199: [JackettCategories.AUDIO_OTHER],
+        # Video categories (200-299)
+        200: [JackettCategories.MOVIES],
+        201: [JackettCategories.MOVIES],
+        202: [JackettCategories.MOVIES_DVD],
+        203: [JackettCategories.AUDIO_VIDEO],
+        204: [JackettCategories.MOVIES_OTHER],
+        205: [JackettCategories.TV],
+        206: [JackettCategories.TV_OTHER],
+        207: [JackettCategories.MOVIES_HD],
+        208: [JackettCategories.TV_HD],
+        209: [JackettCategories.MOVIES_3D],
+        210: [JackettCategories.MOVIES_SD],
+        211: [JackettCategories.MOVIES_UHD],
+        212: [JackettCategories.TV_UHD],
+        299: [JackettCategories.MOVIES_OTHER],
+        # Applications (300-399)
+        300: [JackettCategories.PC],
+        301: [JackettCategories.PC],
+        302: [JackettCategories.PC_MAC],
+        303: [JackettCategories.PC],
+        304: [JackettCategories.PC_MOBILE_OTHER],
+        305: [JackettCategories.PC_MOBILE_IOS],
+        306: [JackettCategories.PC_MOBILE_ANDROID],
+        399: [JackettCategories.PC],
+        # Games (400-499)
+        400: [JackettCategories.CONSOLE],
+        401: [JackettCategories.PC_GAMES],
+        402: [JackettCategories.PC_MAC],
+        403: [JackettCategories.CONSOLE_PS4],
+        404: [JackettCategories.CONSOLE_XBOX],
+        405: [JackettCategories.CONSOLE_WII],
+        406: [JackettCategories.CONSOLE_OTHER],
+        407: [JackettCategories.CONSOLE_OTHER],
+        408: [JackettCategories.CONSOLE_OTHER],
+        499: [JackettCategories.CONSOLE_OTHER],
+        # Adult content (500-599)
+        500: [JackettCategories.XXX],
+        501: [JackettCategories.XXX],
+        502: [JackettCategories.XXX_DVD],
+        503: [JackettCategories.XXX_IMAGESET],
+        504: [JackettCategories.XXX],
+        505: [JackettCategories.XXX_X264],
+        506: [JackettCategories.XXX],
+        507: [JackettCategories.XXX_UHD],
+        599: [JackettCategories.XXX_OTHER],
+        # Other/Books (600-699)
+        600: [JackettCategories.OTHER],
+        601: [JackettCategories.BOOKS_EBOOK],
+        602: [JackettCategories.BOOKS_COMICS],
+        603: [JackettCategories.BOOKS],
+        604: [JackettCategories.BOOKS],
+        605: [JackettCategories.BOOKS],
+        699: [JackettCategories.BOOKS_OTHER],
+    }
+
+    # Fallback parent categories by range
+    TPB_PARENT_MAP = {
+        100: JackettCategories.AUDIO,
+        200: JackettCategories.MOVIES,
+        300: JackettCategories.PC,
+        400: JackettCategories.CONSOLE,
+        500: JackettCategories.XXX,
+        600: JackettCategories.OTHER,
+    }
+
+    def _get_category(self, code: int) -> list[Category]:
         """Map TPB category code to Jackett Category list.
 
-        TPB uses category codes like 100 (Audio), 200 (Video), etc.
+        Based on Jackett's thepiratebay.yml category mappings:
+        https://github.com/Jackett/Jackett/blob/master/src/Jackett.Common/Definitions/thepiratebay.yml
 
         Args:
-            code: TPB category code
+            code: TPB category code (e.g., 101, 207, etc.)
 
         Returns:
-            List containing matching parent Category, or empty list
+            List of matching Jackett Category objects
         """
-        c = code // 100
+        # Try exact match first
+        if code in self.TPB_CATEGORY_MAP:
+            return self.TPB_CATEGORY_MAP[code]
 
-        match c:
-            case 1:
-                return [JackettCategories.AUDIO]
-            case 2:
-                return [JackettCategories.MOVIES]
-            case 3:
-                return [JackettCategories.PC]
-            case 4:
-                return [JackettCategories.CONSOLE]
-            case 5:
-                return [JackettCategories.XXX]
-            case 6:
-                return [JackettCategories.OTHER]
-            case _:
-                return []
+        # Fallback to parent category by range
+        parent_code = (code // 100) * 100
+        if parent_code in self.TPB_PARENT_MAP:
+            return [self.TPB_PARENT_MAP[parent_code]]
+
+        # No match found
+        return []
 
     def details_extended(self, result: SearchResultDTO) -> str:
         """Generate TPB-specific details for right column.
