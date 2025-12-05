@@ -1,12 +1,14 @@
 """Web search query input dialog."""
 
 from textual.binding import Binding, BindingType
+from textual.containers import Horizontal
 from textual.widgets import Input, Static, SelectionList
 from textual.widgets.selection_list import Selection
 from textual.app import ComposeResult
 from textual.screen import ModalScreen
 from typing import ClassVar
 
+from ...common import JackettCategories
 from ...message import WebSearchQuerySubmitted, Notification
 from ...util.decorator import log_time
 from ...ui.widget.common import VimSelectionList
@@ -45,10 +47,15 @@ class WebSearchQueryWidget(Static):
             placeholder="Search for torrents...",
             id="websearch-query-input"
         )
-        yield VimSelectionList[str](
-            *self._build_indexer_selections(),
-            id="websearch-indexers-list"
-        )
+        with Horizontal():
+            yield VimSelectionList[str](
+                *self._build_indexer_selections(),
+                id="websearch-indexers-list"
+            )
+            yield VimSelectionList[str](
+                *self._build_category_selections(),
+                id="websearch-categories-list"
+            )
 
     def _build_indexer_selections(self) -> list[Selection]:
         """Build selection list from all provider indexers.
@@ -62,6 +69,13 @@ class WebSearchQueryWidget(Static):
                 Selection(indexer.name, indexer.id, True))
         return selections
 
+    def _build_category_selections(self) -> list[Selection]:
+        selections = []
+        for category in JackettCategories.parent_categories():
+            selections.append(
+                Selection(category.full_path, category.id, True))
+        return selections
+
     @log_time
     def on_mount(self) -> None:
         """Focus on input when dialog opens."""
@@ -69,7 +83,8 @@ class WebSearchQueryWidget(Static):
         self.border_subtitle = ('(Enter) Search / (Tab) Switch / '
                                 '(Space) Toggle selection / (ESC) Close')
 
-        self.query_one(VimSelectionList).border_title = "Search indexers"
+        self.query_one("#websearch-indexers-list").border_title = "Search indexers"
+        self.query_one("#websearch-categories-list").border_title = "Categories"
 
         input_widget = self.query_one("#websearch-query-input", Input)
         if self.initial_query:
