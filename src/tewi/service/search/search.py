@@ -3,7 +3,7 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from ...common import SearchResultDTO, IndexerDTO
+from ...common import SearchResultDTO, IndexerDTO, Category
 from .base_provider import BaseSearchProvider
 from . import (
         YTSProvider,
@@ -72,7 +72,7 @@ class SearchClient:
         return [idx for p in self.get_providers() for idx in p.indexers()]
 
     def search(self, query: str, selected_indexers: list[str] | None,
-               selected_categories: list[str] | None) -> tuple[
+               selected_categories: list[Category] | None) -> tuple[
             list[SearchResultDTO], list[str]]:
         """Search for torrents across multiple providers in parallel.
 
@@ -83,7 +83,7 @@ class SearchClient:
         Args:
             query: Search term to query providers with
             selected_indexers: List of indexer IDs to search, or None for all
-            selected_categories: List of category IDs to filter by,
+            selected_categories: List of Category objects to filter by,
                                 or None for all
 
         Returns:
@@ -102,7 +102,7 @@ class SearchClient:
         # Execute all provider searches in parallel
         with ThreadPoolExecutor(
                 max_workers=len(providers_to_search)) as executor:
-            # Submit all search tasks with category filter
+            # Submit all search tasks with category filter (as Category objects)
             future_to_provider = {
                     executor.submit(provider.search, query,
                                     selected_categories): provider
@@ -200,7 +200,7 @@ class SearchClient:
     def _filter_by_categories(
             self,
             results: list[SearchResultDTO],
-            selected_categories: list[str]) -> list[SearchResultDTO]:
+            selected_categories: list[Category]) -> list[SearchResultDTO]:
         """Filter search results by categories.
 
         Keeps results that have at least one category matching the
@@ -209,7 +209,7 @@ class SearchClient:
 
         Args:
             results: List of search results to filter
-            selected_categories: List of category ID strings to match
+            selected_categories: List of Category objects to match
 
         Returns:
             Filtered list of search results
@@ -217,13 +217,8 @@ class SearchClient:
         if not selected_categories:
             return results
 
-        # Convert selected categories to integers
-        selected_cat_ids = set()
-        for cat_id in selected_categories:
-            try:
-                selected_cat_ids.add(int(cat_id))
-            except ValueError:
-                continue
+        # Extract category IDs from Category objects
+        selected_cat_ids = {cat.id for cat in selected_categories}
 
         filtered_results = []
         for result in results:

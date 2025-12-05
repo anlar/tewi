@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO
+from ...common import SearchResultDTO, Category
 from ...util.decorator import log_time
 
 
@@ -33,7 +33,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
     @log_time
     def _search_impl(self, query: str,
-                     categories: list[str] | None = None) -> list[
+                     categories: list[Category] | None = None) -> list[
             SearchResultDTO]:
         """Search torrents-csv.com for torrents.
 

@@ -29,7 +29,7 @@ class TPBProvider(BaseSearchProvider):
 
     @log_time
     def _search_impl(self, query: str,
-                     categories: list[str] | None = None) -> list[
+                     categories: list[Category] | None = None) -> list[
             SearchResultDTO]:
         """Search The Pirate Bay for torrents.
 
@@ -144,14 +144,14 @@ class TPBProvider(BaseSearchProvider):
 
     def _convert_categories_to_tpb(
             self,
-            categories: list[str] | None) -> int:
-        """Convert Jackett category IDs to TPB category code.
+            categories: list[Category] | None) -> int:
+        """Convert Jackett categories to TPB category code.
 
         TPB uses category codes: 100 (Audio), 200 (Video), 300 (Apps),
         400 (Games), 500 (Porn), 600 (Other)
 
         Args:
-            categories: List of Jackett category ID strings
+            categories: List of Category objects
 
         Returns:
             TPB category code (0 for all categories)
@@ -161,20 +161,20 @@ class TPBProvider(BaseSearchProvider):
 
         # Map Jackett parent category IDs to TPB codes
         jackett_to_tpb = {
-            '1000': 400,  # Console -> Games
-            '2000': 200,  # Movies -> Video
-            '3000': 100,  # Audio -> Audio
-            '4000': 300,  # PC -> Applications
-            '5000': 200,  # TV -> Video
-            '6000': 500,  # XXX -> Porn
-            '7000': 600,  # Books -> Other
-            '8000': 600,  # Other -> Other
+            1000: 400,  # Console -> Games
+            2000: 200,  # Movies -> Video
+            3000: 100,  # Audio -> Audio
+            4000: 300,  # PC -> Applications
+            5000: 200,  # TV -> Video
+            6000: 500,  # XXX -> Porn
+            7000: 600,  # Books -> Other
+            8000: 600,  # Other -> Other
         }
 
         # Try to find a matching parent category
-        for cat_id in categories:
-            # Get parent category ID (first digit + '000')
-            parent_id = str((int(cat_id) // 1000) * 1000)
+        for category in categories:
+            # Get parent category ID (first digit * 1000)
+            parent_id = (category.id // 1000) * 1000
             if parent_id in jackett_to_tpb:
                 return jackett_to_tpb[parent_id]
 

@@ -35,7 +35,7 @@ class JackettProvider(BaseSearchProvider):
         self.api_key = api_key
         self._config_error = self._validate_config(jackett_url, api_key)
         self._selected_indexers: list[str] | None = None
-        self._selected_categories: list[str] | None = None
+        self._selected_categories: list[Category] | None = None
 
     def _validate_config(self,
                          jackett_url: str | None,
@@ -160,7 +160,7 @@ class JackettProvider(BaseSearchProvider):
 
     @log_time
     def _search_impl(self, query: str,
-                     categories: list[str] | None = None) -> list[
+                     categories: list[Category] | None = None) -> list[
             SearchResultDTO]:
         """Search Jackett for torrents across all indexers.
 
@@ -248,8 +248,9 @@ class JackettProvider(BaseSearchProvider):
 
         # Add category filter if specified
         if self._selected_categories:
-            # Jackett accepts comma-separated category IDs
-            params['Category'] = ','.join(self._selected_categories)
+            # Jackett accepts comma-separated category IDs (as strings)
+            params['Category'] = ','.join(
+                str(cat.id) for cat in self._selected_categories)
 
         return f"{endpoint}?{urllib.parse.urlencode(params)}"
 

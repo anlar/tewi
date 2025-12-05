@@ -46,11 +46,11 @@ class YTSProvider(BaseSearchProvider):
     def full_name(self) -> str:
         return self.short_name
 
-    def _has_movies_category(self, categories: list[str] | None) -> bool:
+    def _has_movies_category(self, categories: list[Category] | None) -> bool:
         """Check if categories list includes Movies category.
 
         Args:
-            categories: List of category ID strings
+            categories: List of Category objects
 
         Returns:
             True if categories is None or includes Movies (2000-2999),
@@ -60,15 +60,10 @@ class YTSProvider(BaseSearchProvider):
             return True
 
         # Check if any category is Movies or Movies subcategory
-        for cat_id in categories:
-            try:
-                cat_id_int = int(cat_id)
-                # Movies parent category (2000) or any Movies subcategory
-                # (2xxx)
-                if cat_id_int == 2000 or (2000 < cat_id_int < 3000):
-                    return True
-            except ValueError:
-                continue
+        for category in categories:
+            # Movies parent category (2000) or any Movies subcategory (2xxx)
+            if category.id == 2000 or (2000 < category.id < 3000):
+                return True
 
         return False
 
@@ -122,7 +117,7 @@ class YTSProvider(BaseSearchProvider):
 
     @log_time
     def _search_impl(self, query: str,
-                     categories: list[str] | None = None) -> list[
+                     categories: list[Category] | None = None) -> list[
             SearchResultDTO]:
         """Search YTS for movie torrents.
 

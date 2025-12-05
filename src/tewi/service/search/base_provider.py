@@ -21,13 +21,13 @@ class BaseSearchProvider(ABC):
 
     @abstractmethod
     def _search_impl(self, query: str,
-                     categories: list[str] | None = None) -> list[
+                     categories: list[Category] | None = None) -> list[
             SearchResultDTO]:
         """Provider-specific search implementation.
 
         Args:
             query: Search term
-            categories: Category IDs to filter by (optional)
+            categories: Category objects to filter by (optional)
 
         Returns:
             List of SearchResultDTO objects
@@ -38,7 +38,8 @@ class BaseSearchProvider(ABC):
         pass
 
     def search(self, query: str,
-               categories: list[str] | None = None) -> list[SearchResultDTO]:
+               categories: list[Category] | None = None) -> list[
+            SearchResultDTO]:
         """Search for torrents and refine unknown categories.
 
         This method calls the provider-specific implementation and
@@ -46,7 +47,7 @@ class BaseSearchProvider(ABC):
 
         Args:
             query: Search term
-            categories: Category IDs to filter by (optional)
+            categories: Category objects to filter by (optional)
 
         Returns:
             List of SearchResultDTO objects with refined categories

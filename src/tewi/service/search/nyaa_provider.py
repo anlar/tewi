@@ -42,7 +42,7 @@ class NyaaProvider(BaseSearchProvider):
 
     @log_time
     def _search_impl(self, query: str,
-                     categories: list[str] | None = None) -> list[
+                     categories: list[Category] | None = None) -> list[
             SearchResultDTO]:
         """Search Nyaa.si for torrents via RSS feed.
 
@@ -253,13 +253,13 @@ class NyaaProvider(BaseSearchProvider):
 
     def _convert_categories_to_nyaa(
             self,
-            categories: list[str] | None) -> str | None:
-        """Convert Jackett category IDs to Nyaa category code.
+            categories: list[Category] | None) -> str | None:
+        """Convert Jackett categories to Nyaa category code.
 
         Nyaa uses category codes like '1_0' (Anime), '2_0' (Audio), etc.
 
         Args:
-            categories: List of Jackett category ID strings
+            categories: List of Category objects
 
         Returns:
             Nyaa category code or None for all categories
@@ -270,25 +270,25 @@ class NyaaProvider(BaseSearchProvider):
         # Map Jackett category IDs to Nyaa codes
         jackett_to_nyaa = {
             # TV/Anime categories
-            '5070': '1_0',  # TV/Anime -> Anime
-            '5000': '1_0',  # TV -> Anime (Nyaa is anime-focused)
+            5070: '1_0',  # TV/Anime -> Anime
+            5000: '1_0',  # TV -> Anime (Nyaa is anime-focused)
             # Audio categories
-            '3000': '2_0',  # Audio -> Audio
-            '3040': '2_1',  # Audio/Lossless -> Audio - Lossless
+            3000: '2_0',  # Audio -> Audio
+            3040: '2_1',  # Audio/Lossless -> Audio - Lossless
             # Books categories
-            '7000': '3_0',  # Books -> Literature
+            7000: '3_0',  # Books -> Literature
             # Software/PC categories
-            '4000': '6_0',  # PC -> Software
-            '4020': '6_1',  # PC/ISO -> Software - Applications
-            '4050': '6_2',  # PC/Games -> Software - Games
+            4000: '6_0',  # PC -> Software
+            4020: '6_1',  # PC/ISO -> Software - Applications
+            4050: '6_2',  # PC/Games -> Software - Games
         }
 
         # Try to find a matching category
-        for cat_id in categories:
-            if cat_id in jackett_to_nyaa:
-                return jackett_to_nyaa[cat_id]
+        for category in categories:
+            if category.id in jackett_to_nyaa:
+                return jackett_to_nyaa[category.id]
             # Try parent category
-            parent_id = str((int(cat_id) // 1000) * 1000)
+            parent_id = (category.id // 1000) * 1000
             if parent_id in jackett_to_nyaa:
                 return jackett_to_nyaa[parent_id]
 

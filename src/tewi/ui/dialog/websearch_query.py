@@ -72,8 +72,9 @@ class WebSearchQueryWidget(Static):
     def _build_category_selections(self) -> list[Selection]:
         selections = []
         for category in JackettCategories.parent_categories():
+            # Use category object as value instead of ID
             selections.append(
-                Selection(category.full_path, category.id, True))
+                Selection(category.full_path, category, True))
         return selections
 
     @log_time
@@ -108,7 +109,7 @@ class WebSearchQueryWidget(Static):
             "#websearch-indexers-list", SelectionList)
         selected_indexers = list(indexers_list.selected)
 
-        # Get selected categories
+        # Get selected categories (Category objects)
         categories_list = self.query_one(
             "#websearch-categories-list", SelectionList)
         selected_categories = list(categories_list.selected)
@@ -126,12 +127,11 @@ class WebSearchQueryWidget(Static):
             return
 
         # If all categories are selected, pass None to search everything
-        all_categories = [str(cat.id)
-                          for cat in JackettCategories.parent_categories()]
-        if len(selected_categories) == len(all_categories):
+        all_categories_count = len(JackettCategories.parent_categories())
+        if len(selected_categories) == all_categories_count:
             selected_categories = None
 
-        # Post message with query, selected indexers, selected categories
+        # Post message with query, selected indexers, selected Category objects
         self.post_message(WebSearchQuerySubmitted(query,
                                                   selected_indexers,
                                                   selected_categories))
