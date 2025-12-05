@@ -108,14 +108,27 @@ class WebSearchQueryWidget(Static):
             "#websearch-indexers-list", SelectionList)
         selected_indexers = list(indexers_list.selected)
 
+        # Get selected indexers
+        categories_list = self.query_one(
+            "#websearch-categories-list", SelectionList)
+        selected_categories = list(categories_list.selected)
+
         if not selected_indexers:
             self.post_message(Notification(
                 "Please select at least one indexer",
                 "warning"))
             return
 
-        # Post message with query and selected indexers
-        self.post_message(WebSearchQuerySubmitted(query, selected_indexers))
+        if not selected_categories:
+            self.post_message(Notification(
+                "Please select at least one category",
+                "warning"))
+            return
+
+        # Post message with query, selected indexers, selected categories
+        self.post_message(WebSearchQuerySubmitted(query,
+                                                  selected_indexers,
+                                                  selected_categories))
 
         # Close dialog
         self.parent.dismiss()

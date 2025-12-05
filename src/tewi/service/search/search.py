@@ -71,7 +71,8 @@ class SearchClient:
         """
         return [idx for p in self.get_providers() for idx in p.indexers()]
 
-    def search(self, query: str, selected_indexers: list[str] | None) -> tuple[
+    def search(self, query: str, selected_indexers: list[str] | None,
+               selected_categories: list[str] | None) -> tuple[
             list[SearchResultDTO], list[str]]:
         """Search for torrents across multiple providers in parallel.
 

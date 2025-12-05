@@ -85,7 +85,8 @@ class TorrentWebSearch(Static):
 
     @log_time
     def execute_search(self, query: str,
-                       selected_indexers: list[str] | None = None) -> None:
+                       selected_indexers: list[str] | None = None,
+                       selected_categories: list[str] | None = None) -> None:
         """Execute search with given query.
 
         Args:
@@ -97,7 +98,7 @@ class TorrentWebSearch(Static):
         self.r_query = f"Query: {query}"
 
         # Start background search
-        self.perform_search(query, selected_indexers)
+        self.perform_search(query, selected_indexers, selected_categories)
 
     @log_time
     def watch_r_results(self, results: list[SearchResultDTO]) -> None:
@@ -290,7 +291,8 @@ class TorrentWebSearch(Static):
     @log_time
     @work(exclusive=True, thread=True)
     async def perform_search(self, query: str,
-                             selected_indexers: list[str] | None = None) -> None:
+                             selected_indexers: list[str] | None = None,
+                             selected_categories: list[str] | None = None) -> None:
         """Perform search in background thread using selected providers.
 
         Args:
@@ -300,7 +302,9 @@ class TorrentWebSearch(Static):
         """
         self.r_search_status = "Searching..."
 
-        all_results, errors = self.app.search.search(query, selected_indexers)
+        all_results, errors = self.app.search.search(query,
+                                                     selected_indexers,
+                                                     selected_categories)
 
         self.app.call_from_thread(self.update_results, all_results, errors)
 
