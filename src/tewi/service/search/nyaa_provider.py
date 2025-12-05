@@ -89,14 +89,13 @@ class NyaaProvider(BaseSearchProvider):
         except ET.ParseError as e:
             raise Exception(f"Failed to parse RSS feed: {e}")
 
-    def _build_fields(self, item: ET.Element, ns: dict[str, str],
-                      nyaa_category: str | None) -> dict[str, str]:
+    def _build_fields(self, item: ET.Element,
+                      ns: dict[str, str]) -> dict[str, str]:
         """Build provider-specific fields dictionary.
 
         Args:
             item: XML Element representing an RSS item
             ns: XML namespace dict
-            nyaa_category: Nyaa category string
 
         Returns:
             Dictionary of provider-specific fields
@@ -118,8 +117,9 @@ class NyaaProvider(BaseSearchProvider):
         if remake_elem is not None and remake_elem.text:
             fields['remake'] = remake_elem.text
 
-        if nyaa_category is not None:
-            fields['nyaa_category'] = nyaa_category
+        category_elem = item.find('nyaa:category', ns)
+        if category_elem is not None and category_elem.text:
+            fields['nyaa_category'] = category_elem.text
 
         return fields
 
@@ -154,9 +154,6 @@ class NyaaProvider(BaseSearchProvider):
                 else 0
             leechers = int(leechers_elem.text) if leechers_elem is not None \
                 else 0
-
-            # Extract category name
-            nyaa_category = item.find('nyaa:category', ns)
 
             # Extract category ID
             category_id_elem = item.find('nyaa:categoryId', ns)
@@ -196,7 +193,7 @@ class NyaaProvider(BaseSearchProvider):
                 page_url = link_elem.text
 
             # Build provider-specific fields
-            fields = self._build_fields(item, ns, nyaa_category)
+            fields = self._build_fields(item, ns)
 
             return SearchResultDTO(
                 title=title,
