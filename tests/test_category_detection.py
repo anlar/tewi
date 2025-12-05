@@ -1,7 +1,7 @@
 """Unit tests for category detection logic in search providers."""
 
 from src.tewi.service.search.base_provider import BaseSearchProvider
-from src.tewi.common import TorrentCategory, SearchResultDTO
+from src.tewi.common import SearchResultDTO, JackettCategories
 
 
 class DummyProvider(BaseSearchProvider):
@@ -38,141 +38,141 @@ class TestCategoryDetection:
         """Test detection of audio category by file extension."""
         assert self.provider._detect_category_from_name(
             "Artist - Album (2024) [FLAC].zip"
-        ) == TorrentCategory.AUDIO
+        ) == JackettCategories.AUDIO
 
         assert self.provider._detect_category_from_name(
             "Song.mp3"
-        ) == TorrentCategory.AUDIO
+        ) == JackettCategories.AUDIO
 
         assert self.provider._detect_category_from_name(
             "Soundtrack.m4a"
-        ) == TorrentCategory.AUDIO
+        ) == JackettCategories.AUDIO
 
     def test_detect_audio_by_keyword(self):
         """Test detection of audio category by keyword."""
         assert self.provider._detect_category_from_name(
             "Artist Discography 1990-2024"
-        ) == TorrentCategory.AUDIO
+        ) == JackettCategories.AUDIO
 
         assert self.provider._detect_category_from_name(
             "Game Soundtrack OST"
-        ) == TorrentCategory.AUDIO
+        ) == JackettCategories.AUDIO
 
         assert self.provider._detect_category_from_name(
             "Music Collection"
-        ) == TorrentCategory.AUDIO
+        ) == JackettCategories.AUDIO
 
     def test_detect_video_by_extension(self):
         """Test detection of video category by file extension."""
         assert self.provider._detect_category_from_name(
             "Movie.2024.mkv"
-        ) == TorrentCategory.VIDEO
+        ) == JackettCategories.MOVIES
 
         assert self.provider._detect_category_from_name(
             "Series.S01E01.mp4"
-        ) == TorrentCategory.VIDEO
+        ) == JackettCategories.MOVIES
 
         assert self.provider._detect_category_from_name(
             "Documentary.avi"
-        ) == TorrentCategory.VIDEO
+        ) == JackettCategories.MOVIES
 
     def test_detect_video_by_keyword(self):
         """Test detection of video category by keyword."""
         assert self.provider._detect_category_from_name(
             "The Matrix (1999) 1080p BluRay x264"
-        ) == TorrentCategory.VIDEO
+        ) == JackettCategories.MOVIES
 
         assert self.provider._detect_category_from_name(
             "Film Title 2024 4K HEVC"
-        ) == TorrentCategory.VIDEO
+        ) == JackettCategories.MOVIES
 
         assert self.provider._detect_category_from_name(
             "Series S01 720p WEBRip"
-        ) == TorrentCategory.VIDEO
+        ) == JackettCategories.MOVIES
 
     def test_detect_software_by_extension(self):
         """Test detection of software category by file extension."""
         assert self.provider._detect_category_from_name(
             "installer.exe"
-        ) == TorrentCategory.SOFTWARE
+        ) == JackettCategories.PC
 
         assert self.provider._detect_category_from_name(
             "application.dmg"
-        ) == TorrentCategory.SOFTWARE
+        ) == JackettCategories.PC
 
         assert self.provider._detect_category_from_name(
             "package.deb"
-        ) == TorrentCategory.SOFTWARE
+        ) == JackettCategories.PC
 
     def test_detect_software_by_keyword(self):
         """Test detection of software category by keyword."""
         assert self.provider._detect_category_from_name(
             "Adobe Software Suite 2024"
-        ) == TorrentCategory.SOFTWARE
+        ) == JackettCategories.PC
 
         assert self.provider._detect_category_from_name(
             "Program Setup Installer"
-        ) == TorrentCategory.SOFTWARE
+        ) == JackettCategories.PC
 
         assert self.provider._detect_category_from_name(
             "App Portable v1.0 + Crack"
-        ) == TorrentCategory.SOFTWARE
+        ) == JackettCategories.PC
 
     def test_detect_games_by_keyword(self):
         """Test detection of games category by keyword."""
         assert self.provider._detect_category_from_name(
             "Game Title Repack FitGirl"
-        ) == TorrentCategory.GAMES
+        ) == JackettCategories.CONSOLE
 
         assert self.provider._detect_category_from_name(
             "PC Game CODEX"
-        ) == TorrentCategory.GAMES
+        ) == JackettCategories.CONSOLE
 
         assert self.provider._detect_category_from_name(
             "PlayStation 5 Game"
-        ) == TorrentCategory.GAMES
+        ) == JackettCategories.CONSOLE
 
         assert self.provider._detect_category_from_name(
             "Nintendo Switch Gameplay"
-        ) == TorrentCategory.GAMES
+        ) == JackettCategories.CONSOLE
 
     def test_detect_xxx_by_keyword(self):
         """Test detection of XXX category by keyword."""
         assert self.provider._detect_category_from_name(
             "Adult Content XXX"
-        ) == TorrentCategory.XXX
+        ) == JackettCategories.XXX
 
         assert self.provider._detect_category_from_name(
             "18+ NSFW Collection"
-        ) == TorrentCategory.XXX
+        ) == JackettCategories.XXX
 
     def test_detect_other_by_extension(self):
-        """Test detection of OTHER category by file extension."""
+        """Test detection of BOOKS category by file extension."""
         assert self.provider._detect_category_from_name(
             "Book Title.pdf"
-        ) == TorrentCategory.OTHER
+        ) == JackettCategories.BOOKS
 
         assert self.provider._detect_category_from_name(
             "Novel.epub"
-        ) == TorrentCategory.OTHER
+        ) == JackettCategories.BOOKS
 
         assert self.provider._detect_category_from_name(
             "Archive.zip"
-        ) == TorrentCategory.OTHER
+        ) == JackettCategories.BOOKS
 
     def test_detect_other_by_keyword(self):
-        """Test detection of OTHER category by keyword."""
+        """Test detection of BOOKS category by keyword."""
         assert self.provider._detect_category_from_name(
             "Programming Ebook Collection"
-        ) == TorrentCategory.OTHER
+        ) == JackettCategories.BOOKS
 
         assert self.provider._detect_category_from_name(
             "Magazine Archive 2024"
-        ) == TorrentCategory.OTHER
+        ) == JackettCategories.BOOKS
 
         assert self.provider._detect_category_from_name(
             "Comic Book Series"
-        ) == TorrentCategory.OTHER
+        ) == JackettCategories.BOOKS
 
     def test_no_detection_returns_none(self):
         """Test that unrecognizable names return None."""
@@ -188,15 +188,15 @@ class TestCategoryDetection:
         """Test that detection is case-insensitive."""
         assert self.provider._detect_category_from_name(
             "ALBUM.FLAC"
-        ) == TorrentCategory.AUDIO
+        ) == JackettCategories.AUDIO
 
         assert self.provider._detect_category_from_name(
             "Movie.MKV"
-        ) == TorrentCategory.VIDEO
+        ) == JackettCategories.MOVIES
 
         assert self.provider._detect_category_from_name(
             "GAME REPACK"
-        ) == TorrentCategory.GAMES
+        ) == JackettCategories.CONSOLE
 
 
 class TestResultsRefinement:
@@ -207,11 +207,11 @@ class TestResultsRefinement:
         self.provider = DummyProvider()
 
     def test_refine_unknown_categories(self):
-        """Test that UNKNOWN categories are refined when possible."""
+        """Test that empty categories are refined when possible."""
         results = [
             SearchResultDTO(
                 title="Ubuntu 24.04 Desktop.iso",
-                category=TorrentCategory.UNKNOWN,
+                categories=[],
                 seeders=100,
                 leechers=10,
                 size=3000000000,
@@ -225,7 +225,7 @@ class TestResultsRefinement:
             ),
             SearchResultDTO(
                 title="Music Album [FLAC]",
-                category=TorrentCategory.UNKNOWN,
+                categories=[],
                 seeders=50,
                 leechers=5,
                 size=500000000,
@@ -241,21 +241,19 @@ class TestResultsRefinement:
 
         refined = self.provider._refine_results(results)
 
-        # First result should be detected as SOFTWARE (has .iso extension
-        # but also "Desktop" keyword which could match software patterns)
-        # Actually, "Ubuntu" and ".iso" don't match our patterns,
-        # so it stays UNKNOWN
-        assert refined[0].category == TorrentCategory.UNKNOWN
+        # First result should remain empty (no pattern matches)
+        assert refined[0].categories == []
 
         # Second result should be detected as AUDIO
-        assert refined[1].category == TorrentCategory.AUDIO
+        assert len(refined[1].categories) == 1
+        assert refined[1].categories[0] == JackettCategories.AUDIO
 
     def test_keep_known_categories_unchanged(self):
-        """Test that non-UNKNOWN categories are not changed."""
+        """Test that non-empty categories are not changed."""
         results = [
             SearchResultDTO(
                 title="Movie Title 1080p",
-                category=TorrentCategory.VIDEO,
+                categories=[JackettCategories.MOVIES],
                 seeders=100,
                 leechers=10,
                 size=3000000000,
@@ -271,15 +269,16 @@ class TestResultsRefinement:
 
         refined = self.provider._refine_results(results)
 
-        # Category should remain VIDEO
-        assert refined[0].category == TorrentCategory.VIDEO
+        # Category should remain Movies
+        assert len(refined[0].categories) == 1
+        assert refined[0].categories[0] == JackettCategories.MOVIES
 
     def test_preserve_unknown_when_no_detection(self):
-        """Test that UNKNOWN is preserved when no pattern matches."""
+        """Test that empty categories are preserved when no pattern matches."""
         results = [
             SearchResultDTO(
                 title="Random Content",
-                category=TorrentCategory.UNKNOWN,
+                categories=[],
                 seeders=10,
                 leechers=1,
                 size=100000000,
@@ -295,15 +294,15 @@ class TestResultsRefinement:
 
         refined = self.provider._refine_results(results)
 
-        # Should remain UNKNOWN
-        assert refined[0].category == TorrentCategory.UNKNOWN
+        # Should remain empty
+        assert refined[0].categories == []
 
     def test_refinement_preserves_all_fields(self):
         """Test that refinement creates new DTO with all fields intact."""
         results = [
             SearchResultDTO(
                 title="Movie 2024 1080p BluRay",
-                category=TorrentCategory.UNKNOWN,
+                categories=[],
                 seeders=100,
                 leechers=10,
                 size=3000000000,
@@ -321,7 +320,9 @@ class TestResultsRefinement:
 
         # Check all fields are preserved
         assert refined[0].title == "Movie 2024 1080p BluRay"
-        assert refined[0].category == TorrentCategory.VIDEO  # Refined
+        # Should be refined to Movies category
+        assert len(refined[0].categories) == 1
+        assert refined[0].categories[0] == JackettCategories.MOVIES
         assert refined[0].seeders == 100
         assert refined[0].leechers == 10
         assert refined[0].size == 3000000000

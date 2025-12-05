@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO, TorrentCategory
+from ...common import SearchResultDTO, JackettCategories, Category
 from ...util.decorator import log_time
 
 
@@ -118,7 +118,7 @@ class TPBProvider(BaseSearchProvider):
 
             return SearchResultDTO(
                 title=name,
-                category=self._get_category(category_code),
+                categories=self._get_category(category_code),
                 seeders=int(torrent.get('seeders', 0)),
                 leechers=int(torrent.get('leechers', 0)),
                 size=size,
@@ -136,24 +136,34 @@ class TPBProvider(BaseSearchProvider):
         except (KeyError, ValueError, TypeError):
             return None
 
-    def _get_category(self, code: str) -> TorrentCategory:
+    def _get_category(self, code: str) -> list[Category]:
+        """Map TPB category code to Jackett Category list.
+
+        TPB uses category codes like 100 (Audio), 200 (Video), etc.
+
+        Args:
+            code: TPB category code
+
+        Returns:
+            List containing matching parent Category, or empty list
+        """
         c = code // 100
 
         match c:
             case 1:
-                return TorrentCategory.AUDIO
+                return [JackettCategories.AUDIO]
             case 2:
-                return TorrentCategory.VIDEO
+                return [JackettCategories.MOVIES]
             case 3:
-                return TorrentCategory.SOFTWARE
+                return [JackettCategories.PC]
             case 4:
-                return TorrentCategory.GAMES
+                return [JackettCategories.CONSOLE]
             case 5:
-                return TorrentCategory.XXX
+                return [JackettCategories.XXX]
             case 6:
-                return TorrentCategory.OTHER
+                return [JackettCategories.OTHER]
             case _:
-                return TorrentCategory.UNKNOWN
+                return []
 
     def details_extended(self, result: SearchResultDTO) -> str:
         """Generate TPB-specific details for right column.

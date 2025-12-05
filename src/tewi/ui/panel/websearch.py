@@ -119,6 +119,9 @@ class TorrentWebSearch(Static):
             up_date = r.upload_date.strftime("%Y-%m-%d") \
                 if r.upload_date else '-'
 
+            # Display category full_name (first category if multiple)
+            category_display = r.categories[0].full_name if r.categories else '-'
+
             table.add_row(
                 r.provider,
                 up_date,
@@ -126,7 +129,7 @@ class TorrentWebSearch(Static):
                 r.leechers,
                 print_size(r.size),
                 r.files_count or '-',
-                r.category.value,
+                category_display,
                 r.title,
                 key=r.info_hash
             )

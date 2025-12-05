@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO, TorrentCategory, IndexerDTO
+from ...common import SearchResultDTO, Category, JackettCategories, IndexerDTO
 from ...util.decorator import log_time
 
 logger = logging.getLogger('tewi')
@@ -324,7 +324,7 @@ class JackettProvider(BaseSearchProvider):
 
             return SearchResultDTO(
                 title=result.get('Title', 'Unknown'),
-                category=self._map_jackett_category(result),
+                categories=self._map_jackett_category(result),
                 seeders=int(result.get('Seeders')),
                 leechers=int(result.get('Peers')),
                 size=int(result.get('Size')),
@@ -498,84 +498,56 @@ class JackettProvider(BaseSearchProvider):
         return fields if fields else None
 
     def _map_jackett_category(self,
-                              result: dict[str, Any]) -> TorrentCategory:
-        """Map Jackett category to TorrentCategory enum.
+                              result: dict[str, Any]) -> list[Category]:
+        """Map Jackett category codes to Category objects.
 
-        Jackett uses Torznab category IDs:
-        - 1000-1999: Console (games)
-        - 2000-2999: Movies (video)
-        - 3000-3999: Audio
-        - 4000-4999: PC (games/software)
-        - 5000-5999: TV (video)
-        - 6000-6999: XXX
-        - 7000-7999: Books (other)
+        Jackett uses Torznab category IDs with hierarchy:
+        - Parent categories end in 000 (e.g., 2000 = Movies)
+        - Subcategories have specific IDs (e.g., 2040 = Movies/HD)
 
         Args:
             result: Result dict from Jackett API
 
         Returns:
-            TorrentCategory enum value
+            List of Category objects (may contain parent and subcategory)
         """
         category_codes = result.get('Category', [])
         if not category_codes:
-            return TorrentCategory.UNKNOWN
+            return []
 
-        code = self._get_first_category_code(category_codes)
-        if code is None:
-            return TorrentCategory.UNKNOWN
+        # Get all category codes from the result
+        codes = self._extract_category_codes(category_codes)
+        if not codes:
+            return []
 
-        return self._get_category_from_code(code, result)
+        # Map codes to Category objects
+        categories = []
+        for code in codes:
+            category = JackettCategories.get_by_id(code)
+            if category:
+                categories.append(category)
 
-    def _get_first_category_code(
-            self,
-            category_codes: Any) -> int | None:
-        """Extract first category code from codes list/value.
+        return categories if categories else []
+
+    def _extract_category_codes(self, category_codes: Any) -> list[int]:
+        """Extract all category codes from Jackett response.
 
         Args:
             category_codes: Category codes (list or single value)
 
         Returns:
-            First category code as integer or None
+            List of category codes as integers
         """
+        codes = []
         try:
-            if isinstance(category_codes, list) and category_codes:
-                return int(category_codes[0])
-            return int(category_codes)
+            if isinstance(category_codes, list):
+                for code in category_codes:
+                    codes.append(int(code))
+            else:
+                codes.append(int(category_codes))
         except (ValueError, TypeError):
-            return None
-
-    def _get_category_from_code(self,
-                                code: int,
-                                result: dict[str, Any]) -> TorrentCategory:
-        """Map Torznab category code to TorrentCategory enum.
-
-        Args:
-            code: Torznab category code
-            result: Result dict for additional context
-
-        Returns:
-            TorrentCategory enum value
-        """
-        if 1000 <= code < 2000:
-            return TorrentCategory.GAMES
-        elif 2000 <= code < 3000:
-            return TorrentCategory.VIDEO
-        elif 3000 <= code < 4000:
-            return TorrentCategory.AUDIO
-        elif 4000 <= code < 5000:
-            # PC can be games or software
-            categories = result.get('CategoryDesc', '').lower()
-            if any(x in categories for x in ['game', 'games']):
-                return TorrentCategory.GAMES
-            return TorrentCategory.SOFTWARE
-        elif 5000 <= code < 6000:
-            return TorrentCategory.VIDEO
-        elif 6000 <= code < 7000:
-            return TorrentCategory.XXX
-        elif 7000 <= code < 8000:
-            return TorrentCategory.OTHER
-
-        return TorrentCategory.UNKNOWN
+            pass
+        return codes
 
     def _transform_field(self, key: str, value: str) -> tuple[str, str]:
         """Transform field key and value for display.

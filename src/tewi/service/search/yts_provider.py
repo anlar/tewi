@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO, TorrentCategory
+from ...common import SearchResultDTO, JackettCategories, Category
 from ...util.decorator import log_time
 
 
@@ -164,6 +164,34 @@ class YTSProvider(BaseSearchProvider):
 
         return fields
 
+    def _get_category_from_quality(self, quality: str) -> list[Category]:
+        """Map YTS quality to Jackett category.
+
+        Based on Jackett YTS category mappings:
+        - 720p → Movies/HD
+        - 1080p → Movies/HD
+        - 2160p → Movies/UHD
+        - 3D → Movies/3D
+        - default → Movies
+
+        Args:
+            quality: Quality string from YTS API (e.g., "720p", "1080p")
+
+        Returns:
+            List containing the appropriate Jackett category
+        """
+        quality_lower = quality.lower() if quality else ""
+
+        if "2160p" in quality_lower or "4k" in quality_lower:
+            return [JackettCategories.MOVIES_UHD]
+        elif "3d" in quality_lower:
+            return [JackettCategories.MOVIES_3D]
+        elif "720p" in quality_lower or "1080p" in quality_lower:
+            return [JackettCategories.MOVIES_HD]
+        else:
+            # Default to general Movies category
+            return [JackettCategories.MOVIES]
+
     def _parse_torrent(self, movie: dict[str, Any],
                        torrent: dict[str, Any]) -> SearchResultDTO | None:
         """Parse a single torrent from YTS API response."""
@@ -211,7 +239,7 @@ class YTSProvider(BaseSearchProvider):
 
             return SearchResultDTO(
                 title=full_title,
-                category=TorrentCategory.VIDEO,
+                categories=self._get_category_from_quality(quality),
                 seeders=torrent.get('seeds', 0),
                 leechers=torrent.get('peers', 0),
                 size=size,
