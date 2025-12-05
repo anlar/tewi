@@ -534,7 +534,7 @@ class MainApp(App):
         self.query_one(ContentSwitcher).current = "torrent-websearch"
         # Execute search with query and selected indexers
         self.query_one(TorrentWebSearch).execute_search(
-            event.query, event.selected_indexers)
+            event.query, event.selected_indexers, event.selected_categories)
 
     @log_time
     @on(AddTorrentFromWebSearchCommand)

@@ -1,5 +1,5 @@
 from textual.message import Message
-from .common import FilterOption, PageState
+from .common import FilterOption, PageState, Category
 
 
 # Commands
@@ -148,10 +148,12 @@ class AddTorrentFromWebSearchCommand(Message):
 class WebSearchQuerySubmitted(Message):
 
     def __init__(self, query: str,
-                 selected_indexers: list[str] | None = None) -> None:
+                 selected_indexers: list[str] | None = None,
+                 selected_categories: list[Category] | None = None) -> None:
         super().__init__()
         self.query = query
         self.selected_indexers = selected_indexers
+        self.selected_categories = selected_categories
 
 
 # Events

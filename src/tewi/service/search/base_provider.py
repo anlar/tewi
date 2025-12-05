@@ -20,11 +20,14 @@ class BaseSearchProvider(ABC):
                   "Chrome/131.0.0.0 Safari/537.36")
 
     @abstractmethod
-    def _search_impl(self, query: str) -> list[SearchResultDTO]:
+    def _search_impl(self, query: str,
+                     categories: list[Category] | None = None) -> list[
+            SearchResultDTO]:
         """Provider-specific search implementation.
 
         Args:
             query: Search term
+            categories: Category objects to filter by (optional)
 
         Returns:
             List of SearchResultDTO objects
@@ -34,7 +37,9 @@ class BaseSearchProvider(ABC):
         """
         pass
 
-    def search(self, query: str) -> list[SearchResultDTO]:
+    def search(self, query: str,
+               categories: list[Category] | None = None) -> list[
+            SearchResultDTO]:
         """Search for torrents and refine unknown categories.
 
         This method calls the provider-specific implementation and
@@ -42,6 +47,7 @@ class BaseSearchProvider(ABC):
 
         Args:
             query: Search term
+            categories: Category objects to filter by (optional)
 
         Returns:
             List of SearchResultDTO objects with refined categories
@@ -49,7 +55,7 @@ class BaseSearchProvider(ABC):
         Raises:
             Exception: If search fails
         """
-        results = self._search_impl(query)
+        results = self._search_impl(query, categories)
         return self._refine_results(results)
 
     def _urlopen(self, url: str, timeout: int = 30):

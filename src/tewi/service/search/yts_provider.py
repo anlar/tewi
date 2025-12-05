@@ -46,23 +46,39 @@ class YTSProvider(BaseSearchProvider):
     def full_name(self) -> str:
         return self.short_name
 
-    @log_time
-    def _search_impl(self, query: str) -> list[SearchResultDTO]:
-        """Search YTS for movie torrents.
+    def _has_movies_category(self, categories: list[Category] | None) -> bool:
+        """Check if categories list includes Movies category.
 
         Args:
-            query: Movie name to search for
-            limit: Maximum number of results
+            categories: List of Category objects
 
         Returns:
-            List of SearchResultDTO objects
+            True if categories is None or includes Movies (2000-2999),
+            False otherwise
+        """
+        if not categories:
+            return True
+
+        # Check if any category is Movies or Movies subcategory
+        for category in categories:
+            # Movies parent category (2000) or any Movies subcategory (2xxx)
+            if category.id == 2000 or (2000 < category.id < 3000):
+                return True
+
+        return False
+
+    def _fetch_api_data(self, query: str) -> dict:
+        """Fetch data from YTS API.
+
+        Args:
+            query: Search term
+
+        Returns:
+            Parsed JSON response
 
         Raises:
             Exception: If API request fails
         """
-        if not query or not query.strip():
-            return []
-
         params = {
             'query_term': query.strip(),
             'limit': 50,  # YTS max is 50
@@ -74,30 +90,66 @@ class YTSProvider(BaseSearchProvider):
 
         try:
             with self._urlopen(url) as response:
-                data = json.loads(response.read().decode('utf-8'))
-
-            if data.get('status') != 'ok':
-                raise Exception(f"API error: {data.get('status_message')}")
-
-            movies = data.get('data', {}).get('movies', [])
-            if not movies:
-                return []
-
-            results = []
-            for movie in movies:
-                # YTS returns multiple torrents per movie (different qualities)
-                torrents = movie.get('torrents', [])
-                for torrent in torrents:
-                    result = self._parse_torrent(movie, torrent)
-                    if result:
-                        results.append(result)
-
-            return results
-
+                return json.loads(response.read().decode('utf-8'))
         except urllib.error.URLError as e:
             raise Exception(f"Network error: {e}")
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
+
+    def _process_movies(self, movies: list) -> list[SearchResultDTO]:
+        """Process movies list into SearchResultDTO objects.
+
+        Args:
+            movies: List of movie dicts from API
+
+        Returns:
+            List of SearchResultDTO objects
+        """
+        results = []
+        for movie in movies:
+            # YTS returns multiple torrents per movie (different qualities)
+            torrents = movie.get('torrents', [])
+            for torrent in torrents:
+                result = self._parse_torrent(movie, torrent)
+                if result:
+                    results.append(result)
+        return results
+
+    @log_time
+    def _search_impl(self, query: str,
+                     categories: list[Category] | None = None) -> list[
+            SearchResultDTO]:
+        """Search YTS for movie torrents.
+
+        Args:
+            query: Movie name to search for
+            categories: Category IDs to filter by - if provided and
+                       doesn't contain Movies category, returns empty list
+
+        Returns:
+            List of SearchResultDTO objects
+
+        Raises:
+            Exception: If API request fails
+        """
+        if not query or not query.strip():
+            return []
+
+        # YTS only returns movies - if categories specified and don't
+        # include Movies, return empty
+        if not self._has_movies_category(categories):
+            return []
+
+        data = self._fetch_api_data(query)
+
+        if data.get('status') != 'ok':
+            raise Exception(f"API error: {data.get('status_message')}")
+
+        movies = data.get('data', {}).get('movies', [])
+        if not movies:
+            return []
+
+        return self._process_movies(movies)
 
     def _build_movie_fields(self, movie: dict[str, Any], torrent: dict[str, Any],
                             year: str, language: str, quality: str) -> dict[str, str]:

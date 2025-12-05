@@ -3,7 +3,7 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from ...common import SearchResultDTO, IndexerDTO
+from ...common import SearchResultDTO, IndexerDTO, Category
 from .base_provider import BaseSearchProvider
 from . import (
         YTSProvider,
@@ -71,21 +71,26 @@ class SearchClient:
         """
         return [idx for p in self.get_providers() for idx in p.indexers()]
 
-    def search(self, query: str, selected_indexers: list[str] | None) -> tuple[
+    def search(self, query: str, selected_indexers: list[str] | None,
+               selected_categories: list[Category] | None) -> tuple[
             list[SearchResultDTO], list[str]]:
         """Search for torrents across multiple providers in parallel.
 
         Executes searches across all selected providers concurrently,
-        deduplicates results by info_hash, and sorts by seeders.
+        deduplicates results by info_hash, filters by category, and
+        sorts by seeders.
 
         Args:
             query: Search term to query providers with
             selected_indexers: List of indexer IDs to search, or None for all
+            selected_categories: List of Category objects to filter by,
+                                or None for all
 
         Returns:
             Tuple of (results, errors) where:
-            - results: List of SearchResultDTO objects, deduplicated and
-                      sorted by seeders (highest first)
+            - results: List of SearchResultDTO objects, deduplicated,
+                      filtered by category, and sorted by seeders
+                      (highest first)
             - errors: List of error messages from failed providers
         """
         all_results = []
@@ -97,9 +102,10 @@ class SearchClient:
         # Execute all provider searches in parallel
         with ThreadPoolExecutor(
                 max_workers=len(providers_to_search)) as executor:
-            # Submit all search tasks
+            # Submit all search tasks with category filter (as Category objects)
             future_to_provider = {
-                    executor.submit(provider.search, query): provider
+                    executor.submit(provider.search, query,
+                                    selected_categories): provider
                     for provider in providers_to_search
                     }
 
@@ -131,8 +137,15 @@ class SearchClient:
                 if result.seeders > best_results[hash_key].seeders:
                     best_results[hash_key] = result
 
-        # Convert back to list and sort by seeders for relevance
+        # Convert back to list
         all_results = list(best_results.values())
+
+        # Filter by categories if specified
+        if selected_categories:
+            all_results = self._filter_by_categories(all_results,
+                                                     selected_categories)
+
+        # Sort by seeders for relevance
         all_results.sort(key=lambda r: r.seeders, reverse=True)
 
         return all_results, errors
@@ -183,3 +196,45 @@ class SearchClient:
                 providers_to_search.append(provider)
 
         return providers_to_search
+
+    def _filter_by_categories(
+            self,
+            results: list[SearchResultDTO],
+            selected_categories: list[Category]) -> list[SearchResultDTO]:
+        """Filter search results by categories.
+
+        Keeps results that have at least one category matching the
+        selected categories. Matches both exact category IDs and
+        parent categories.
+
+        Args:
+            results: List of search results to filter
+            selected_categories: List of Category objects to match
+
+        Returns:
+            Filtered list of search results
+        """
+        if not selected_categories:
+            return results
+
+        # Extract category IDs from Category objects
+        selected_cat_ids = {cat.id for cat in selected_categories}
+
+        filtered_results = []
+        for result in results:
+            if not result.categories:
+                # No categories assigned - skip
+                continue
+
+            # Check if any result category matches selected categories
+            for category in result.categories:
+                # Match exact category ID
+                if category.id in selected_cat_ids:
+                    filtered_results.append(result)
+                    break
+                # Match parent category ID
+                if category.parent and category.parent.id in selected_cat_ids:
+                    filtered_results.append(result)
+                    break
+
+        return filtered_results

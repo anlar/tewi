@@ -41,11 +41,14 @@ class NyaaProvider(BaseSearchProvider):
         return "Nyaa Torrents"
 
     @log_time
-    def _search_impl(self, query: str) -> list[SearchResultDTO]:
+    def _search_impl(self, query: str,
+                     categories: list[Category] | None = None) -> list[
+            SearchResultDTO]:
         """Search Nyaa.si for torrents via RSS feed.
 
         Args:
             query: Search term
+            categories: Category IDs to filter by (optional)
 
         Returns:
             List of SearchResultDTO objects, sorted by seeders descending
@@ -56,9 +59,14 @@ class NyaaProvider(BaseSearchProvider):
         if not query or not query.strip():
             return []
 
+        # Convert Jackett category IDs to Nyaa category codes
+        nyaa_category = self._convert_categories_to_nyaa(categories)
+
         params = {
             'q': query.strip(),
         }
+        if nyaa_category:
+            params['c'] = nyaa_category
 
         url = f"{self.RSS_URL}&{urllib.parse.urlencode(params)}"
 
@@ -242,6 +250,50 @@ class NyaaProvider(BaseSearchProvider):
         }
 
         return int(value * multipliers.get(unit, 1))
+
+    def _convert_categories_to_nyaa(
+            self,
+            categories: list[Category] | None) -> str | None:
+        """Convert Jackett categories to Nyaa category code.
+
+        Nyaa uses category codes like '1_0' (Anime), '2_0' (Audio), etc.
+
+        Args:
+            categories: List of Category objects
+
+        Returns:
+            Nyaa category code or None for all categories
+        """
+        if not categories:
+            return None
+
+        # Map Jackett category IDs to Nyaa codes
+        jackett_to_nyaa = {
+            # TV/Anime categories
+            5070: '1_0',  # TV/Anime -> Anime
+            5000: '1_0',  # TV -> Anime (Nyaa is anime-focused)
+            # Audio categories
+            3000: '2_0',  # Audio -> Audio
+            3040: '2_1',  # Audio/Lossless -> Audio - Lossless
+            # Books categories
+            7000: '3_0',  # Books -> Literature
+            # Software/PC categories
+            4000: '6_0',  # PC -> Software
+            4020: '6_1',  # PC/ISO -> Software - Applications
+            4050: '6_2',  # PC/Games -> Software - Games
+        }
+
+        # Try to find a matching category
+        for category in categories:
+            if category.id in jackett_to_nyaa:
+                return jackett_to_nyaa[category.id]
+            # Try parent category
+            parent_id = (category.id // 1000) * 1000
+            if parent_id in jackett_to_nyaa:
+                return jackett_to_nyaa[parent_id]
+
+        # Default to all categories
+        return None
 
     def _map_category_by_id(self, category_id: str | None) -> list[Category]:
         """Map Nyaa categoryId to Jackett Category list.

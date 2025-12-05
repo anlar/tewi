@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO
+from ...common import SearchResultDTO, Category
 from ...util.decorator import log_time
 
 
@@ -32,11 +32,15 @@ class TorrentsCsvProvider(BaseSearchProvider):
         return "Torrents-CSV"
 
     @log_time
-    def _search_impl(self, query: str) -> list[SearchResultDTO]:
+    def _search_impl(self, query: str,
+                     categories: list[Category] | None = None) -> list[
+            SearchResultDTO]:
         """Search torrents-csv.com for torrents.
 
         Args:
             query: Search term
+            categories: Category IDs to filter by (ignored - TorrentsCSV
+                       doesn't support category filtering)
 
         Returns:
             List of SearchResultDTO objects

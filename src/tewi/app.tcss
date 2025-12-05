@@ -504,11 +504,15 @@ WebSearchQueryWidget {
     border: round $warning;
 }
 
-WebSearchQueryWidget > #websearch-query-input {
+WebSearchQueryWidget > Input {
     border: round $warning;
 }
 
-WebSearchQueryWidget > #websearch-indexers-list {
+WebSearchQueryWidget > Horizontal {
+    height: 100%;
+}
+
+WebSearchQueryWidget > Horizontal > VimSelectionList {
     height: 100%;
     border: round $warning;
     margin: 0 0 3 0;

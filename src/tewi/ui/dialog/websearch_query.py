@@ -1,12 +1,14 @@
 """Web search query input dialog."""
 
 from textual.binding import Binding, BindingType
+from textual.containers import Horizontal
 from textual.widgets import Input, Static, SelectionList
 from textual.widgets.selection_list import Selection
 from textual.app import ComposeResult
 from textual.screen import ModalScreen
 from typing import ClassVar
 
+from ...common import JackettCategories
 from ...message import WebSearchQuerySubmitted, Notification
 from ...util.decorator import log_time
 from ...ui.widget.common import VimSelectionList
@@ -45,10 +47,15 @@ class WebSearchQueryWidget(Static):
             placeholder="Search for torrents...",
             id="websearch-query-input"
         )
-        yield VimSelectionList[str](
-            *self._build_indexer_selections(),
-            id="websearch-indexers-list"
-        )
+        with Horizontal():
+            yield VimSelectionList[str](
+                *self._build_indexer_selections(),
+                id="websearch-indexers-list"
+            )
+            yield VimSelectionList[str](
+                *self._build_category_selections(),
+                id="websearch-categories-list"
+            )
 
     def _build_indexer_selections(self) -> list[Selection]:
         """Build selection list from all provider indexers.
@@ -62,6 +69,14 @@ class WebSearchQueryWidget(Static):
                 Selection(indexer.name, indexer.id, True))
         return selections
 
+    def _build_category_selections(self) -> list[Selection]:
+        selections = []
+        for category in JackettCategories.parent_categories():
+            # Use category object as value instead of ID
+            selections.append(
+                Selection(category.full_path, category, True))
+        return selections
+
     @log_time
     def on_mount(self) -> None:
         """Focus on input when dialog opens."""
@@ -69,7 +84,8 @@ class WebSearchQueryWidget(Static):
         self.border_subtitle = ('(Enter) Search / (Tab) Switch / '
                                 '(Space) Toggle selection / (ESC) Close')
 
-        self.query_one(VimSelectionList).border_title = "Search indexers"
+        self.query_one("#websearch-indexers-list").border_title = "Search indexers"
+        self.query_one("#websearch-categories-list").border_title = "Categories"
 
         input_widget = self.query_one("#websearch-query-input", Input)
         if self.initial_query:
@@ -93,14 +109,32 @@ class WebSearchQueryWidget(Static):
             "#websearch-indexers-list", SelectionList)
         selected_indexers = list(indexers_list.selected)
 
+        # Get selected categories (Category objects)
+        categories_list = self.query_one(
+            "#websearch-categories-list", SelectionList)
+        selected_categories = list(categories_list.selected)
+
         if not selected_indexers:
             self.post_message(Notification(
                 "Please select at least one indexer",
                 "warning"))
             return
 
-        # Post message with query and selected indexers
-        self.post_message(WebSearchQuerySubmitted(query, selected_indexers))
+        if not selected_categories:
+            self.post_message(Notification(
+                "Please select at least one category",
+                "warning"))
+            return
+
+        # If all categories are selected, pass None to search everything
+        all_categories_count = len(JackettCategories.parent_categories())
+        if len(selected_categories) == all_categories_count:
+            selected_categories = None
+
+        # Post message with query, selected indexers, selected Category objects
+        self.post_message(WebSearchQuerySubmitted(query,
+                                                  selected_indexers,
+                                                  selected_categories))
 
         # Close dialog
         self.parent.dismiss()
