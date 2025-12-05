@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO, TorrentCategory
+from ...common import SearchResultDTO, JackettCategories, Category
 from ...util.decorator import log_time
 
 
@@ -118,7 +118,7 @@ class NyaaProvider(BaseSearchProvider):
         if remake_elem is not None and remake_elem.text:
             fields['remake'] = remake_elem.text
 
-        if nyaa_category:
+        if nyaa_category is not None:
             fields['nyaa_category'] = nyaa_category
 
         return fields
@@ -155,11 +155,14 @@ class NyaaProvider(BaseSearchProvider):
             leechers = int(leechers_elem.text) if leechers_elem is not None \
                 else 0
 
-            # Extract and map category
-            category_elem = item.find('nyaa:category', ns)
-            nyaa_category = category_elem.text if category_elem is not None \
+            # Extract category name
+            nyaa_category = item.find('nyaa:category', ns)
+
+            # Extract category ID
+            category_id_elem = item.find('nyaa:categoryId', ns)
+            category_id = category_id_elem.text if category_id_elem is not None \
                 else None
-            category = self._map_category(nyaa_category)
+            category = self._map_category_by_id(category_id)
 
             # Extract and parse size
             size_elem = item.find('nyaa:size', ns)
@@ -197,7 +200,7 @@ class NyaaProvider(BaseSearchProvider):
 
             return SearchResultDTO(
                 title=title,
-                category=category,
+                categories=category,
                 seeders=seeders,
                 leechers=leechers,
                 size=size,
@@ -243,34 +246,61 @@ class NyaaProvider(BaseSearchProvider):
 
         return int(value * multipliers.get(unit, 1))
 
-    def _map_category(self, nyaa_category: str) -> TorrentCategory:
-        """Map Nyaa-specific category to basic category.
+    def _map_category_by_id(self, category_id: str | None) -> list[Category]:
+        """Map Nyaa categoryId to Jackett Category list.
+
+        Based on Jackett's nyaasi.yml category mappings:
+        https://github.com/Jackett/Jackett/blob/master/src/Jackett.Common/Definitions/nyaasi.yml
 
         Args:
-            nyaa_category: Nyaa category string (e.g., "Anime - Raw")
+            category_id: Nyaa category ID (e.g., "1_4" for Anime - Raw)
 
         Returns:
-            Basic category enum compatible with other providers
+            List of matching Jackett Category objects
         """
-        if nyaa_category is None:
-            return TorrentCategory.UNKNOWN
+        if not category_id:
+            return []
 
-        # Extract prefix before " - "
-        prefix = nyaa_category.split(" - ")[0] \
-            if " - " in nyaa_category else nyaa_category
+        # Mapping based on Jackett's nyaasi.yml categorymappings
+        # Format: categoryId -> [Jackett Categories]
+        category_map = {
+            # Anime categories (1_x) - map to TV/Anime
+            '1_0': [JackettCategories.TV_ANIME],  # Anime
+            '1_1': [JackettCategories.TV_ANIME],  # Anime - AMV
+            '1_2': [JackettCategories.TV_ANIME],  # Anime - English-translated
+            '1_3': [JackettCategories.TV_ANIME],  # Anime - Non-English
+            '1_4': [JackettCategories.TV_ANIME],  # Anime - Raw
 
-        match prefix:
-            case "Anime" | "Live Action":
-                return TorrentCategory.VIDEO
-            case "Audio":
-                return TorrentCategory.AUDIO
-            case "Literature" | "Pictures":
-                return TorrentCategory.OTHER
-            case "Software":
-                return TorrentCategory.GAMES if "Games" in nyaa_category \
-                    else TorrentCategory.SOFTWARE
-            case _:
-                return TorrentCategory.OTHER
+            # Audio categories (2_x)
+            '2_0': [JackettCategories.AUDIO],  # Audio
+            '2_1': [JackettCategories.AUDIO_LOSSLESS],  # Audio - Lossless
+            '2_2': [JackettCategories.AUDIO],  # Audio - Lossy
+
+            # Literature categories (3_x)
+            '3_0': [JackettCategories.BOOKS],  # Literature
+            '3_1': [JackettCategories.BOOKS],  # Literature - English
+            '3_2': [JackettCategories.BOOKS],  # Literature - Non-English
+            '3_3': [JackettCategories.BOOKS],  # Literature - Raw
+
+            # Live Action categories (4_x)
+            '4_0': [JackettCategories.TV],  # Live Action
+            '4_1': [JackettCategories.TV],  # Live Action - English
+            '4_2': [JackettCategories.TV],  # Live Action - Idol/PV
+            '4_3': [JackettCategories.TV],  # Live Action - Non-English
+            '4_4': [JackettCategories.TV],  # Live Action - Raw
+
+            # Pictures categories (5_x)
+            '5_0': [JackettCategories.OTHER],  # Pictures
+            '5_1': [JackettCategories.OTHER],  # Pictures - Graphics
+            '5_2': [JackettCategories.OTHER],  # Pictures - Photos
+
+            # Software categories (6_x)
+            '6_0': [JackettCategories.PC],  # Software
+            '6_1': [JackettCategories.PC_ISO],  # Software - Applications
+            '6_2': [JackettCategories.PC_GAMES],  # Software - Games
+        }
+
+        return category_map.get(category_id, [])
 
     def details_extended(self, result: SearchResultDTO) -> str:
         """Generate Nyaa-specific details for right column.

@@ -15,7 +15,7 @@ from src.tewi.service.search.tpb_provider import TPBProvider
 from src.tewi.service.search.torrentscsv_provider import TorrentsCsvProvider
 from src.tewi.service.search.nyaa_provider import NyaaProvider
 from src.tewi.service.search.jackett_provider import JackettProvider
-from src.tewi.common import SearchResultDTO, TorrentCategory
+from src.tewi.common import SearchResultDTO, JackettCategories
 
 
 # Mark all tests in this module as integration tests
@@ -167,15 +167,20 @@ class BaseProviderIntegrationTest(ABC):
             assert upload_date < now, \
                 "Upload date should be in the past"
 
-    def validate_category(self, category, valid_categories: set):
-        """Validate category is in the valid set.
+    def validate_categories(self, categories: list, valid_categories: set):
+        """Validate categories list contains valid categories.
 
         Args:
-            category: Category value
-            valid_categories: Set of valid category values
+            categories: List of Category objects
+            valid_categories: Set of valid Category objects
         """
-        assert category in valid_categories, \
-            f"Category '{category}' not in valid set {valid_categories}"
+        # Empty categories list is allowed (for providers without category support)
+        if not categories:
+            return
+
+        for category in categories:
+            assert category in valid_categories, \
+                f"Category '{category.full_name}' not in valid set"
 
     @pytest.mark.xfail(reason="External provider API may be unavailable or unreliable")
     def test_provider_search(self):
@@ -213,8 +218,8 @@ class BaseProviderIntegrationTest(ABC):
             # Validate upload date if present
             self.validate_upload_date(result.upload_date)
 
-            # Validate category
-            self.validate_category(result.category, valid_categories)
+            # Validate categories
+            self.validate_categories(result.categories, valid_categories)
 
 
 class TestYTSProviderIntegration(BaseProviderIntegrationTest):
@@ -227,7 +232,7 @@ class TestYTSProviderIntegration(BaseProviderIntegrationTest):
         return "matrix"
 
     def get_valid_categories(self) -> set:
-        return {TorrentCategory.VIDEO}
+        return {JackettCategories.MOVIES}
 
     def requires_trackers(self) -> bool:
         return True
@@ -243,10 +248,10 @@ class TestTPBProviderIntegration(BaseProviderIntegrationTest):
         return "ubuntu"
 
     def get_valid_categories(self) -> set:
-        return {TorrentCategory.AUDIO, TorrentCategory.VIDEO,
-                TorrentCategory.SOFTWARE, TorrentCategory.GAMES,
-                TorrentCategory.XXX, TorrentCategory.OTHER,
-                TorrentCategory.UNKNOWN}
+        return {JackettCategories.AUDIO, JackettCategories.MOVIES,
+                JackettCategories.PC, JackettCategories.CONSOLE,
+                JackettCategories.XXX, JackettCategories.OTHER,
+                JackettCategories.BOOKS}
 
     def requires_trackers(self) -> bool:
         return False
@@ -262,12 +267,12 @@ class TestTorrentsCsvProviderIntegration(BaseProviderIntegrationTest):
         return "debian"
 
     def get_valid_categories(self) -> set:
-        # TorrentsCSV returns UNKNOWN, but category refinement may detect
-        # other categories from torrent names
-        return {TorrentCategory.UNKNOWN, TorrentCategory.AUDIO,
-                TorrentCategory.VIDEO, TorrentCategory.SOFTWARE,
-                TorrentCategory.GAMES, TorrentCategory.XXX,
-                TorrentCategory.OTHER}
+        # TorrentsCSV returns empty categories, but refinement may detect
+        # categories from torrent names
+        return {JackettCategories.AUDIO, JackettCategories.MOVIES,
+                JackettCategories.PC, JackettCategories.CONSOLE,
+                JackettCategories.XXX, JackettCategories.BOOKS,
+                JackettCategories.OTHER}
 
     def requires_trackers(self) -> bool:
         return False
@@ -283,10 +288,24 @@ class TestNyaaProviderIntegration(BaseProviderIntegrationTest):
         return "anime"
 
     def get_valid_categories(self) -> set:
-        # Nyaa categories are now mapped to basic categories
-        return {TorrentCategory.AUDIO, TorrentCategory.VIDEO,
-                TorrentCategory.SOFTWARE, TorrentCategory.GAMES,
-                TorrentCategory.OTHER, TorrentCategory.UNKNOWN}
+        # Nyaa categories are now mapped to Jackett categories based on categoryId
+        return {
+            # Anime categories
+            JackettCategories.TV_ANIME,
+            # Audio categories
+            JackettCategories.AUDIO,
+            JackettCategories.AUDIO_LOSSLESS,
+            # Literature categories
+            JackettCategories.BOOKS,
+            # Live Action categories
+            JackettCategories.TV,
+            # Pictures categories
+            JackettCategories.OTHER,
+            # Software categories
+            JackettCategories.PC,
+            JackettCategories.PC_ISO,
+            JackettCategories.PC_GAMES,
+        }
 
     def requires_trackers(self) -> bool:
         return True
@@ -316,7 +335,7 @@ class TestJackettProviderIntegration(BaseProviderIntegrationTest):
 
     def get_valid_categories(self) -> set:
         # Jackett can return any category
-        return set(TorrentCategory)
+        return set(JackettCategories.all_categories())
 
     def requires_trackers(self) -> bool:
         # Jackett may or may not have trackers depending on indexer

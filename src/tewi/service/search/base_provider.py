@@ -3,7 +3,7 @@
 import urllib.parse
 import urllib.request
 from abc import ABC, abstractmethod
-from ...common import SearchResultDTO, TorrentCategory, IndexerDTO
+from ...common import SearchResultDTO, Category, JackettCategories, IndexerDTO
 from ...util.print import print_size
 
 
@@ -127,14 +127,14 @@ class BaseSearchProvider(ABC):
 
         return magnet
 
-    def _detect_category_from_name(self, name: str) -> TorrentCategory | None:
+    def _detect_category_from_name(self, name: str) -> Category | None:
         """Detect category from torrent name using pattern matching.
 
         Args:
             name: Torrent name/title
 
         Returns:
-            Detected TorrentCategory or None if no pattern matches
+            Detected Jackett Category or None if no pattern matches
         """
         name_lower = name.lower()
 
@@ -144,7 +144,7 @@ class BaseSearchProvider(ABC):
             'album', 'discography', 'soundtrack', 'ost', 'music',
         ]
         if any(pattern in name_lower for pattern in audio_patterns):
-            return TorrentCategory.AUDIO
+            return JackettCategories.AUDIO
 
         # VIDEO: Check for video file extensions and keywords
         video_patterns = [
@@ -153,7 +153,7 @@ class BaseSearchProvider(ABC):
             'webrip', 'hdtv', 'x264', 'x265', 'hevc', 'dvdrip',
         ]
         if any(pattern in name_lower for pattern in video_patterns):
-            return TorrentCategory.VIDEO
+            return JackettCategories.MOVIES
 
         # OTHER: Check for documents, archives, and other content FIRST
         # (before SOFTWARE to avoid "ebook" matching "app" in application)
@@ -163,7 +163,7 @@ class BaseSearchProvider(ABC):
             ' book', 'ebook', 'magazine', 'comic', 'tutorial',
         ]
         if any(pattern in name_lower for pattern in other_patterns):
-            return TorrentCategory.OTHER
+            return JackettCategories.BOOKS
 
         # SOFTWARE: Check for software extensions and keywords
         software_patterns = [
@@ -172,7 +172,7 @@ class BaseSearchProvider(ABC):
             'patch', 'crack', 'keygen', 'portable',
         ]
         if any(pattern in name_lower for pattern in software_patterns):
-            return TorrentCategory.SOFTWARE
+            return JackettCategories.PC
 
         # GAMES: Check for game-related keywords
         games_patterns = [
@@ -181,12 +181,12 @@ class BaseSearchProvider(ABC):
             'xbox', 'switch', 'nintendo',
         ]
         if any(pattern in name_lower for pattern in games_patterns):
-            return TorrentCategory.GAMES
+            return JackettCategories.CONSOLE
 
         # XXX: Check for adult content keywords
         xxx_patterns = ['xxx', 'adult', '18+', 'nsfw', 'porn']
         if any(pattern in name_lower for pattern in xxx_patterns):
-            return TorrentCategory.XXX
+            return JackettCategories.XXX
 
         # No pattern matched
         return None
@@ -194,7 +194,7 @@ class BaseSearchProvider(ABC):
     def _refine_results(
             self,
             results: list[SearchResultDTO]) -> list[SearchResultDTO]:
-        """Refine UNKNOWN categories by detecting from torrent names.
+        """Refine empty categories by detecting from torrent names.
 
         Creates new DTOs with refined categories where detection succeeds,
         preserving immutability of SearchResultDTO.
@@ -207,13 +207,14 @@ class BaseSearchProvider(ABC):
         """
         refined_results = []
         for result in results:
-            if result.category == TorrentCategory.UNKNOWN:
+            # Only refine if categories list is empty
+            if not result.categories:
                 detected = self._detect_category_from_name(result.title)
                 if detected:
-                    # Create new DTO with refined category
+                    # Create new DTO with detected category
                     result = SearchResultDTO(
                         title=result.title,
-                        category=detected,
+                        categories=[detected],
                         seeders=result.seeders,
                         leechers=result.leechers,
                         size=result.size,
@@ -241,7 +242,14 @@ class BaseSearchProvider(ABC):
         """
         md = "## General\n"
         md += f"- **Provider:** {self.full_name}\n"
-        md += f"- **Category:** {result.category.value}\n"
+
+        # Display categories with full names
+        if result.categories:
+            category_names = ', '.join(cat.full_name for cat in result.categories)
+            md += f"- **Category:** {category_names}\n"
+        else:
+            md += "- **Category:** Unknown\n"
+
         md += f"- **Info Hash:** `{result.info_hash}`\n"
 
         if result.page_url:

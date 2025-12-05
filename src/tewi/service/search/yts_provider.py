@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO, TorrentCategory
+from ...common import SearchResultDTO, JackettCategories
 from ...util.decorator import log_time
 
 
@@ -211,7 +211,7 @@ class YTSProvider(BaseSearchProvider):
 
             return SearchResultDTO(
                 title=full_title,
-                category=TorrentCategory.VIDEO,
+                categories=[JackettCategories.MOVIES],
                 seeders=torrent.get('seeds', 0),
                 leechers=torrent.get('peers', 0),
                 size=size,
