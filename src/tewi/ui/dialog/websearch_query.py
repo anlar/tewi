@@ -68,7 +68,8 @@ class WebSearchQueryWidget(Static):
     def on_mount(self) -> None:
         """Focus on input when dialog opens."""
         self.border_title = 'Search torrents'
-        self.border_subtitle = '(Enter) Search / (Tab) Switch / (ESC) Close'
+        self.border_subtitle = ('(Enter) Search / (Tab) Switch / '
+                                '(Space) Toggle selection / (ESC) Close')
 
         self.query_one(VimSelectionList).border_title = "Search indexers"
 
