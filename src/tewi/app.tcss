@@ -504,11 +504,11 @@ WebSearchQueryWidget {
     border: round $warning;
 }
 
-WebSearchQueryWidget #websearch-query-input {
+WebSearchQueryWidget > #websearch-query-input {
     border: round $warning;
 }
 
-WebSearchQueryWidget #websearch-indexers-list {
+WebSearchQueryWidget > #websearch-indexers-list {
     height: 100%;
     border: round $warning;
     margin: 0 0 3 0;
