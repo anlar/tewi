@@ -10,6 +10,7 @@ from typing import ClassVar
 
 from ...message import WebSearchQuerySubmitted, Notification
 from ...util.decorator import log_time
+from ...ui.widget.common import VimSelectionList
 
 
 class WebSearchQueryDialog(ModalScreen[None]):
@@ -46,7 +47,7 @@ class WebSearchQueryWidget(Static):
                 placeholder="Search for torrents...",
                 id="websearch-query-input"
             )
-            yield SelectionList[str](
+            yield VimSelectionList[str](
                 *self._build_indexer_selections(),
                 id="websearch-indexers-list"
             )
@@ -69,7 +70,7 @@ class WebSearchQueryWidget(Static):
         self.border_title = 'Search torrents'
         self.border_subtitle = '(Enter) Search / (Tab) Switch / (ESC) Close'
 
-        self.query_one(SelectionList).border_title = "Search indexers"
+        self.query_one(VimSelectionList).border_title = "Search indexers"
 
         input_widget = self.query_one("#websearch-query-input", Input)
         if self.initial_query:
