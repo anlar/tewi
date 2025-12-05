@@ -22,14 +22,12 @@ class SearchClient:
 
     This client manages multiple search providers (YTS, TorrentsCSV, TPB,
     Nyaa, Jackett) and provides a unified search interface. It handles:
-    - Provider initialization and configuration
+    - Lazy provider initialization (on first access)
     - Parallel search execution across providers
     - Result deduplication based on info_hash
     - Error handling and logging
 
-    Attributes:
-        providers: List of initialized search provider instances
-        indexers: List of all available indexers from all providers
+    Providers are initialized lazily on first use for better performance.
     """
 
     def __init__(self, jackett_url: str | None, jackett_api_key: str | None):
@@ -39,15 +37,31 @@ class SearchClient:
             jackett_url: Base URL of Jackett instance (optional)
             jackett_api_key: API key for Jackett authentication (optional)
         """
-        self.providers = [
-            YTSProvider(),
-            TorrentsCsvProvider(),
-            TPBProvider(),
-            NyaaProvider()
-        ]
+        self._providers: list[BaseSearchProvider] | None = None
+        self._jackett_url = jackett_url
+        self._jackett_api_key = jackett_api_key
 
-        if jackett_url and jackett_api_key:
-            self.providers.append(JackettProvider(jackett_url, jackett_api_key))
+    def get_providers(self) -> list[BaseSearchProvider]:
+        """Get list of all search providers, initializing them if needed.
+
+        Providers are created lazily on first access for better performance.
+
+        Returns:
+            List of BaseSearchProvider instances
+        """
+        if self._providers is None:
+            self._providers = [
+                TPBProvider(),
+                TorrentsCsvProvider(),
+                YTSProvider(),
+                NyaaProvider()
+            ]
+
+            if self._jackett_url and self._jackett_api_key:
+                self._providers.append(
+                    JackettProvider(self._jackett_url, self._jackett_api_key))
+
+        return self._providers
 
     def get_indexers(self) -> list[IndexerDTO]:
         """Get list of all available indexers from all providers.
@@ -55,7 +69,7 @@ class SearchClient:
         Returns:
             List of IndexerDTO objects representing all available indexers
         """
-        return [idx for p in self.providers for idx in p.indexers()]
+        return [idx for p in self.get_providers() for idx in p.indexers()]
 
     def search(self, query: str, selected_indexers: list[str] | None) -> tuple[
             list[SearchResultDTO], list[str]]:
@@ -139,7 +153,7 @@ class SearchClient:
         """
         if selected_indexers is None:
             # Search all providers
-            return self.providers
+            return self.get_providers()
 
         providers_to_search = []
 
@@ -156,7 +170,7 @@ class SearchClient:
                 regular_providers.add(indexer_id)
 
         # Add regular providers if selected
-        for provider in self.providers:
+        for provider in self.get_providers():
             provider_id = provider.id()
             if provider_id == 'jackett':
                 # Handle Jackett separately
