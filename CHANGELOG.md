@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix position sorting with empty queue numbers
 - Configuration directory moved from `~/.config/` to `~/.config/tewi/`
 - Remember last search query in search dialog
+- Use Jackett torrent categories
 
 ### Removed
 
