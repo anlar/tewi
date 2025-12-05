@@ -1,4 +1,5 @@
 from typing import TypeVar
+from textual import on
 from textual.binding import Binding
 from textual.reactive import reactive
 from textual.widgets import Static, Label, DataTable, SelectionList
@@ -31,6 +32,10 @@ class VimSelectionList(SelectionList[SelectionType]):
         Binding("g", "first", "First", show=False),
         Binding("G", "last", "Last", show=False),
     ]
+
+    @on(SelectionList.SelectionToggled)
+    def update_selected_view(self) -> None:
+        self.action_cursor_down()
 
 
 class ReactiveLabel(Label):
