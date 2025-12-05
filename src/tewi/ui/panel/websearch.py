@@ -1,6 +1,5 @@
 """Web search results panel for public torrent trackers."""
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import ClassVar
 
 from textual import on, work
@@ -85,17 +84,20 @@ class TorrentWebSearch(Static):
         self.create_table_columns()
 
     @log_time
-    def execute_search(self, query: str) -> None:
+    def execute_search(self, query: str,
+                       selected_indexers: list[str] | None = None) -> None:
         """Execute search with given query.
 
         Args:
             query: Search term
+            selected_indexers: List of indexer IDs to search,
+                              or None to search all
         """
 
         self.r_query = f"Query: {query}"
 
         # Start background search
-        self.perform_search(query)
+        self.perform_search(query, selected_indexers)
 
     @log_time
     def watch_r_results(self, results: list[SearchResultDTO]) -> None:
@@ -284,55 +286,18 @@ class TorrentWebSearch(Static):
 
     @log_time
     @work(exclusive=True, thread=True)
-    async def perform_search(self, query: str) -> None:
-        """Perform search in background thread using all providers in parallel.
+    async def perform_search(self, query: str,
+                             selected_indexers: list[str] | None = None) -> None:
+        """Perform search in background thread using selected providers.
 
         Args:
             query: Search term
+            selected_indexers: List of indexer IDs to search,
+                              or None to search all
         """
         self.r_search_status = "Searching..."
 
-        all_results = []
-        errors = []
-
-        # Execute all provider searches in parallel
-        with ThreadPoolExecutor(max_workers=len(self.providers)) as executor:
-            # Submit all search tasks
-            future_to_provider = {
-                executor.submit(provider.search, query): provider
-                for provider in self.providers
-            }
-
-            # Collect results as they complete
-            for future in as_completed(future_to_provider):
-                provider = future_to_provider[future]
-                try:
-                    provider_results = future.result()
-                    all_results.extend(provider_results)
-                except Exception as e:
-                    # Log error but continue with other providers
-                    errors.append(f"{provider.short_name}: {str(e)}")
-
-        # Deduplicate by info_hash, keeping result with highest seeders
-        best_results = {}
-        for result in all_results:
-            # Use info_hash as key; fall back to title:size for results without
-            if result.info_hash:
-                hash_key = result.info_hash
-            else:
-                # Deduplicate by title + size when hash unavailable
-                hash_key = f"__no_hash__{result.title}:{result.size}"
-
-            if hash_key not in best_results:
-                best_results[hash_key] = result
-            else:
-                # Keep the result with more seeders
-                if result.seeders > best_results[hash_key].seeders:
-                    best_results[hash_key] = result
-
-        # Convert back to list and sort by seeders for relevance
-        all_results = list(best_results.values())
-        all_results.sort(key=lambda r: r.seeders, reverse=True)
+        all_results, errors = self.app.search.search(query, selected_indexers)
 
         self.app.call_from_thread(self.update_results, all_results, errors)
 

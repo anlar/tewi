@@ -497,20 +497,21 @@ WebSearchQueryDialog {
 }
 
 WebSearchQueryWidget {
-    width: 100%;
-    height: auto;
+    width: 50%;
+    height: 50%;
 
     border-title-align: center;
     border: round $warning;
-    padding: 1;
 }
 
 WebSearchQueryWidget > #websearch-query-input {
-    height: auto;
+    border: round $warning;
+}
 
-    border: none;
-    padding: 0;
-    margin: 0;
+WebSearchQueryWidget > #websearch-indexers-list {
+    height: 100%;
+    border: round $warning;
+    margin: 0 0 3 0;
 }
 
 /* SCREEN: SORT ORDER DIALOG */

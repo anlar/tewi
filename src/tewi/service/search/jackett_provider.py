@@ -1,13 +1,17 @@
 """Jackett torrent search provider implementation."""
 
+import logging
+import urllib.error
 import urllib.parse
 import json
 from datetime import datetime
 from typing import Any
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO, TorrentCategory
+from ...common import SearchResultDTO, TorrentCategory, IndexerDTO
 from ...util.decorator import log_time
+
+logger = logging.getLogger('tewi')
 
 
 class JackettProvider(BaseSearchProvider):
@@ -30,6 +34,7 @@ class JackettProvider(BaseSearchProvider):
         self.jackett_url = jackett_url
         self.api_key = api_key
         self._config_error = self._validate_config(jackett_url, api_key)
+        self._selected_indexers: list[str] | None = None
 
     def _validate_config(self,
                          jackett_url: str | None,
@@ -53,6 +58,96 @@ class JackettProvider(BaseSearchProvider):
 
     def id(self) -> str:
         return "jackett"
+
+    def indexers(self) -> list[IndexerDTO]:
+        """Return list of configured indexers from Jackett instance.
+
+        Returns:
+            List of (indexer_id, indexer_name) tuples from Jackett,
+            or empty list if not configured or error occurs
+        """
+        if self._config_error:
+            logger.debug(f"Jackett not configured: {self._config_error}")
+            return []
+
+        try:
+            url = self._build_indexers_url()
+            data = self._fetch_indexers(url)
+            indexers = self._process_indexers(data)
+            logger.info(f"Jackett: loaded {len(indexers)} indexers")
+            return indexers
+        except Exception as e:
+            # Return empty list if indexers cannot be fetched
+            logger.warning(f"Failed to load Jackett indexers: {e}")
+            return []
+
+    def _build_indexers_url(self) -> str:
+        """Build Jackett API indexers URL.
+
+        Uses search results endpoint with empty query to get indexer list.
+        This endpoint returns JSON with indexer information.
+
+        Returns:
+            Complete URL to fetch indexers list
+        """
+        base_url = self.jackett_url.rstrip('/')
+        endpoint = f"{base_url}/api/v2.0/indexers/all/results"
+        params = {
+            'apikey': self.api_key,
+            'Query': ''
+        }
+        return f"{endpoint}?{urllib.parse.urlencode(params)}"
+
+    def _fetch_indexers(self, url: str) -> dict:
+        """Fetch and parse JSON indexers list from Jackett API.
+
+        Args:
+            url: Complete API URL
+
+        Returns:
+            Parsed JSON data as dictionary
+
+        Raises:
+            Exception: If request fails or response invalid
+        """
+        try:
+            with self._urlopen(url, timeout=10) as response:
+                return json.loads(response.read().decode('utf-8'))
+        except urllib.error.HTTPError as e:
+            if e.code in (401, 403):
+                raise Exception("Invalid Jackett API key")
+            raise Exception(f"HTTP error {e.code}: {e.reason}")
+        except urllib.error.URLError as e:
+            raise Exception(
+                f"Cannot connect to Jackett at {self.jackett_url}: "
+                f"{e.reason}"
+            )
+        except json.JSONDecodeError as e:
+            raise Exception(f"Failed to parse Jackett JSON response: {e}")
+
+    def _process_indexers(self, data: dict) -> list[IndexerDTO]:
+        """Process indexers JSON response.
+
+        Args:
+            data: Parsed JSON data from search endpoint
+
+        Returns:
+            List of IndexerDTO objects
+        """
+        indexers = []
+        # Get indexers list from response
+        indexers_data = data.get('Indexers', [])
+        for indexer in indexers_data:
+            indexer_id = indexer.get('ID')
+            indexer_name = indexer.get('Name')
+            # Only include indexers with valid ID and Name
+            if indexer_id and indexer_name:
+                # Prefix with jackett: to distinguish from other providers
+                full_id = f"jackett:{indexer_id}"
+                indexers.append(IndexerDTO(
+                    full_id,
+                    f"[bold]{indexer_name}[/]"))
+        return indexers
 
     @property
     def short_name(self) -> str:
@@ -81,21 +176,64 @@ class JackettProvider(BaseSearchProvider):
         if not query or not query.strip():
             return []
 
-        url = self._build_search_url(query)
+        # If specific indexers selected, search each individually
+        # (Jackett has bug with comma-separated indexers in URL)
+        if self._selected_indexers and len(self._selected_indexers) > 0:
+            return self._search_multiple_indexers(query)
+
+        # Search all indexers
+        url = self._build_search_url(query, 'all')
         data = self._fetch_results(url)
         return self._process_results(data)
 
-    def _build_search_url(self, query: str) -> str:
-        """Build Jackett API search URL.
+    def _search_multiple_indexers(
+            self,
+            query: str) -> list[SearchResultDTO]:
+        """Search multiple indexers individually and combine results.
+
+        Workaround for Jackett bug where comma-separated indexers
+        in URL path cause NullReferenceException.
 
         Args:
             query: Search term
 
         Returns:
+            Combined list of SearchResultDTO objects from all indexers
+        """
+        all_results = []
+        for indexer_id in self._selected_indexers:
+            try:
+                url = self._build_search_url(query, indexer_id)
+                data = self._fetch_results(url)
+                results = self._process_results(data)
+                all_results.extend(results)
+            except Exception as e:
+                # Log error but continue with other indexers
+                logger.warning(
+                    f"Jackett indexer '{indexer_id}' failed: {e}")
+        return all_results
+
+    def set_selected_indexers(self, indexer_ids: list[str] | None) -> None:
+        """Set which indexers to search.
+
+        Args:
+            indexer_ids: List of indexer IDs (without 'jackett:' prefix),
+                        or None to search all indexers
+        """
+        self._selected_indexers = indexer_ids
+
+    def _build_search_url(self, query: str, indexers: str) -> str:
+        """Build Jackett API search URL.
+
+        Args:
+            query: Search term
+            indexers: Indexer ID or 'all'
+
+        Returns:
             Complete URL with parameters
         """
         base_url = self.jackett_url.rstrip('/')
-        endpoint = f"{base_url}/api/v2.0/indexers/all/results"
+        endpoint = f"{base_url}/api/v2.0/indexers/{indexers}/results"
         params = {
             'apikey': self.api_key,
             'Query': query.strip(),
@@ -115,9 +253,19 @@ class JackettProvider(BaseSearchProvider):
             Exception: If request fails or response invalid
         """
         try:
+            logger.debug(f"Jackett: requesting URL: {url}")
             with self._urlopen(url) as response:
                 return json.loads(response.read().decode('utf-8'))
         except urllib.error.HTTPError as e:
+            # Read error response body for more details
+            error_body = ''
+            try:
+                if e.fp:
+                    error_body = e.fp.read().decode('utf-8')
+                    logger.error(f"Jackett HTTP {e.code} response: "
+                                 f"{error_body}")
+            except Exception:
+                pass
             if e.code in (401, 403):
                 raise Exception("Invalid Jackett API key")
             raise Exception(f"HTTP error {e.code}: {e.reason}")

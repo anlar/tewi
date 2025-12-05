@@ -191,6 +191,12 @@ class TorrentDetailDTO:
     trackers: list[TrackerDTO]
 
 
+@dataclass(frozen=True)
+class IndexerDTO:
+    id: str
+    name: str
+
+
 class PageState(NamedTuple):
     current: int
     total: int

@@ -147,9 +147,11 @@ class AddTorrentFromWebSearchCommand(Message):
 
 class WebSearchQuerySubmitted(Message):
 
-    def __init__(self, query: str) -> None:
+    def __init__(self, query: str,
+                 selected_indexers: list[str] | None = None) -> None:
         super().__init__()
         self.query = query
+        self.selected_indexers = selected_indexers
 
 
 # Events

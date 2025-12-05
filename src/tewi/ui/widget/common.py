@@ -1,6 +1,7 @@
+from typing import TypeVar
 from textual.binding import Binding
 from textual.reactive import reactive
-from textual.widgets import Static, Label, DataTable
+from textual.widgets import Static, Label, DataTable, SelectionList
 from ...util.decorator import log_time
 from ...util.print import print_speed
 
@@ -13,6 +14,22 @@ class VimDataTable(DataTable):
         Binding("h", "cursor_left", "Cursor left", show=False),
         Binding("g", "scroll_top", "Home", show=False),
         Binding("G", "scroll_bottom", "End", show=False),
+    ]
+
+
+SelectionType = TypeVar("SelectionType")
+
+
+class VimSelectionList(SelectionList[SelectionType]):
+    """SelectionList with vim-style keybindings.
+
+    Generic type parameter allows type-safe selection values.
+    """
+    BINDINGS = [
+        Binding("k", "cursor_up", "Up", show=False),
+        Binding("j", "cursor_down", "Down", show=False),
+        Binding("g", "first", "First", show=False),
+        Binding("G", "last", "Last", show=False),
     ]
 
 

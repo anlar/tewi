@@ -3,7 +3,7 @@
 import urllib.parse
 import urllib.request
 from abc import ABC, abstractmethod
-from ...common import SearchResultDTO, TorrentCategory
+from ...common import SearchResultDTO, TorrentCategory, IndexerDTO
 from ...util.print import print_size
 
 
@@ -80,6 +80,18 @@ class BaseSearchProvider(ABC):
             Unique string identifier (e.g., 'yts', 'jackett', 'tpb')
         """
         pass
+
+    def indexers(self) -> list[IndexerDTO]:
+        """Return list of available indexers for this provider.
+
+        For most providers, this returns a single indexer (the provider
+        itself) which is basic implementation. For meta-providers like
+        Jackett, this returns all configured indexers.
+
+        Returns:
+            List of (indexer_id, indexer_name) tuples
+        """
+        return [IndexerDTO(self.id(), f"[bold]{self.short_name}[/]")]
 
     @property
     @abstractmethod
