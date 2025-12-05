@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Any
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO, TorrentCategory
+from ...common import SearchResultDTO, TorrentCategory, IndexerDTO
 from ...util.decorator import log_time
 
 logger = logging.getLogger('tewi')
@@ -60,7 +60,7 @@ class JackettProvider(BaseSearchProvider):
     def id(self) -> str:
         return "jackett"
 
-    def indexers(self) -> list[tuple[str, str]]:
+    def indexers(self) -> list[IndexerDTO]:
         """Return list of configured indexers from Jackett instance.
 
         Returns:
@@ -149,7 +149,7 @@ class JackettProvider(BaseSearchProvider):
                     else indexer_id
                 # Prefix with jackett: to distinguish from other providers
                 full_id = f"jackett:{indexer_id}"
-                indexers.append((full_id, indexer_name))
+                indexers.append(IndexerDTO(full_id, indexer_name))
         return indexers
 
     @property
@@ -179,9 +179,42 @@ class JackettProvider(BaseSearchProvider):
         if not query or not query.strip():
             return []
 
-        url = self._build_search_url(query)
+        # If specific indexers selected, search each individually
+        # (Jackett has bug with comma-separated indexers in URL)
+        if self._selected_indexers and len(self._selected_indexers) > 0:
+            return self._search_multiple_indexers(query)
+
+        # Search all indexers
+        url = self._build_search_url(query, 'all')
         data = self._fetch_results(url)
         return self._process_results(data)
+
+    def _search_multiple_indexers(
+            self,
+            query: str) -> list[SearchResultDTO]:
+        """Search multiple indexers individually and combine results.
+
+        Workaround for Jackett bug where comma-separated indexers
+        in URL path cause NullReferenceException.
+
+        Args:
+            query: Search term
+
+        Returns:
+            Combined list of SearchResultDTO objects from all indexers
+        """
+        all_results = []
+        for indexer_id in self._selected_indexers:
+            try:
+                url = self._build_search_url(query, indexer_id)
+                data = self._fetch_results(url)
+                results = self._process_results(data)
+                all_results.extend(results)
+            except Exception as e:
+                # Log error but continue with other indexers
+                logger.warning(
+                    f"Jackett indexer '{indexer_id}' failed: {e}")
+        return all_results
 
     def set_selected_indexers(self, indexer_ids: list[str] | None) -> None:
         """Set which indexers to search.
@@ -192,26 +225,17 @@ class JackettProvider(BaseSearchProvider):
         """
         self._selected_indexers = indexer_ids
 
-    def _build_search_url(self, query: str) -> str:
+    def _build_search_url(self, query: str, indexers: str) -> str:
         """Build Jackett API search URL.
 
         Args:
             query: Search term
+            indexers: Indexer ID or 'all'
 
         Returns:
             Complete URL with parameters
         """
         base_url = self.jackett_url.rstrip('/')
-
-        # Determine which indexers to search
-        if self._selected_indexers is not None and \
-           len(self._selected_indexers) > 0:
-            # Search specific indexers
-            indexers = ','.join(self._selected_indexers)
-        else:
-            # Search all indexers
-            indexers = 'all'
-
         endpoint = f"{base_url}/api/v2.0/indexers/{indexers}/results"
         params = {
             'apikey': self.api_key,
@@ -232,9 +256,19 @@ class JackettProvider(BaseSearchProvider):
             Exception: If request fails or response invalid
         """
         try:
+            logger.debug(f"Jackett: requesting URL: {url}")
             with self._urlopen(url) as response:
                 return json.loads(response.read().decode('utf-8'))
         except urllib.error.HTTPError as e:
+            # Read error response body for more details
+            error_body = ''
+            try:
+                if e.fp:
+                    error_body = e.fp.read().decode('utf-8')
+                    logger.error(f"Jackett HTTP {e.code} response: "
+                                 f"{error_body}")
+            except Exception:
+                pass
             if e.code in (401, 403):
                 raise Exception("Invalid Jackett API key")
             raise Exception(f"HTTP error {e.code}: {e.reason}")

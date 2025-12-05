@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO, TorrentCategory
+from ...common import SearchResultDTO, TorrentCategory, IndexerDTO
 from ...util.decorator import log_time
 
 
@@ -34,7 +34,7 @@ class NyaaProvider(BaseSearchProvider):
 
     def indexers(self) -> list[tuple[str, str]]:
         """Return Nyaa as a single indexer."""
-        return [(self.id(), self.short_name)]
+        return [IndexerDTO(self.id(), self.short_name)]
 
     @property
     def short_name(self) -> str:

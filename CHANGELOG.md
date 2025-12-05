@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Jackett indexers loading - now uses Torznab API endpoint instead of broken `/api/v2.0/indexers` endpoint
+- Jackett search with multiple indexers - workaround for Jackett bug where comma-separated indexers in URL cause NullReferenceException. Now searches each indexer individually and combines results
 
 ### Removed
 

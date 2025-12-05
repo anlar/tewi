@@ -16,14 +16,13 @@ class WebSearchQueryDialog(ModalScreen[None]):
     """Modal dialog for entering web search query."""
 
     @log_time
-    def __init__(self, providers: list, initial_query: str = None):
+    def __init__(self, initial_query: str = None):
         super().__init__()
-        self.providers = providers
         self.initial_query = initial_query
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield WebSearchQueryWidget(self.providers, self.initial_query)
+        yield WebSearchQueryWidget(self.initial_query)
 
 
 class WebSearchQueryWidget(Static):
@@ -36,9 +35,8 @@ class WebSearchQueryWidget(Static):
     ]
 
     @log_time
-    def __init__(self, providers: list, initial_query: str = None):
+    def __init__(self, initial_query: str = None):
         super().__init__()
-        self.providers = providers
         self.initial_query = initial_query
 
     @log_time
@@ -60,17 +58,9 @@ class WebSearchQueryWidget(Static):
             List of Selection objects with all indexers
         """
         selections = []
-        for provider in self.providers:
-            try:
-                indexers = provider.indexers()
-                for indexer_id, indexer_name in indexers:
-                    # All indexers selected by default
-                    selections.append(
-                        Selection(indexer_name, indexer_id, True)
-                    )
-            except Exception:
-                # Skip providers that fail to load indexers
-                pass
+        for indexer in self.app.search.get_indexers():
+            selections.append(
+                Selection(indexer.name, indexer.id, True))
         return selections
 
     @log_time

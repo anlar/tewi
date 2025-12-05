@@ -1,6 +1,5 @@
 """Web search results panel for public torrent trackers."""
 
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import ClassVar
 
 from textual import on, work
@@ -285,51 +284,6 @@ class TorrentWebSearch(Static):
 
     # Background search
 
-    def _filter_providers(
-            self,
-            selected_indexers: list[str] | None) -> list:
-        """Filter providers based on selected indexers.
-
-        Args:
-            selected_indexers: List of indexer IDs to search,
-                              or None to search all
-
-        Returns:
-            List of providers to search
-        """
-        if selected_indexers is None:
-            # Search all providers
-            return self.providers
-
-        providers_to_search = []
-
-        # Group selected indexers by provider
-        regular_providers = set()
-        jackett_indexers = []
-
-        for indexer_id in selected_indexers:
-            if indexer_id.startswith('jackett:'):
-                # Extract jackett indexer ID (remove 'jackett:' prefix)
-                jackett_indexers.append(indexer_id[8:])
-            else:
-                # Regular provider
-                regular_providers.add(indexer_id)
-
-        # Add regular providers if selected
-        for provider in self.providers:
-            provider_id = provider.id()
-            if provider_id == 'jackett':
-                # Handle Jackett separately
-                if jackett_indexers:
-                    # Configure Jackett with selected indexers
-                    provider.set_selected_indexers(jackett_indexers)
-                    providers_to_search.append(provider)
-            elif provider_id in regular_providers:
-                # Add regular provider
-                providers_to_search.append(provider)
-
-        return providers_to_search
-
     @log_time
     @work(exclusive=True, thread=True)
     async def perform_search(self, query: str,
@@ -343,51 +297,7 @@ class TorrentWebSearch(Static):
         """
         self.r_search_status = "Searching..."
 
-        all_results = []
-        errors = []
-
-        # Filter providers based on selected indexers
-        providers_to_search = self._filter_providers(selected_indexers)
-
-        # Execute all provider searches in parallel
-        with ThreadPoolExecutor(
-                max_workers=len(providers_to_search)) as executor:
-            # Submit all search tasks
-            future_to_provider = {
-                executor.submit(provider.search, query): provider
-                for provider in providers_to_search
-            }
-
-            # Collect results as they complete
-            for future in as_completed(future_to_provider):
-                provider = future_to_provider[future]
-                try:
-                    provider_results = future.result()
-                    all_results.extend(provider_results)
-                except Exception as e:
-                    # Log error but continue with other providers
-                    errors.append(f"{provider.short_name}: {str(e)}")
-
-        # Deduplicate by info_hash, keeping result with highest seeders
-        best_results = {}
-        for result in all_results:
-            # Use info_hash as key; fall back to title:size for results without
-            if result.info_hash:
-                hash_key = result.info_hash
-            else:
-                # Deduplicate by title + size when hash unavailable
-                hash_key = f"__no_hash__{result.title}:{result.size}"
-
-            if hash_key not in best_results:
-                best_results[hash_key] = result
-            else:
-                # Keep the result with more seeders
-                if result.seeders > best_results[hash_key].seeders:
-                    best_results[hash_key] = result
-
-        # Convert back to list and sort by seeders for relevance
-        all_results = list(best_results.values())
-        all_results.sort(key=lambda r: r.seeders, reverse=True)
+        all_results, errors = self.app.search.search(query, selected_indexers)
 
         self.app.call_from_thread(self.update_results, all_results, errors)
 

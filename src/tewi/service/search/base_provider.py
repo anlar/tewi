@@ -3,7 +3,7 @@
 import urllib.parse
 import urllib.request
 from abc import ABC, abstractmethod
-from ...common import SearchResultDTO, TorrentCategory
+from ...common import SearchResultDTO, TorrentCategory, IndexerDTO
 from ...util.print import print_size
 
 
@@ -82,7 +82,7 @@ class BaseSearchProvider(ABC):
         pass
 
     @abstractmethod
-    def indexers(self) -> list[tuple[str, str]]:
+    def indexers(self) -> list[IndexerDTO]:
         """Return list of available indexers for this provider.
 
         For most providers, this returns a single indexer (the provider

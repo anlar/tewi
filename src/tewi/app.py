@@ -63,6 +63,8 @@ from .ui.panel.listview import TorrentListViewPanel
 from .ui.panel.details import TorrentInfoPanel
 from .ui.panel.websearch import TorrentWebSearch
 
+from .service.search.search import SearchClient
+
 
 logger = logging.getLogger('tewi')
 
@@ -139,6 +141,8 @@ class MainApp(App):
                                     port=self.c_port,
                                     username=username,
                                     password=password)
+
+        self.search = SearchClient(jackett_url, jackett_api_key)
 
         self.sort_order = sort_orders[0]
         self.sort_order_asc = True
@@ -248,9 +252,7 @@ class MainApp(App):
 
     @log_time
     def action_open_websearch(self) -> None:
-        websearch = self.query_one(TorrentWebSearch)
         self.push_screen(WebSearchQueryDialog(
-            websearch.providers,
             self.last_search_query
         ))
 

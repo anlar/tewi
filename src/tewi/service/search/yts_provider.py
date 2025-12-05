@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO, TorrentCategory
+from ...common import SearchResultDTO, TorrentCategory, IndexerDTO
 from ...util.decorator import log_time
 
 
@@ -38,9 +38,9 @@ class YTSProvider(BaseSearchProvider):
     def id(self) -> str:
         return "yts"
 
-    def indexers(self) -> list[tuple[str, str]]:
+    def indexers(self) -> list[IndexerDTO]:
         """Return YTS as a single indexer."""
-        return [(self.id(), self.short_name)]
+        return [IndexerDTO(self.id(), self.short_name)]
 
     @property
     def short_name(self) -> str:
