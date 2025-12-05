@@ -49,17 +49,13 @@ class SearchClient:
         if jackett_url and jackett_api_key:
             self.providers.append(JackettProvider(jackett_url, jackett_api_key))
 
-        self.indexers = []
-        for provider in self.providers:
-            self.indexers.extend(provider.indexers())
-
     def get_indexers(self) -> list[IndexerDTO]:
         """Get list of all available indexers from all providers.
 
         Returns:
             List of IndexerDTO objects representing all available indexers
         """
-        return self.indexers
+        return [idx for p in self.providers for idx in p.indexers()]
 
     def search(self, query: str, selected_indexers: list[str] | None) -> tuple[
             list[SearchResultDTO], list[str]]:
