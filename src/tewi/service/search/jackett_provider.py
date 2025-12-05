@@ -35,6 +35,7 @@ class JackettProvider(BaseSearchProvider):
         self.api_key = api_key
         self._config_error = self._validate_config(jackett_url, api_key)
         self._selected_indexers: list[str] | None = None
+        self._selected_categories: list[str] | None = None
 
     def _validate_config(self,
                          jackett_url: str | None,
@@ -158,11 +159,14 @@ class JackettProvider(BaseSearchProvider):
         return "Jackett"
 
     @log_time
-    def _search_impl(self, query: str) -> list[SearchResultDTO]:
+    def _search_impl(self, query: str,
+                     categories: list[str] | None = None) -> list[
+            SearchResultDTO]:
         """Search Jackett for torrents across all indexers.
 
         Args:
             query: Search term
+            categories: Category IDs to filter by (optional)
 
         Returns:
             List of SearchResultDTO objects
@@ -175,6 +179,9 @@ class JackettProvider(BaseSearchProvider):
 
         if not query or not query.strip():
             return []
+
+        # Store categories for use in URL building
+        self._selected_categories = categories
 
         # If specific indexers selected, search each individually
         # (Jackett has bug with comma-separated indexers in URL)
@@ -238,6 +245,12 @@ class JackettProvider(BaseSearchProvider):
             'apikey': self.api_key,
             'Query': query.strip(),
         }
+
+        # Add category filter if specified
+        if self._selected_categories:
+            # Jackett accepts comma-separated category IDs
+            params['Category'] = ','.join(self._selected_categories)
+
         return f"{endpoint}?{urllib.parse.urlencode(params)}"
 
     def _fetch_results(self, url: str) -> dict:

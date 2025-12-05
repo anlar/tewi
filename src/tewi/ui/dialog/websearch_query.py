@@ -108,7 +108,7 @@ class WebSearchQueryWidget(Static):
             "#websearch-indexers-list", SelectionList)
         selected_indexers = list(indexers_list.selected)
 
-        # Get selected indexers
+        # Get selected categories
         categories_list = self.query_one(
             "#websearch-categories-list", SelectionList)
         selected_categories = list(categories_list.selected)
@@ -124,6 +124,12 @@ class WebSearchQueryWidget(Static):
                 "Please select at least one category",
                 "warning"))
             return
+
+        # If all categories are selected, pass None to search everything
+        all_categories = [str(cat.id)
+                          for cat in JackettCategories.parent_categories()]
+        if len(selected_categories) == len(all_categories):
+            selected_categories = None
 
         # Post message with query, selected indexers, selected categories
         self.post_message(WebSearchQuerySubmitted(query,

@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Display category and labels in torrent card
 - Badge display options: `--badge-max-count` and `--badge-max-length` to control badge display in torrent cards
 - Indexer selection in web search dialog - select which search providers/indexers to use for each search
+- Category filtering in web search - search providers now support category filter in search requests
 
 ### Changed
 

@@ -28,11 +28,14 @@ class TPBProvider(BaseSearchProvider):
         return "The Pirate Bay"
 
     @log_time
-    def _search_impl(self, query: str) -> list[SearchResultDTO]:
+    def _search_impl(self, query: str,
+                     categories: list[str] | None = None) -> list[
+            SearchResultDTO]:
         """Search The Pirate Bay for torrents.
 
         Args:
             query: Search term
+            categories: Category IDs to filter by (optional)
 
         Returns:
             List of SearchResultDTO objects
@@ -43,9 +46,12 @@ class TPBProvider(BaseSearchProvider):
         if not query or not query.strip():
             return []
 
+        # Convert Jackett category IDs to TPB category codes
+        tpb_category = self._convert_categories_to_tpb(categories)
+
         params = {
             'q': query.strip(),
-            'cat': 0,  # All categories
+            'cat': tpb_category,
         }
 
         url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
@@ -135,6 +141,45 @@ class TPBProvider(BaseSearchProvider):
 
         except (KeyError, ValueError, TypeError):
             return None
+
+    def _convert_categories_to_tpb(
+            self,
+            categories: list[str] | None) -> int:
+        """Convert Jackett category IDs to TPB category code.
+
+        TPB uses category codes: 100 (Audio), 200 (Video), 300 (Apps),
+        400 (Games), 500 (Porn), 600 (Other)
+
+        Args:
+            categories: List of Jackett category ID strings
+
+        Returns:
+            TPB category code (0 for all categories)
+        """
+        if not categories:
+            return 0
+
+        # Map Jackett parent category IDs to TPB codes
+        jackett_to_tpb = {
+            '1000': 400,  # Console -> Games
+            '2000': 200,  # Movies -> Video
+            '3000': 100,  # Audio -> Audio
+            '4000': 300,  # PC -> Applications
+            '5000': 200,  # TV -> Video
+            '6000': 500,  # XXX -> Porn
+            '7000': 600,  # Books -> Other
+            '8000': 600,  # Other -> Other
+        }
+
+        # Try to find a matching parent category
+        for cat_id in categories:
+            # Get parent category ID (first digit + '000')
+            parent_id = str((int(cat_id) // 1000) * 1000)
+            if parent_id in jackett_to_tpb:
+                return jackett_to_tpb[parent_id]
+
+        # Default to all categories
+        return 0
 
     def _get_category(self, code: str) -> list[Category]:
         """Map TPB category code to Jackett Category list.
