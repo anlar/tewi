@@ -21,6 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Indexer selection in web search dialog - select which search providers/indexers to use for each search
 - Category filtering in web search - search providers now support category filter in search requests
 - Cache Jackett search indexers for 10 minutes [#131](https://github.com/anlar/tewi/issues/131)
+- Option to specify enabled search providers: `--search-providers`, config `[search].providers` [#132](https://github.com/anlar/tewi/issues/132)
+- Command to list avaialable search providers: `--list-search-providers` [#132](https://github.com/anlar/tewi/issues/132)
 
 ### Changed
 

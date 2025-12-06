@@ -192,6 +192,9 @@ def _load_search_section(parser: configparser.ConfigParser,
     val = _get_string_option(parser, 'search', 'jackett_api_key')
     if val:
         config['jackett_api_key'] = val
+    val = _get_string_option(parser, 'search', 'providers')
+    if val:
+        config['search_providers'] = val
 
 
 def _load_config_file(config_path: Path, config: dict) -> None:
@@ -305,6 +308,11 @@ jackett_url =
 
 # API key for Jackett authentication
 jackett_api_key =
+
+# Comma-separated list of enabled search providers
+# Available: tpb, torrentscsv, yts, nyaa, jackett
+# Leave empty to enable all providers
+providers =
 
 [debug]
 # Enable verbose logs: boolean (saved to tewi_<timestamp>.log file)

@@ -63,7 +63,7 @@ from .ui.panel.listview import TorrentListViewPanel
 from .ui.panel.details import TorrentInfoPanel
 from .ui.panel.websearch import TorrentWebSearch
 
-from .service.search.search import SearchClient
+from .service.search.search import SearchClient, print_available_providers
 
 
 logger = logging.getLogger('tewi')
@@ -113,7 +113,8 @@ class MainApp(App):
                  search_query: str,
                  filter: str,
                  badge_max_count: int,
-                 badge_max_length: int):
+                 badge_max_length: int,
+                 search_providers: str | None = None):
 
         super().__init__()
 
@@ -142,7 +143,8 @@ class MainApp(App):
                                     username=username,
                                     password=password)
 
-        self.search = SearchClient(jackett_url, jackett_api_key)
+        self.search = SearchClient(jackett_url, jackett_api_key,
+                                   search_providers)
 
         self.sort_order = sort_orders[0]
         self.sort_order_asc = True
@@ -626,6 +628,13 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     p.add_argument('--jackett-api-key', type=str,
                    action=TrackSetAction,
                    help='API key for Jackett authentication')
+    p.add_argument('--search-providers', type=str,
+                   action=TrackSetAction,
+                   help='Comma-separated list of enabled search providers '
+                   '(tpb, torrentscsv, yts, nyaa, jackett). '
+                   'Leave empty to enable all')
+    p.add_argument('--list-search-providers', action='store_true',
+                   help='List available search providers and exit')
 
     # Profiles
     p.add_argument('--profile', type=str,
@@ -687,6 +696,12 @@ def _handle_profiles_command():
     sys.exit(0)
 
 
+def _handle_list_search_providers_command():
+    """Handle --list-search-providers command."""
+    print_available_providers()
+    sys.exit(0)
+
+
 def _handle_create_config_command(profile: str | None):
     """Handle --create-config command to create config file."""
     config_path = get_config_path(profile)
@@ -699,12 +714,10 @@ def _handle_create_config_command(profile: str | None):
 
 
 @log_time
-def create_app():
-    """Create and return a MainApp instance."""
-    tewi_version = __version__
-
-    parser = _setup_argument_parser(tewi_version)
-    args = parser.parse_args()
+def _handle_commands(args) -> None:
+    # Handle --list-search-providers (list providers and exit)
+    if args.list_search_providers:
+        _handle_list_search_providers_command()
 
     # Handle --profiles (list available profiles and exit)
     if args.profiles:
@@ -713,6 +726,17 @@ def create_app():
     # Handle --create-config (must happen before other processing)
     if args.create_config:
         _handle_create_config_command(getattr(args, 'profile', None))
+
+
+@log_time
+def create_app():
+    """Create and return a MainApp instance."""
+    tewi_version = __version__
+
+    parser = _setup_argument_parser(tewi_version)
+    args = parser.parse_args()
+
+    _handle_commands(args)
 
     # Load config file and merge with CLI arguments
     profile = getattr(args, 'profile', None)
@@ -760,7 +784,9 @@ def create_app():
                       search_query=args.search,
                       filter=args.filter,
                       badge_max_count=args.badge_max_count,
-                      badge_max_length=args.badge_max_length)
+                      badge_max_length=args.badge_max_length,
+                      search_providers=getattr(args, 'search_providers',
+                                               None))
         return app
     except ClientError as e:
         print(f"Failed to connect to {args.client_type} daemon at "

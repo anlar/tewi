@@ -1,6 +1,7 @@
 """Unified search client for multiple torrent search providers."""
 
 import logging
+import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from ...common import SearchResultDTO, IndexerDTO, Category
@@ -16,6 +17,29 @@ from . import (
 
 logger = logging.getLogger('tewi')
 
+# Available provider IDs
+AVAILABLE_PROVIDERS = {
+    'tpb': TPBProvider,
+    'torrentscsv': TorrentsCsvProvider,
+    'yts': YTSProvider,
+    'nyaa': NyaaProvider,
+    'jackett': JackettProvider
+}
+
+
+def print_available_providers() -> None:
+    """Print list of all available search providers to stdout."""
+    print("Available search providers:")
+    for provider_id in sorted(AVAILABLE_PROVIDERS.keys()):
+        provider_class = AVAILABLE_PROVIDERS[provider_id]
+        # Create temporary instance to get name
+        if provider_id == 'jackett':
+            # Jackett needs dummy args to instantiate
+            instance = provider_class(None, None)
+        else:
+            instance = provider_class()
+        print(f"  - {provider_id}: {instance.name}")
+
 
 class SearchClient:
     """Unified search client that coordinates multiple torrent providers.
@@ -30,36 +54,96 @@ class SearchClient:
     Providers are initialized lazily on first use for better performance.
     """
 
-    def __init__(self, jackett_url: str | None, jackett_api_key: str | None):
+    def __init__(self, jackett_url: str | None, jackett_api_key: str | None,
+                 enabled_providers: str | None = None):
         """Initialize search client with available providers.
 
         Args:
             jackett_url: Base URL of Jackett instance (optional)
             jackett_api_key: API key for Jackett authentication (optional)
+            enabled_providers: Comma-separated list of provider IDs to enable,
+                             or None to enable all providers
         """
         self._providers: list[BaseSearchProvider] | None = None
         self._jackett_url = jackett_url
         self._jackett_api_key = jackett_api_key
+        self._enabled_providers = self._parse_enabled_providers(
+            enabled_providers)
+
+    def _parse_enabled_providers(
+            self, enabled_providers: str | None) -> set[str] | None:
+        """Parse and validate enabled providers list.
+
+        Args:
+            enabled_providers: Comma-separated list of provider IDs,
+                             or None to enable all
+
+        Returns:
+            Set of validated provider IDs, or None for all providers
+
+        Raises:
+            SystemExit: If unknown provider ID is specified
+        """
+        if not enabled_providers or not enabled_providers.strip():
+            return None
+
+        # Parse CSV list
+        provider_ids = [p.strip() for p in enabled_providers.split(',')
+                        if p.strip()]
+
+        if not provider_ids:
+            return None
+
+        # Validate provider IDs
+        unknown_providers = []
+        for provider_id in provider_ids:
+            if provider_id not in AVAILABLE_PROVIDERS:
+                unknown_providers.append(provider_id)
+
+        if unknown_providers:
+            print(f"Error: Unknown search provider(s): "
+                  f"{', '.join(unknown_providers)}", file=sys.stderr)
+            print(f"Available providers: "
+                  f"{', '.join(sorted(AVAILABLE_PROVIDERS.keys()))}",
+                  file=sys.stderr)
+            sys.exit(1)
+
+        return set(provider_ids)
 
     def get_providers(self) -> list[BaseSearchProvider]:
         """Get list of all search providers, initializing them if needed.
 
         Providers are created lazily on first access for better performance.
+        Only enabled providers are initialized based on configuration.
 
         Returns:
             List of BaseSearchProvider instances
         """
         if self._providers is None:
-            self._providers = [
-                TPBProvider(),
-                TorrentsCsvProvider(),
-                YTSProvider(),
-                NyaaProvider()
-            ]
+            self._providers = []
 
-            if self._jackett_url and self._jackett_api_key:
-                self._providers.append(
-                    JackettProvider(self._jackett_url, self._jackett_api_key))
+            # Determine which providers to enable
+            if self._enabled_providers is None:
+                # All providers enabled
+                enabled_ids = set(AVAILABLE_PROVIDERS.keys())
+            else:
+                # Only specified providers enabled
+                enabled_ids = self._enabled_providers
+
+            # Initialize enabled providers
+            for provider_id in enabled_ids:
+                if provider_id == 'jackett':
+                    # Jackett requires configuration
+                    if self._jackett_url and self._jackett_api_key:
+                        provider_class = AVAILABLE_PROVIDERS[provider_id]
+                        self._providers.append(
+                            provider_class(
+                                self._jackett_url,
+                                self._jackett_api_key))
+                else:
+                    # Regular providers
+                    provider_class = AVAILABLE_PROVIDERS[provider_id]
+                    self._providers.append(provider_class())
 
         return self._providers
 
