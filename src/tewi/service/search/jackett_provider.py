@@ -424,7 +424,7 @@ class JackettProvider(BaseSearchProvider):
             return None
 
     def _build_provider_name(self, result: dict[str, Any]) -> str:
-        """Build provider name in format 'Jackett(IndexerName)'.
+        """Build provider name in format 'IndexerName (J)'.
 
         Args:
             result: Result dict from Jackett API
@@ -434,7 +434,7 @@ class JackettProvider(BaseSearchProvider):
         """
         tracker_id = result.get('TrackerId', 'Unknown')
         tracker = result.get('Tracker', tracker_id)
-        return f"J: {tracker}"
+        return f"{tracker} [dim](J)[/]"
 
     def _get_page_url(self, result: dict[str, Any]) -> str | None:
         """Get page URL from result.
