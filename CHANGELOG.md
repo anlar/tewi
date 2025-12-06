@@ -29,6 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Remember last search query in search dialog
 - Use Jackett torrent categories
 - Make torrent search parameters selection move to the next line after toggle
+- Refactored search providers: use only full name (removed short name)
 
 ### Removed
 

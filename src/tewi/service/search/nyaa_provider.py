@@ -33,11 +33,7 @@ class NyaaProvider(BaseSearchProvider):
         return "nyaa"
 
     @property
-    def short_name(self) -> str:
-        return "Nyaa"
-
-    @property
-    def full_name(self) -> str:
+    def name(self) -> str:
         return "Nyaa Torrents"
 
     @log_time
@@ -213,7 +209,7 @@ class NyaaProvider(BaseSearchProvider):
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,
-                provider=self.short_name,
+                provider=self.name,
                 provider_id=self.id(),
                 page_url=page_url,
                 torrent_link=None,

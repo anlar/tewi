@@ -24,11 +24,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
         return "torrentscsv"
 
     @property
-    def short_name(self) -> str:
-        return "T-CSV"
-
-    @property
-    def full_name(self) -> str:
+    def name(self) -> str:
         return "Torrents-CSV"
 
     @log_time
@@ -122,7 +118,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,
-                provider=self.short_name,
+                provider=self.name,
                 provider_id=self.id(),
                 page_url=None,
                 torrent_link=None,

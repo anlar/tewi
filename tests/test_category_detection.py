@@ -10,16 +10,8 @@ class DummyProvider(BaseSearchProvider):
     def id(self) -> str:
         return "dummy"
 
-    def indexers(self) -> list[tuple[str, str]]:
-        """Return dummy indexer."""
-        return [(self.id(), self.short_name)]
-
     @property
-    def short_name(self) -> str:
-        return "Dummy"
-
-    @property
-    def full_name(self) -> str:
+    def name(self) -> str:
         return "Dummy Provider"
 
     def _search_impl(self, query: str) -> list[SearchResultDTO]:

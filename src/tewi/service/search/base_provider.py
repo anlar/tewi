@@ -97,18 +97,12 @@ class BaseSearchProvider(ABC):
         Returns:
             List of (indexer_id, indexer_name) tuples
         """
-        return [IndexerDTO(self.id(), f"{self.short_name}")]
+        return [IndexerDTO(self.id(), f"{self.name}")]
 
     @property
     @abstractmethod
-    def short_name(self) -> str:
-        """Return the provider short name for results list."""
-        pass
-
-    @property
-    @abstractmethod
-    def full_name(self) -> str:
-        """Return the provider full name for details view."""
+    def name(self) -> str:
+        """Return the provider name."""
         pass
 
     def _build_magnet_link(self, info_hash: str, name: str,
@@ -247,7 +241,7 @@ class BaseSearchProvider(ABC):
             Markdown-formatted string with common details
         """
         md = "## General\n"
-        md += f"- **Provider:** {self.full_name}\n"
+        md += f"- **Provider:** {self.name}\n"
 
         # Display categories with full names
         if result.categories:

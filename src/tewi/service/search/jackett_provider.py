@@ -153,11 +153,7 @@ class JackettProvider(BaseSearchProvider):
         return indexers
 
     @property
-    def short_name(self) -> str:
-        return "Jackett"
-
-    @property
-    def full_name(self) -> str:
+    def name(self) -> str:
         return "Jackett"
 
     @log_time

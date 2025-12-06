@@ -117,8 +117,8 @@ class SearchClient:
                     all_results.extend(provider_results)
                 except Exception as e:
                     # Log error but continue with other providers
-                    errors.append(f"{provider.short_name}: {str(e)}")
-                    logger.exception(f"Failed to search {provider.short_name}")
+                    errors.append(f"{provider.name}: {str(e)}")
+                    logger.exception(f"Failed to search {provider.name}")
 
         # Deduplicate by info_hash, keeping result with highest seeders
         best_results = {}

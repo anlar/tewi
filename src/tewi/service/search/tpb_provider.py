@@ -20,11 +20,7 @@ class TPBProvider(BaseSearchProvider):
         return "tpb"
 
     @property
-    def short_name(self) -> str:
-        return "TPB"
-
-    @property
-    def full_name(self) -> str:
+    def name(self) -> str:
         return "The Pirate Bay"
 
     @log_time
@@ -132,7 +128,7 @@ class TPBProvider(BaseSearchProvider):
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,
-                provider=self.short_name,
+                provider=self.name,
                 provider_id=self.id(),
                 page_url=page_url,
                 torrent_link=None,
