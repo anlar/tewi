@@ -4,7 +4,7 @@ import logging
 import urllib.error
 import urllib.parse
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from .base_provider import BaseSearchProvider
@@ -36,6 +36,9 @@ class JackettProvider(BaseSearchProvider):
         self._config_error = self._validate_config(jackett_url, api_key)
         self._selected_indexers: list[str] | None = None
         self._selected_categories: list[Category] | None = None
+        self._cached_indexers: list[IndexerDTO] | None = None
+        self._cache_time: datetime | None = None
+        self._cache_duration = timedelta(minutes=10)
 
     def _validate_config(self,
                          jackett_url: str | None,
@@ -63,6 +66,8 @@ class JackettProvider(BaseSearchProvider):
     def indexers(self) -> list[IndexerDTO]:
         """Return list of configured indexers from Jackett instance.
 
+        Uses a 10-minute cache to avoid repeated API calls.
+
         Returns:
             List of (indexer_id, indexer_name) tuples from Jackett,
             or empty list if not configured or error occurs
@@ -71,16 +76,38 @@ class JackettProvider(BaseSearchProvider):
             logger.debug(f"Jackett not configured: {self._config_error}")
             return []
 
+        # Check if cache is valid
+        if self._is_cache_valid():
+            logger.debug("Jackett: returning cached indexers")
+            return self._cached_indexers
+
         try:
             url = self._build_indexers_url()
             data = self._fetch_indexers(url)
             indexers = self._process_indexers(data)
             logger.info(f"Jackett: loaded {len(indexers)} indexers")
+
+            # Update cache
+            self._cached_indexers = indexers
+            self._cache_time = datetime.now()
+
             return indexers
         except Exception as e:
             # Return empty list if indexers cannot be fetched
             logger.warning(f"Failed to load Jackett indexers: {e}")
             return []
+
+    def _is_cache_valid(self) -> bool:
+        """Check if cached indexers are still valid.
+
+        Returns:
+            True if cache exists and hasn't expired, False otherwise
+        """
+        if self._cached_indexers is None or self._cache_time is None:
+            return False
+
+        time_elapsed = datetime.now() - self._cache_time
+        return time_elapsed < self._cache_duration
 
     def _build_indexers_url(self) -> str:
         """Build Jackett API indexers URL.
