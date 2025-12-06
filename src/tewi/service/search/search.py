@@ -130,8 +130,8 @@ class SearchClient:
                 # Only specified providers enabled
                 enabled_ids = self._enabled_providers
 
-            # Initialize enabled providers
-            for provider_id in enabled_ids:
+            # Initialize enabled providers (sorted for consistent order)
+            for provider_id in sorted(enabled_ids):
                 if provider_id == 'jackett':
                     # Jackett requires configuration
                     if self._jackett_url and self._jackett_api_key:
