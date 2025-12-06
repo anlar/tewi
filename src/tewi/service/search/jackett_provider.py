@@ -136,8 +136,10 @@ class JackettProvider(BaseSearchProvider):
             List of IndexerDTO objects
         """
         indexers = []
+
         # Get indexers list from response
-        indexers_data = data.get('Indexers', [])
+        indexers_data = sorted(data.get('Indexers', []), key=lambda x: x['Name'])
+
         for indexer in indexers_data:
             indexer_id = indexer.get('ID')
             indexer_name = indexer.get('Name')
@@ -147,7 +149,7 @@ class JackettProvider(BaseSearchProvider):
                 full_id = f"jackett:{indexer_id}"
                 indexers.append(IndexerDTO(
                     full_id,
-                    f"[bold]{indexer_name}[/]"))
+                    f"{indexer_name} [dim](Jackett)[/]"))
         return indexers
 
     @property

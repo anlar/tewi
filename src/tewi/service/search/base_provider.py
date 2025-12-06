@@ -97,7 +97,7 @@ class BaseSearchProvider(ABC):
         Returns:
             List of (indexer_id, indexer_name) tuples
         """
-        return [IndexerDTO(self.id(), f"[bold]{self.short_name}[/]")]
+        return [IndexerDTO(self.id(), f"{self.short_name}")]
 
     @property
     @abstractmethod
