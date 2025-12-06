@@ -428,12 +428,12 @@ class TestEscapeMarkup:
         assert escape_markup("") == ""
 
     def test_escape_brackets(self):
-        """Test escaping of square brackets."""
+        """Test escaping of opening square brackets."""
         assert escape_markup("[") == r"\["
-        assert escape_markup("]") == r"\]"
-        assert escape_markup("[]") == r"\[\]"
+        assert escape_markup("]") == "]"
+        assert escape_markup("[]") == r"\[]"
 
     def test_mixed_content(self):
         """Test strings with mixed content."""
-        assert escape_markup("text[with]brackets") == r"text\[with\]brackets"
-        assert escape_markup("[bold]text[/bold]") == r"\[bold\]text\[/bold\]"
+        assert escape_markup("text[with]brackets") == r"text\[with]brackets"
+        assert escape_markup("[bold]text[/bold]") == r"\[bold]text\[/bold]"

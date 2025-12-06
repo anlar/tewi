@@ -154,7 +154,7 @@ def print_time_ago(dt: datetime) -> str:
 
 @cache
 def escape_markup(value: str) -> str:
-    return value.replace('[', r'\[').replace(']', r'\]')
+    return value.replace('[', r'\[')
 
 
 @cache

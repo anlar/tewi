@@ -21,7 +21,7 @@ from ...service.search import (YTSProvider, TorrentsCsvProvider,
                                TPBProvider, NyaaProvider,
                                JackettProvider)
 from ...util.decorator import log_time
-from ...util.print import print_size
+from ...util.print import print_size, escape_markup
 
 
 class TorrentWebSearch(Static):
@@ -131,7 +131,7 @@ class TorrentWebSearch(Static):
                 print_size(r.size),
                 r.files_count or '-',
                 category_display,
-                r.title,
+                escape_markup(r.title),
                 key=r.info_hash
             )
 

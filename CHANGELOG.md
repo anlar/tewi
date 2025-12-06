@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use Jackett torrent categories
 - Make torrent search parameters selection move to the next line after toggle
 - Refactored search providers: use only full name (removed short name)
+- Escape markup characters in torrent names in web search results table
 
 ### Removed
 
