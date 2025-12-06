@@ -413,8 +413,8 @@ class TransmissionClient(BaseClient):
             trackers=trackers,
             )
 
-    @log_time
     @staticmethod
+    @log_time
     def _calculate_ratio(downloaded: int, uploaded: int) -> float:
         """Calculate download ratio (zero div safe)."""
         if downloaded == 0:
@@ -422,14 +422,14 @@ class TransmissionClient(BaseClient):
         else:
             return uploaded / downloaded
 
-    @log_time
     @staticmethod
+    @log_time
     def _ts_to_dt(timestamp: int) -> datetime | None:
         """Convert Unix timestamp to datetime (None for invalid values)."""
         return datetime.fromtimestamp(timestamp) if timestamp > 0 else None
 
-    @log_time
     @staticmethod
+    @log_time
     def _get_peer_state(is_interested: bool, is_choked: bool) -> PeerState:
         """Determine peer state from interest and choke flags."""
         if not is_interested:
