@@ -271,6 +271,9 @@ class BaseSearchProvider(ABC):
             date_str = result.upload_date.strftime('%Y-%m-%d %H:%M')
             md += f"- **Uploaded:** {date_str}\n"
 
+        if result.freeleech:
+            md += f"- **Freeleech:** {result.freeleech}\n"
+
         return md
 
     def details_extended(self, result: SearchResultDTO) -> str:

@@ -277,6 +277,7 @@ class SearchResultDTO:
     downloads: int | None = None  # Download/grabs count
     page_url: str | None = None  # Link to torrent page on provider site
     torrent_link: str | None = None  # HTTP/HTTPS torrent file URL
+    freeleech: bool = False  # Is freeleech (only for private trackers)
     fields: dict[str, str] | None = None  # Provider-specific metadata
 
 

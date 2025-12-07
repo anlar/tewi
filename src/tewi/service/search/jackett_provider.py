@@ -361,6 +361,9 @@ class JackettProvider(BaseSearchProvider):
             if not magnet_link and not torrent_link:
                 return None
 
+            freeleech = (result.get('TrackerType') != 'public' and
+                         result.get('DownloadVolumeFactor') == 0)
+
             # Extract downloads from Grabs field
             downloads = None
             grabs = result.get('Grabs')
@@ -382,6 +385,7 @@ class JackettProvider(BaseSearchProvider):
                 downloads=downloads,
                 page_url=self._get_page_url(result),
                 torrent_link=torrent_link,
+                freeleech=freeleech,
                 fields=self._build_fields(result)
             )
         except (KeyError, ValueError, TypeError):

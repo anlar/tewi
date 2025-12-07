@@ -126,6 +126,10 @@ class TorrentWebSearch(Static):
             # Display category full_name (first category if multiple)
             category_display = r.categories[0].full_name if r.categories else '-'
 
+            title = escape_markup(r.title)
+            if r.freeleech:
+                title = f'[bold green]\\[F][/] {title}'
+
             table.add_row(
                 r.provider,
                 up_date,
@@ -135,7 +139,7 @@ class TorrentWebSearch(Static):
                 print_size(r.size),
                 r.files_count or '-',
                 category_display,
-                escape_markup(r.title),
+                title,
                 key=r.info_hash
             )
 
