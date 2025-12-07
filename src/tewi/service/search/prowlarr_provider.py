@@ -333,11 +333,18 @@ class ProwlarrProvider(BaseSearchProvider):
             if not magnet_link and not torrent_link:
                 return None
 
+            # Extract downloads from grabs field
+            downloads = None
+            grabs = result.get('grabs')
+            if grabs is not None:
+                downloads = int(grabs)
+
             return SearchResultDTO(
                 title=result.get('title', 'Unknown'),
                 categories=self._map_prowlarr_category(result),
                 seeders=int(result.get('seeders', 0)),
                 leechers=int(result.get('leechers', 0)),
+                downloads=downloads,
                 size=int(result.get('size', 0)),
                 files_count=self._get_files_count(result),
                 magnet_link=magnet_link,
@@ -487,6 +494,7 @@ class ProwlarrProvider(BaseSearchProvider):
             'categories',      # -> categories (objects, not IDs)
             'seeders',         # -> seeders
             'leechers',        # -> leechers
+            'grabs',           # -> downloads
             'size',            # -> size
             'files',           # -> files_count
             'magnetUrl',       # -> torrent_link
@@ -580,7 +588,7 @@ class ProwlarrProvider(BaseSearchProvider):
         elif key in ['tmdbId', 'tvMazeId', 'tvdbId']:
             if not value:
                 return None, None
-        elif key in ['grabs', 'protocol']:
+        elif key in ['protocol']:
             return key.capitalize(), value
         elif key == 'indexerFlags':
             return 'Indexer Flags', value

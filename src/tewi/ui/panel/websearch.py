@@ -131,6 +131,7 @@ class TorrentWebSearch(Static):
                 up_date,
                 r.seeders,
                 r.leechers,
+                r.downloads or '-',
                 print_size(r.size),
                 r.files_count or '-',
                 category_display,
@@ -148,6 +149,7 @@ class TorrentWebSearch(Static):
         table.add_column("Uploaded", key="uploaded")
         table.add_column("S ↓", key="seeders")
         table.add_column("L", key="leechers")
+        table.add_column("D", key="downloads")
         table.add_column("Size", key="size")
         table.add_column("Files", key="files")
         table.add_column("Category", key="category")

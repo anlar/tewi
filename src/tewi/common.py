@@ -274,6 +274,7 @@ class SearchResultDTO:
     upload_date: datetime | None  # Unix timestamp from API
     provider: str  # Display name of search provider
     provider_id: str  # Unique provider identifier
+    downloads: int | None = None  # Download/grabs count
     page_url: str | None = None  # Link to torrent page on provider site
     torrent_link: str | None = None  # HTTP/HTTPS torrent file URL
     fields: dict[str, str] | None = None  # Provider-specific metadata

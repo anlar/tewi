@@ -224,6 +224,7 @@ class BaseSearchProvider(ABC):
                         upload_date=result.upload_date,
                         provider=result.provider,
                         provider_id=result.provider_id,
+                        downloads=result.downloads,
                         page_url=result.page_url,
                         torrent_link=result.torrent_link,
                         fields=result.fields
@@ -259,6 +260,9 @@ class BaseSearchProvider(ABC):
         md += f"- **Size:** {print_size(result.size)}\n"
         md += f"- **Seeders:** {result.seeders}\n"
         md += f"- **Leechers:** {result.leechers}\n"
+
+        if result.downloads:
+            md += f"- **Downloads:** {result.downloads}\n"
 
         if result.files_count is not None:
             md += f"- **Files:** {result.files_count}\n"

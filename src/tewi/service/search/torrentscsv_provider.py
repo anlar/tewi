@@ -99,10 +99,6 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
             # Build provider-specific fields
             fields = {}
-            completed = torrent.get('completed')
-            if completed is not None:
-                fields['completed'] = str(completed)
-
             scraped_date = torrent.get('scraped_date')
             if scraped_date:
                 scraped_dt = datetime.fromtimestamp(scraped_date)
@@ -113,6 +109,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 categories=[],
                 seeders=torrent.get('seeders', 0),
                 leechers=torrent.get('leechers', 0),
+                downloads=torrent.get('completed', 0),
                 size=size,
                 files_count=None,
                 magnet_link=magnet_link,

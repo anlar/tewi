@@ -361,6 +361,12 @@ class JackettProvider(BaseSearchProvider):
             if not magnet_link and not torrent_link:
                 return None
 
+            # Extract downloads from Grabs field
+            downloads = None
+            grabs = result.get('Grabs')
+            if grabs is not None:
+                downloads = int(grabs)
+
             return SearchResultDTO(
                 title=result.get('Title', 'Unknown'),
                 categories=self._map_jackett_category(result),
@@ -373,6 +379,7 @@ class JackettProvider(BaseSearchProvider):
                 upload_date=self._parse_upload_date(result),
                 provider=self._build_provider_name(result),
                 provider_id=self.id(),
+                downloads=downloads,
                 page_url=self._get_page_url(result),
                 torrent_link=torrent_link,
                 fields=self._build_fields(result)
@@ -503,6 +510,7 @@ class JackettProvider(BaseSearchProvider):
             'Category',        # -> category (via _map_jackett_category)
             'Seeders',         # -> seeders
             'Peers',           # -> leechers
+            'Grabs',           # -> downloads
             'Size',            # -> size
             'Files',           # -> files_count
             'MagnetUri',       # -> magnet_link

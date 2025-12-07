@@ -130,6 +130,7 @@ class TPBProvider(BaseSearchProvider):
                 upload_date=upload_date,
                 provider=self.name,
                 provider_id=self.id(),
+                downloads=None,
                 page_url=page_url,
                 torrent_link=None,
                 fields=fields

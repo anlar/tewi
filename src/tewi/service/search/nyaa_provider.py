@@ -105,10 +105,6 @@ class NyaaProvider(BaseSearchProvider):
             Dictionary of provider-specific fields
         """
         fields = {}
-        downloads_elem = item.find('nyaa:downloads', ns)
-        if downloads_elem is not None and downloads_elem.text:
-            fields['downloads'] = downloads_elem.text
-
         comments_elem = item.find('nyaa:comments', ns)
         if comments_elem is not None and comments_elem.text:
             fields['comments'] = comments_elem.text
@@ -151,12 +147,15 @@ class NyaaProvider(BaseSearchProvider):
                 return None
             info_hash = hash_elem.text
 
-            # Extract seeders and leechers
+            # Extract seeders, leechers, downloads
             seeders_elem = item.find('nyaa:seeders', ns)
             leechers_elem = item.find('nyaa:leechers', ns)
+            downloads_elem = item.find('nyaa:downloads', ns)
             seeders = int(seeders_elem.text) if seeders_elem is not None \
                 else 0
             leechers = int(leechers_elem.text) if leechers_elem is not None \
+                else 0
+            downloads = int(downloads_elem.text) if downloads_elem is not None \
                 else 0
 
             # Extract category ID
@@ -204,6 +203,7 @@ class NyaaProvider(BaseSearchProvider):
                 categories=category,
                 seeders=seeders,
                 leechers=leechers,
+                downloads=downloads,
                 size=size,
                 files_count=None,
                 magnet_link=magnet_link,
@@ -363,9 +363,6 @@ class NyaaProvider(BaseSearchProvider):
 
         if 'nyaa_category' in result.fields:
             md += f"- **Category:** {result.fields['nyaa_category']}\n"
-
-        if 'downloads' in result.fields:
-            md += f"- **Downloads:** {result.fields['downloads']}\n"
 
         if 'comments' in result.fields:
             md += f"- **Comments:** {result.fields['comments']}\n"
