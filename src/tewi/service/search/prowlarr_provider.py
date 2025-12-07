@@ -514,7 +514,7 @@ class ProwlarrProvider(BaseSearchProvider):
                 # For complex types, convert to string
                 fields[key] = str(value)
             else:
-                fields[key] = str(value)
+                fields[key] = value
 
         return fields if fields else None
 
@@ -555,6 +555,30 @@ class ProwlarrProvider(BaseSearchProvider):
 
         return categories if categories else []
 
+    def _transform_field(self, key: str, value: str) -> tuple[str, str] | None:
+        """Transform field key and value for display.
+
+        Applies transformations like converting IDs to URLs.
+        This is a universal mechanism for enhancing field display.
+
+        Args:
+            key: Field name from Jackett response
+            value: Field value
+
+        Returns:
+            Tuple of (display_name, display_value)
+        """
+        if key == 'imdbId':
+            if value:
+                return 'IMDB', f"https://www.imdb.com/title/tt{value}/"
+            else:
+                return None, None
+        elif key in ['tmdbId', 'tvMazeId', 'tvdbId']:
+            if not value:
+                return None, None
+
+        return key, value
+
     def details_extended(self, result: SearchResultDTO) -> str:
         """Generate Prowlarr-specific details for right column.
 
@@ -574,6 +598,9 @@ class ProwlarrProvider(BaseSearchProvider):
         # Print all fields in sorted order for consistent display
         for key in sorted(result.fields.keys()):
             value = result.fields[key]
-            md += f"- **{key}:** {value}\n"
+            # Transform field for display
+            display_name, display_value = self._transform_field(key, value)
+            if display_name:
+                md += f"- **{display_name}:** {display_value}\n"
 
         return md
