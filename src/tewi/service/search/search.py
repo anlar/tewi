@@ -11,7 +11,8 @@ from . import (
         TorrentsCsvProvider,
         TPBProvider,
         NyaaProvider,
-        JackettProvider
+        JackettProvider,
+        ProwlarrProvider
 )
 
 
@@ -23,7 +24,8 @@ AVAILABLE_PROVIDERS = {
     'torrentscsv': TorrentsCsvProvider,
     'yts': YTSProvider,
     'nyaa': NyaaProvider,
-    'jackett': JackettProvider
+    'jackett': JackettProvider,
+    'prowlarr': ProwlarrProvider
 }
 
 
@@ -33,8 +35,8 @@ def print_available_providers() -> None:
     for provider_id in sorted(AVAILABLE_PROVIDERS.keys()):
         provider_class = AVAILABLE_PROVIDERS[provider_id]
         # Create temporary instance to get name
-        if provider_id == 'jackett':
-            # Jackett needs dummy args to instantiate
+        if provider_id in ('jackett', 'prowlarr'):
+            # Jackett and Prowlarr need dummy args to instantiate
             instance = provider_class(None, None)
         else:
             instance = provider_class()
@@ -55,18 +57,23 @@ class SearchClient:
     """
 
     def __init__(self, jackett_url: str | None, jackett_api_key: str | None,
+                 prowlarr_url: str | None, prowlarr_api_key: str | None,
                  enabled_providers: str | None = None):
         """Initialize search client with available providers.
 
         Args:
             jackett_url: Base URL of Jackett instance (optional)
             jackett_api_key: API key for Jackett authentication (optional)
+            prowlarr_url: Base URL of Prowlarr instance (optional)
+            prowlarr_api_key: API key for Prowlarr authentication (optional)
             enabled_providers: Comma-separated list of provider IDs to enable,
                              or None to enable all providers
         """
         self._providers: list[BaseSearchProvider] | None = None
         self._jackett_url = jackett_url
         self._jackett_api_key = jackett_api_key
+        self._prowlarr_url = prowlarr_url
+        self._prowlarr_api_key = prowlarr_api_key
         self._enabled_providers = self._parse_enabled_providers(
             enabled_providers)
 
@@ -140,6 +147,14 @@ class SearchClient:
                             provider_class(
                                 self._jackett_url,
                                 self._jackett_api_key))
+                elif provider_id == 'prowlarr':
+                    # Prowlarr requires configuration
+                    if self._prowlarr_url and self._prowlarr_api_key:
+                        provider_class = AVAILABLE_PROVIDERS[provider_id]
+                        self._providers.append(
+                            provider_class(
+                                self._prowlarr_url,
+                                self._prowlarr_api_key))
                 else:
                     # Regular providers
                     provider_class = AVAILABLE_PROVIDERS[provider_id]
@@ -234,12 +249,42 @@ class SearchClient:
 
         return all_results, errors
 
-    def _filter_providers(self, selected_indexers: list[str] | None) -> list[BaseSearchProvider]:
+    def _group_indexers(
+            self,
+            selected_indexers: list[str]) -> tuple[
+                set[str], list[str], list[str]]:
+        """Group selected indexers by provider type.
+
+        Args:
+            selected_indexers: List of indexer IDs
+
+        Returns:
+            Tuple of (regular_providers, jackett_indexers, prowlarr_indexers)
+        """
+        regular_providers = set()
+        jackett_indexers = []
+        prowlarr_indexers = []
+
+        for indexer_id in selected_indexers:
+            if indexer_id.startswith('jackett:'):
+                jackett_indexers.append(indexer_id.removeprefix('jackett:'))
+            elif indexer_id.startswith('prowlarr:'):
+                prowlarr_indexers.append(
+                    indexer_id.removeprefix('prowlarr:'))
+            else:
+                regular_providers.add(indexer_id)
+
+        return regular_providers, jackett_indexers, prowlarr_indexers
+
+    def _filter_providers(
+            self,
+            selected_indexers: list[str] | None) -> list[
+                BaseSearchProvider]:
         """Filter providers based on selected indexers.
 
         Processes the selected indexer IDs and returns the appropriate
-        providers to search. Handles special cases like Jackett where
-        individual indexers need to be configured.
+        providers to search. Handles special cases like Jackett/Prowlarr
+        where individual indexers need to be configured.
 
         Args:
             selected_indexers: List of indexer IDs to search,
@@ -249,34 +294,20 @@ class SearchClient:
             List of BaseSearchProvider instances to search
         """
         if selected_indexers is None:
-            # Search all providers
             return self.get_providers()
 
+        regular, jackett, prowlarr = self._group_indexers(selected_indexers)
         providers_to_search = []
 
-        # Group selected indexers by provider
-        regular_providers = set()
-        jackett_indexers = []
-
-        for indexer_id in selected_indexers:
-            if indexer_id.startswith('jackett:'):
-                # Extract jackett indexer ID (remove 'jackett:' prefix)
-                jackett_indexers.append(indexer_id.removeprefix('jackett:'))
-            else:
-                # Regular provider
-                regular_providers.add(indexer_id)
-
-        # Add regular providers if selected
         for provider in self.get_providers():
             provider_id = provider.id()
-            if provider_id == 'jackett':
-                # Handle Jackett separately
-                if jackett_indexers:
-                    # Configure Jackett with selected indexers
-                    provider.set_selected_indexers(jackett_indexers)
-                    providers_to_search.append(provider)
-            elif provider_id in regular_providers:
-                # Add regular provider
+            if provider_id == 'jackett' and jackett:
+                provider.set_selected_indexers(jackett)
+                providers_to_search.append(provider)
+            elif provider_id == 'prowlarr' and prowlarr:
+                provider.set_selected_indexers(prowlarr)
+                providers_to_search.append(provider)
+            elif provider_id in regular:
                 providers_to_search.append(provider)
 
         return providers_to_search
