@@ -192,6 +192,12 @@ def _load_search_section(parser: configparser.ConfigParser,
     val = _get_string_option(parser, 'search', 'jackett_api_key')
     if val:
         config['jackett_api_key'] = val
+    val = _get_string_option(parser, 'search', 'prowlarr_url')
+    if val:
+        config['prowlarr_url'] = val
+    val = _get_string_option(parser, 'search', 'prowlarr_api_key')
+    if val:
+        config['prowlarr_api_key'] = val
     val = _get_string_option(parser, 'search', 'providers')
     if val:
         config['search_providers'] = val
@@ -309,8 +315,15 @@ jackett_url =
 # API key for Jackett authentication
 jackett_api_key =
 
+# Prowlarr server configuration for torrent search
+# URL of your Prowlarr instance (default: http://localhost:9696)
+prowlarr_url =
+
+# API key for Prowlarr authentication
+prowlarr_api_key =
+
 # Comma-separated list of enabled search providers
-# Available: tpb, torrentscsv, yts, nyaa, jackett
+# Available: tpb, torrentscsv, yts, nyaa, jackett, prowlarr
 # Leave empty to enable all providers
 providers =
 

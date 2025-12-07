@@ -110,6 +110,8 @@ class MainApp(App):
                  version: str,
                  jackett_url: str,
                  jackett_api_key: str,
+                 prowlarr_url: str,
+                 prowlarr_api_key: str,
                  search_query: str,
                  filter: str,
                  badge_max_count: int,
@@ -132,6 +134,8 @@ class MainApp(App):
         self.initial_search_query = search_query
         self.jackett_url = jackett_url
         self.jackett_api_key = jackett_api_key
+        self.prowlarr_url = prowlarr_url
+        self.prowlarr_api_key = prowlarr_api_key
 
         self.c_type = client_type
         self.c_host = host
@@ -144,6 +148,7 @@ class MainApp(App):
                                     password=password)
 
         self.search = SearchClient(jackett_url, jackett_api_key,
+                                   prowlarr_url, prowlarr_api_key,
                                    search_providers)
 
         self.sort_order = sort_orders[0]
@@ -171,6 +176,8 @@ class MainApp(App):
                 yield TorrentWebSearch(
                     jackett_url=self.jackett_url,
                     jackett_api_key=self.jackett_api_key,
+                    prowlarr_url=self.prowlarr_url,
+                    prowlarr_api_key=self.prowlarr_api_key,
                     id="torrent-websearch"
                 )
 
@@ -628,10 +635,17 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     p.add_argument('--jackett-api-key', type=str,
                    action=TrackSetAction,
                    help='API key for Jackett authentication')
+    p.add_argument('--prowlarr-url', type=str,
+                   default='http://localhost:9696',
+                   action=TrackSetAction,
+                   help='URL of your Prowlarr instance')
+    p.add_argument('--prowlarr-api-key', type=str,
+                   action=TrackSetAction,
+                   help='API key for Prowlarr authentication')
     p.add_argument('--search-providers', type=str,
                    action=TrackSetAction,
                    help='Comma-separated list of enabled search providers '
-                   '(tpb, torrentscsv, yts, nyaa, jackett). '
+                   '(tpb, torrentscsv, yts, nyaa, jackett, prowlarr). '
                    'Leave empty to enable all')
     p.add_argument('--list-search-providers', action='store_true',
                    help='List available search providers and exit')
@@ -781,6 +795,8 @@ def create_app():
                       version=tewi_version,
                       jackett_url=args.jackett_url,
                       jackett_api_key=args.jackett_api_key,
+                      prowlarr_url=args.prowlarr_url,
+                      prowlarr_api_key=args.prowlarr_api_key,
                       search_query=args.search,
                       filter=args.filter,
                       badge_max_count=args.badge_max_count,

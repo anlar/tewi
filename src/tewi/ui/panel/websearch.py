@@ -19,7 +19,7 @@ from ...message import (
 )
 from ...service.search import (YTSProvider, TorrentsCsvProvider,
                                TPBProvider, NyaaProvider,
-                               JackettProvider)
+                               JackettProvider, ProwlarrProvider)
 from ...util.decorator import log_time
 from ...util.print import print_size, escape_markup
 
@@ -54,13 +54,16 @@ class TorrentWebSearch(Static):
     def __init__(self,
                  jackett_url: str | None = None,
                  jackett_api_key: str | None = None,
+                 prowlarr_url: str | None = None,
+                 prowlarr_api_key: str | None = None,
                  **kwargs) -> None:
         super().__init__(**kwargs)
         self.providers = [YTSProvider(),
                           TorrentsCsvProvider(),
                           TPBProvider(),
                           NyaaProvider(),
-                          JackettProvider(jackett_url, jackett_api_key)]
+                          JackettProvider(jackett_url, jackett_api_key),
+                          ProwlarrProvider(prowlarr_url, prowlarr_api_key)]
 
     @log_time
     def compose(self) -> ComposeResult:
