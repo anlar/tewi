@@ -483,6 +483,7 @@ class ProwlarrProvider(BaseSearchProvider):
         # Fields already mapped to SearchResultDTO attributes
         excluded_fields = {
             'title',           # -> title
+            'fileName',        # -> title
             'categories',      # -> categories (objects, not IDs)
             'seeders',         # -> seeders
             'leechers',        # -> leechers
@@ -497,6 +498,9 @@ class ProwlarrProvider(BaseSearchProvider):
             'guid',            # -> magnet_link (actual magnet)
             'downloadUrl',     # -> torrent_link
             'sortTitle',       # internal field
+            'age',             # -> publish_date
+            'ageHours',        # -> publish_date
+            'ageMinutes',      # -> publish_date
         }
 
         fields = {}
@@ -576,6 +580,12 @@ class ProwlarrProvider(BaseSearchProvider):
         elif key in ['tmdbId', 'tvMazeId', 'tvdbId']:
             if not value:
                 return None, None
+        elif key in ['grabs', 'protocol']:
+            return key.capitalize(), value
+        elif key == 'indexerFlags':
+            return 'Indexer Flags', value
+        elif key == 'posterUrl':
+            return 'Poster', value
 
         return key, value
 
