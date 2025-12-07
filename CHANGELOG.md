@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+### Changed
+
+### Removed
+
+## [2.0.0] - 2025-12-07 - White Rabbit of Good Fortune
+
+### Added
+
 - Support for Deluge torrent client (via Web API) [#110](https://github.com/anlar/tewi/issues/110)
 - Configuration profiles support (`--profile` option to load profile configs, `--profiles` to list available profiles) [#108](https://github.com/anlar/tewi/issues/108)
 - Add Jackett torrent search provider [#118](https://github.com/anlar/tewi/issues/118)
@@ -35,13 +43,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Refactored search providers: use only full name (removed short name)
 - Escape markup characters in torrent names in web search results table
 
-### Removed
-
 ## [1.2.1] - 2025-11-30 - Sharing Krolik
 
 ### Changed
 
-Fix bug when adding new torrent from UI
+- Fix bug when adding new torrent from UI
 
 ## [1.2.0] - 2025-11-28 - Sharing Krolik
 
