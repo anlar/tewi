@@ -227,6 +227,7 @@ class BaseSearchProvider(ABC):
                         downloads=result.downloads,
                         page_url=result.page_url,
                         torrent_link=result.torrent_link,
+                        freeleech=result.freeleech,
                         fields=result.fields
                     )
             refined_results.append(result)
@@ -272,7 +273,7 @@ class BaseSearchProvider(ABC):
             md += f"- **Uploaded:** {date_str}\n"
 
         if result.freeleech:
-            md += f"- **Freeleech:** {result.freeleech}\n"
+            md += "- **Freeleech:** Yes\n"
 
         return md
 

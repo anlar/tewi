@@ -333,8 +333,7 @@ class ProwlarrProvider(BaseSearchProvider):
             if not magnet_link and not torrent_link:
                 return None
 
-            # Detect freeleech on non-public trackers
-            # TODO: detect if tracker is non-public
+            # Detect freeleech
             freeleech = 'freeleech' in result.get('indexerFlags')
 
             # Extract downloads from grabs field
