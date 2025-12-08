@@ -22,7 +22,9 @@ import argparse
 import logging
 import sys
 
-from datetime import datetime
+from pathlib import Path
+
+from platformdirs import user_log_dir
 
 from textual import on, work
 from textual.app import App, ComposeResult
@@ -660,7 +662,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     # Other
     p.add_argument('--logs', default=False,
                    action=argparse.BooleanOptionalAction,
-                   help='Enable verbose logs (saved to `tewi_TS.log` file)')
+                   help='Enable verbose logs')
     p.add_argument('--version', action='version',
                    version='%(prog)s ' + version,
                    help='Show version and exit')
@@ -758,9 +760,11 @@ def create_app():
     merge_config_with_args(config, args)
 
     if args.logs:
-        now = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        log_dir = Path(user_log_dir('tewi', appauthor=False))
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / 'tewi.log'
         logging.basicConfig(
-                filename=(f'tewi_{now}.log'),
+                filename=str(log_file),
                 encoding='utf-8',
                 format='%(asctime)s.%(msecs)03d %(module)-15s '
                        '%(levelname)-8s %(message)s',

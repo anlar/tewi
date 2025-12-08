@@ -15,6 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Use `platformdirs` library to get location for config and logs directories [#140](https://github.com/anlar/tewi/issues/140)
+- Log file moved to platform-specific directory [#140](https://github.com/anlar/tewi/issues/140)
+
 ### Removed
 
 ## [2.0.0] - 2025-12-07 - White Rabbit of Good Fortune
