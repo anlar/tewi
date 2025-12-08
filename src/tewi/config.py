@@ -17,10 +17,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import configparser
-import os
 import sys
 from pathlib import Path
 from argparse import Action, Namespace
+
+from platformdirs import user_config_dir
 
 
 class TrackSetAction(Action):
@@ -34,16 +35,11 @@ class TrackSetAction(Action):
 
 def get_config_dir() -> Path:
     """
-    Get the configuration directory path following XDG Base Directory spec.
+    Get the configuration directory path using platformdirs.
 
-    Returns path to tewi directory in XDG_CONFIG_HOME/tewi or
-    ~/.config/tewi if not set.
+    Returns the platform-appropriate user config directory for tewi.
     """
-    config_home = os.environ.get('XDG_CONFIG_HOME')
-    if config_home:
-        return Path(config_home) / 'tewi'
-    else:
-        return Path.home() / '.config' / 'tewi'
+    return Path(user_config_dir('tewi', appauthor=False))
 
 
 def get_config_path(profile: str | None = None) -> Path:
