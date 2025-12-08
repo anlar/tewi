@@ -208,15 +208,43 @@ class JackettProvider(BaseSearchProvider):
         # Store categories for use in URL building
         self._selected_categories = categories
 
-        # If specific indexers selected, search each individually
-        # (Jackett has bug with comma-separated indexers in URL)
-        if self._selected_indexers and len(self._selected_indexers) > 0:
+        # If specific indexers selected that differ from all indexers,
+        # search each individually
+        # (Jackett can search only on 1 or all indexers)
+        if self._should_search_multiple_indexers():
             return self._search_multiple_indexers(query)
+        else:
+            # Search all indexers
+            url = self._build_search_url(query, 'all')
+            data = self._fetch_results(url)
+            return self._process_results(data)
 
-        # Search all indexers
-        url = self._build_search_url(query, 'all')
-        data = self._fetch_results(url)
-        return self._process_results(data)
+    def _should_search_multiple_indexers(self) -> bool:
+        """Check if selected indexers differ from all available indexers.
+
+        Returns:
+            True if specific indexers are selected and they differ from all
+            available indexers, False otherwise
+        """
+        # No indexers selected means search all
+        if not self._selected_indexers or len(self._selected_indexers) == 0:
+            return False
+
+        # Get all available indexers
+        all_indexers = self.indexers()
+        if not all_indexers:
+            return False
+
+        # Extract indexer IDs without 'jackett:' prefix
+        all_indexer_ids = set()
+        for indexer in all_indexers:
+            # Remove 'jackett:' prefix from ID
+            indexer_id = indexer.id.replace('jackett:', '', 1)
+            all_indexer_ids.add(indexer_id)
+
+        # Compare selected indexers with all indexers
+        selected_set = set(self._selected_indexers)
+        return selected_set != all_indexer_ids
 
     def _search_multiple_indexers(
             self,
