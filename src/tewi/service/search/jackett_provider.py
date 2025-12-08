@@ -6,6 +6,7 @@ import urllib.parse
 import json
 from datetime import datetime, timedelta
 from typing import Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .base_provider import BaseSearchProvider
 from ...common import SearchResultDTO, Category, JackettCategories, IndexerDTO
@@ -251,9 +252,6 @@ class JackettProvider(BaseSearchProvider):
             query: str) -> list[SearchResultDTO]:
         """Search multiple indexers individually and combine results.
 
-        Workaround for Jackett bug where comma-separated indexers
-        in URL path cause NullReferenceException.
-
         Args:
             query: Search term
 
@@ -261,17 +259,27 @@ class JackettProvider(BaseSearchProvider):
             Combined list of SearchResultDTO objects from all indexers
         """
         all_results = []
-        for indexer_id in self._selected_indexers:
-            try:
-                url = self._build_search_url(query, indexer_id)
-                data = self._fetch_results(url)
-                results = self._process_results(data)
-                all_results.extend(results)
-            except Exception as e:
-                # Log error but continue with other indexers
-                logger.warning(
-                    f"Jackett indexer '{indexer_id}' failed: {e}")
+
+        with ThreadPoolExecutor(max_workers=len(self._selected_indexers)) as executor:
+            futures = {
+                executor.submit(self.fetch_from_indexer, query, indexer_id): indexer_id
+                for indexer_id in self._selected_indexers
+            }
+
+            for future in as_completed(futures):
+                indexer_id = futures[future]
+                try:
+                    all_results.extend(future.result())
+                except Exception as e:
+                    logger.warning(f"Jackett indexer '{indexer_id}' failed: {e}")
+
         return all_results
+
+    def fetch_from_indexer(self, query, indexer_id):
+        """Helper for parallel execution."""
+        url = self._build_search_url(query, indexer_id)
+        data = self._fetch_results(url)
+        return self._process_results(data)
 
     def set_selected_indexers(self, indexer_ids: list[str] | None) -> None:
         """Set which indexers to search.
