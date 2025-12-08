@@ -36,7 +36,6 @@ class JackettProvider(BaseSearchProvider):
         self.api_key = api_key
         self._config_error = self._validate_config(jackett_url, api_key)
         self._selected_indexers: list[str] | None = None
-        self._selected_categories: list[Category] | None = None
         self._cached_indexers: list[IndexerDTO] | None = None
         self._cache_time: datetime | None = None
         self._cache_duration = timedelta(minutes=10)
@@ -206,17 +205,14 @@ class JackettProvider(BaseSearchProvider):
         if not query or not query.strip():
             return []
 
-        # Store categories for use in URL building
-        self._selected_categories = categories
-
         # If specific indexers selected that differ from all indexers,
         # search each individually
         # (Jackett can search only on 1 or all indexers)
         if self._should_search_multiple_indexers():
-            return self._search_multiple_indexers(query)
+            return self._search_multiple_indexers(query, categories)
         else:
             # Search all indexers
-            url = self._build_search_url(query, 'all')
+            url = self._build_search_url(query, 'all', categories)
             data = self._fetch_results(url)
             return self._process_results(data)
 
@@ -249,7 +245,8 @@ class JackettProvider(BaseSearchProvider):
 
     def _search_multiple_indexers(
             self,
-            query: str) -> list[SearchResultDTO]:
+            query: str,
+            categories: list[Category] | None) -> list[SearchResultDTO]:
         """Search multiple indexers individually and combine results.
 
         Args:
@@ -262,7 +259,8 @@ class JackettProvider(BaseSearchProvider):
 
         with ThreadPoolExecutor(max_workers=len(self._selected_indexers)) as executor:
             futures = {
-                executor.submit(self.fetch_from_indexer, query, indexer_id): indexer_id
+                executor.submit(self.fetch_from_indexer,
+                                query, indexer_id, categories): indexer_id
                 for indexer_id in self._selected_indexers
             }
 
@@ -275,7 +273,7 @@ class JackettProvider(BaseSearchProvider):
 
         return all_results
 
-    def fetch_from_indexer(self, query, indexer_id):
+    def fetch_from_indexer(self, query, indexer_id, categories: list[Category] | None):
         """Helper for parallel execution."""
         url = self._build_search_url(query, indexer_id)
         data = self._fetch_results(url)
@@ -290,7 +288,8 @@ class JackettProvider(BaseSearchProvider):
         """
         self._selected_indexers = indexer_ids
 
-    def _build_search_url(self, query: str, indexers: str) -> str:
+    def _build_search_url(self, query: str, indexers: str,
+                          categories: list[Category] | None) -> str:
         """Build Jackett API search URL.
 
         Args:
@@ -308,10 +307,10 @@ class JackettProvider(BaseSearchProvider):
         }
 
         # Add category filter if specified
-        if self._selected_categories:
+        if categories:
             # Jackett accepts comma-separated category IDs (as strings)
             params['Category'] = ','.join(
-                str(cat.id) for cat in self._selected_categories)
+                str(cat.id) for cat in categories)
 
         return f"{endpoint}?{urllib.parse.urlencode(params)}"
 
