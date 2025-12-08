@@ -227,6 +227,7 @@ class BaseSearchProvider(ABC):
                         downloads=result.downloads,
                         page_url=result.page_url,
                         torrent_link=result.torrent_link,
+                        freeleech=result.freeleech,
                         fields=result.fields
                     )
             refined_results.append(result)
@@ -270,6 +271,9 @@ class BaseSearchProvider(ABC):
         if result.upload_date:
             date_str = result.upload_date.strftime('%Y-%m-%d %H:%M')
             md += f"- **Uploaded:** {date_str}\n"
+
+        if result.freeleech:
+            md += "- **Freeleech:** Yes\n"
 
         return md
 

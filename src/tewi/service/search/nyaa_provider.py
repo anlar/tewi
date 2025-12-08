@@ -213,6 +213,7 @@ class NyaaProvider(BaseSearchProvider):
                 provider_id=self.id(),
                 page_url=page_url,
                 torrent_link=None,
+                freeleech=True,  # Public tracker
                 fields=fields
             )
 
