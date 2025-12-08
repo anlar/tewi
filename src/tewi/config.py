@@ -324,7 +324,7 @@ prowlarr_api_key =
 providers =
 
 [debug]
-# Enable verbose logs: boolean (saved to tewi_<timestamp>.log file)
+# Enable verbose logs: boolean
 logs =
 
 """
