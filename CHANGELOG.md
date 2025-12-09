@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Use `platformdirs` library to get location for config and logs directories [#140](https://github.com/anlar/tewi/issues/140)
 - Log file moved to platform-specific directory [#140](https://github.com/anlar/tewi/issues/140)
-- Optimize Jackett search to use 'all' endpoint when all indexers are selected
+- Optimize Jackett search (use 'all' endpoint or run indexers in parallel)
 
 ### Removed
 
