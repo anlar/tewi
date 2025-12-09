@@ -1,4 +1,5 @@
 from typing import NamedTuple
+from dataclasses import dataclass
 
 
 class PageState(NamedTuple):
@@ -50,6 +51,11 @@ class FilterOption(NamedTuple):
     key: str
     display_name: str
     filter_func: None
+
+
+class FilterState(NamedTuple):
+    option: FilterOption
+    torrent_count: int
 
 
 filter_options = [
