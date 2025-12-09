@@ -8,8 +8,8 @@ from datetime import datetime, timedelta
 from typing import Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO, Category, JackettCategories, IndexerDTO
+from ..base import BaseSearchProvider
+from ..models import SearchResultDTO, Category, JackettCategories, IndexerDTO
 from ...util.decorator import log_time
 
 logger = logging.getLogger('tewi')

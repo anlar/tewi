@@ -1,7 +1,7 @@
 """Unit tests for category detection logic in search providers."""
 
-from src.tewi.service.search.base_provider import BaseSearchProvider
-from src.tewi.common import SearchResultDTO, JackettCategories
+from src.tewi.search.base import BaseSearchProvider
+from src.tewi.search.models import SearchResultDTO, JackettCategories
 
 
 class DummyProvider(BaseSearchProvider):

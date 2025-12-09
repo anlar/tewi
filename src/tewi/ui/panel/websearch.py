@@ -11,15 +11,15 @@ from textual.reactive import reactive
 
 from ..widget.common import ReactiveLabel
 from ..dialog.torrent_details import TorrentDetailsDialog
-from ...common import SearchResultDTO
+from ...search.models import SearchResultDTO
 from ...message import (
     OpenTorrentListCommand,
     AddTorrentFromWebSearchCommand,
     Notification
 )
-from ...service.search import (YTSProvider, TorrentsCsvProvider,
-                               TPBProvider, NyaaProvider,
-                               JackettProvider, ProwlarrProvider)
+from ...search.providers import (YTSProvider, TorrentsCsvProvider,
+                                 TPBProvider, NyaaProvider,
+                                 JackettProvider, ProwlarrProvider)
 from ...util.decorator import log_time
 from ...util.print import print_size, escape_markup
 

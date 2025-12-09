@@ -6,8 +6,8 @@ import json
 from datetime import datetime
 from typing import Any
 
-from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO, Category
+from ..base import BaseSearchProvider
+from ..models import SearchResultDTO, Category
 from ...util.decorator import log_time
 
 

@@ -6,8 +6,8 @@ import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
-from .base_provider import BaseSearchProvider
-from ...common import SearchResultDTO, JackettCategories, Category
+from ..base import BaseSearchProvider
+from ..models import SearchResultDTO, JackettCategories, Category
 from ...util.decorator import log_time
 
 

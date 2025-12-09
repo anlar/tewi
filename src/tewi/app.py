@@ -65,7 +65,7 @@ from .ui.panel.listview import TorrentListViewPanel
 from .ui.panel.details import TorrentInfoPanel
 from .ui.panel.websearch import TorrentWebSearch
 
-from .service.search.search import SearchClient, print_available_providers
+from .search.manager import SearchClient, print_available_providers
 
 
 logger = logging.getLogger('tewi')

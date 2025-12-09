@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional
 
 
@@ -15,6 +17,11 @@ class Category:
         if self.parent:
             return f"{self.parent.name}/{self.name}"
         return self.name
+
+    @property
+    def full_name(self) -> str:
+        """Alias for full_path for backward compatibility."""
+        return self.full_path
 
     @property
     def is_parent(self) -> bool:
@@ -140,3 +147,34 @@ class JackettCategories:
     def parent_categories(cls) -> list[Category]:
         """Get only parent categories."""
         return [c for c in cls.all_categories() if c.is_parent]
+
+
+@dataclass(frozen=True)
+class IndexerDTO:
+    id: str
+    name: str
+
+
+@dataclass(frozen=True)
+class SearchResultDTO:
+    """Data Transfer Object for web search results.
+
+    Note: All size fields are in bytes.
+    The fields dict contains provider-specific additional metadata.
+    """
+    title: str
+    categories: list[Category]
+    seeders: int
+    leechers: int
+    size: int  # bytes
+    files_count: int | None
+    magnet_link: str
+    info_hash: str | None  # Optional: can be None for results without hash
+    upload_date: datetime | None  # Unix timestamp from API
+    provider: str  # Display name of search provider
+    provider_id: str  # Unique provider identifier
+    downloads: int | None = None  # Download/grabs count
+    page_url: str | None = None  # Link to torrent page on provider site
+    torrent_link: str | None = None  # HTTP/HTTPS torrent file URL
+    freeleech: bool = False  # Is freeleech (always True for public trackers)
+    fields: dict[str, str] | None = None  # Provider-specific metadata

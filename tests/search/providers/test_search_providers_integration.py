@@ -10,12 +10,12 @@ import pytest
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from src.tewi.service.search.yts_provider import YTSProvider
-from src.tewi.service.search.tpb_provider import TPBProvider
-from src.tewi.service.search.torrentscsv_provider import TorrentsCsvProvider
-from src.tewi.service.search.nyaa_provider import NyaaProvider
-from src.tewi.service.search.jackett_provider import JackettProvider
-from src.tewi.common import SearchResultDTO, JackettCategories
+from src.tewi.search.providers.yts import YTSProvider
+from src.tewi.search.providers.tpb import TPBProvider
+from src.tewi.search.providers.torrentscsv import TorrentsCsvProvider
+from src.tewi.search.providers.nyaa import NyaaProvider
+from src.tewi.search.providers.jackett import JackettProvider
+from src.tewi.search.models import SearchResultDTO, JackettCategories
 
 
 # Mark all tests in this module as integration tests

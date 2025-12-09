@@ -4,9 +4,9 @@ import logging
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from ...common import SearchResultDTO, IndexerDTO, Category
-from .base_provider import BaseSearchProvider
-from . import (
+from .models import SearchResultDTO, IndexerDTO, Category
+from .base import BaseSearchProvider
+from .providers import (
         YTSProvider,
         TorrentsCsvProvider,
         TPBProvider,
