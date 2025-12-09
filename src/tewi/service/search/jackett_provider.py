@@ -6,6 +6,7 @@ import urllib.parse
 import json
 from datetime import datetime, timedelta
 from typing import Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from .base_provider import BaseSearchProvider
 from ...common import SearchResultDTO, Category, JackettCategories, IndexerDTO
@@ -35,7 +36,6 @@ class JackettProvider(BaseSearchProvider):
         self.api_key = api_key
         self._config_error = self._validate_config(jackett_url, api_key)
         self._selected_indexers: list[str] | None = None
-        self._selected_categories: list[Category] | None = None
         self._cached_indexers: list[IndexerDTO] | None = None
         self._cache_time: datetime | None = None
         self._cache_duration = timedelta(minutes=10)
@@ -205,26 +205,49 @@ class JackettProvider(BaseSearchProvider):
         if not query or not query.strip():
             return []
 
-        # Store categories for use in URL building
-        self._selected_categories = categories
+        # If specific indexers selected that differ from all indexers,
+        # search each individually
+        # (Jackett can search only on 1 or all indexers)
+        if self._should_search_multiple_indexers():
+            return self._search_multiple_indexers(query, categories)
+        else:
+            # Search all indexers
+            url = self._build_search_url(query, 'all', categories)
+            data = self._fetch_results(url)
+            return self._process_results(data)
 
-        # If specific indexers selected, search each individually
-        # (Jackett has bug with comma-separated indexers in URL)
-        if self._selected_indexers and len(self._selected_indexers) > 0:
-            return self._search_multiple_indexers(query)
+    def _should_search_multiple_indexers(self) -> bool:
+        """Check if selected indexers differ from all available indexers.
 
-        # Search all indexers
-        url = self._build_search_url(query, 'all')
-        data = self._fetch_results(url)
-        return self._process_results(data)
+        Returns:
+            True if specific indexers are selected and they differ from all
+            available indexers, False otherwise
+        """
+        # No indexers selected means search all
+        if not self._selected_indexers or len(self._selected_indexers) == 0:
+            return False
+
+        # Get all available indexers
+        all_indexers = self.indexers()
+        if not all_indexers:
+            return False
+
+        # Extract indexer IDs without 'jackett:' prefix
+        all_indexer_ids = set()
+        for indexer in all_indexers:
+            # Remove 'jackett:' prefix from ID
+            indexer_id = indexer.id.replace('jackett:', '', 1)
+            all_indexer_ids.add(indexer_id)
+
+        # Compare selected indexers with all indexers
+        selected_set = set(self._selected_indexers)
+        return selected_set != all_indexer_ids
 
     def _search_multiple_indexers(
             self,
-            query: str) -> list[SearchResultDTO]:
+            query: str,
+            categories: list[Category] | None) -> list[SearchResultDTO]:
         """Search multiple indexers individually and combine results.
-
-        Workaround for Jackett bug where comma-separated indexers
-        in URL path cause NullReferenceException.
 
         Args:
             query: Search term
@@ -233,17 +256,28 @@ class JackettProvider(BaseSearchProvider):
             Combined list of SearchResultDTO objects from all indexers
         """
         all_results = []
-        for indexer_id in self._selected_indexers:
-            try:
-                url = self._build_search_url(query, indexer_id)
-                data = self._fetch_results(url)
-                results = self._process_results(data)
-                all_results.extend(results)
-            except Exception as e:
-                # Log error but continue with other indexers
-                logger.warning(
-                    f"Jackett indexer '{indexer_id}' failed: {e}")
+
+        with ThreadPoolExecutor(max_workers=len(self._selected_indexers)) as executor:
+            futures = {
+                executor.submit(self.fetch_from_indexer,
+                                query, indexer_id, categories): indexer_id
+                for indexer_id in self._selected_indexers
+            }
+
+            for future in as_completed(futures):
+                indexer_id = futures[future]
+                try:
+                    all_results.extend(future.result())
+                except Exception as e:
+                    logger.warning(f"Jackett indexer '{indexer_id}' failed: {e}")
+
         return all_results
+
+    def fetch_from_indexer(self, query, indexer_id, categories: list[Category] | None):
+        """Helper for parallel execution."""
+        url = self._build_search_url(query, indexer_id)
+        data = self._fetch_results(url)
+        return self._process_results(data)
 
     def set_selected_indexers(self, indexer_ids: list[str] | None) -> None:
         """Set which indexers to search.
@@ -254,7 +288,8 @@ class JackettProvider(BaseSearchProvider):
         """
         self._selected_indexers = indexer_ids
 
-    def _build_search_url(self, query: str, indexers: str) -> str:
+    def _build_search_url(self, query: str, indexers: str,
+                          categories: list[Category] | None) -> str:
         """Build Jackett API search URL.
 
         Args:
@@ -272,10 +307,10 @@ class JackettProvider(BaseSearchProvider):
         }
 
         # Add category filter if specified
-        if self._selected_categories:
+        if categories:
             # Jackett accepts comma-separated category IDs (as strings)
             params['Category'] = ','.join(
-                str(cat.id) for cat in self._selected_categories)
+                str(cat.id) for cat in categories)
 
         return f"{endpoint}?{urllib.parse.urlencode(params)}"
 
