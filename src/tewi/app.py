@@ -221,8 +221,7 @@ class MainApp(App):
                 torrents = self.client.torrents()
 
             # Load session with full list of torrents (before filtering)
-            session = self.client.session(torrents,
-                                          self.r_filter_option)
+            session = self.client.session(torrents)
 
             torrents = [t for t in torrents
                         if self.r_filter_option.filter_func(t)]
@@ -477,8 +476,7 @@ class MainApp(App):
     @log_time
     @on(OpenAddTorrentCommand)
     def handle_open_add_torrent_command(self, event: OpenAddTorrentCommand) -> None:
-        session = self.client.session(self.r_torrents, self.r_sort_order,
-                                      self.r_sort_order_asc, self.r_filter_option)
+        session = self.client.session(self.r_torrents)
         self.push_screen(AddTorrentDialog(session['download_dir'],
                                           session['download_dir_free_space']))
 

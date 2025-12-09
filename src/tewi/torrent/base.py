@@ -6,7 +6,6 @@ from dataclasses import replace
 from typing import TypedDict
 
 from .models import CategoryDTO, FilePriority, TorrentDTO
-from ..ui.models import FilterOption
 
 
 class ClientMeta(TypedDict):
@@ -66,8 +65,6 @@ class ClientSession(TypedDict):
     torrents_check: int
     torrents_stop: int
 
-    filter_option: FilterOption
-
 
 class ClientError(Exception):
     """Base exception for all client errors."""
@@ -114,13 +111,11 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def session(self, torrents: list[TorrentDTO],
-                filter_option: FilterOption) -> ClientSession:
+    def session(self, torrents: list[TorrentDTO]) -> ClientSession:
         """Get session information with computed torrent counts.
 
         Args:
             torrents: List of torrents to compute counts from
-            filter_option: Current filter option
 
         Returns:
             ClientSession with speeds, settings, and torrent counts
