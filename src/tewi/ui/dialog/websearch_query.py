@@ -8,7 +8,7 @@ from textual.app import ComposeResult
 from textual.screen import ModalScreen
 from typing import ClassVar
 
-from ...search.models import JackettCategories
+from ...search.models import StandardCategories
 from ..messages import WebSearchQuerySubmitted, Notification
 from ...util.decorator import log_time
 from ...ui.widget.common import VimSelectionList
@@ -71,7 +71,7 @@ class WebSearchQueryWidget(Static):
 
     def _build_category_selections(self) -> list[Selection]:
         selections = []
-        for category in JackettCategories.parent_categories():
+        for category in StandardCategories.parent_categories():
             # Use category object as value instead of ID
             selections.append(
                 Selection(category.full_path, category, True))
@@ -127,7 +127,7 @@ class WebSearchQueryWidget(Static):
             return
 
         # If all categories are selected, pass None to search everything
-        all_categories_count = len(JackettCategories.parent_categories())
+        all_categories_count = len(StandardCategories.parent_categories())
         if len(selected_categories) == all_categories_count:
             selected_categories = None
 

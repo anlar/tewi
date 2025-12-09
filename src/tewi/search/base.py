@@ -3,7 +3,7 @@
 import urllib.parse
 import urllib.request
 from abc import ABC, abstractmethod
-from .models import SearchResultDTO, Category, JackettCategories, IndexerDTO
+from .models import SearchResultDTO, Category, StandardCategories, IndexerDTO
 from ..util.print import print_size
 
 
@@ -144,7 +144,7 @@ class BaseSearchProvider(ABC):
             'album', 'discography', 'soundtrack', 'ost', 'music',
         ]
         if any(pattern in name_lower for pattern in audio_patterns):
-            return JackettCategories.AUDIO
+            return StandardCategories.AUDIO
 
         # VIDEO: Check for video file extensions and keywords
         video_patterns = [
@@ -153,7 +153,7 @@ class BaseSearchProvider(ABC):
             'webrip', 'hdtv', 'x264', 'x265', 'hevc', 'dvdrip',
         ]
         if any(pattern in name_lower for pattern in video_patterns):
-            return JackettCategories.MOVIES
+            return StandardCategories.MOVIES
 
         # OTHER: Check for documents, archives, and other content FIRST
         # (before SOFTWARE to avoid "ebook" matching "app" in application)
@@ -163,7 +163,7 @@ class BaseSearchProvider(ABC):
             ' book', 'ebook', 'magazine', 'comic', 'tutorial',
         ]
         if any(pattern in name_lower for pattern in other_patterns):
-            return JackettCategories.BOOKS
+            return StandardCategories.BOOKS
 
         # SOFTWARE: Check for software extensions and keywords
         software_patterns = [
@@ -172,7 +172,7 @@ class BaseSearchProvider(ABC):
             'patch', 'crack', 'keygen', 'portable',
         ]
         if any(pattern in name_lower for pattern in software_patterns):
-            return JackettCategories.PC
+            return StandardCategories.PC
 
         # GAMES: Check for game-related keywords
         games_patterns = [
@@ -181,12 +181,12 @@ class BaseSearchProvider(ABC):
             'xbox', 'switch', 'nintendo',
         ]
         if any(pattern in name_lower for pattern in games_patterns):
-            return JackettCategories.CONSOLE
+            return StandardCategories.CONSOLE
 
         # XXX: Check for adult content keywords
         xxx_patterns = ['xxx', 'adult', '18+', 'nsfw', 'porn']
         if any(pattern in name_lower for pattern in xxx_patterns):
-            return JackettCategories.XXX
+            return StandardCategories.XXX
 
         # No pattern matched
         return None

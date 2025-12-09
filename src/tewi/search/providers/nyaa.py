@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 from ..base import BaseSearchProvider
-from ..models import SearchResultDTO, JackettCategories, Category
+from ..models import SearchResultDTO, StandardCategories, Category
 from ...util.decorator import log_time
 
 
@@ -311,39 +311,39 @@ class NyaaProvider(BaseSearchProvider):
         # Format: categoryId -> [Jackett Categories]
         category_map = {
             # Anime categories (1_x) - map to TV/Anime
-            '1_0': [JackettCategories.TV_ANIME],  # Anime
-            '1_1': [JackettCategories.TV_ANIME],  # Anime - AMV
-            '1_2': [JackettCategories.TV_ANIME],  # Anime - English-translated
-            '1_3': [JackettCategories.TV_ANIME],  # Anime - Non-English
-            '1_4': [JackettCategories.TV_ANIME],  # Anime - Raw
+            '1_0': [StandardCategories.TV_ANIME],  # Anime
+            '1_1': [StandardCategories.TV_ANIME],  # Anime - AMV
+            '1_2': [StandardCategories.TV_ANIME],  # Anime - English-translated
+            '1_3': [StandardCategories.TV_ANIME],  # Anime - Non-English
+            '1_4': [StandardCategories.TV_ANIME],  # Anime - Raw
 
             # Audio categories (2_x)
-            '2_0': [JackettCategories.AUDIO],  # Audio
-            '2_1': [JackettCategories.AUDIO_LOSSLESS],  # Audio - Lossless
-            '2_2': [JackettCategories.AUDIO],  # Audio - Lossy
+            '2_0': [StandardCategories.AUDIO],  # Audio
+            '2_1': [StandardCategories.AUDIO_LOSSLESS],  # Audio - Lossless
+            '2_2': [StandardCategories.AUDIO],  # Audio - Lossy
 
             # Literature categories (3_x)
-            '3_0': [JackettCategories.BOOKS],  # Literature
-            '3_1': [JackettCategories.BOOKS],  # Literature - English
-            '3_2': [JackettCategories.BOOKS],  # Literature - Non-English
-            '3_3': [JackettCategories.BOOKS],  # Literature - Raw
+            '3_0': [StandardCategories.BOOKS],  # Literature
+            '3_1': [StandardCategories.BOOKS],  # Literature - English
+            '3_2': [StandardCategories.BOOKS],  # Literature - Non-English
+            '3_3': [StandardCategories.BOOKS],  # Literature - Raw
 
             # Live Action categories (4_x)
-            '4_0': [JackettCategories.TV],  # Live Action
-            '4_1': [JackettCategories.TV],  # Live Action - English
-            '4_2': [JackettCategories.TV],  # Live Action - Idol/PV
-            '4_3': [JackettCategories.TV],  # Live Action - Non-English
-            '4_4': [JackettCategories.TV],  # Live Action - Raw
+            '4_0': [StandardCategories.TV],  # Live Action
+            '4_1': [StandardCategories.TV],  # Live Action - English
+            '4_2': [StandardCategories.TV],  # Live Action - Idol/PV
+            '4_3': [StandardCategories.TV],  # Live Action - Non-English
+            '4_4': [StandardCategories.TV],  # Live Action - Raw
 
             # Pictures categories (5_x)
-            '5_0': [JackettCategories.OTHER],  # Pictures
-            '5_1': [JackettCategories.OTHER],  # Pictures - Graphics
-            '5_2': [JackettCategories.OTHER],  # Pictures - Photos
+            '5_0': [StandardCategories.OTHER],  # Pictures
+            '5_1': [StandardCategories.OTHER],  # Pictures - Graphics
+            '5_2': [StandardCategories.OTHER],  # Pictures - Photos
 
             # Software categories (6_x)
-            '6_0': [JackettCategories.PC],  # Software
-            '6_1': [JackettCategories.PC_ISO],  # Software - Applications
-            '6_2': [JackettCategories.PC_GAMES],  # Software - Games
+            '6_0': [StandardCategories.PC],  # Software
+            '6_1': [StandardCategories.PC_ISO],  # Software - Applications
+            '6_2': [StandardCategories.PC_GAMES],  # Software - Games
         }
 
         return category_map.get(category_id, [])

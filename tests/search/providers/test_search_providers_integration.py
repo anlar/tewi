@@ -15,7 +15,7 @@ from src.tewi.search.providers.tpb import TPBProvider
 from src.tewi.search.providers.torrentscsv import TorrentsCsvProvider
 from src.tewi.search.providers.nyaa import NyaaProvider
 from src.tewi.search.providers.jackett import JackettProvider
-from src.tewi.search.models import SearchResultDTO, JackettCategories
+from src.tewi.search.models import SearchResultDTO, StandardCategories
 
 
 # Mark all tests in this module as integration tests
@@ -232,7 +232,7 @@ class TestYTSProviderIntegration(BaseProviderIntegrationTest):
         return "matrix"
 
     def get_valid_categories(self) -> set:
-        return {JackettCategories.MOVIES}
+        return {StandardCategories.MOVIES}
 
     def requires_trackers(self) -> bool:
         return True
@@ -248,10 +248,10 @@ class TestTPBProviderIntegration(BaseProviderIntegrationTest):
         return "ubuntu"
 
     def get_valid_categories(self) -> set:
-        return {JackettCategories.AUDIO, JackettCategories.MOVIES,
-                JackettCategories.PC, JackettCategories.CONSOLE,
-                JackettCategories.XXX, JackettCategories.OTHER,
-                JackettCategories.BOOKS}
+        return {StandardCategories.AUDIO, StandardCategories.MOVIES,
+                StandardCategories.PC, StandardCategories.CONSOLE,
+                StandardCategories.XXX, StandardCategories.OTHER,
+                StandardCategories.BOOKS}
 
     def requires_trackers(self) -> bool:
         return False
@@ -269,10 +269,10 @@ class TestTorrentsCsvProviderIntegration(BaseProviderIntegrationTest):
     def get_valid_categories(self) -> set:
         # TorrentsCSV returns empty categories, but refinement may detect
         # categories from torrent names
-        return {JackettCategories.AUDIO, JackettCategories.MOVIES,
-                JackettCategories.PC, JackettCategories.CONSOLE,
-                JackettCategories.XXX, JackettCategories.BOOKS,
-                JackettCategories.OTHER}
+        return {StandardCategories.AUDIO, StandardCategories.MOVIES,
+                StandardCategories.PC, StandardCategories.CONSOLE,
+                StandardCategories.XXX, StandardCategories.BOOKS,
+                StandardCategories.OTHER}
 
     def requires_trackers(self) -> bool:
         return False
@@ -291,20 +291,20 @@ class TestNyaaProviderIntegration(BaseProviderIntegrationTest):
         # Nyaa categories are now mapped to Jackett categories based on categoryId
         return {
             # Anime categories
-            JackettCategories.TV_ANIME,
+            StandardCategories.TV_ANIME,
             # Audio categories
-            JackettCategories.AUDIO,
-            JackettCategories.AUDIO_LOSSLESS,
+            StandardCategories.AUDIO,
+            StandardCategories.AUDIO_LOSSLESS,
             # Literature categories
-            JackettCategories.BOOKS,
+            StandardCategories.BOOKS,
             # Live Action categories
-            JackettCategories.TV,
+            StandardCategories.TV,
             # Pictures categories
-            JackettCategories.OTHER,
+            StandardCategories.OTHER,
             # Software categories
-            JackettCategories.PC,
-            JackettCategories.PC_ISO,
-            JackettCategories.PC_GAMES,
+            StandardCategories.PC,
+            StandardCategories.PC_ISO,
+            StandardCategories.PC_GAMES,
         }
 
     def requires_trackers(self) -> bool:
@@ -335,7 +335,7 @@ class TestJackettProviderIntegration(BaseProviderIntegrationTest):
 
     def get_valid_categories(self) -> set:
         # Jackett can return any category
-        return set(JackettCategories.all_categories())
+        return set(StandardCategories.all_categories())
 
     def requires_trackers(self) -> bool:
         # Jackett may or may not have trackers depending on indexer

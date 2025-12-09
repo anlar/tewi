@@ -32,8 +32,21 @@ class Category:
         return f"Category(id={self.id}, name='{self.name}')"
 
 
-class JackettCategories:
-    """Jackett category definitions with hierarchy."""
+class StandardCategories:
+    """Full list of categories.
+
+    Parent categories shouldn't change - they are used as parameters
+    for search providers (Prowlarr, Jackett).
+
+    Sub-categories are only used to parse search results so they could
+    contain maximum set of categories.
+
+    List built from Jackett categories with addition of missing categories
+    from Prowlarr.
+
+    * https://github.com/Jackett/Jackett/wiki/Jackett-Categories
+    * https://github.com/Prowlarr/Prowlarr/blob/develop/src/NzbDrone.Core/Indexers/NewznabStandardCategory.cs
+    """
 
     # Parent categories
     CONSOLE = Category(1000, "Console")
@@ -71,6 +84,7 @@ class JackettCategories:
     MOVIES_3D = Category(2060, "3D", MOVIES)
     MOVIES_DVD = Category(2070, "DVD", MOVIES)
     MOVIES_WEBDL = Category(2080, "WEB-DL", MOVIES)
+    MOVIES_X265 = Category(2090, "x265", MOVIES)
 
     # Audio subcategories
     AUDIO_MP3 = Category(3010, "MP3", AUDIO)
@@ -99,6 +113,7 @@ class JackettCategories:
     TV_SPORT = Category(5060, "Sport", TV)
     TV_ANIME = Category(5070, "Anime", TV)
     TV_DOCUMENTARY = Category(5080, "Documentary", TV)
+    TV_X265 = Category(5090, "x265", TV)
 
     # XXX subcategories
     XXX_DVD = Category(6010, "DVD", XXX)

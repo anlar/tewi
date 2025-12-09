@@ -7,7 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from ..base import BaseSearchProvider
-from ..models import SearchResultDTO, JackettCategories, Category
+from ..models import SearchResultDTO, StandardCategories, Category
 from ...util.decorator import log_time
 
 
@@ -231,14 +231,14 @@ class YTSProvider(BaseSearchProvider):
         quality_lower = quality.lower() if quality else ""
 
         if "2160p" in quality_lower or "4k" in quality_lower:
-            return [JackettCategories.MOVIES_UHD]
+            return [StandardCategories.MOVIES_UHD]
         elif "3d" in quality_lower:
-            return [JackettCategories.MOVIES_3D]
+            return [StandardCategories.MOVIES_3D]
         elif "720p" in quality_lower or "1080p" in quality_lower:
-            return [JackettCategories.MOVIES_HD]
+            return [StandardCategories.MOVIES_HD]
         else:
             # Default to general Movies category
-            return [JackettCategories.MOVIES]
+            return [StandardCategories.MOVIES]
 
     def _parse_torrent(self, movie: dict[str, Any],
                        torrent: dict[str, Any]) -> SearchResultDTO | None:

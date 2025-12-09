@@ -9,7 +9,7 @@ from typing import Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from ..base import BaseSearchProvider
-from ..models import SearchResultDTO, Category, JackettCategories, IndexerDTO
+from ..models import SearchResultDTO, Category, StandardCategories, IndexerDTO
 from ...util.decorator import log_time
 
 logger = logging.getLogger('tewi')
@@ -608,7 +608,7 @@ class JackettProvider(BaseSearchProvider):
         # Map codes to Category objects
         categories = []
         for code in codes:
-            category = JackettCategories.get_by_id(code)
+            category = StandardCategories.get_by_id(code)
             if category:
                 categories.append(category)
 

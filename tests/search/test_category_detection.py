@@ -1,7 +1,7 @@
 """Unit tests for category detection logic in search providers."""
 
 from src.tewi.search.base import BaseSearchProvider
-from src.tewi.search.models import SearchResultDTO, JackettCategories
+from src.tewi.search.models import SearchResultDTO, StandardCategories
 
 
 class DummyProvider(BaseSearchProvider):
@@ -30,141 +30,141 @@ class TestCategoryDetection:
         """Test detection of audio category by file extension."""
         assert self.provider._detect_category_from_name(
             "Artist - Album (2024) [FLAC].zip"
-        ) == JackettCategories.AUDIO
+        ) == StandardCategories.AUDIO
 
         assert self.provider._detect_category_from_name(
             "Song.mp3"
-        ) == JackettCategories.AUDIO
+        ) == StandardCategories.AUDIO
 
         assert self.provider._detect_category_from_name(
             "Soundtrack.m4a"
-        ) == JackettCategories.AUDIO
+        ) == StandardCategories.AUDIO
 
     def test_detect_audio_by_keyword(self):
         """Test detection of audio category by keyword."""
         assert self.provider._detect_category_from_name(
             "Artist Discography 1990-2024"
-        ) == JackettCategories.AUDIO
+        ) == StandardCategories.AUDIO
 
         assert self.provider._detect_category_from_name(
             "Game Soundtrack OST"
-        ) == JackettCategories.AUDIO
+        ) == StandardCategories.AUDIO
 
         assert self.provider._detect_category_from_name(
             "Music Collection"
-        ) == JackettCategories.AUDIO
+        ) == StandardCategories.AUDIO
 
     def test_detect_video_by_extension(self):
         """Test detection of video category by file extension."""
         assert self.provider._detect_category_from_name(
             "Movie.2024.mkv"
-        ) == JackettCategories.MOVIES
+        ) == StandardCategories.MOVIES
 
         assert self.provider._detect_category_from_name(
             "Series.S01E01.mp4"
-        ) == JackettCategories.MOVIES
+        ) == StandardCategories.MOVIES
 
         assert self.provider._detect_category_from_name(
             "Documentary.avi"
-        ) == JackettCategories.MOVIES
+        ) == StandardCategories.MOVIES
 
     def test_detect_video_by_keyword(self):
         """Test detection of video category by keyword."""
         assert self.provider._detect_category_from_name(
             "The Matrix (1999) 1080p BluRay x264"
-        ) == JackettCategories.MOVIES
+        ) == StandardCategories.MOVIES
 
         assert self.provider._detect_category_from_name(
             "Film Title 2024 4K HEVC"
-        ) == JackettCategories.MOVIES
+        ) == StandardCategories.MOVIES
 
         assert self.provider._detect_category_from_name(
             "Series S01 720p WEBRip"
-        ) == JackettCategories.MOVIES
+        ) == StandardCategories.MOVIES
 
     def test_detect_software_by_extension(self):
         """Test detection of software category by file extension."""
         assert self.provider._detect_category_from_name(
             "installer.exe"
-        ) == JackettCategories.PC
+        ) == StandardCategories.PC
 
         assert self.provider._detect_category_from_name(
             "application.dmg"
-        ) == JackettCategories.PC
+        ) == StandardCategories.PC
 
         assert self.provider._detect_category_from_name(
             "package.deb"
-        ) == JackettCategories.PC
+        ) == StandardCategories.PC
 
     def test_detect_software_by_keyword(self):
         """Test detection of software category by keyword."""
         assert self.provider._detect_category_from_name(
             "Adobe Software Suite 2024"
-        ) == JackettCategories.PC
+        ) == StandardCategories.PC
 
         assert self.provider._detect_category_from_name(
             "Program Setup Installer"
-        ) == JackettCategories.PC
+        ) == StandardCategories.PC
 
         assert self.provider._detect_category_from_name(
             "App Portable v1.0 + Crack"
-        ) == JackettCategories.PC
+        ) == StandardCategories.PC
 
     def test_detect_games_by_keyword(self):
         """Test detection of games category by keyword."""
         assert self.provider._detect_category_from_name(
             "Game Title Repack FitGirl"
-        ) == JackettCategories.CONSOLE
+        ) == StandardCategories.CONSOLE
 
         assert self.provider._detect_category_from_name(
             "PC Game CODEX"
-        ) == JackettCategories.CONSOLE
+        ) == StandardCategories.CONSOLE
 
         assert self.provider._detect_category_from_name(
             "PlayStation 5 Game"
-        ) == JackettCategories.CONSOLE
+        ) == StandardCategories.CONSOLE
 
         assert self.provider._detect_category_from_name(
             "Nintendo Switch Gameplay"
-        ) == JackettCategories.CONSOLE
+        ) == StandardCategories.CONSOLE
 
     def test_detect_xxx_by_keyword(self):
         """Test detection of XXX category by keyword."""
         assert self.provider._detect_category_from_name(
             "Adult Content XXX"
-        ) == JackettCategories.XXX
+        ) == StandardCategories.XXX
 
         assert self.provider._detect_category_from_name(
             "18+ NSFW Collection"
-        ) == JackettCategories.XXX
+        ) == StandardCategories.XXX
 
     def test_detect_other_by_extension(self):
         """Test detection of BOOKS category by file extension."""
         assert self.provider._detect_category_from_name(
             "Book Title.pdf"
-        ) == JackettCategories.BOOKS
+        ) == StandardCategories.BOOKS
 
         assert self.provider._detect_category_from_name(
             "Novel.epub"
-        ) == JackettCategories.BOOKS
+        ) == StandardCategories.BOOKS
 
         assert self.provider._detect_category_from_name(
             "Archive.zip"
-        ) == JackettCategories.BOOKS
+        ) == StandardCategories.BOOKS
 
     def test_detect_other_by_keyword(self):
         """Test detection of BOOKS category by keyword."""
         assert self.provider._detect_category_from_name(
             "Programming Ebook Collection"
-        ) == JackettCategories.BOOKS
+        ) == StandardCategories.BOOKS
 
         assert self.provider._detect_category_from_name(
             "Magazine Archive 2024"
-        ) == JackettCategories.BOOKS
+        ) == StandardCategories.BOOKS
 
         assert self.provider._detect_category_from_name(
             "Comic Book Series"
-        ) == JackettCategories.BOOKS
+        ) == StandardCategories.BOOKS
 
     def test_no_detection_returns_none(self):
         """Test that unrecognizable names return None."""
@@ -180,15 +180,15 @@ class TestCategoryDetection:
         """Test that detection is case-insensitive."""
         assert self.provider._detect_category_from_name(
             "ALBUM.FLAC"
-        ) == JackettCategories.AUDIO
+        ) == StandardCategories.AUDIO
 
         assert self.provider._detect_category_from_name(
             "Movie.MKV"
-        ) == JackettCategories.MOVIES
+        ) == StandardCategories.MOVIES
 
         assert self.provider._detect_category_from_name(
             "GAME REPACK"
-        ) == JackettCategories.CONSOLE
+        ) == StandardCategories.CONSOLE
 
 
 class TestResultsRefinement:
@@ -238,14 +238,14 @@ class TestResultsRefinement:
 
         # Second result should be detected as AUDIO
         assert len(refined[1].categories) == 1
-        assert refined[1].categories[0] == JackettCategories.AUDIO
+        assert refined[1].categories[0] == StandardCategories.AUDIO
 
     def test_keep_known_categories_unchanged(self):
         """Test that non-empty categories are not changed."""
         results = [
             SearchResultDTO(
                 title="Movie Title 1080p",
-                categories=[JackettCategories.MOVIES],
+                categories=[StandardCategories.MOVIES],
                 seeders=100,
                 leechers=10,
                 size=3000000000,
@@ -263,7 +263,7 @@ class TestResultsRefinement:
 
         # Category should remain Movies
         assert len(refined[0].categories) == 1
-        assert refined[0].categories[0] == JackettCategories.MOVIES
+        assert refined[0].categories[0] == StandardCategories.MOVIES
 
     def test_preserve_unknown_when_no_detection(self):
         """Test that empty categories are preserved when no pattern matches."""
@@ -314,7 +314,7 @@ class TestResultsRefinement:
         assert refined[0].title == "Movie 2024 1080p BluRay"
         # Should be refined to Movies category
         assert len(refined[0].categories) == 1
-        assert refined[0].categories[0] == JackettCategories.MOVIES
+        assert refined[0].categories[0] == StandardCategories.MOVIES
         assert refined[0].seeders == 100
         assert refined[0].leechers == 10
         assert refined[0].size == 3000000000
