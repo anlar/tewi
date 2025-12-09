@@ -11,7 +11,7 @@ from ...util.misc import is_torrent_link
 from ...util.decorator import log_time
 from ..models import (CategoryDTO, TorrentDTO, TorrentDetailDTO, FileDTO,
                       PeerDTO, TrackerDTO, PeerState, FilePriority)
-from ...common import FilterOption
+from ...ui.models import FilterOption
 from ..base import (BaseClient, ClientMeta, ClientStats,
                     ClientSession, ClientError)
 

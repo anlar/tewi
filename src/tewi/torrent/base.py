@@ -6,7 +6,7 @@ from dataclasses import replace
 from typing import TypedDict
 
 from .models import CategoryDTO, FilePriority, TorrentDTO
-from ..common import FilterOption
+from ..ui.models import FilterOption
 
 
 class ClientMeta(TypedDict):

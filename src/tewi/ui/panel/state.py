@@ -15,6 +15,8 @@ class StatePanel(Static):
     r_session = reactive(None)
     r_sort_order = reactive(None)
     r_sort_order_asc = reactive(None)
+    r_filter_option = reactive(None)
+    r_filtered_torrent_count = reactive(None)
 
     # recompose whole line to update blocks width
     r_search = reactive(None, recompose=True)
@@ -68,9 +70,27 @@ class StatePanel(Static):
             self.update_sort(self.r_sort_order, new_r_sort_order_asc)
 
     @log_time
+    def watch_r_filter_option(self, new_r_filter_option) -> None:
+        if new_r_filter_option:
+            self.update_filter(new_r_filter_option, self.r_filtered_torrent_count)
+
+    @log_time
+    def watch_r_filtered_torrent_count(self, new_r_filtered_torrent_count) -> None:
+        if new_r_filtered_torrent_count:
+            self.update_filter(self.r_filter_option, new_r_filtered_torrent_count)
+
+    @log_time
     def update_sort(self, sort_order: SortOrder, sort_order_asc: bool) -> None:
         sort_arrow = '' if sort_order_asc else ' ↑'
         self.r_sort = f'Sort: {sort_order.name}{sort_arrow}'
+
+    @log_time
+    def update_filter(self, filter_option, filtered_torrent_count) -> None:
+        if filter_option.id != 'all':
+            self.r_filter = (f'Filter: {filter_option.name} '
+                             f'({filtered_torrent_count})')
+        else:
+            self.r_filter = ''
 
     @log_time
     def watch_r_session(self, new_r_session):
@@ -85,6 +105,7 @@ class StatePanel(Static):
             else:
                 self.r_stats_size = f'Size: {complete_size}'
 
+            """
             filter_option = new_r_session['filter_option']
             if filter_option.id != 'all':
                 filtered_count = new_r_session['filtered_torrents_count']
@@ -92,6 +113,7 @@ class StatePanel(Static):
                                  f'({filtered_count})')
             else:
                 self.r_filter = ''
+            """
 
             self.r_upload_speed = new_r_session['upload_speed']
             self.r_download_speed = new_r_session['download_speed']
