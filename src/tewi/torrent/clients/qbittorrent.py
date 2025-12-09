@@ -10,7 +10,7 @@ from ...util.misc import is_torrent_link
 from ...util.decorator import log_time
 from ..models import (CategoryDTO, TorrentDTO, TorrentDetailDTO, FileDTO,
                       PeerDTO, TrackerDTO, PeerState, FilePriority)
-from ...common import FilterOption, SortOrder
+from ...common import FilterOption
 from ..base import BaseClient, ClientMeta, ClientStats, ClientSession, ClientError
 
 
@@ -142,8 +142,7 @@ class QBittorrentClient(BaseClient):
         }
 
     @log_time
-    def session(self, torrents: list[TorrentDTO], sort_order: SortOrder,
-                sort_order_asc: bool,
+    def session(self, torrents: list[TorrentDTO],
                 filter_option: FilterOption) -> ClientSession:
         transfer_info = self.client.transfer.info
         prefs = self.client.app.preferences
@@ -180,8 +179,6 @@ class QBittorrentClient(BaseClient):
             'torrents_check': counts['check'],
             'torrents_stop': counts['stop'],
 
-            'sort_order': sort_order,
-            'sort_order_asc': sort_order_asc,
             'filter_option': filter_option,
         }
 

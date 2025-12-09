@@ -7,11 +7,14 @@ from ..widget.common import ReactiveLabel, PageIndicator, SpeedIndicator
 
 from ...util.print import print_size, print_speed
 from ...util.decorator import log_time
+from ..models import SortOrder
 
 
 class StatePanel(Static):
 
     r_session = reactive(None)
+    r_sort_order = reactive(None)
+    r_sort_order_asc = reactive(None)
 
     # recompose whole line to update blocks width
     r_search = reactive(None, recompose=True)
@@ -55,6 +58,21 @@ class StatePanel(Static):
                     speed=StatePanel.r_download_speed)
 
     @log_time
+    def watch_r_sort_order(self, new_r_sort_order: SortOrder) -> None:
+        if new_r_sort_order:
+            self.update_sort(new_r_sort_order, self.r_sort_order_asc)
+
+    @log_time
+    def watch_r_sort_order_asc(self, new_r_sort_order_asc: bool) -> None:
+        if new_r_sort_order_asc is not None:
+            self.update_sort(self.r_sort_order, new_r_sort_order_asc)
+
+    @log_time
+    def update_sort(self, sort_order: SortOrder, sort_order_asc: bool) -> None:
+        sort_arrow = '' if sort_order_asc else ' ↑'
+        self.r_sort = f'Sort: {sort_order.name}{sort_arrow}'
+
+    @log_time
     def watch_r_session(self, new_r_session):
         if new_r_session:
             self.r_stats = self.print_stats(new_r_session)
@@ -66,11 +84,6 @@ class StatePanel(Static):
                 self.r_stats_size = f'Size: {complete_size} / {total_size}'
             else:
                 self.r_stats_size = f'Size: {complete_size}'
-
-            sort_order = new_r_session['sort_order'].name
-            sort_order_asc = new_r_session['sort_order_asc']
-            sort_arrow = '' if sort_order_asc else '↑'
-            self.r_sort = f'Sort: {sort_order}{sort_arrow}'
 
             filter_option = new_r_session['filter_option']
             if filter_option.id != 'all':

@@ -6,7 +6,7 @@ from textual.app import ComposeResult
 from rich.text import Text
 
 from ...messages import SortOrderUpdatedEvent
-from ....common import sort_orders
+from ...models import sort_orders
 from ....util.decorator import log_time
 
 

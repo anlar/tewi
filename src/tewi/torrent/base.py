@@ -6,7 +6,7 @@ from dataclasses import replace
 from typing import TypedDict
 
 from .models import CategoryDTO, FilePriority, TorrentDTO
-from ..common import FilterOption, SortOrder
+from ..common import FilterOption
 
 
 class ClientMeta(TypedDict):
@@ -66,8 +66,6 @@ class ClientSession(TypedDict):
     torrents_check: int
     torrents_stop: int
 
-    sort_order: SortOrder
-    sort_order_asc: bool
     filter_option: FilterOption
 
 
@@ -116,15 +114,12 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def session(self, torrents: list[TorrentDTO], sort_order: SortOrder,
-                sort_order_asc: bool,
+    def session(self, torrents: list[TorrentDTO],
                 filter_option: FilterOption) -> ClientSession:
         """Get session information with computed torrent counts.
 
         Args:
             torrents: List of torrents to compute counts from
-            sort_order: Current sort order
-            sort_order_asc: Whether sort order is ascending
             filter_option: Current filter option
 
         Returns:
