@@ -3,7 +3,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Static, DataTable
 from textual.app import ComposeResult
 
-from ....common import CategoryDTO
+from ....torrent.models import CategoryDTO
 from ....message import UpdateTorrentCategoryCommand
 from ....util.decorator import log_time
 

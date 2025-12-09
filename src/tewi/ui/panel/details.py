@@ -9,7 +9,7 @@ from textual.widgets import Static, TabbedContent, TabPane
 from textual.widgets.data_table import RowKey
 
 from ...message import OpenTorrentListCommand, ToggleFileDownloadCommand
-from ...common import FilePriority
+from ...torrent.models import FilePriority
 
 from ..widget.common import ReactiveLabel, VimDataTable
 from ...util.print import print_size, print_speed, print_time_ago

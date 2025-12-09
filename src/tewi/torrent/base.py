@@ -5,7 +5,8 @@ from abc import ABC, abstractmethod
 from dataclasses import replace
 from typing import TypedDict
 
-from ..common import CategoryDTO, FilePriority, FilterOption, SortOrder, TorrentDTO
+from .models import CategoryDTO, FilePriority, TorrentDTO
+from ..common import FilterOption, SortOrder
 
 
 class ClientMeta(TypedDict):

@@ -7,12 +7,12 @@ from typing import Any
 
 import requests
 
-from ..util.decorator import log_time
-from ..common import (CategoryDTO, FilterOption, SortOrder, TorrentDTO,
-                      TorrentDetailDTO, FileDTO, PeerDTO, TrackerDTO,
-                      PeerState, FilePriority)
-from .base_client import (BaseClient, ClientMeta, ClientStats,
-                          ClientSession, ClientError)
+from ...util.decorator import log_time
+from ..models import (CategoryDTO, TorrentDTO, TorrentDetailDTO, FileDTO,
+                      PeerDTO, TrackerDTO, PeerState, FilePriority)
+from ...common import FilterOption, SortOrder
+from ..base import (BaseClient, ClientMeta, ClientStats,
+                    ClientSession, ClientError)
 
 
 class DelugeClient(BaseClient):

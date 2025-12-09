@@ -17,7 +17,7 @@
 from functools import cache
 from typing import Any
 
-from ..common import FileDTO, FilePriority
+from ..torrent.models import FileDTO, FilePriority
 from .decorator import log_time
 from .print import print_size
 

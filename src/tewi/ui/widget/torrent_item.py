@@ -21,7 +21,7 @@ from textual.containers import Grid, Horizontal
 from textual.reactive import reactive
 from textual.widgets import Static, ProgressBar
 
-from ...common import TorrentDTO
+from ...torrent.models import TorrentDTO
 from ...util.decorator import log_time
 from ...util.print import print_size, print_time, esc_trunk
 from .common import ReactiveLabel, SpeedIndicator

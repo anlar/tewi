@@ -8,7 +8,8 @@ from textual.binding import Binding, BindingType
 from textual.widgets import ListView, ListItem
 from textual.reactive import reactive
 
-from ...common import PageState, TorrentDTO
+from ...common import PageState
+from ...torrent.models import TorrentDTO
 from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
 from ...util.decorator import log_time
 

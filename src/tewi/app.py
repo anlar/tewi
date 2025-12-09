@@ -33,10 +33,12 @@ from textual.containers import Horizontal
 from textual.reactive import reactive
 from textual.widgets import ContentSwitcher
 
-from .common import get_filter_by_id, sort_orders, TorrentDTO
+from .common import get_filter_by_id, sort_orders
+from .torrent.models import TorrentDTO
 from .config import TrackSetAction, get_config_path, load_config, create_default_config, \
     merge_config_with_args, get_available_profiles
-from .service import create_client, ClientError
+from .torrent.factory import create_client
+from .torrent.base import ClientError
 from .message import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpdatedEvent, Notification, Confirm, \
         OpenSortOrderCommand, OpenFilterCommand, FilterUpdatedEvent, OpenSearchCommand, PageChangedEvent, \
         VerifyTorrentCommand, ReannounceTorrentCommand, \
