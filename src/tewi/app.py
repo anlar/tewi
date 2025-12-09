@@ -159,7 +159,8 @@ class MainApp(App):
                                    prowlarr_url, prowlarr_api_key,
                                    search_providers)
 
-        self.r_filter_state = FilterState(get_filter_by_id(filter), 0)
+        self.filter_option = get_filter_by_id(filter)
+        self.r_filter_state = FilterState(self.filter_option, 0)
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -222,16 +223,15 @@ class MainApp(App):
             session = self.client.session(torrents)
 
             torrents = [t for t in torrents
-                        if self.r_filter_state.option.filter_func(t)]
+                        if self.filter_option.filter_func(t)]
 
-            # Add filtered count to session for display
-            self.r_filter_state = FilterState(self.r_filter_state.option,
-                                              len(torrents))
+            filter_state = FilterState(self.filter_option,
+                                       len(torrents))
 
             torrents.sort(key=self.r_sort_order.sort_func,
                           reverse=not self.r_sort_order_asc)
 
-            self.call_from_thread(self.set_tdata, torrents, session)
+            self.call_from_thread(self.set_tdata, torrents, session, filter_state)
         elif current_pane == 'torrent-info':
             info_panel = self.query_one(TorrentInfoPanel)
             torrent = self.client.torrent(info_panel.r_torrent.id)
@@ -242,9 +242,11 @@ class MainApp(App):
         self.query_one(TorrentInfoPanel).r_torrent = torrent
 
     @log_time
-    def set_tdata(self, torrents: list[TorrentDTO], session) -> None:
+    def set_tdata(self, torrents: list[TorrentDTO], session,
+                  filter_state: FilterState) -> None:
         self.r_torrents = torrents
         self.r_session = session
+        self.r_filter_state = filter_state
 
     @log_time
     def action_toggle_alt_speed(self) -> None:
@@ -432,8 +434,7 @@ class MainApp(App):
     @log_time
     @on(FilterUpdatedEvent)
     def handle_filter_updated_event(self, event: FilterUpdatedEvent) -> None:
-        self.r_filter_state = FilterState(event.filter_option,
-                                          self.r_filter_state.torrent_count)
+        self.filter_option = event.filter_option
 
         self.post_message(Notification(
             f"Selected filter: {event.filter_option.name}"))

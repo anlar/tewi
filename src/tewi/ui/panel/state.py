@@ -7,7 +7,7 @@ from ..widget.common import ReactiveLabel, PageIndicator, SpeedIndicator
 
 from ...util.print import print_size, print_speed
 from ...util.decorator import log_time
-from ..models import SortOrder
+from ..models import FilterState, SortOrder
 
 
 class StatePanel(Static):
@@ -69,7 +69,7 @@ class StatePanel(Static):
             self.update_sort(self.r_sort_order, new_r_sort_order_asc)
 
     @log_time
-    def watch_r_filter_state(self, new_r_filter_state) -> None:
+    def watch_r_filter_state(self, new_r_filter_state: FilterState) -> None:
         if new_r_filter_state:
             if new_r_filter_state.option.id != 'all':
                 self.r_filter = (f'Filter: {new_r_filter_state.option.name} '

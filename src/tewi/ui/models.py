@@ -1,5 +1,4 @@
 from typing import NamedTuple
-from dataclasses import dataclass
 
 
 class PageState(NamedTuple):
