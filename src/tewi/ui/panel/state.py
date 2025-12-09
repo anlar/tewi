@@ -96,16 +96,6 @@ class StatePanel(Static):
             else:
                 self.r_stats_size = f'Size: {complete_size}'
 
-            """
-            filter_option = new_r_session['filter_option']
-            if filter_option.id != 'all':
-                filtered_count = new_r_session['filtered_torrents_count']
-                self.r_filter = (f'Filter: {filter_option.name} '
-                                 f'({filtered_count})')
-            else:
-                self.r_filter = ''
-            """
-
             self.r_upload_speed = new_r_session['upload_speed']
             self.r_download_speed = new_r_session['download_speed']
             alt_speed_enabled = new_r_session['alt_speed_enabled']
