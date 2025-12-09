@@ -7,7 +7,7 @@ from ..widget.common import ReactiveLabel, PageIndicator, SpeedIndicator
 
 from ...util.print import print_size, print_speed
 from ...util.decorator import log_time
-from ..models import SortOrder
+from ..models import FilterState, SortOrder
 
 
 class StatePanel(Static):
@@ -15,6 +15,7 @@ class StatePanel(Static):
     r_session = reactive(None)
     r_sort_order = reactive(None)
     r_sort_order_asc = reactive(None)
+    r_filter_state = reactive(None)
 
     # recompose whole line to update blocks width
     r_search = reactive(None, recompose=True)
@@ -68,6 +69,16 @@ class StatePanel(Static):
             self.update_sort(self.r_sort_order, new_r_sort_order_asc)
 
     @log_time
+    def watch_r_filter_state(self, new_r_filter_state: FilterState) -> None:
+        if new_r_filter_state:
+            if new_r_filter_state.option.id != 'all':
+                self.r_filter = (f'Filter: {new_r_filter_state.option.name} '
+                                 f'({new_r_filter_state.torrent_count})')
+                return
+
+        self.r_filter = ''
+
+    @log_time
     def update_sort(self, sort_order: SortOrder, sort_order_asc: bool) -> None:
         sort_arrow = '' if sort_order_asc else ' ↑'
         self.r_sort = f'Sort: {sort_order.name}{sort_arrow}'
@@ -84,14 +95,6 @@ class StatePanel(Static):
                 self.r_stats_size = f'Size: {complete_size} / {total_size}'
             else:
                 self.r_stats_size = f'Size: {complete_size}'
-
-            filter_option = new_r_session['filter_option']
-            if filter_option.id != 'all':
-                filtered_count = new_r_session['filtered_torrents_count']
-                self.r_filter = (f'Filter: {filter_option.name} '
-                                 f'({filtered_count})')
-            else:
-                self.r_filter = ''
 
             self.r_upload_speed = new_r_session['upload_speed']
             self.r_download_speed = new_r_session['download_speed']

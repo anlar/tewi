@@ -10,7 +10,6 @@ import requests
 from ...util.decorator import log_time
 from ..models import (CategoryDTO, TorrentDTO, TorrentDetailDTO, FileDTO,
                       PeerDTO, TrackerDTO, PeerState, FilePriority)
-from ...common import FilterOption
 from ..base import (BaseClient, ClientMeta, ClientStats,
                     ClientSession, ClientError)
 
@@ -206,8 +205,7 @@ class DelugeClient(BaseClient):
         }
 
     @log_time
-    def session(self, torrents: list[TorrentDTO],
-                filter_option: FilterOption) -> ClientSession:
+    def session(self, torrents: list[TorrentDTO]) -> ClientSession:
         """Get session information with computed torrent counts."""
         # Get config and session status
         config = self._call("core.get_config")
@@ -244,8 +242,6 @@ class DelugeClient(BaseClient):
             'torrents_seed': counts['seed'],
             'torrents_check': counts['check'],
             'torrents_stop': counts['stop'],
-
-            'filter_option': filter_option,
         }
 
     def _flatten_dict(self, data: dict, parent_key: str = ''

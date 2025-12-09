@@ -33,8 +33,7 @@ from textual.containers import Horizontal
 from textual.reactive import reactive
 from textual.widgets import ContentSwitcher
 
-from .common import get_filter_by_id
-from .ui.models import sort_orders
+from .ui.models import get_filter_by_id, sort_orders, FilterState
 from .torrent.models import TorrentDTO
 from .config import TrackSetAction, get_config_path, load_config, create_default_config, \
     merge_config_with_args, get_available_profiles
@@ -104,6 +103,7 @@ class MainApp(App):
 
     r_sort_order = reactive(sort_orders[0])
     r_sort_order_asc = reactive(True)
+    r_filter_state = reactive(None)
 
     last_search_query = None
 
@@ -160,6 +160,7 @@ class MainApp(App):
                                    search_providers)
 
         self.filter_option = get_filter_by_id(filter)
+        self.r_filter_state = FilterState(self.filter_option, 0)
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -190,6 +191,7 @@ class MainApp(App):
         yield StatePanel().data_bind(r_session=MainApp.r_session,
                                      r_sort_order=MainApp.r_sort_order,
                                      r_sort_order_asc=MainApp.r_sort_order_asc,
+                                     r_filter_state=MainApp.r_filter_state,
                                      r_page=MainApp.r_page,
                                      r_search=MainApp.r_search)
 
@@ -218,19 +220,18 @@ class MainApp(App):
                 torrents = self.client.torrents()
 
             # Load session with full list of torrents (before filtering)
-            session = self.client.session(torrents,
-                                          self.filter_option)
+            session = self.client.session(torrents)
 
             torrents = [t for t in torrents
                         if self.filter_option.filter_func(t)]
 
-            # Add filtered count to session for display
-            session['filtered_torrents_count'] = len(torrents)
+            filter_state = FilterState(self.filter_option,
+                                       len(torrents))
 
             torrents.sort(key=self.r_sort_order.sort_func,
                           reverse=not self.r_sort_order_asc)
 
-            self.call_from_thread(self.set_tdata, torrents, session)
+            self.call_from_thread(self.set_tdata, torrents, session, filter_state)
         elif current_pane == 'torrent-info':
             info_panel = self.query_one(TorrentInfoPanel)
             torrent = self.client.torrent(info_panel.r_torrent.id)
@@ -241,9 +242,11 @@ class MainApp(App):
         self.query_one(TorrentInfoPanel).r_torrent = torrent
 
     @log_time
-    def set_tdata(self, torrents: list[TorrentDTO], session) -> None:
+    def set_tdata(self, torrents: list[TorrentDTO], session,
+                  filter_state: FilterState) -> None:
         self.r_torrents = torrents
         self.r_session = session
+        self.r_filter_state = filter_state
 
     @log_time
     def action_toggle_alt_speed(self) -> None:
@@ -474,8 +477,7 @@ class MainApp(App):
     @log_time
     @on(OpenAddTorrentCommand)
     def handle_open_add_torrent_command(self, event: OpenAddTorrentCommand) -> None:
-        session = self.client.session(self.r_torrents, self.r_sort_order,
-                                      self.r_sort_order_asc, self.filter_option)
+        session = self.client.session(self.r_torrents)
         self.push_screen(AddTorrentDialog(session['download_dir'],
                                           session['download_dir_free_space']))
 
