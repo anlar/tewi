@@ -4,7 +4,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Static, Input, Label
 from textual.app import ComposeResult
 
-from ....message import EditTorrentCommand
+from ...messages import EditTorrentCommand
 from ....util.decorator import log_time
 
 

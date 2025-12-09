@@ -4,7 +4,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Static, TextArea
 from textual.app import ComposeResult
 
-from ....message import TorrentLabelsUpdatedEvent
+from ...messages import TorrentLabelsUpdatedEvent
 from ....util.decorator import log_time
 
 

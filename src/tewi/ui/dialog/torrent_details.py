@@ -9,7 +9,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal, ScrollableContainer
 
 from ...util.decorator import log_time
-from ...message import AddTorrentFromWebSearchCommand, Notification
+from ..messages import AddTorrentFromWebSearchCommand, Notification
 
 
 class TorrentDetailsDialog(ModalScreen[None]):

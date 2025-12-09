@@ -12,7 +12,7 @@ from textual.reactive import reactive
 from ..widget.common import ReactiveLabel
 from ..dialog.torrent_details import TorrentDetailsDialog
 from ...search.models import SearchResultDTO
-from ...message import (
+from ..messages import (
     OpenTorrentListCommand,
     AddTorrentFromWebSearchCommand,
     Notification

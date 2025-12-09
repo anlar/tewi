@@ -4,7 +4,7 @@ from textual.widgets import Static, DataTable
 from textual.app import ComposeResult
 
 from ....torrent.models import CategoryDTO
-from ....message import UpdateTorrentCategoryCommand
+from ...messages import UpdateTorrentCategoryCommand
 from ....util.decorator import log_time
 
 

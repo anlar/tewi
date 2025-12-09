@@ -9,7 +9,7 @@ from textual.screen import ModalScreen
 from typing import ClassVar
 
 from ...search.models import JackettCategories
-from ...message import WebSearchQuerySubmitted, Notification
+from ..messages import WebSearchQuerySubmitted, Notification
 from ...util.decorator import log_time
 from ...ui.widget.common import VimSelectionList
 

@@ -5,7 +5,7 @@ from textual.app import ComposeResult
 
 from rich.text import Text
 
-from ....message import FilterUpdatedEvent
+from ...messages import FilterUpdatedEvent
 from ....common import filter_options
 from ....util.decorator import log_time
 

@@ -3,7 +3,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Static, Input
 from textual.app import ComposeResult
 
-from ....message import SearchCompletedEvent
+from ...messages import SearchCompletedEvent
 from ....util.decorator import log_time
 
 

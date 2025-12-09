@@ -6,7 +6,7 @@ from textual.widgets import Static, TextArea
 from textual.app import ComposeResult
 from textual.reactive import reactive
 
-from ....message import AddTorrentCommand
+from ...messages import AddTorrentCommand
 from ....util.print import print_size
 from ....util.misc import is_torrent_link
 from ....util.decorator import log_time

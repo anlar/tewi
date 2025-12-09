@@ -8,7 +8,7 @@ from textual.reactive import reactive
 from textual.widgets import Static, TabbedContent, TabPane
 from textual.widgets.data_table import RowKey
 
-from ...message import OpenTorrentListCommand, ToggleFileDownloadCommand
+from ..messages import OpenTorrentListCommand, ToggleFileDownloadCommand
 from ...torrent.models import FilePriority
 
 from ..widget.common import ReactiveLabel, VimDataTable
