@@ -2,7 +2,7 @@ from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.widgets import Static, Label
 from textual.app import ComposeResult
-from ...torrent.base import ClientStats
+from ...torrent.models import ClientStats
 from ...util.print import print_size, print_time, print_ratio
 from ...util.decorator import log_time
 

@@ -1,7 +1,8 @@
 """Factory for creating torrent client instances."""
 
 from ..util.decorator import log_time
-from .base import BaseClient, ClientError
+from .base import BaseClient
+from .models import ClientError
 from .clients.transmission import TransmissionClient
 from .clients.qbittorrent import QBittorrentClient
 from .clients.deluge import DelugeClient

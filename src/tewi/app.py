@@ -38,7 +38,7 @@ from .torrent.models import TorrentDTO
 from .config import TrackSetAction, get_config_path, load_config, create_default_config, \
     merge_config_with_args, get_available_profiles
 from .torrent.factory import create_client
-from .torrent.base import ClientError
+from .torrent.models import ClientError
 from .ui.messages import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpdatedEvent, Notification, Confirm, \
         OpenSortOrderCommand, OpenFilterCommand, FilterUpdatedEvent, OpenSearchCommand, PageChangedEvent, \
         VerifyTorrentCommand, ReannounceTorrentCommand, \
