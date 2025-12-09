@@ -14,7 +14,6 @@ from ...widget.common import ReactiveLabel
 
 
 class AddTorrentDialog(ModalScreen[None]):
-
     @log_time
     def __init__(self, download_dir: str, download_dir_free_space: int):
         self.download_dir = download_dir
@@ -27,13 +26,12 @@ class AddTorrentDialog(ModalScreen[None]):
 
 
 class AddTorrentWidget(Static):
-
-    r_download_dir = reactive('')
+    r_download_dir = reactive("")
 
     BINDINGS = [
-            Binding("enter", "add", "[Torrent] Add torrent", priority=True),
-            Binding("escape", "close", "[Torrent] Close"),
-            ]
+        Binding("enter", "add", "[Torrent] Add torrent", priority=True),
+        Binding("escape", "close", "[Torrent] Close"),
+    ]
 
     @log_time
     def __init__(self, download_dir: str, download_dir_free_space: int):
@@ -43,18 +41,19 @@ class AddTorrentWidget(Static):
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield ReactiveLabel().data_bind(
-                name=AddTorrentWidget.r_download_dir)
+        yield ReactiveLabel().data_bind(name=AddTorrentWidget.r_download_dir)
         yield TextArea()
 
     @log_time
     def on_mount(self) -> None:
-        self.border_title = 'Add torrent (local file, magnet link, URL)'
-        self.border_subtitle = '(Enter) Add / (ESC) Close'
+        self.border_title = "Add torrent (local file, magnet link, URL)"
+        self.border_subtitle = "(Enter) Add / (ESC) Close"
 
         free_space = print_size(self.download_dir_free_space)
 
-        self.r_download_dir = f'Destination folder: {self.download_dir} ({free_space} Free)'
+        self.r_download_dir = (
+            f"Destination folder: {self.download_dir} ({free_space} Free)"
+        )
 
         text_area = self.query_one(TextArea)
 
@@ -63,7 +62,7 @@ class AddTorrentWidget(Static):
         if link:
             text_area.load_text(link)
         else:
-            text_area.load_text('~/')
+            text_area.load_text("~/")
 
         text_area.cursor_location = text_area.document.end
 

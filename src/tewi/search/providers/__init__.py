@@ -8,10 +8,10 @@ from .jackett import JackettProvider
 from .prowlarr import ProwlarrProvider
 
 __all__ = [
-    'YTSProvider',
-    'TorrentsCsvProvider',
-    'TPBProvider',
-    'NyaaProvider',
-    'JackettProvider',
-    'ProwlarrProvider',
+    "YTSProvider",
+    "TorrentsCsvProvider",
+    "TPBProvider",
+    "NyaaProvider",
+    "JackettProvider",
+    "ProwlarrProvider",
 ]

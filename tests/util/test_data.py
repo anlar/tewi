@@ -47,79 +47,170 @@ class TestPrintPriority:
 class TestGetFileList:
     """Test cases for get_file_list function."""
 
-    @pytest.mark.parametrize("files,expected_file_count,expected_dir_count", [
-        # Zero files
-        (
-            [],
-            0,
-            0
-        ),
-        # One file
-        (
-            [
-                FileDTO(id=0, name="file.txt", size=1024,
-                        completed=512, priority=FilePriority.MEDIUM),
-            ],
-            1,
-            0
-        ),
-        # 5 files flat (no directories)
-        (
-            [
-                FileDTO(id=0, name="file1.txt", size=1024,
-                        completed=1024, priority=FilePriority.HIGH),
-                FileDTO(id=1, name="file2.txt", size=2048,
-                        completed=0, priority=FilePriority.NOT_DOWNLOADING),
-                FileDTO(id=2, name="file3.txt", size=512,
-                        completed=256, priority=FilePriority.LOW),
-                FileDTO(id=3, name="file4.txt", size=4096,
-                        completed=4096, priority=FilePriority.MEDIUM),
-                FileDTO(id=4, name="file5.txt", size=8192,
-                        completed=4096, priority=FilePriority.HIGH),
-            ],
-            5,
-            0
-        ),
-        # One dir with one file
-        (
-            [
-                FileDTO(id=0, name="dir/file.txt", size=1024,
-                        completed=512, priority=FilePriority.MEDIUM),
-            ],
-            1,
-            1
-        ),
-        # Complex structure
-        (
-            [
-                FileDTO(id=0, name="README.md", size=1024,
-                        completed=1024, priority=FilePriority.MEDIUM),
-                FileDTO(id=1, name="src/main.py", size=2048,
-                        completed=1024, priority=FilePriority.HIGH),
-                FileDTO(id=2, name="src/utils.py", size=512,
-                        completed=512, priority=FilePriority.MEDIUM),
-                FileDTO(id=3, name="docs/guide.md", size=4096,
-                        completed=0, priority=FilePriority.NOT_DOWNLOADING),
-                FileDTO(id=4, name="docs/api/index.html", size=8192,
-                        completed=4096, priority=FilePriority.LOW),
-                FileDTO(id=5, name="docs/api/reference.html", size=16384,
-                        completed=16384, priority=FilePriority.HIGH),
-                FileDTO(id=6, name="tests/test_one.py", size=1536,
-                        completed=768, priority=FilePriority.MEDIUM),
-                FileDTO(id=7, name="tests/unit/test_two.py", size=2560,
-                        completed=2560, priority=FilePriority.LOW),
-                FileDTO(id=8, name="tests/unit/fixtures/data.json", size=128,
-                        completed=64, priority=FilePriority.HIGH),
-                FileDTO(id=9, name="LICENSE", size=2048,
-                        completed=2048, priority=FilePriority.MEDIUM),
-            ],
-            10,
-            6
-        ),
-    ], ids=["zero_files", "one_file", "flat_files", "one_dir_one_file",
-            "complex_structure"])
+    @pytest.mark.parametrize(
+        "files,expected_file_count,expected_dir_count",
+        [
+            # Zero files
+            ([], 0, 0),
+            # One file
+            (
+                [
+                    FileDTO(
+                        id=0,
+                        name="file.txt",
+                        size=1024,
+                        completed=512,
+                        priority=FilePriority.MEDIUM,
+                    ),
+                ],
+                1,
+                0,
+            ),
+            # 5 files flat (no directories)
+            (
+                [
+                    FileDTO(
+                        id=0,
+                        name="file1.txt",
+                        size=1024,
+                        completed=1024,
+                        priority=FilePriority.HIGH,
+                    ),
+                    FileDTO(
+                        id=1,
+                        name="file2.txt",
+                        size=2048,
+                        completed=0,
+                        priority=FilePriority.NOT_DOWNLOADING,
+                    ),
+                    FileDTO(
+                        id=2,
+                        name="file3.txt",
+                        size=512,
+                        completed=256,
+                        priority=FilePriority.LOW,
+                    ),
+                    FileDTO(
+                        id=3,
+                        name="file4.txt",
+                        size=4096,
+                        completed=4096,
+                        priority=FilePriority.MEDIUM,
+                    ),
+                    FileDTO(
+                        id=4,
+                        name="file5.txt",
+                        size=8192,
+                        completed=4096,
+                        priority=FilePriority.HIGH,
+                    ),
+                ],
+                5,
+                0,
+            ),
+            # One dir with one file
+            (
+                [
+                    FileDTO(
+                        id=0,
+                        name="dir/file.txt",
+                        size=1024,
+                        completed=512,
+                        priority=FilePriority.MEDIUM,
+                    ),
+                ],
+                1,
+                1,
+            ),
+            # Complex structure
+            (
+                [
+                    FileDTO(
+                        id=0,
+                        name="README.md",
+                        size=1024,
+                        completed=1024,
+                        priority=FilePriority.MEDIUM,
+                    ),
+                    FileDTO(
+                        id=1,
+                        name="src/main.py",
+                        size=2048,
+                        completed=1024,
+                        priority=FilePriority.HIGH,
+                    ),
+                    FileDTO(
+                        id=2,
+                        name="src/utils.py",
+                        size=512,
+                        completed=512,
+                        priority=FilePriority.MEDIUM,
+                    ),
+                    FileDTO(
+                        id=3,
+                        name="docs/guide.md",
+                        size=4096,
+                        completed=0,
+                        priority=FilePriority.NOT_DOWNLOADING,
+                    ),
+                    FileDTO(
+                        id=4,
+                        name="docs/api/index.html",
+                        size=8192,
+                        completed=4096,
+                        priority=FilePriority.LOW,
+                    ),
+                    FileDTO(
+                        id=5,
+                        name="docs/api/reference.html",
+                        size=16384,
+                        completed=16384,
+                        priority=FilePriority.HIGH,
+                    ),
+                    FileDTO(
+                        id=6,
+                        name="tests/test_one.py",
+                        size=1536,
+                        completed=768,
+                        priority=FilePriority.MEDIUM,
+                    ),
+                    FileDTO(
+                        id=7,
+                        name="tests/unit/test_two.py",
+                        size=2560,
+                        completed=2560,
+                        priority=FilePriority.LOW,
+                    ),
+                    FileDTO(
+                        id=8,
+                        name="tests/unit/fixtures/data.json",
+                        size=128,
+                        completed=64,
+                        priority=FilePriority.HIGH,
+                    ),
+                    FileDTO(
+                        id=9,
+                        name="LICENSE",
+                        size=2048,
+                        completed=2048,
+                        priority=FilePriority.MEDIUM,
+                    ),
+                ],
+                10,
+                6,
+            ),
+        ],
+        ids=[
+            "zero_files",
+            "one_file",
+            "flat_files",
+            "one_dir_one_file",
+            "complex_structure",
+        ],
+    )
     def test_file_list_generation(
-            self, files, expected_file_count, expected_dir_count):
+        self, files, expected_file_count, expected_dir_count
+    ):
         """Test file list generation with various file structures."""
         result = get_file_list(files)
 
@@ -127,13 +218,13 @@ class TestGetFileList:
         assert isinstance(result, list)
 
         # Verify all input files are present in the result
-        file_ids = [item['id'] for item in result if item['is_file']]
+        file_ids = [item["id"] for item in result if item["is_file"]]
         expected_ids = {f.id for f in files}
         assert set(file_ids) == expected_ids
         assert len(file_ids) == expected_file_count
 
         # Verify directory entries
-        directories = [item for item in result if not item['is_file']]
+        directories = [item for item in result if not item["is_file"]]
         assert len(directories) == expected_dir_count
 
         # Verify total entry count
@@ -146,38 +237,39 @@ class TestGetFileList:
 
         # Verify directory entries have None values for file-specific fields
         for directory in directories:
-            assert directory['id'] is None
-            assert directory['size'] is None
-            assert directory['done'] is None
-            assert directory['priority'] is None
+            assert directory["id"] is None
+            assert directory["size"] is None
+            assert directory["done"] is None
+            assert directory["priority"] is None
 
         # Verify all entries have proper structure
         for item in result:
-            assert 'is_file' in item
-            assert 'display_name' in item
-            assert 'id' in item
-            assert 'size' in item
-            assert 'done' in item
-            assert 'priority' in item
+            assert "is_file" in item
+            assert "display_name" in item
+            assert "id" in item
+            assert "size" in item
+            assert "done" in item
+            assert "priority" in item
 
         # Verify file metadata is correctly formatted
-        file_entries = [item for item in result if item['is_file']]
+        file_entries = [item for item in result if item["is_file"]]
         for entry in file_entries:
             # Size should be formatted string
-            assert isinstance(entry['size'], str)
+            assert isinstance(entry["size"], str)
             # Done should be percentage string
-            assert isinstance(entry['done'], str)
-            assert entry['done'].endswith('%')
+            assert isinstance(entry["done"], str)
+            assert entry["done"].endswith("%")
             # Priority should be string
-            assert isinstance(entry['priority'], str)
+            assert isinstance(entry["priority"], str)
 
         # Verify completion percentages are calculated correctly
         for file_dto in files:
             file_entry = next(
-                item for item in result
-                if item['is_file'] and item['id'] == file_dto.id
+                item
+                for item in result
+                if item["is_file"] and item["id"] == file_dto.id
             )
             expected_percentage = int(
                 (file_dto.completed / file_dto.size) * 100
             )
-            assert file_entry['done'] == f'{expected_percentage}%'
+            assert file_entry["done"] == f"{expected_percentage}%"

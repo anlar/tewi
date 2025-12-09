@@ -5,11 +5,11 @@ from .base import BaseSearchProvider
 from .manager import SearchClient, print_available_providers
 
 __all__ = [
-    'SearchResultDTO',
-    'IndexerDTO',
-    'Category',
-    'StandardCategories',
-    'BaseSearchProvider',
-    'SearchClient',
-    'print_available_providers',
+    "SearchResultDTO",
+    "IndexerDTO",
+    "Category",
+    "StandardCategories",
+    "BaseSearchProvider",
+    "SearchClient",
+    "print_available_providers",
 ]

@@ -6,10 +6,9 @@ from ...util.decorator import log_time
 
 
 class HelpDialog(ModalScreen[None]):
-
     BINDINGS = [
-            Binding("x,escape", "close", "[Navigation] Close"),
-            ]
+        Binding("x,escape", "close", "[Navigation] Close"),
+    ]
 
     @log_time
     def __init__(self, bindings) -> None:
@@ -26,7 +25,6 @@ class HelpDialog(ModalScreen[None]):
 
 
 class HelpWidget(Static):
-
     @log_time
     def __init__(self, bindings) -> None:
         self.bindings = bindings
@@ -34,13 +32,12 @@ class HelpWidget(Static):
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield DataTable(cursor_type="none",
-                        zebra_stripes=True)
+        yield DataTable(cursor_type="none", zebra_stripes=True)
 
     @log_time
     def on_mount(self) -> None:
-        self.border_title = 'Help'
-        self.border_subtitle = '(X) Close'
+        self.border_title = "Help"
+        self.border_subtitle = "(X) Close"
 
         table = self.query_one(DataTable)
         table.add_columns("Category", "Key", "Command")
@@ -51,12 +48,12 @@ class HelpWidget(Static):
             key = b.binding.key
             description = b.binding.description
 
-            if key == 'question_mark':
-                key = '?'
-            elif key == 'quotation_mark':
+            if key == "question_mark":
+                key = "?"
+            elif key == "quotation_mark":
                 key = '"'
-            elif key == 'slash':
-                key = '/'
+            elif key == "slash":
+                key = "/"
 
             if len(key) > 1:
                 key = key.title()

@@ -7,25 +7,25 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from .models import SearchResultDTO, IndexerDTO, Category
 from .base import BaseSearchProvider
 from .providers import (
-        YTSProvider,
-        TorrentsCsvProvider,
-        TPBProvider,
-        NyaaProvider,
-        JackettProvider,
-        ProwlarrProvider
+    YTSProvider,
+    TorrentsCsvProvider,
+    TPBProvider,
+    NyaaProvider,
+    JackettProvider,
+    ProwlarrProvider,
 )
 
 
-logger = logging.getLogger('tewi')
+logger = logging.getLogger("tewi")
 
 # Available provider IDs
 AVAILABLE_PROVIDERS = {
-    'tpb': TPBProvider,
-    'torrentscsv': TorrentsCsvProvider,
-    'yts': YTSProvider,
-    'nyaa': NyaaProvider,
-    'jackett': JackettProvider,
-    'prowlarr': ProwlarrProvider
+    "tpb": TPBProvider,
+    "torrentscsv": TorrentsCsvProvider,
+    "yts": YTSProvider,
+    "nyaa": NyaaProvider,
+    "jackett": JackettProvider,
+    "prowlarr": ProwlarrProvider,
 }
 
 
@@ -35,7 +35,7 @@ def print_available_providers() -> None:
     for provider_id in sorted(AVAILABLE_PROVIDERS.keys()):
         provider_class = AVAILABLE_PROVIDERS[provider_id]
         # Create temporary instance to get name
-        if provider_id in ('jackett', 'prowlarr'):
+        if provider_id in ("jackett", "prowlarr"):
             # Jackett and Prowlarr need dummy args to instantiate
             instance = provider_class(None, None)
         else:
@@ -56,9 +56,14 @@ class SearchClient:
     Providers are initialized lazily on first use for better performance.
     """
 
-    def __init__(self, jackett_url: str | None, jackett_api_key: str | None,
-                 prowlarr_url: str | None, prowlarr_api_key: str | None,
-                 enabled_providers: str | None = None):
+    def __init__(
+        self,
+        jackett_url: str | None,
+        jackett_api_key: str | None,
+        prowlarr_url: str | None,
+        prowlarr_api_key: str | None,
+        enabled_providers: str | None = None,
+    ):
         """Initialize search client with available providers.
 
         Args:
@@ -75,10 +80,12 @@ class SearchClient:
         self._prowlarr_url = prowlarr_url
         self._prowlarr_api_key = prowlarr_api_key
         self._enabled_providers = self._parse_enabled_providers(
-            enabled_providers)
+            enabled_providers
+        )
 
     def _parse_enabled_providers(
-            self, enabled_providers: str | None) -> set[str] | None:
+        self, enabled_providers: str | None
+    ) -> set[str] | None:
         """Parse and validate enabled providers list.
 
         Args:
@@ -95,8 +102,9 @@ class SearchClient:
             return None
 
         # Parse CSV list
-        provider_ids = [p.strip() for p in enabled_providers.split(',')
-                        if p.strip()]
+        provider_ids = [
+            p.strip() for p in enabled_providers.split(",") if p.strip()
+        ]
 
         if not provider_ids:
             return None
@@ -108,11 +116,16 @@ class SearchClient:
                 unknown_providers.append(provider_id)
 
         if unknown_providers:
-            print(f"Error: Unknown search provider(s): "
-                  f"{', '.join(unknown_providers)}", file=sys.stderr)
-            print(f"Available providers: "
-                  f"{', '.join(sorted(AVAILABLE_PROVIDERS.keys()))}",
-                  file=sys.stderr)
+            print(
+                f"Error: Unknown search provider(s): "
+                f"{', '.join(unknown_providers)}",
+                file=sys.stderr,
+            )
+            print(
+                f"Available providers: "
+                f"{', '.join(sorted(AVAILABLE_PROVIDERS.keys()))}",
+                file=sys.stderr,
+            )
             sys.exit(1)
 
         return set(provider_ids)
@@ -139,22 +152,24 @@ class SearchClient:
 
             # Initialize enabled providers (sorted for consistent order)
             for provider_id in sorted(enabled_ids):
-                if provider_id == 'jackett':
+                if provider_id == "jackett":
                     # Jackett requires configuration
                     if self._jackett_url and self._jackett_api_key:
                         provider_class = AVAILABLE_PROVIDERS[provider_id]
                         self._providers.append(
                             provider_class(
-                                self._jackett_url,
-                                self._jackett_api_key))
-                elif provider_id == 'prowlarr':
+                                self._jackett_url, self._jackett_api_key
+                            )
+                        )
+                elif provider_id == "prowlarr":
                     # Prowlarr requires configuration
                     if self._prowlarr_url and self._prowlarr_api_key:
                         provider_class = AVAILABLE_PROVIDERS[provider_id]
                         self._providers.append(
                             provider_class(
-                                self._prowlarr_url,
-                                self._prowlarr_api_key))
+                                self._prowlarr_url, self._prowlarr_api_key
+                            )
+                        )
                 else:
                     # Regular providers
                     provider_class = AVAILABLE_PROVIDERS[provider_id]
@@ -170,9 +185,12 @@ class SearchClient:
         """
         return [idx for p in self.get_providers() for idx in p.indexers()]
 
-    def search(self, query: str, selected_indexers: list[str] | None,
-               selected_categories: list[Category] | None) -> tuple[
-            list[SearchResultDTO], list[str]]:
+    def search(
+        self,
+        query: str,
+        selected_indexers: list[str] | None,
+        selected_categories: list[Category] | None,
+    ) -> tuple[list[SearchResultDTO], list[str]]:
         """Search for torrents across multiple providers in parallel.
 
         Executes searches across all selected providers concurrently,
@@ -200,13 +218,15 @@ class SearchClient:
 
         # Execute all provider searches in parallel
         with ThreadPoolExecutor(
-                max_workers=len(providers_to_search)) as executor:
+            max_workers=len(providers_to_search)
+        ) as executor:
             # Submit all search tasks with category filter (as Category objects)
             future_to_provider = {
-                    executor.submit(provider.search, query,
-                                    selected_categories): provider
-                    for provider in providers_to_search
-                    }
+                executor.submit(
+                    provider.search, query, selected_categories
+                ): provider
+                for provider in providers_to_search
+            }
 
             # Collect results as they complete
             for future in as_completed(future_to_provider):
@@ -241,8 +261,9 @@ class SearchClient:
 
         # Filter by categories if specified
         if selected_categories:
-            all_results = self._filter_by_categories(all_results,
-                                                     selected_categories)
+            all_results = self._filter_by_categories(
+                all_results, selected_categories
+            )
 
         # Sort by seeders for relevance
         all_results.sort(key=lambda r: r.seeders, reverse=True)
@@ -250,9 +271,8 @@ class SearchClient:
         return all_results, errors
 
     def _group_indexers(
-            self,
-            selected_indexers: list[str]) -> tuple[
-                set[str], list[str], list[str]]:
+        self, selected_indexers: list[str]
+    ) -> tuple[set[str], list[str], list[str]]:
         """Group selected indexers by provider type.
 
         Args:
@@ -266,20 +286,18 @@ class SearchClient:
         prowlarr_indexers = []
 
         for indexer_id in selected_indexers:
-            if indexer_id.startswith('jackett:'):
-                jackett_indexers.append(indexer_id.removeprefix('jackett:'))
-            elif indexer_id.startswith('prowlarr:'):
-                prowlarr_indexers.append(
-                    indexer_id.removeprefix('prowlarr:'))
+            if indexer_id.startswith("jackett:"):
+                jackett_indexers.append(indexer_id.removeprefix("jackett:"))
+            elif indexer_id.startswith("prowlarr:"):
+                prowlarr_indexers.append(indexer_id.removeprefix("prowlarr:"))
             else:
                 regular_providers.add(indexer_id)
 
         return regular_providers, jackett_indexers, prowlarr_indexers
 
     def _filter_providers(
-            self,
-            selected_indexers: list[str] | None) -> list[
-                BaseSearchProvider]:
+        self, selected_indexers: list[str] | None
+    ) -> list[BaseSearchProvider]:
         """Filter providers based on selected indexers.
 
         Processes the selected indexer IDs and returns the appropriate
@@ -301,10 +319,10 @@ class SearchClient:
 
         for provider in self.get_providers():
             provider_id = provider.id()
-            if provider_id == 'jackett' and jackett:
+            if provider_id == "jackett" and jackett:
                 provider.set_selected_indexers(jackett)
                 providers_to_search.append(provider)
-            elif provider_id == 'prowlarr' and prowlarr:
+            elif provider_id == "prowlarr" and prowlarr:
                 provider.set_selected_indexers(prowlarr)
                 providers_to_search.append(provider)
             elif provider_id in regular:
@@ -313,9 +331,10 @@ class SearchClient:
         return providers_to_search
 
     def _filter_by_categories(
-            self,
-            results: list[SearchResultDTO],
-            selected_categories: list[Category]) -> list[SearchResultDTO]:
+        self,
+        results: list[SearchResultDTO],
+        selected_categories: list[Category],
+    ) -> list[SearchResultDTO]:
         """Filter search results by categories.
 
         Keeps results that have at least one category matching the

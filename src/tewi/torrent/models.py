@@ -10,6 +10,7 @@ class TorrentDTO:
 
     Note: All size fields are in bytes, all speed fields are in bytes/second.
     """
+
     id: int | str
     name: str
     status: str
@@ -47,6 +48,7 @@ class FileDTO:
 
     Note: All size fields are in bytes.
     """
+
     id: int
     name: str
     size: int  # bytes
@@ -55,19 +57,20 @@ class FileDTO:
 
 
 class PeerState(Enum):
-    INTERESTED = 'Interested'
+    INTERESTED = "Interested"
     """Peer is interested in data and unchoked."""
 
-    CHOKED = 'Choked'
+    CHOKED = "Choked"
     """Peer is interested in data BUT unchoked."""
 
-    NONE = '-'
+    NONE = "-"
     """No active interest or transfer state."""
 
 
 @dataclass(frozen=True)
 class CategoryDTO:
     """Data Transfer Object for torrent categories (immutable)."""
+
     name: str
     save_path: str | None
 
@@ -78,6 +81,7 @@ class PeerDTO:
 
     Note: All speed fields are in bytes/second.
     """
+
     address: str
     client_name: str
     progress: float
@@ -96,6 +100,7 @@ class PeerDTO:
 @dataclass(frozen=True)
 class TrackerDTO:
     """Data Transfer Object for tracker information."""
+
     host: str
     tier: int | None
     seeder_count: int | None
@@ -116,6 +121,7 @@ class TorrentDetailDTO:
 
     Note: All size fields are in bytes.
     """
+
     id: int | str
     name: str
     hash_string: str
@@ -147,6 +153,7 @@ class TorrentDetailDTO:
 
 class ClientMeta(TypedDict):
     """Metadata about the torrent client daemon."""
+
     name: str
     version: str
 
@@ -157,6 +164,7 @@ class ClientStats(TypedDict):
     Note: All fields are optional as some clients may not provide certain statistics.
     Fields that are None will be displayed as "N/A" in the UI.
     """
+
     current_uploaded_bytes: int | None
     current_downloaded_bytes: int | None
     current_ratio: float | None
@@ -185,6 +193,7 @@ class ClientSession(TypedDict):
 
     Note: All speed values are in bytes/second for consistency across clients.
     """
+
     download_dir: str
     download_dir_free_space: int
     upload_speed: int
@@ -205,4 +214,5 @@ class ClientSession(TypedDict):
 
 class ClientError(Exception):
     """Base exception for all client errors."""
+
     pass

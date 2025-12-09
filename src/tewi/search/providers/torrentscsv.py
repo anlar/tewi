@@ -28,9 +28,9 @@ class TorrentsCsvProvider(BaseSearchProvider):
         return "Torrents-CSV"
 
     @log_time
-    def _search_impl(self, query: str,
-                     categories: list[Category] | None = None) -> list[
-            SearchResultDTO]:
+    def _search_impl(
+        self, query: str, categories: list[Category] | None = None
+    ) -> list[SearchResultDTO]:
         """Search torrents-csv.com for torrents.
 
         Args:
@@ -48,17 +48,17 @@ class TorrentsCsvProvider(BaseSearchProvider):
             return []
 
         params = {
-            'q': query.strip(),
-            'size': 50,  # Limit results
+            "q": query.strip(),
+            "size": 50,  # Limit results
         }
 
         url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
 
         try:
             with self._urlopen(url) as response:
-                data = json.loads(response.read().decode('utf-8'))
+                data = json.loads(response.read().decode("utf-8"))
 
-            torrents = data.get('torrents', [])
+            torrents = data.get("torrents", [])
             if not torrents:
                 return []
 
@@ -78,38 +78,37 @@ class TorrentsCsvProvider(BaseSearchProvider):
     def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResultDTO | None:
         """Parse a single torrent from TorrentsCSV API response."""
         try:
-            info_hash = torrent.get('infohash', '')
+            info_hash = torrent.get("infohash", "")
             if not info_hash:
                 return None
 
-            name = torrent.get('name', 'Unknown')
+            name = torrent.get("name", "Unknown")
 
-            size = torrent.get('size_bytes', 0)
+            size = torrent.get("size_bytes", 0)
 
             magnet_link = self._build_magnet_link(
-                info_hash=info_hash,
-                name=name
+                info_hash=info_hash, name=name
             )
 
             # Parse upload date from unix timestamp
             upload_date = None
-            created_unix = torrent.get('created_unix')
+            created_unix = torrent.get("created_unix")
             if created_unix:
                 upload_date = datetime.fromtimestamp(created_unix)
 
             # Build provider-specific fields
             fields = {}
-            scraped_date = torrent.get('scraped_date')
+            scraped_date = torrent.get("scraped_date")
             if scraped_date:
                 scraped_dt = datetime.fromtimestamp(scraped_date)
-                fields['scraped_date'] = scraped_dt.strftime('%Y-%m-%d %H:%M')
+                fields["scraped_date"] = scraped_dt.strftime("%Y-%m-%d %H:%M")
 
             return SearchResultDTO(
                 title=name,
                 categories=[],
-                seeders=torrent.get('seeders', 0),
-                leechers=torrent.get('leechers', 0),
-                downloads=torrent.get('completed', 0),
+                seeders=torrent.get("seeders", 0),
+                leechers=torrent.get("leechers", 0),
+                downloads=torrent.get("completed", 0),
                 size=size,
                 files_count=None,
                 magnet_link=magnet_link,
@@ -120,7 +119,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 page_url=None,
                 torrent_link=None,
                 freeleech=True,  # Public tracker
-                fields=fields
+                fields=fields,
             )
 
         except (KeyError, ValueError, TypeError):
@@ -140,11 +139,11 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
         md = "## Information\n"
 
-        if 'completed' in result.fields:
-            completed = result.fields['completed']
+        if "completed" in result.fields:
+            completed = result.fields["completed"]
             md += f"- **Completed Downloads:** {completed}\n"
 
-        if 'scraped_date' in result.fields:
+        if "scraped_date" in result.fields:
             md += f"- **Last Scraped:** {result.fields['scraped_date']}\n"
 
         return md

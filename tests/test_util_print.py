@@ -17,8 +17,12 @@
 import math
 from datetime import datetime, timedelta
 from src.tewi.util.print import (
-    print_size, print_speed, print_ratio, print_time, print_time_ago,
-    escape_markup
+    print_size,
+    print_speed,
+    print_ratio,
+    print_time,
+    print_time_ago,
+    escape_markup,
 )
 
 
@@ -104,7 +108,9 @@ class TestPrintRatio:
     def test_infinite_ratio(self):
         """Test formatting of infinite ratio values."""
         assert print_ratio(math.inf) == "∞"
-        assert print_ratio(-math.inf) == "∞"  # Both positive and negative infinity should show ∞
+        assert (
+            print_ratio(-math.inf) == "∞"
+        )  # Both positive and negative infinity should show ∞
 
     def test_very_large_ratios(self):
         """Test formatting of very large ratio values."""
@@ -122,8 +128,8 @@ class TestPrintRatio:
     def test_edge_cases(self):
         """Test edge cases and special values."""
         # Test NaN (though it may not be expected in normal usage)
-        nan_result = print_ratio(float('nan'))
-        assert 'nan' in nan_result.lower() or nan_result == "nan"
+        nan_result = print_ratio(float("nan"))
+        assert "nan" in nan_result.lower() or nan_result == "nan"
 
         # Test zero variations
         assert print_ratio(0.0) == "0.00"
@@ -192,7 +198,10 @@ class TestPrintSpeed:
 
         # Non-zero values should be unaffected
         assert print_speed(1000, dash_for_zero=True) == "1 KB"
-        assert print_speed(1500000, print_secs=True, dash_for_zero=True) == "1.5 MB/s"
+        assert (
+            print_speed(1500000, print_secs=True, dash_for_zero=True)
+            == "1.5 MB/s"
+        )
 
 
 class TestPrintTime:
@@ -241,7 +250,9 @@ class TestPrintTime:
         assert print_time(90181, units=1) == "1 day"
         assert print_time(90181, units=2) == "1 day, 1 hour"
         assert print_time(90181, units=3) == "1 day, 1 hour, 3 minutes"
-        assert print_time(90181, units=4) == "1 day, 1 hour, 3 minutes, 1 second"
+        assert (
+            print_time(90181, units=4) == "1 day, 1 hour, 3 minutes, 1 second"
+        )
 
     def test_abbreviated_multiple_units(self):
         """Test abbreviated format with multiple units."""
@@ -256,7 +267,9 @@ class TestPrintTime:
 
         # Exact boundaries
         assert print_time(86400) == "1 day"
-        assert print_time(86401) == "1 day"  # Should only show days with units=1
+        assert (
+            print_time(86401) == "1 day"
+        )  # Should only show days with units=1
 
         # Zero
         assert print_time(0) == ""
@@ -268,7 +281,10 @@ class TestPrintTime:
         assert print_time(complex_time, units=1) == "1 day"
         assert print_time(complex_time, units=2) == "1 day, 1 hour"
         assert print_time(complex_time, units=3) == "1 day, 1 hour, 3 minutes"
-        assert print_time(complex_time, units=4) == "1 day, 1 hour, 3 minutes, 2 seconds"
+        assert (
+            print_time(complex_time, units=4)
+            == "1 day, 1 hour, 3 minutes, 2 seconds"
+        )
 
 
 class TestPrintTimeAgo:

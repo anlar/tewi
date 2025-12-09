@@ -26,6 +26,7 @@ class VimSelectionList(SelectionList[SelectionType]):
 
     Generic type parameter allows type-safe selection values.
     """
+
     BINDINGS = [
         Binding("k", "cursor_up", "Up", show=False),
         Binding("j", "cursor_down", "Down", show=False),
@@ -39,7 +40,6 @@ class VimSelectionList(SelectionList[SelectionType]):
 
 
 class ReactiveLabel(Label):
-
     name = reactive(None, layout=True)
 
     @log_time
@@ -52,11 +52,10 @@ class ReactiveLabel(Label):
         if self.name:
             return self.name
         else:
-            return ''
+            return ""
 
 
 class SpeedIndicator(Static):
-
     speed = reactive(0)
 
     @log_time
@@ -72,7 +71,6 @@ class SpeedIndicator(Static):
 
 
 class PageIndicator(Static):
-
     state = reactive(None)
 
     @log_time
@@ -83,7 +81,7 @@ class PageIndicator(Static):
     def render(self) -> str:
         # hide indicator when single page or none (no torrents)
         if self.state is None or self.state.total <= 1:
-            return ''
+            return ""
         else:
             # include padding by spaces
-            return f' [ {self.state.current + 1} / {self.state.total} ] '
+            return f" [ {self.state.current + 1} / {self.state.total} ] "

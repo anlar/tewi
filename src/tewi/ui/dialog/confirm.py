@@ -8,11 +8,10 @@ from ...util.decorator import log_time
 
 
 class ConfirmDialog(ModalScreen[bool]):
-
     BINDINGS = [
-            Binding("y", "confirm", "[Confirmation] Yes"),
-            Binding("n,x,escape", "close", "[Confirmation] No"),
-            ]
+        Binding("y", "confirm", "[Confirmation] Yes"),
+        Binding("n,x,escape", "close", "[Confirmation] No"),
+    ]
 
     @log_time
     def __init__(self, message: str, description: str = None) -> None:
@@ -34,7 +33,6 @@ class ConfirmDialog(ModalScreen[bool]):
 
 
 class ConfirmWidget(Static):
-
     @log_time
     def __init__(self, message: str, description: str = None) -> None:
         self.message = message
@@ -47,11 +45,11 @@ class ConfirmWidget(Static):
 
         if self.description:
             # empty space between message and description
-            yield Label('')
+            yield Label("")
             for line in textwrap.wrap(self.description, 56):
                 yield Label(line)
 
     @log_time
     def on_mount(self):
-        self.border_title = 'Confirmation'
-        self.border_subtitle = '(Y) Yes / (N) No'
+        self.border_title = "Confirmation"
+        self.border_subtitle = "(Y) Yes / (N) No"

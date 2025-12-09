@@ -35,19 +35,51 @@ from textual.widgets import ContentSwitcher
 
 from .ui.models import get_filter_by_id, sort_orders, FilterState
 from .torrent.models import TorrentDTO
-from .config import TrackSetAction, get_config_path, load_config, create_default_config, \
-    merge_config_with_args, get_available_profiles
+from .config import (
+    TrackSetAction,
+    get_config_path,
+    load_config,
+    create_default_config,
+    merge_config_with_args,
+    get_available_profiles,
+)
 from .torrent.factory import create_client
 from .torrent.models import ClientError
-from .ui.messages import AddTorrentCommand, TorrentLabelsUpdatedEvent, SortOrderUpdatedEvent, Notification, Confirm, \
-        OpenSortOrderCommand, OpenFilterCommand, FilterUpdatedEvent, OpenSearchCommand, PageChangedEvent, \
-        VerifyTorrentCommand, ReannounceTorrentCommand, \
-        OpenTorrentInfoCommand, OpenTorrentListCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
-        RemoveTorrentCommand, TorrentRemovedEvent, TrashTorrentCommand, TorrentTrashedEvent, SearchCompletedEvent, \
-        StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, \
-        AddTorrentFromWebSearchCommand, WebSearchQuerySubmitted, ChangeTorrentPriorityCommand, \
-        ToggleFileDownloadCommand, OpenEditTorrentCommand, EditTorrentCommand, SearchStateChangedEvent, \
-        OpenUpdateTorrentCategoryCommand, UpdateTorrentCategoryCommand
+from .ui.messages import (
+    AddTorrentCommand,
+    TorrentLabelsUpdatedEvent,
+    SortOrderUpdatedEvent,
+    Notification,
+    Confirm,
+    OpenSortOrderCommand,
+    OpenFilterCommand,
+    FilterUpdatedEvent,
+    OpenSearchCommand,
+    PageChangedEvent,
+    VerifyTorrentCommand,
+    ReannounceTorrentCommand,
+    OpenTorrentInfoCommand,
+    OpenTorrentListCommand,
+    OpenAddTorrentCommand,
+    ToggleTorrentCommand,
+    RemoveTorrentCommand,
+    TorrentRemovedEvent,
+    TrashTorrentCommand,
+    TorrentTrashedEvent,
+    SearchCompletedEvent,
+    StartAllTorrentsCommand,
+    StopAllTorrentsCommand,
+    OpenUpdateTorrentLabelsCommand,
+    AddTorrentFromWebSearchCommand,
+    WebSearchQuerySubmitted,
+    ChangeTorrentPriorityCommand,
+    ToggleFileDownloadCommand,
+    OpenEditTorrentCommand,
+    EditTorrentCommand,
+    SearchStateChangedEvent,
+    OpenUpdateTorrentCategoryCommand,
+    UpdateTorrentCategoryCommand,
+)
 from .util.decorator import log_time
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -70,31 +102,27 @@ from .ui.panel.websearch import TorrentWebSearch
 from .search.manager import SearchClient, print_available_providers
 
 
-logger = logging.getLogger('tewi')
+logger = logging.getLogger("tewi")
 
 
 # Core UI panels
 
 
 class MainApp(App):
-
     ENABLE_COMMAND_PALETTE = False
 
     CSS_PATH = "app.tcss"
 
     BINDINGS = [
-            Binding("t", "toggle_alt_speed", "[Speed] Toggle limits"),
-            Binding("S", "show_statistics", "[Info] Statistics"),
-            Binding("P", "show_preferences", "[App] Preferences"),
-
-            Binding("W", "open_websearch", "[Search] Web search"),
-
-            Binding('"', "screenshot", "[App] Screenshot", priority=True),
-
-            Binding("d", "toggle_dark", "[UI] Toggle theme"),
-            Binding("?", "help", "[App] Help"),
-            Binding("q", "quit", "[App] Quit", priority=True),
-            ]
+        Binding("t", "toggle_alt_speed", "[Speed] Toggle limits"),
+        Binding("S", "show_statistics", "[Info] Statistics"),
+        Binding("P", "show_preferences", "[App] Preferences"),
+        Binding("W", "open_websearch", "[Search] Web search"),
+        Binding('"', "screenshot", "[App] Screenshot", priority=True),
+        Binding("d", "toggle_dark", "[UI] Toggle theme"),
+        Binding("?", "help", "[App] Help"),
+        Binding("q", "quit", "[App] Quit", priority=True),
+    ]
 
     r_torrents: list[TorrentDTO] | None = reactive(None)
     r_session = reactive(None)
@@ -108,27 +136,32 @@ class MainApp(App):
     last_search_query = None
 
     @log_time
-    def __init__(self, client_type: str, host: str, port: str,
-                 username: str, password: str,
-                 view_mode: str,
-                 refresh_interval: int,
-                 page_size: int,
-                 limit_torrents: int,
-                 test_mode: int,
-                 version: str,
-                 jackett_url: str,
-                 jackett_api_key: str,
-                 prowlarr_url: str,
-                 prowlarr_api_key: str,
-                 search_query: str,
-                 filter: str,
-                 badge_max_count: int,
-                 badge_max_length: int,
-                 search_providers: str | None = None):
-
+    def __init__(
+        self,
+        client_type: str,
+        host: str,
+        port: str,
+        username: str,
+        password: str,
+        view_mode: str,
+        refresh_interval: int,
+        page_size: int,
+        limit_torrents: int,
+        test_mode: int,
+        version: str,
+        jackett_url: str,
+        jackett_api_key: str,
+        prowlarr_url: str,
+        prowlarr_api_key: str,
+        search_query: str,
+        filter: str,
+        badge_max_count: int,
+        badge_max_length: int,
+        search_providers: str | None = None,
+    ):
         super().__init__()
 
-        self.title = 'Tewi'
+        self.title = "Tewi"
 
         self.view_mode = view_mode
         self.refresh_interval = refresh_interval
@@ -149,51 +182,65 @@ class MainApp(App):
         self.c_host = host
         self.c_port = port
 
-        self.client = create_client(client_type=self.c_type,
-                                    host=self.c_host,
-                                    port=self.c_port,
-                                    username=username,
-                                    password=password)
+        self.client = create_client(
+            client_type=self.c_type,
+            host=self.c_host,
+            port=self.c_port,
+            username=username,
+            password=password,
+        )
 
-        self.search = SearchClient(jackett_url, jackett_api_key,
-                                   prowlarr_url, prowlarr_api_key,
-                                   search_providers)
+        self.search = SearchClient(
+            jackett_url,
+            jackett_api_key,
+            prowlarr_url,
+            prowlarr_api_key,
+            search_providers,
+        )
 
         self.filter_option = get_filter_by_id(filter)
         self.r_filter_state = FilterState(self.filter_option, 0)
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield InfoPanel(self.tewi_version,
-                        self.client.meta()['name'],
-                        self.client.meta()['version'],
-                        self.c_host,
-                        self.c_port)
+        yield InfoPanel(
+            self.tewi_version,
+            self.client.meta()["name"],
+            self.client.meta()["version"],
+            self.c_host,
+            self.c_port,
+        )
 
         with Horizontal():
             with ContentSwitcher(initial="torrent-list"):
-                yield TorrentListViewPanel(id="torrent-list",
-                                           page_size=self.page_size,
-                                           view_mode=self.view_mode,
-                                           capability_set_priority=self.client.capable('set_priority'),
-                                           capability_label=self.client.capable('label'),
-                                           capability_category=self.client.capable('category')
-                                           ).data_bind(r_torrents=MainApp.r_torrents)
-                yield TorrentInfoPanel(capability_torrent_id=self.client.capable('torrent_id'), id="torrent-info")
+                yield TorrentListViewPanel(
+                    id="torrent-list",
+                    page_size=self.page_size,
+                    view_mode=self.view_mode,
+                    capability_set_priority=self.client.capable("set_priority"),
+                    capability_label=self.client.capable("label"),
+                    capability_category=self.client.capable("category"),
+                ).data_bind(r_torrents=MainApp.r_torrents)
+                yield TorrentInfoPanel(
+                    capability_torrent_id=self.client.capable("torrent_id"),
+                    id="torrent-info",
+                )
                 yield TorrentWebSearch(
                     jackett_url=self.jackett_url,
                     jackett_api_key=self.jackett_api_key,
                     prowlarr_url=self.prowlarr_url,
                     prowlarr_api_key=self.prowlarr_api_key,
-                    id="torrent-websearch"
+                    id="torrent-websearch",
                 )
 
-        yield StatePanel().data_bind(r_session=MainApp.r_session,
-                                     r_sort_order=MainApp.r_sort_order,
-                                     r_sort_order_asc=MainApp.r_sort_order_asc,
-                                     r_filter_state=MainApp.r_filter_state,
-                                     r_page=MainApp.r_page,
-                                     r_search=MainApp.r_search)
+        yield StatePanel().data_bind(
+            r_session=MainApp.r_session,
+            r_sort_order=MainApp.r_sort_order,
+            r_sort_order_asc=MainApp.r_sort_order_asc,
+            r_filter_state=MainApp.r_filter_state,
+            r_page=MainApp.r_page,
+            r_search=MainApp.r_search,
+        )
 
     @log_time
     def on_mount(self) -> None:
@@ -202,8 +249,9 @@ class MainApp(App):
 
         # Auto-start web search if query provided via CLI
         if self.initial_search_query:
-            self.post_message(WebSearchQuerySubmitted(
-                self.initial_search_query))
+            self.post_message(
+                WebSearchQuerySubmitted(self.initial_search_query)
+            )
 
         self.query_one(TorrentListViewPanel).focus()
 
@@ -211,7 +259,7 @@ class MainApp(App):
     @work(exclusive=True, thread=True)
     async def load_tdata(self) -> None:
         current_pane = self.query_one(ContentSwitcher).current
-        if current_pane == 'torrent-list':
+        if current_pane == "torrent-list":
             logging.info("Start loading data from torrent client...")
 
             if self.test_mode:
@@ -222,17 +270,21 @@ class MainApp(App):
             # Load session with full list of torrents (before filtering)
             session = self.client.session(torrents)
 
-            torrents = [t for t in torrents
-                        if self.filter_option.filter_func(t)]
+            torrents = [
+                t for t in torrents if self.filter_option.filter_func(t)
+            ]
 
-            filter_state = FilterState(self.filter_option,
-                                       len(torrents))
+            filter_state = FilterState(self.filter_option, len(torrents))
 
-            torrents.sort(key=self.r_sort_order.sort_func,
-                          reverse=not self.r_sort_order_asc)
+            torrents.sort(
+                key=self.r_sort_order.sort_func,
+                reverse=not self.r_sort_order_asc,
+            )
 
-            self.call_from_thread(self.set_tdata, torrents, session, filter_state)
-        elif current_pane == 'torrent-info':
+            self.call_from_thread(
+                self.set_tdata, torrents, session, filter_state
+            )
+        elif current_pane == "torrent-info":
             info_panel = self.query_one(TorrentInfoPanel)
             torrent = self.client.torrent(info_panel.r_torrent.id)
             self.call_from_thread(self.set_tdata2, torrent)
@@ -242,8 +294,9 @@ class MainApp(App):
         self.query_one(TorrentInfoPanel).r_torrent = torrent
 
     @log_time
-    def set_tdata(self, torrents: list[TorrentDTO], session,
-                  filter_state: FilterState) -> None:
+    def set_tdata(
+        self, torrents: list[TorrentDTO], session, filter_state: FilterState
+    ) -> None:
         self.r_torrents = torrents
         self.r_session = session
         self.r_filter_state = filter_state
@@ -276,23 +329,25 @@ class MainApp(App):
     @log_time
     @on(Notification)
     def handle_notification(self, event: Notification) -> None:
-        timeout = 3 if event.severity == 'information' else 5
+        timeout = 3 if event.severity == "information" else 5
 
-        self.notify(message=event.message,
-                    severity=event.severity,
-                    timeout=timeout)
+        self.notify(
+            message=event.message, severity=event.severity, timeout=timeout
+        )
 
     @log_time
     @on(Confirm)
     def handle_confirm(self, event: Confirm) -> None:
         self.push_screen(
-                    ConfirmDialog(message=event.message,
-                                  description=event.description),
-                    event.check_quit)
+            ConfirmDialog(message=event.message, description=event.description),
+            event.check_quit,
+        )
 
     @log_time
     @on(OpenSortOrderCommand)
-    def handle_open_sort_order_command(self, event: OpenSortOrderCommand) -> None:
+    def handle_open_sort_order_command(
+        self, event: OpenSortOrderCommand
+    ) -> None:
         self.push_screen(SortOrderDialog())
 
     @log_time
@@ -312,39 +367,52 @@ class MainApp(App):
             self.client.add_torrent(event.value)
             self.post_message(Notification("New torrent was added"))
         except ClientError as e:
-            self.post_message(Notification(
-                f"Failed to add torrent:\n{e}",
-                "warning"))
+            self.post_message(
+                Notification(f"Failed to add torrent:\n{e}", "warning")
+            )
         except FileNotFoundError:
-            self.post_message(Notification(
-                f"Failed to add torrent:\nFile not found {event.value}",
-                "warning"))
+            self.post_message(
+                Notification(
+                    f"Failed to add torrent:\nFile not found {event.value}",
+                    "warning",
+                )
+            )
 
     @log_time
     @on(OpenUpdateTorrentLabelsCommand)
-    def handle_open_update_torrent_labels_command(self, event: OpenUpdateTorrentLabelsCommand) -> None:
+    def handle_open_update_torrent_labels_command(
+        self, event: OpenUpdateTorrentLabelsCommand
+    ) -> None:
         self.push_screen(UpdateTorrentLabelsDialog(event.torrent, None))
 
     @log_time
     @on(OpenEditTorrentCommand)
-    def handle_open_edit_torrent_command(self, event: OpenEditTorrentCommand) -> None:
+    def handle_open_edit_torrent_command(
+        self, event: OpenEditTorrentCommand
+    ) -> None:
         self.push_screen(EditTorrentDialog(event.torrent))
 
     @log_time
     @on(VerifyTorrentCommand)
-    def handle_verify_torrent_command(self, event: VerifyTorrentCommand) -> None:
+    def handle_verify_torrent_command(
+        self, event: VerifyTorrentCommand
+    ) -> None:
         self.client.verify_torrent(event.torrent_id)
         self.post_message(Notification("Torrent sent to verification"))
 
     @log_time
     @on(ReannounceTorrentCommand)
-    def handle_reannounce_torrent_command(self, event: ReannounceTorrentCommand) -> None:
+    def handle_reannounce_torrent_command(
+        self, event: ReannounceTorrentCommand
+    ) -> None:
         self.client.reannounce_torrent(event.torrent_id)
         self.post_message(Notification("Torrent reannounce started"))
 
     @log_time
     @on(ChangeTorrentPriorityCommand)
-    def handle_change_torrent_priority_command(self, event: ChangeTorrentPriorityCommand) -> None:
+    def handle_change_torrent_priority_command(
+        self, event: ChangeTorrentPriorityCommand
+    ) -> None:
         # Cycle through priorities: None/0 -> 1 (high) -> -1 (low) -> 0 (normal) -> 1 (high)...
         if event.current_priority is None or event.current_priority == 0:
             new_priority = 1
@@ -357,87 +425,112 @@ class MainApp(App):
             priority_label = "Normal"
 
         self.client.set_priority(event.torrent_id, new_priority)
-        self.post_message(Notification(f"Torrent priority set to {priority_label}"))
+        self.post_message(
+            Notification(f"Torrent priority set to {priority_label}")
+        )
 
     @log_time
     @on(ToggleFileDownloadCommand)
-    def handle_toggle_file_download_command(self, event: ToggleFileDownloadCommand) -> None:
-        self.client.set_file_priority(event.torrent_id, event.file_ids, event.priority)
+    def handle_toggle_file_download_command(
+        self, event: ToggleFileDownloadCommand
+    ) -> None:
+        self.client.set_file_priority(
+            event.torrent_id, event.file_ids, event.priority
+        )
         # Refresh torrent details to show updated file priorities
         torrent = self.client.torrent(event.torrent_id)
         self.query_one(TorrentInfoPanel).r_torrent = torrent
 
     @log_time
     @on(SearchCompletedEvent)
-    def handle_search_completed_event(self, event: SearchCompletedEvent) -> None:
+    def handle_search_completed_event(
+        self, event: SearchCompletedEvent
+    ) -> None:
         self.query_one(TorrentListViewPanel).search_torrent(event.search_term)
 
     @log_time
     @on(TorrentLabelsUpdatedEvent)
-    def handle_torrent_labels_updated_event(self, event: TorrentLabelsUpdatedEvent) -> None:
-        labels = [x.strip() for x in event.value.split(',') if x.strip()]
+    def handle_torrent_labels_updated_event(
+        self, event: TorrentLabelsUpdatedEvent
+    ) -> None:
+        labels = [x.strip() for x in event.value.split(",") if x.strip()]
 
         if len(event.torrent_ids) == 1:
-            count_label = '1 torrent'
+            count_label = "1 torrent"
         else:
             count_label = f"{len(event.torrent_ids)} torrents"
 
         if len(labels) > 0:
             self.client.update_labels(event.torrent_ids, labels)
 
-            self.post_message(Notification(
-                f"Updated torrent labels ({count_label}):\n{','.join(labels)}"))
+            self.post_message(
+                Notification(
+                    f"Updated torrent labels ({count_label}):\n{','.join(labels)}"
+                )
+            )
         else:
             self.client.update_labels(event.torrent_ids, [])
 
-            self.post_message(Notification(
-                f"Removed torrent labels ({count_label})"))
+            self.post_message(
+                Notification(f"Removed torrent labels ({count_label})")
+            )
 
     @log_time
     @on(EditTorrentCommand)
     def handle_edit_torrent_command(self, event: EditTorrentCommand) -> None:
         try:
-            self.client.edit_torrent(event.torrent_id, event.name,
-                                     event.location)
+            self.client.edit_torrent(
+                event.torrent_id, event.name, event.location
+            )
             self.post_message(Notification("Torrent updated successfully"))
         except Exception as e:
-            self.post_message(Notification(
-                f"Failed to update torrent: {str(e)}", "error"))
+            self.post_message(
+                Notification(f"Failed to update torrent: {str(e)}", "error")
+            )
 
     @log_time
     @on(OpenUpdateTorrentCategoryCommand)
-    def handle_open_update_torrent_category_command(self, event: OpenUpdateTorrentCategoryCommand) -> None:
+    def handle_open_update_torrent_category_command(
+        self, event: OpenUpdateTorrentCategoryCommand
+    ) -> None:
         categories = self.client.get_categories()
         self.push_screen(UpdateTorrentCategoryDialog(event.torrent, categories))
 
     @log_time
     @on(UpdateTorrentCategoryCommand)
-    def handle_update_torrent_category_command(self, event: UpdateTorrentCategoryCommand) -> None:
+    def handle_update_torrent_category_command(
+        self, event: UpdateTorrentCategoryCommand
+    ) -> None:
         try:
             self.client.set_category(event.torrent_id, event.category)
             category_name = event.category if event.category else "None"
             self.post_message(Notification(f"Category set to: {category_name}"))
         except Exception as e:
-            self.post_message(Notification(
-                f"Failed to set category: {str(e)}", "error"))
+            self.post_message(
+                Notification(f"Failed to set category: {str(e)}", "error")
+            )
 
     @log_time
     @on(SortOrderUpdatedEvent)
-    def handle_sort_order_updated_event(self, event: SortOrderUpdatedEvent) -> None:
+    def handle_sort_order_updated_event(
+        self, event: SortOrderUpdatedEvent
+    ) -> None:
         self.r_sort_order = event.order
         self.r_sort_order_asc = event.is_asc
 
-        direction = 'ASC' if event.is_asc else 'DESC'
-        self.post_message(Notification(
-            f"Selected sort order: {event.order.name} {direction}"))
+        direction = "ASC" if event.is_asc else "DESC"
+        self.post_message(
+            Notification(f"Selected sort order: {event.order.name} {direction}")
+        )
 
     @log_time
     @on(FilterUpdatedEvent)
     def handle_filter_updated_event(self, event: FilterUpdatedEvent) -> None:
         self.filter_option = event.filter_option
 
-        self.post_message(Notification(
-            f"Selected filter: {event.filter_option.name}"))
+        self.post_message(
+            Notification(f"Selected filter: {event.filter_option.name}")
+        )
 
     @log_time
     @on(PageChangedEvent)
@@ -446,9 +539,9 @@ class MainApp(App):
 
     @log_time
     @on(SearchStateChangedEvent)
-    def handle_search_state_changed_event(self,
-                                          event: SearchStateChangedEvent) -> None:
-
+    def handle_search_state_changed_event(
+        self, event: SearchStateChangedEvent
+    ) -> None:
         if event.current and event.total:
             self.r_search = f" Found: {event.current} / {event.total} "
         else:
@@ -458,7 +551,9 @@ class MainApp(App):
 
     @log_time
     @on(OpenTorrentInfoCommand)
-    def handle_open_torrent_info_command(self, event: OpenTorrentInfoCommand) -> None:
+    def handle_open_torrent_info_command(
+        self, event: OpenTorrentInfoCommand
+    ) -> None:
         torrent = self.client.torrent(event.torrent_id)
 
         self.query_one(ContentSwitcher).current = "torrent-info"
@@ -469,22 +564,31 @@ class MainApp(App):
 
     @log_time
     @on(OpenTorrentListCommand)
-    def handle_open_torrent_list_command(self, event: OpenTorrentListCommand) -> None:
+    def handle_open_torrent_list_command(
+        self, event: OpenTorrentListCommand
+    ) -> None:
         self.query_one(ContentSwitcher).current = "torrent-list"
         # Focus on the torrent list when returning from other panels
         self.query_one(TorrentListViewPanel).focus()
 
     @log_time
     @on(OpenAddTorrentCommand)
-    def handle_open_add_torrent_command(self, event: OpenAddTorrentCommand) -> None:
+    def handle_open_add_torrent_command(
+        self, event: OpenAddTorrentCommand
+    ) -> None:
         session = self.client.session(self.r_torrents)
-        self.push_screen(AddTorrentDialog(session['download_dir'],
-                                          session['download_dir_free_space']))
+        self.push_screen(
+            AddTorrentDialog(
+                session["download_dir"], session["download_dir_free_space"]
+            )
+        )
 
     @log_time
     @on(ToggleTorrentCommand)
-    def handle_toggle_torrent_command(self, event: ToggleTorrentCommand) -> None:
-        if event.torrent_status == 'stopped':
+    def handle_toggle_torrent_command(
+        self, event: ToggleTorrentCommand
+    ) -> None:
+        if event.torrent_status == "stopped":
             self.client.start_torrent(event.torrent_id)
             self.post_message(Notification("Torrent started"))
         else:
@@ -493,80 +597,104 @@ class MainApp(App):
 
     @log_time
     @on(RemoveTorrentCommand)
-    def handle_remove_torrent_command(self, event: RemoveTorrentCommand) -> None:
+    def handle_remove_torrent_command(
+        self, event: RemoveTorrentCommand
+    ) -> None:
         def check_quit(confirmed: bool | None) -> None:
             if confirmed:
-                self.client.remove_torrent(event.torrent_id,
-                                           delete_data=False)
+                self.client.remove_torrent(event.torrent_id, delete_data=False)
 
-                self.query_one(TorrentListViewPanel).post_message(TorrentRemovedEvent(event.torrent_id))
+                self.query_one(TorrentListViewPanel).post_message(
+                    TorrentRemovedEvent(event.torrent_id)
+                )
                 self.post_message(Notification("Torrent removed"))
 
         message = "Remove torrent?"
-        description = ("Once removed, continuing the "
-                       "transfer will require the torrent file. "
-                       "Are you sure you want to remove it?")
+        description = (
+            "Once removed, continuing the "
+            "transfer will require the torrent file. "
+            "Are you sure you want to remove it?"
+        )
 
-        self.post_message(Confirm(message=message,
-                                  description=description,
-                                  check_quit=check_quit))
+        self.post_message(
+            Confirm(
+                message=message, description=description, check_quit=check_quit
+            )
+        )
 
     @log_time
     @on(TrashTorrentCommand)
     def handle_trash_torrent_command(self, event: TrashTorrentCommand) -> None:
         def check_quit(confirmed: bool | None) -> None:
             if confirmed:
-                self.client.remove_torrent(event.torrent_id,
-                                           delete_data=True)
+                self.client.remove_torrent(event.torrent_id, delete_data=True)
 
-                self.query_one(TorrentListViewPanel).post_message(TorrentTrashedEvent(event.torrent_id))
+                self.query_one(TorrentListViewPanel).post_message(
+                    TorrentTrashedEvent(event.torrent_id)
+                )
                 self.post_message(Notification("Torrent and its data removed"))
 
         message = "Remove torrent and delete data?"
-        description = ("All data downloaded for this torrent "
-                       "will be deleted. Are you sure you "
-                       "want to remove it?")
+        description = (
+            "All data downloaded for this torrent "
+            "will be deleted. Are you sure you "
+            "want to remove it?"
+        )
 
-        self.post_message(Confirm(message=message,
-                                  description=description,
-                                  check_quit=check_quit))
+        self.post_message(
+            Confirm(
+                message=message, description=description, check_quit=check_quit
+            )
+        )
 
     @log_time
     @on(StartAllTorrentsCommand)
-    def handle_start_all_torrents_command(self, event: StartAllTorrentsCommand) -> None:
+    def handle_start_all_torrents_command(
+        self, event: StartAllTorrentsCommand
+    ) -> None:
         self.client.start_all_torrents()
         self.post_message(Notification("All torrents started"))
 
     @log_time
     @on(StopAllTorrentsCommand)
-    def handle_stop_all_torrents_command(self, event: StopAllTorrentsCommand) -> None:
+    def handle_stop_all_torrents_command(
+        self, event: StopAllTorrentsCommand
+    ) -> None:
         self.client.stop_all_torrents()
         self.post_message(Notification("All torrents stopped"))
 
     @log_time
     @on(WebSearchQuerySubmitted)
-    def handle_websearch_query_submitted(self, event: WebSearchQuerySubmitted) -> None:
+    def handle_websearch_query_submitted(
+        self, event: WebSearchQuerySubmitted
+    ) -> None:
         # Save executed search query to use it as default value on next search
         self.last_search_query = event.query
         # Switch to results panel
         self.query_one(ContentSwitcher).current = "torrent-websearch"
         # Execute search with query and selected indexers
         self.query_one(TorrentWebSearch).execute_search(
-            event.query, event.selected_indexers, event.selected_categories)
+            event.query, event.selected_indexers, event.selected_categories
+        )
 
     @log_time
     @on(AddTorrentFromWebSearchCommand)
-    def handle_add_torrent_from_websearch_command(self, event: AddTorrentFromWebSearchCommand) -> None:
+    def handle_add_torrent_from_websearch_command(
+        self, event: AddTorrentFromWebSearchCommand
+    ) -> None:
         try:
             self.client.add_torrent(event.magnet_link)
-            self.post_message(Notification("New torrent was added from web search"))
+            self.post_message(
+                Notification("New torrent was added from web search")
+            )
         except ClientError as e:
-            self.post_message(Notification(
-                f"Failed to add torrent:\n{e}",
-                "warning"))
+            self.post_message(
+                Notification(f"Failed to add torrent:\n{e}", "warning")
+            )
 
-    def check_action(self, action: str,
-                     parameters: tuple[object, ...]) -> bool | None:
+    def check_action(
+        self, action: str, parameters: tuple[object, ...]
+    ) -> bool | None:
         """Check if an action may run."""
         if action == "toggle_alt_speed":
             return self.client.capable("toggle_alt_speed")
@@ -577,108 +705,199 @@ class MainApp(App):
 def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     """Set up and return the argument parser."""
     p = argparse.ArgumentParser(
-            prog='tewi',
-            description='Text-based interface for BitTorrent clients '
-                        '(Transmission, qBittorrent, and Deluge)',
-            formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        prog="tewi",
+        description="Text-based interface for BitTorrent clients "
+        "(Transmission, qBittorrent, and Deluge)",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
 
     # Actions
-    p.add_argument('-a', '--add-torrent', type=str,
-                   metavar='PATH_OR_MAGNET',
-                   help='Add torrent from file path or magnet link and exit')
-    p.add_argument('-s', '--search', type=str,
-                   metavar='QUERY',
-                   help='Start web search with the given query')
-    p.add_argument('--create-config',
-                   action='store_true',
-                   help='Create default configuration file and exit')
+    p.add_argument(
+        "-a",
+        "--add-torrent",
+        type=str,
+        metavar="PATH_OR_MAGNET",
+        help="Add torrent from file path or magnet link and exit",
+    )
+    p.add_argument(
+        "-s",
+        "--search",
+        type=str,
+        metavar="QUERY",
+        help="Start web search with the given query",
+    )
+    p.add_argument(
+        "--create-config",
+        action="store_true",
+        help="Create default configuration file and exit",
+    )
 
     # Client
-    p.add_argument('--client-type', type=str, default='transmission',
-                   choices=['transmission', 'qbittorrent', 'deluge'],
-                   action=TrackSetAction,
-                   help='Type of BitTorrent client to connect to')
-    p.add_argument('--host', type=str, default='localhost',
-                   action=TrackSetAction,
-                   help='BitTorrent daemon host for connection')
-    p.add_argument('--port', type=str, default='9091',
-                   action=TrackSetAction,
-                   help='BitTorrent daemon port for connection')
-    p.add_argument('--username', type=str,
-                   action=TrackSetAction,
-                   help='BitTorrent daemon username for connection')
-    p.add_argument('--password', type=str,
-                   action=TrackSetAction,
-                   help='BitTorrent daemon password for connection')
+    p.add_argument(
+        "--client-type",
+        type=str,
+        default="transmission",
+        choices=["transmission", "qbittorrent", "deluge"],
+        action=TrackSetAction,
+        help="Type of BitTorrent client to connect to",
+    )
+    p.add_argument(
+        "--host",
+        type=str,
+        default="localhost",
+        action=TrackSetAction,
+        help="BitTorrent daemon host for connection",
+    )
+    p.add_argument(
+        "--port",
+        type=str,
+        default="9091",
+        action=TrackSetAction,
+        help="BitTorrent daemon port for connection",
+    )
+    p.add_argument(
+        "--username",
+        type=str,
+        action=TrackSetAction,
+        help="BitTorrent daemon username for connection",
+    )
+    p.add_argument(
+        "--password",
+        type=str,
+        action=TrackSetAction,
+        help="BitTorrent daemon password for connection",
+    )
 
     # UI
-    p.add_argument('--view-mode', type=str, default='card',
-                   choices=['card', 'compact', 'oneline'],
-                   action=TrackSetAction,
-                   help='View mode for torrents in list')
-    p.add_argument('--page-size', type=int, default=30,
-                   action=TrackSetAction,
-                   help='Number of torrents displayed per page')
-    p.add_argument('--filter', type=str, default='all',
-                   choices=['all', 'active', 'downloading',
-                            'seeding', 'paused', 'finished'],
-                   action=TrackSetAction,
-                   help='Filter torrents by status')
-    p.add_argument('--badge-max-count', type=int, default=3,
-                   action=TrackSetAction,
-                   help='Maximum number of badges (category and labels) '
-                   'to display (-1: unlimited, 0: none, 1+: count)')
-    p.add_argument('--badge-max-length', type=int, default=10,
-                   action=TrackSetAction,
-                   help='Maximum length of badge (category or label) text'
-                   '(0: unlimited, 1+: truncate with …)')
-    p.add_argument('--refresh-interval', type=int, default=5,
-                   action=TrackSetAction,
-                   help='Refresh interval (in seconds) for loading '
-                   'data from daemon')
+    p.add_argument(
+        "--view-mode",
+        type=str,
+        default="card",
+        choices=["card", "compact", "oneline"],
+        action=TrackSetAction,
+        help="View mode for torrents in list",
+    )
+    p.add_argument(
+        "--page-size",
+        type=int,
+        default=30,
+        action=TrackSetAction,
+        help="Number of torrents displayed per page",
+    )
+    p.add_argument(
+        "--filter",
+        type=str,
+        default="all",
+        choices=[
+            "all",
+            "active",
+            "downloading",
+            "seeding",
+            "paused",
+            "finished",
+        ],
+        action=TrackSetAction,
+        help="Filter torrents by status",
+    )
+    p.add_argument(
+        "--badge-max-count",
+        type=int,
+        default=3,
+        action=TrackSetAction,
+        help="Maximum number of badges (category and labels) "
+        "to display (-1: unlimited, 0: none, 1+: count)",
+    )
+    p.add_argument(
+        "--badge-max-length",
+        type=int,
+        default=10,
+        action=TrackSetAction,
+        help="Maximum length of badge (category or label) text"
+        "(0: unlimited, 1+: truncate with …)",
+    )
+    p.add_argument(
+        "--refresh-interval",
+        type=int,
+        default=5,
+        action=TrackSetAction,
+        help="Refresh interval (in seconds) for loading data from daemon",
+    )
 
     # Search
-    p.add_argument('--jackett-url', type=str, default='http://localhost:9117',
-                   action=TrackSetAction,
-                   help='URL of your Jackett instance')
-    p.add_argument('--jackett-api-key', type=str,
-                   action=TrackSetAction,
-                   help='API key for Jackett authentication')
-    p.add_argument('--prowlarr-url', type=str,
-                   default='http://localhost:9696',
-                   action=TrackSetAction,
-                   help='URL of your Prowlarr instance')
-    p.add_argument('--prowlarr-api-key', type=str,
-                   action=TrackSetAction,
-                   help='API key for Prowlarr authentication')
-    p.add_argument('--search-providers', type=str,
-                   action=TrackSetAction,
-                   help='Comma-separated list of enabled search providers '
-                   '(tpb, torrentscsv, yts, nyaa, jackett, prowlarr). '
-                   'Leave empty to enable all')
-    p.add_argument('--list-search-providers', action='store_true',
-                   help='List available search providers and exit')
+    p.add_argument(
+        "--jackett-url",
+        type=str,
+        default="http://localhost:9117",
+        action=TrackSetAction,
+        help="URL of your Jackett instance",
+    )
+    p.add_argument(
+        "--jackett-api-key",
+        type=str,
+        action=TrackSetAction,
+        help="API key for Jackett authentication",
+    )
+    p.add_argument(
+        "--prowlarr-url",
+        type=str,
+        default="http://localhost:9696",
+        action=TrackSetAction,
+        help="URL of your Prowlarr instance",
+    )
+    p.add_argument(
+        "--prowlarr-api-key",
+        type=str,
+        action=TrackSetAction,
+        help="API key for Prowlarr authentication",
+    )
+    p.add_argument(
+        "--search-providers",
+        type=str,
+        action=TrackSetAction,
+        help="Comma-separated list of enabled search providers "
+        "(tpb, torrentscsv, yts, nyaa, jackett, prowlarr). "
+        "Leave empty to enable all",
+    )
+    p.add_argument(
+        "--list-search-providers",
+        action="store_true",
+        help="List available search providers and exit",
+    )
 
     # Profiles
-    p.add_argument('--profile', type=str,
-                   action=TrackSetAction,
-                   help='Load configuration profile from tewi-PROFILE.conf')
-    p.add_argument('--profiles', action='store_true',
-                   help='List available configuration profiles and exit')
+    p.add_argument(
+        "--profile",
+        type=str,
+        action=TrackSetAction,
+        help="Load configuration profile from tewi-PROFILE.conf",
+    )
+    p.add_argument(
+        "--profiles",
+        action="store_true",
+        help="List available configuration profiles and exit",
+    )
 
     # Other
-    p.add_argument('--logs', default=False,
-                   action=argparse.BooleanOptionalAction,
-                   help='Enable verbose logs')
-    p.add_argument('--version', action='version',
-                   version='%(prog)s ' + version,
-                   help='Show version and exit')
+    p.add_argument(
+        "--logs",
+        default=False,
+        action=argparse.BooleanOptionalAction,
+        help="Enable verbose logs",
+    )
+    p.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s " + version,
+        help="Show version and exit",
+    )
 
     # Hidden
-    p.add_argument('--limit-torrents', type=int, default=None,
-                   help=argparse.SUPPRESS)
-    p.add_argument('--test-mode', type=int, default=None,
-                   help=argparse.SUPPRESS)
+    p.add_argument(
+        "--limit-torrents", type=int, default=None, help=argparse.SUPPRESS
+    )
+    p.add_argument(
+        "--test-mode", type=int, default=None, help=argparse.SUPPRESS
+    )
 
     return p
 
@@ -686,21 +905,27 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
 def _handle_add_torrent_mode(args) -> None:
     """Handle non-interactive add-torrent mode."""
     try:
-        client = create_client(client_type=args.client_type,
-                               host=args.host,
-                               port=args.port,
-                               username=args.username,
-                               password=args.password)
+        client = create_client(
+            client_type=args.client_type,
+            host=args.host,
+            port=args.port,
+            username=args.username,
+            password=args.password,
+        )
         client.add_torrent(args.add_torrent)
-        print(f"Successfully added torrent to {args.client_type} daemon "
-              f"at {args.host}:{args.port}")
+        print(
+            f"Successfully added torrent to {args.client_type} daemon "
+            f"at {args.host}:{args.port}"
+        )
         sys.exit(0)
     except ClientError as e:
         print(f"Failed to add torrent: {e}", file=sys.stderr)
         sys.exit(1)
     except FileNotFoundError:
-        print(f"Failed to add torrent: File not found "
-              f"{args.add_torrent}", file=sys.stderr)
+        print(
+            f"Failed to add torrent: File not found {args.add_torrent}",
+            file=sys.stderr,
+        )
         sys.exit(1)
     except Exception as e:
         print(f"Failed to add torrent: {e}", file=sys.stderr)
@@ -748,7 +973,7 @@ def _handle_commands(args) -> None:
 
     # Handle --create-config (must happen before other processing)
     if args.create_config:
-        _handle_create_config_command(getattr(args, 'profile', None))
+        _handle_create_config_command(getattr(args, "profile", None))
 
 
 @log_time
@@ -762,24 +987,25 @@ def create_app():
     _handle_commands(args)
 
     # Load config file and merge with CLI arguments
-    profile = getattr(args, 'profile', None)
+    profile = getattr(args, "profile", None)
     config = load_config(profile)
     merge_config_with_args(config, args)
 
     if args.logs:
-        log_dir = Path(user_log_dir('tewi', appauthor=False))
+        log_dir = Path(user_log_dir("tewi", appauthor=False))
         log_dir.mkdir(parents=True, exist_ok=True)
-        log_file = log_dir / 'tewi.log'
+        log_file = log_dir / "tewi.log"
         logging.basicConfig(
-                filename=str(log_file),
-                encoding='utf-8',
-                format='%(asctime)s.%(msecs)03d %(module)-15s '
-                       '%(levelname)-8s %(message)s',
-                level=logging.DEBUG,
-                datefmt='%Y-%m-%d %H:%M:%S')
+            filename=str(log_file),
+            encoding="utf-8",
+            format="%(asctime)s.%(msecs)03d %(module)-15s "
+            "%(levelname)-8s %(message)s",
+            level=logging.DEBUG,
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
 
-    logger.info(f'Start Tewi {tewi_version}...')
-    logger.info(f'Loaded CLI options: {args}')
+    logger.info(f"Start Tewi {tewi_version}...")
+    logger.info(f"Loaded CLI options: {args}")
 
     # Validate search query if provided
     if args.search:
@@ -795,29 +1021,35 @@ def create_app():
 
     # Create and return the app instance
     try:
-        app = MainApp(client_type=args.client_type,
-                      host=args.host, port=args.port,
-                      username=args.username, password=args.password,
-                      view_mode=args.view_mode,
-                      refresh_interval=args.refresh_interval,
-                      page_size=args.page_size,
-                      limit_torrents=args.limit_torrents,
-                      test_mode=args.test_mode,
-                      version=tewi_version,
-                      jackett_url=args.jackett_url,
-                      jackett_api_key=args.jackett_api_key,
-                      prowlarr_url=args.prowlarr_url,
-                      prowlarr_api_key=args.prowlarr_api_key,
-                      search_query=args.search,
-                      filter=args.filter,
-                      badge_max_count=args.badge_max_count,
-                      badge_max_length=args.badge_max_length,
-                      search_providers=getattr(args, 'search_providers',
-                                               None))
+        app = MainApp(
+            client_type=args.client_type,
+            host=args.host,
+            port=args.port,
+            username=args.username,
+            password=args.password,
+            view_mode=args.view_mode,
+            refresh_interval=args.refresh_interval,
+            page_size=args.page_size,
+            limit_torrents=args.limit_torrents,
+            test_mode=args.test_mode,
+            version=tewi_version,
+            jackett_url=args.jackett_url,
+            jackett_api_key=args.jackett_api_key,
+            prowlarr_url=args.prowlarr_url,
+            prowlarr_api_key=args.prowlarr_api_key,
+            search_query=args.search,
+            filter=args.filter,
+            badge_max_count=args.badge_max_count,
+            badge_max_length=args.badge_max_length,
+            search_providers=getattr(args, "search_providers", None),
+        )
         return app
     except ClientError as e:
-        print(f"Failed to connect to {args.client_type} daemon at "
-              f"{args.host}:{args.port}: {e}", file=sys.stderr)
+        print(
+            f"Failed to connect to {args.client_type} daemon at "
+            f"{args.host}:{args.port}: {e}",
+            file=sys.stderr,
+        )
         sys.exit(1)
     except Exception as e:
         print(f"Failed to initialize application: {e}", file=sys.stderr)
@@ -829,13 +1061,13 @@ def cli():
     """CLI entry point. Creates and runs the MainApp."""
 
     # set terminal title
-    print('\33]0;Tewi\a', end='', flush=True)
+    print("\33]0;Tewi\a", end="", flush=True)
 
     app = create_app()
     app.run()
 
     # clean terminal title
-    print('\33]0;\a', end='', flush=True)
+    print("\33]0;\a", end="", flush=True)
 
 
 if __name__ == "__main__":

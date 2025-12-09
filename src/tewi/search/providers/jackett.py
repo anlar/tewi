@@ -12,7 +12,7 @@ from ..base import BaseSearchProvider
 from ..models import SearchResultDTO, Category, StandardCategories, IndexerDTO
 from ...util.decorator import log_time
 
-logger = logging.getLogger('tewi')
+logger = logging.getLogger("tewi")
 
 
 class JackettProvider(BaseSearchProvider):
@@ -23,9 +23,9 @@ class JackettProvider(BaseSearchProvider):
     Documentation: https://github.com/Jackett/Jackett
     """
 
-    def __init__(self,
-                 jackett_url: str | None = None,
-                 api_key: str | None = None):
+    def __init__(
+        self, jackett_url: str | None = None, api_key: str | None = None
+    ):
         """Initialize Jackett provider with configuration.
 
         Args:
@@ -40,9 +40,9 @@ class JackettProvider(BaseSearchProvider):
         self._cache_time: datetime | None = None
         self._cache_duration = timedelta(minutes=10)
 
-    def _validate_config(self,
-                         jackett_url: str | None,
-                         api_key: str | None) -> str | None:
+    def _validate_config(
+        self, jackett_url: str | None, api_key: str | None
+    ) -> str | None:
         """Validate configuration and return error message if invalid.
 
         Args:
@@ -53,11 +53,15 @@ class JackettProvider(BaseSearchProvider):
             Error message string if invalid, None if valid
         """
         if not jackett_url or not jackett_url.strip():
-            return ("Jackett URL not configured. "
-                    "Set jackett_url in [search] section.")
+            return (
+                "Jackett URL not configured. "
+                "Set jackett_url in [search] section."
+            )
         if not api_key or not api_key.strip():
-            return ("Jackett API key not configured. "
-                    "Set jackett_api_key in [search] section.")
+            return (
+                "Jackett API key not configured. "
+                "Set jackett_api_key in [search] section."
+            )
         return None
 
     def id(self) -> str:
@@ -118,12 +122,9 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             Complete URL to fetch indexers list
         """
-        base_url = self.jackett_url.rstrip('/')
+        base_url = self.jackett_url.rstrip("/")
         endpoint = f"{base_url}/api/v2.0/indexers/all/results"
-        params = {
-            'apikey': self.api_key,
-            'Query': ''
-        }
+        params = {"apikey": self.api_key, "Query": ""}
         return f"{endpoint}?{urllib.parse.urlencode(params)}"
 
     def _fetch_indexers(self, url: str) -> dict:
@@ -140,15 +141,14 @@ class JackettProvider(BaseSearchProvider):
         """
         try:
             with self._urlopen(url, timeout=10) as response:
-                return json.loads(response.read().decode('utf-8'))
+                return json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
                 raise Exception("Invalid Jackett API key")
             raise Exception(f"HTTP error {e.code}: {e.reason}")
         except urllib.error.URLError as e:
             raise Exception(
-                f"Cannot connect to Jackett at {self.jackett_url}: "
-                f"{e.reason}"
+                f"Cannot connect to Jackett at {self.jackett_url}: {e.reason}"
             )
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse Jackett JSON response: {e}")
@@ -165,18 +165,20 @@ class JackettProvider(BaseSearchProvider):
         indexers = []
 
         # Get indexers list from response
-        indexers_data = sorted(data.get('Indexers', []), key=lambda x: x['Name'])
+        indexers_data = sorted(
+            data.get("Indexers", []), key=lambda x: x["Name"]
+        )
 
         for indexer in indexers_data:
-            indexer_id = indexer.get('ID')
-            indexer_name = indexer.get('Name')
+            indexer_id = indexer.get("ID")
+            indexer_name = indexer.get("Name")
             # Only include indexers with valid ID and Name
             if indexer_id and indexer_name:
                 # Prefix with jackett: to distinguish from other providers
                 full_id = f"jackett:{indexer_id}"
-                indexers.append(IndexerDTO(
-                    full_id,
-                    f"{indexer_name} [dim](Jackett)[/]"))
+                indexers.append(
+                    IndexerDTO(full_id, f"{indexer_name} [dim](Jackett)[/]")
+                )
         return indexers
 
     @property
@@ -184,9 +186,9 @@ class JackettProvider(BaseSearchProvider):
         return "Jackett"
 
     @log_time
-    def _search_impl(self, query: str,
-                     categories: list[Category] | None = None) -> list[
-            SearchResultDTO]:
+    def _search_impl(
+        self, query: str, categories: list[Category] | None = None
+    ) -> list[SearchResultDTO]:
         """Search Jackett for torrents across all indexers.
 
         Args:
@@ -212,7 +214,7 @@ class JackettProvider(BaseSearchProvider):
             return self._search_multiple_indexers(query, categories)
         else:
             # Search all indexers
-            url = self._build_search_url(query, 'all', categories)
+            url = self._build_search_url(query, "all", categories)
             data = self._fetch_results(url)
             return self._process_results(data)
 
@@ -236,7 +238,7 @@ class JackettProvider(BaseSearchProvider):
         all_indexer_ids = set()
         for indexer in all_indexers:
             # Remove 'jackett:' prefix from ID
-            indexer_id = indexer.id.replace('jackett:', '', 1)
+            indexer_id = indexer.id.replace("jackett:", "", 1)
             all_indexer_ids.add(indexer_id)
 
         # Compare selected indexers with all indexers
@@ -244,9 +246,8 @@ class JackettProvider(BaseSearchProvider):
         return selected_set != all_indexer_ids
 
     def _search_multiple_indexers(
-            self,
-            query: str,
-            categories: list[Category] | None) -> list[SearchResultDTO]:
+        self, query: str, categories: list[Category] | None
+    ) -> list[SearchResultDTO]:
         """Search multiple indexers individually and combine results.
 
         Args:
@@ -257,10 +258,13 @@ class JackettProvider(BaseSearchProvider):
         """
         all_results = []
 
-        with ThreadPoolExecutor(max_workers=len(self._selected_indexers)) as executor:
+        with ThreadPoolExecutor(
+            max_workers=len(self._selected_indexers)
+        ) as executor:
             futures = {
-                executor.submit(self.fetch_from_indexer,
-                                query, indexer_id, categories): indexer_id
+                executor.submit(
+                    self.fetch_from_indexer, query, indexer_id, categories
+                ): indexer_id
                 for indexer_id in self._selected_indexers
             }
 
@@ -269,11 +273,15 @@ class JackettProvider(BaseSearchProvider):
                 try:
                     all_results.extend(future.result())
                 except Exception as e:
-                    logger.warning(f"Jackett indexer '{indexer_id}' failed: {e}")
+                    logger.warning(
+                        f"Jackett indexer '{indexer_id}' failed: {e}"
+                    )
 
         return all_results
 
-    def fetch_from_indexer(self, query, indexer_id, categories: list[Category] | None):
+    def fetch_from_indexer(
+        self, query, indexer_id, categories: list[Category] | None
+    ):
         """Helper for parallel execution."""
         url = self._build_search_url(query, indexer_id)
         data = self._fetch_results(url)
@@ -288,8 +296,9 @@ class JackettProvider(BaseSearchProvider):
         """
         self._selected_indexers = indexer_ids
 
-    def _build_search_url(self, query: str, indexers: str,
-                          categories: list[Category] | None) -> str:
+    def _build_search_url(
+        self, query: str, indexers: str, categories: list[Category] | None
+    ) -> str:
         """Build Jackett API search URL.
 
         Args:
@@ -299,18 +308,17 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             Complete URL with parameters
         """
-        base_url = self.jackett_url.rstrip('/')
+        base_url = self.jackett_url.rstrip("/")
         endpoint = f"{base_url}/api/v2.0/indexers/{indexers}/results"
         params = {
-            'apikey': self.api_key,
-            'Query': query.strip(),
+            "apikey": self.api_key,
+            "Query": query.strip(),
         }
 
         # Add category filter if specified
         if categories:
             # Jackett accepts comma-separated category IDs (as strings)
-            params['Category'] = ','.join(
-                str(cat.id) for cat in categories)
+            params["Category"] = ",".join(str(cat.id) for cat in categories)
 
         return f"{endpoint}?{urllib.parse.urlencode(params)}"
 
@@ -329,15 +337,16 @@ class JackettProvider(BaseSearchProvider):
         try:
             logger.debug(f"Jackett: requesting URL: {url}")
             with self._urlopen(url) as response:
-                return json.loads(response.read().decode('utf-8'))
+                return json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             # Read error response body for more details
-            error_body = ''
+            error_body = ""
             try:
                 if e.fp:
-                    error_body = e.fp.read().decode('utf-8')
-                    logger.error(f"Jackett HTTP {e.code} response: "
-                                 f"{error_body}")
+                    error_body = e.fp.read().decode("utf-8")
+                    logger.error(
+                        f"Jackett HTTP {e.code} response: {error_body}"
+                    )
             except Exception:
                 pass
             if e.code in (401, 403):
@@ -345,8 +354,7 @@ class JackettProvider(BaseSearchProvider):
             raise Exception(f"HTTP error {e.code}: {e.reason}")
         except urllib.error.URLError as e:
             raise Exception(
-                f"Cannot connect to Jackett at {self.jackett_url}: "
-                f"{e.reason}"
+                f"Cannot connect to Jackett at {self.jackett_url}: {e.reason}"
             )
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse Jackett response: {e}")
@@ -360,7 +368,7 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             List of SearchResultDTO objects
         """
-        results_data = data.get('Results', [])
+        results_data = data.get("Results", [])
         if not results_data:
             return []
 
@@ -371,8 +379,7 @@ class JackettProvider(BaseSearchProvider):
                 results.append(result)
         return results
 
-    def _parse_result(self,
-                      result: dict[str, Any]) -> SearchResultDTO | None:
+    def _parse_result(self, result: dict[str, Any]) -> SearchResultDTO | None:
         """Parse a single result from Jackett API response.
 
         Args:
@@ -383,9 +390,9 @@ class JackettProvider(BaseSearchProvider):
         """
         try:
             # Allow None for info_hash
-            info_hash_raw = result.get('InfoHash', '')
+            info_hash_raw = result.get("InfoHash", "")
             info_hash = info_hash_raw.strip() if info_hash_raw else None
-            if info_hash == '':
+            if info_hash == "":
                 info_hash = None
 
             # Extract both link types
@@ -396,20 +403,20 @@ class JackettProvider(BaseSearchProvider):
             if not magnet_link and not torrent_link:
                 return None
 
-            freeleech = result.get('DownloadVolumeFactor') == 0
+            freeleech = result.get("DownloadVolumeFactor") == 0
 
             # Extract downloads from Grabs field
             downloads = None
-            grabs = result.get('Grabs')
+            grabs = result.get("Grabs")
             if grabs is not None:
                 downloads = int(grabs)
 
             return SearchResultDTO(
-                title=result.get('Title', 'Unknown'),
+                title=result.get("Title", "Unknown"),
                 categories=self._map_jackett_category(result),
-                seeders=int(result.get('Seeders')),
-                leechers=int(result.get('Peers')),
-                size=int(result.get('Size')),
+                seeders=int(result.get("Seeders")),
+                leechers=int(result.get("Peers")),
+                size=int(result.get("Size")),
                 files_count=self._get_files_count(result),
                 magnet_link=magnet_link,
                 info_hash=info_hash,
@@ -420,14 +427,14 @@ class JackettProvider(BaseSearchProvider):
                 page_url=self._get_page_url(result),
                 torrent_link=torrent_link,
                 freeleech=freeleech,
-                fields=self._build_fields(result)
+                fields=self._build_fields(result),
             )
         except (KeyError, ValueError, TypeError):
             return None
 
-    def _extract_magnet_link(self,
-                             result: dict[str, Any],
-                             info_hash: str | None) -> str | None:
+    def _extract_magnet_link(
+        self, result: dict[str, Any], info_hash: str | None
+    ) -> str | None:
         """Extract or generate magnet link from result.
 
         Priority: MagnetUri field → Generated from InfoHash → None
@@ -439,22 +446,20 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             Magnet URI string or None if unavailable
         """
-        magnet_uri_raw = result.get('MagnetUri', '')
-        magnet_uri = magnet_uri_raw.strip() if magnet_uri_raw else ''
+        magnet_uri_raw = result.get("MagnetUri", "")
+        magnet_uri = magnet_uri_raw.strip() if magnet_uri_raw else ""
         if magnet_uri:
             return magnet_uri
 
         # Generate magnet from info hash if available
         if info_hash:
             return self._build_magnet_link(
-                info_hash=info_hash,
-                name=result.get('Title', 'Unknown')
+                info_hash=info_hash, name=result.get("Title", "Unknown")
             )
 
         return None
 
-    def _extract_torrent_link(self,
-                              result: dict[str, Any]) -> str | None:
+    def _extract_torrent_link(self, result: dict[str, Any]) -> str | None:
         """Extract HTTP/HTTPS torrent file URL from result.
 
         Args:
@@ -463,15 +468,13 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             HTTP/HTTPS URL or None if unavailable
         """
-        link_raw = result.get('Link', '')
-        link = link_raw.strip() if link_raw else ''
-        if link and (link.startswith('http://') or
-                     link.startswith('https://')):
+        link_raw = result.get("Link", "")
+        link = link_raw.strip() if link_raw else ""
+        if link and (link.startswith("http://") or link.startswith("https://")):
             return link
         return None
 
-    def _parse_upload_date(self,
-                           result: dict[str, Any]) -> datetime | None:
+    def _parse_upload_date(self, result: dict[str, Any]) -> datetime | None:
         """Parse upload date from result.
 
         Args:
@@ -480,14 +483,12 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             datetime object or None if parsing fails
         """
-        publish_date = result.get('PublishDate')
+        publish_date = result.get("PublishDate")
         if not publish_date:
             return None
 
         try:
-            return datetime.fromisoformat(
-                publish_date.replace('Z', '+00:00')
-            )
+            return datetime.fromisoformat(publish_date.replace("Z", "+00:00"))
         except (ValueError, AttributeError):
             return None
 
@@ -500,8 +501,8 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             Provider name string
         """
-        tracker_id = result.get('TrackerId', 'Unknown')
-        tracker = result.get('Tracker', tracker_id)
+        tracker_id = result.get("TrackerId", "Unknown")
+        tracker = result.get("Tracker", tracker_id)
         return f"{tracker} [dim](J)[/]"
 
     def _get_page_url(self, result: dict[str, Any]) -> str | None:
@@ -513,7 +514,7 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             Page URL or None
         """
-        return result.get('Details') or result.get('Comments')
+        return result.get("Details") or result.get("Comments")
 
     def _get_files_count(self, result: dict[str, Any]) -> int | None:
         """Get file count from result.
@@ -524,7 +525,7 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             File count as integer or None
         """
-        files_count = result.get('Files')
+        files_count = result.get("Files")
         if files_count is not None:
             return int(files_count)
         return None
@@ -544,23 +545,23 @@ class JackettProvider(BaseSearchProvider):
         """
         # Fields already mapped to SearchResultDTO attributes
         excluded_fields = {
-            'Title',           # -> title
-            'Category',        # -> category (via _map_jackett_category)
-            'Seeders',         # -> seeders
-            'Peers',           # -> leechers
-            'Grabs',           # -> downloads
-            'Size',            # -> size
-            'Files',           # -> files_count
-            'MagnetUri',       # -> magnet_link
-            'InfoHash',        # -> info_hash
-            'PublishDate',     # -> upload_date
-            'Tracker',         # -> provider (via _build_provider_name)
-            'TrackerId',       # -> provider (via _build_provider_name)
-            'Details',         # -> page_url
-            'Comments',        # -> page_url (fallback)
-            'Link',            # -> torrent_link
-            'Guid',            # ignore
-            'FirstSeen'        # ignore
+            "Title",  # -> title
+            "Category",  # -> category (via _map_jackett_category)
+            "Seeders",  # -> seeders
+            "Peers",  # -> leechers
+            "Grabs",  # -> downloads
+            "Size",  # -> size
+            "Files",  # -> files_count
+            "MagnetUri",  # -> magnet_link
+            "InfoHash",  # -> info_hash
+            "PublishDate",  # -> upload_date
+            "Tracker",  # -> provider (via _build_provider_name)
+            "TrackerId",  # -> provider (via _build_provider_name)
+            "Details",  # -> page_url
+            "Comments",  # -> page_url (fallback)
+            "Link",  # -> torrent_link
+            "Guid",  # ignore
+            "FirstSeen",  # ignore
         }
 
         fields = {}
@@ -570,7 +571,7 @@ class JackettProvider(BaseSearchProvider):
                 continue
 
             # Skip null/empty values
-            if value is None or value == '' or value == []:
+            if value is None or value == "" or value == []:
                 continue
 
             # Convert to string representation
@@ -582,8 +583,7 @@ class JackettProvider(BaseSearchProvider):
 
         return fields if fields else None
 
-    def _map_jackett_category(self,
-                              result: dict[str, Any]) -> list[Category]:
+    def _map_jackett_category(self, result: dict[str, Any]) -> list[Category]:
         """Map Jackett category codes to Category objects.
 
         Jackett uses Torznab category IDs with hierarchy:
@@ -596,7 +596,7 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             List of Category objects (may contain parent and subcategory)
         """
-        category_codes = result.get('Category', [])
+        category_codes = result.get("Category", [])
         if not category_codes:
             return []
 
@@ -647,10 +647,10 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             Tuple of (display_name, display_value)
         """
-        if key == 'CategoryDesc':
-            return 'Category', value
-        elif key == 'Imdb':
-            return 'IMDB', f"https://www.imdb.com/title/tt{value}/"
+        if key == "CategoryDesc":
+            return "Category", value
+        elif key == "Imdb":
+            return "IMDB", f"https://www.imdb.com/title/tt{value}/"
 
         return key, value
 

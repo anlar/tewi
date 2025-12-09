@@ -28,7 +28,6 @@ from .common import ReactiveLabel, SpeedIndicator
 
 
 class TorrentItem(Static):
-
     selected = reactive(False)
     marked = reactive(False)
     torrent: TorrentDTO | None = reactive(None)
@@ -152,33 +151,40 @@ class TorrentItem(Static):
 
 
 class TorrentItemOneline(TorrentItem):
-
     @log_time
     def compose(self) -> ComposeResult:
         with Horizontal(id="name-container"):
             yield ReactiveLabel(id="queue", markup=False).data_bind(
-                    name=TorrentItemOneline.t_queue_indicator)
+                name=TorrentItemOneline.t_queue_indicator
+            )
             yield ReactiveLabel(id="priority", markup=False).data_bind(
-                    name=TorrentItemOneline.t_priority_indicator)
+                name=TorrentItemOneline.t_priority_indicator
+            )
             yield ReactiveLabel(id="name", markup=False).data_bind(
-                    name=TorrentItemOneline.t_name)
+                name=TorrentItemOneline.t_name
+            )
 
         with Grid(id="speed"):
             yield ReactiveLabel(id="stats").data_bind(
-                    name=TorrentItemCompact.t_size_stats)
+                name=TorrentItemCompact.t_size_stats
+            )
             yield Static(" ↑ ")
             yield SpeedIndicator().data_bind(
-                    speed=TorrentItemOneline.t_upload_speed)
+                speed=TorrentItemOneline.t_upload_speed
+            )
             yield Static(" ↓ ")
             yield SpeedIndicator().data_bind(
-                    speed=TorrentItemOneline.t_download_speed)
+                speed=TorrentItemOneline.t_download_speed
+            )
 
     @log_time
     def watch_t_status(self, new_t_status):
-        self.remove_class("torrent-complete",
-                          "torrent-incomplete",
-                          "torrent-stop",
-                          "torrent-check")
+        self.remove_class(
+            "torrent-complete",
+            "torrent-incomplete",
+            "torrent-stop",
+            "torrent-check",
+        )
 
         match new_t_status:
             case "stopped":
@@ -192,36 +198,45 @@ class TorrentItemOneline(TorrentItem):
 
 
 class TorrentItemCompact(TorrentItem):
-
     @log_time
     def compose(self) -> ComposeResult:
         with Horizontal(id="name-container"):
             yield ReactiveLabel(id="queue", markup=False).data_bind(
-                    name=TorrentItemCompact.t_queue_indicator)
+                name=TorrentItemCompact.t_queue_indicator
+            )
             yield ReactiveLabel(id="priority", markup=False).data_bind(
-                    name=TorrentItemCompact.t_priority_indicator)
+                name=TorrentItemCompact.t_priority_indicator
+            )
             yield ReactiveLabel(id="name", markup=False).data_bind(
-                    name=TorrentItemCompact.t_name)
+                name=TorrentItemCompact.t_name
+            )
 
         with Grid(id="speed"):
             yield ReactiveLabel(id="stats").data_bind(
-                    name=TorrentItemCompact.t_size_stats)
+                name=TorrentItemCompact.t_size_stats
+            )
             yield Static(" ↑ ")
-            yield SpeedIndicator().data_bind(speed=TorrentItemCompact.t_upload_speed)
+            yield SpeedIndicator().data_bind(
+                speed=TorrentItemCompact.t_upload_speed
+            )
             yield Static(" ↓ ")
-            yield SpeedIndicator().data_bind(speed=TorrentItemCompact.t_download_speed)
+            yield SpeedIndicator().data_bind(
+                speed=TorrentItemCompact.t_download_speed
+            )
 
-        yield (ProgressBar(total=1.0, show_percentage=False, show_eta=False)
-               .data_bind(progress=TorrentItemCompact.t_progress))
+        yield (
+            ProgressBar(
+                total=1.0, show_percentage=False, show_eta=False
+            ).data_bind(progress=TorrentItemCompact.t_progress)
+        )
 
 
 class TorrentItemCard(TorrentItem):
-
     t_status_markup = reactive(None)
 
     t_badges_markup = reactive(None)
 
-    t_stats_uploaded = reactive('')
+    t_stats_uploaded = reactive("")
     t_stats_peer = reactive("")
     t_stats_seed = reactive("")
     t_stats_leech = reactive("")
@@ -230,32 +245,43 @@ class TorrentItemCard(TorrentItem):
     def compose(self) -> ComposeResult:
         with Horizontal(id="name-container"):
             yield ReactiveLabel(id="queue", markup=False).data_bind(
-                    name=TorrentItemCard.t_queue_indicator)
+                name=TorrentItemCard.t_queue_indicator
+            )
             yield ReactiveLabel(id="priority", markup=False).data_bind(
-                    name=TorrentItemCard.t_priority_indicator)
+                name=TorrentItemCard.t_priority_indicator
+            )
             yield ReactiveLabel(id="name", markup=False).data_bind(
-                    name=TorrentItemCard.t_name)
+                name=TorrentItemCard.t_name
+            )
 
         with Grid(id="speed"):
             yield ReactiveLabel(markup=True).data_bind(
-                    name=TorrentItemCard.t_badges_markup)
+                name=TorrentItemCard.t_badges_markup
+            )
             yield Static(" ↑ ")
-            yield SpeedIndicator().data_bind(speed=TorrentItemCard.t_upload_speed)
+            yield SpeedIndicator().data_bind(
+                speed=TorrentItemCard.t_upload_speed
+            )
             yield Static(" ↓ ")
-            yield SpeedIndicator().data_bind(speed=TorrentItemCard.t_download_speed)
+            yield SpeedIndicator().data_bind(
+                speed=TorrentItemCard.t_download_speed
+            )
 
-        yield (ProgressBar(total=1.0, show_percentage=False, show_eta=False)
-               .data_bind(progress=TorrentItemCard.t_progress))
+        yield (
+            ProgressBar(
+                total=1.0, show_percentage=False, show_eta=False
+            ).data_bind(progress=TorrentItemCard.t_progress)
+        )
 
         with Grid(id="stats"):
             yield ReactiveLabel(markup=True).data_bind(
-                    name=TorrentItemCard.t_status_markup)
+                name=TorrentItemCard.t_status_markup
+            )
             yield ReactiveLabel().data_bind(
-                    name=TorrentItemCard.t_stats_uploaded)
-            yield ReactiveLabel().data_bind(
-                    name=TorrentItemCard.t_stats_peer)
-            yield ReactiveLabel().data_bind(
-                    name=TorrentItemCard.t_size_stats)
+                name=TorrentItemCard.t_stats_uploaded
+            )
+            yield ReactiveLabel().data_bind(name=TorrentItemCard.t_stats_peer)
+            yield ReactiveLabel().data_bind(name=TorrentItemCard.t_size_stats)
 
     @log_time
     def update_torrent(self, torrent: TorrentDTO) -> None:
@@ -264,8 +290,9 @@ class TorrentItemCard(TorrentItem):
         with self.app.batch_update():
             self.t_status_markup = self.print_status(torrent.status)
 
-            self.t_badges_markup = self.print_badges(torrent.category,
-                                                     torrent.labels)
+            self.t_badges_markup = self.print_badges(
+                torrent.category, torrent.labels
+            )
 
             self.t_eta = torrent.eta
             self.t_peers_connected = torrent.peers_connected
@@ -274,12 +301,16 @@ class TorrentItemCard(TorrentItem):
             self.t_ratio = torrent.ratio
             self.t_priority = torrent.priority
 
-            self.t_stats_uploaded = print_size(torrent.uploaded_ever) + ' uploaded'
+            self.t_stats_uploaded = (
+                print_size(torrent.uploaded_ever) + " uploaded"
+            )
 
             # implying that there won't be more than 9999 peers
-            self.t_stats_peer = (f'{self.t_peers_connected: >4} peers '
-                                 f'{self.t_seeders: >4} seeders '
-                                 f'{self.t_leechers: >4} leechers')
+            self.t_stats_peer = (
+                f"{self.t_peers_connected: >4} peers "
+                f"{self.t_seeders: >4} seeders "
+                f"{self.t_leechers: >4} leechers"
+            )
 
     @log_time
     def print_size_stats(self, full_ratio=True) -> str:
@@ -292,7 +323,9 @@ class TorrentItemCard(TorrentItem):
             result = f"{size_current} / {size_total} | {(self.t_progress * 100):.1f}%"
 
             if self.t_eta:
-                result = f"{result} | {print_time(self.t_eta.total_seconds(), 2)}"
+                result = (
+                    f"{result} | {print_time(self.t_eta.total_seconds(), 2)}"
+                )
         else:
             result = f"{size_total} | Ratio: {self.t_ratio:.2f}"
 
@@ -302,15 +335,15 @@ class TorrentItemCard(TorrentItem):
     def print_status(self, status: str) -> str:
         match status:
             case "stopped":
-                return '[bold $background-lighten-3]' + status + '[/]'
+                return "[bold $background-lighten-3]" + status + "[/]"
             case "check pending" | "checking":
-                return '[bold $error-darken-1]' + status + '[/]'
+                return "[bold $error-darken-1]" + status + "[/]"
             case "download pending" | "downloading":
-                return '[bold $primary]' + status + '[/]'
+                return "[bold $primary]" + status + "[/]"
             case "seed pending" | "seeding":
-                return '[bold $success]' + status + '[/]'
+                return "[bold $success]" + status + "[/]"
             case _:
-                return '[bold]' + status + '[/]'
+                return "[bold]" + status + "[/]"
 
     @log_time
     def print_badges(self, category: str | None, labels: list | None) -> str:
@@ -327,8 +360,7 @@ class TorrentItemCard(TorrentItem):
 
         if labels:
             badges.extend(
-                (esc_trunk(label, max_length), font, back_l)
-                for label in labels
+                (esc_trunk(label, max_length), font, back_l) for label in labels
             )
 
         # Don't draw badges if there are 0 of them or they are disabled

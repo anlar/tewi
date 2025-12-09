@@ -8,17 +8,15 @@ from ....util.decorator import log_time
 
 
 class SearchDialog(ModalScreen):
-
     @log_time
     def compose(self) -> ComposeResult:
         yield SearchWidget()
 
 
 class SearchWidget(Static):
-
     BINDINGS = [
-            Binding("enter", "search", "[Search] Search", priority=True),
-            Binding("escape", "close", "[Search] Close"),
+        Binding("enter", "search", "[Search] Search", priority=True),
+        Binding("escape", "close", "[Search] Close"),
     ]
 
     @log_time
@@ -27,8 +25,8 @@ class SearchWidget(Static):
 
     @log_time
     def on_mount(self) -> None:
-        self.border_title = 'Search'
-        self.border_subtitle = '(Enter) Search / (ESC) Close'
+        self.border_title = "Search"
+        self.border_subtitle = "(Enter) Search / (ESC) Close"
         self.query_one("#search-input").focus()
 
     @log_time

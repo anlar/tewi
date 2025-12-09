@@ -14,7 +14,7 @@ def create_client(
     host: str,
     port: str,
     username: str = None,
-    password: str = None
+    password: str = None,
 ) -> BaseClient:
     """Create a torrent client instance based on the specified type.
 
@@ -34,26 +34,17 @@ def create_client(
     """
     client_type = client_type.lower()
 
-    if client_type == 'transmission':
+    if client_type == "transmission":
         return TransmissionClient(
-            host=host,
-            port=port,
-            username=username,
-            password=password
+            host=host, port=port, username=username, password=password
         )
-    elif client_type == 'qbittorrent':
+    elif client_type == "qbittorrent":
         return QBittorrentClient(
-            host=host,
-            port=port,
-            username=username,
-            password=password
+            host=host, port=port, username=username, password=password
         )
-    elif client_type == 'deluge':
+    elif client_type == "deluge":
         return DelugeClient(
-            host=host,
-            port=port,
-            username=username,
-            password=password
+            host=host, port=port, username=username, password=password
         )
     else:
         raise ClientError(

@@ -15,14 +15,16 @@ class BaseSearchProvider(ABC):
     """
 
     # User-Agent string to imitate a popular browser
-    USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                  "AppleWebKit/537.36 (KHTML, like Gecko) "
-                  "Chrome/131.0.0.0 Safari/537.36")
+    USER_AGENT = (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/131.0.0.0 Safari/537.36"
+    )
 
     @abstractmethod
-    def _search_impl(self, query: str,
-                     categories: list[Category] | None = None) -> list[
-            SearchResultDTO]:
+    def _search_impl(
+        self, query: str, categories: list[Category] | None = None
+    ) -> list[SearchResultDTO]:
         """Provider-specific search implementation.
 
         Args:
@@ -37,9 +39,9 @@ class BaseSearchProvider(ABC):
         """
         pass
 
-    def search(self, query: str,
-               categories: list[Category] | None = None) -> list[
-            SearchResultDTO]:
+    def search(
+        self, query: str, categories: list[Category] | None = None
+    ) -> list[SearchResultDTO]:
         """Search for torrents and refine unknown categories.
 
         This method calls the provider-specific implementation and
@@ -75,7 +77,7 @@ class BaseSearchProvider(ABC):
             urllib.error.URLError: If network request fails
         """
         request = urllib.request.Request(url)
-        request.add_header('User-Agent', self.USER_AGENT)
+        request.add_header("User-Agent", self.USER_AGENT)
         return urllib.request.urlopen(request, timeout=timeout)
 
     @abstractmethod
@@ -105,8 +107,9 @@ class BaseSearchProvider(ABC):
         """Return the provider name."""
         pass
 
-    def _build_magnet_link(self, info_hash: str, name: str,
-                           trackers: list[str] = None) -> str:
+    def _build_magnet_link(
+        self, info_hash: str, name: str, trackers: list[str] = None
+    ) -> str:
         """Build a magnet link from info hash, name, and optional trackers.
 
         Args:
@@ -122,7 +125,7 @@ class BaseSearchProvider(ABC):
 
         if trackers:
             for tracker in trackers:
-                encoded_tracker = urllib.parse.quote(tracker, safe='/:')
+                encoded_tracker = urllib.parse.quote(tracker, safe="/:")
                 magnet += f"&tr={encoded_tracker}"
 
         return magnet
@@ -140,17 +143,46 @@ class BaseSearchProvider(ABC):
 
         # AUDIO: Check for audio file extensions and keywords
         audio_patterns = [
-            '.mp3', '.flac', '.wav', '.aac', '.ogg', '.m4a', '.wma', '.alac',
-            'album', 'discography', 'soundtrack', 'ost', 'music',
+            ".mp3",
+            ".flac",
+            ".wav",
+            ".aac",
+            ".ogg",
+            ".m4a",
+            ".wma",
+            ".alac",
+            "album",
+            "discography",
+            "soundtrack",
+            "ost",
+            "music",
         ]
         if any(pattern in name_lower for pattern in audio_patterns):
             return StandardCategories.AUDIO
 
         # VIDEO: Check for video file extensions and keywords
         video_patterns = [
-            '.mkv', '.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm', '.m4v',
-            'movie', 'film', '1080p', '720p', '2160p', '4k', 'bluray',
-            'webrip', 'hdtv', 'x264', 'x265', 'hevc', 'dvdrip',
+            ".mkv",
+            ".mp4",
+            ".avi",
+            ".mov",
+            ".wmv",
+            ".flv",
+            ".webm",
+            ".m4v",
+            "movie",
+            "film",
+            "1080p",
+            "720p",
+            "2160p",
+            "4k",
+            "bluray",
+            "webrip",
+            "hdtv",
+            "x264",
+            "x265",
+            "hevc",
+            "dvdrip",
         ]
         if any(pattern in name_lower for pattern in video_patterns):
             return StandardCategories.MOVIES
@@ -158,33 +190,70 @@ class BaseSearchProvider(ABC):
         # OTHER: Check for documents, archives, and other content FIRST
         # (before SOFTWARE to avoid "ebook" matching "app" in application)
         other_patterns = [
-            '.pdf', '.epub', '.mobi', '.azw', '.doc', '.txt',
-            '.zip', '.rar', '.7z', '.tar',
-            ' book', 'ebook', 'magazine', 'comic', 'tutorial',
+            ".pdf",
+            ".epub",
+            ".mobi",
+            ".azw",
+            ".doc",
+            ".txt",
+            ".zip",
+            ".rar",
+            ".7z",
+            ".tar",
+            " book",
+            "ebook",
+            "magazine",
+            "comic",
+            "tutorial",
         ]
         if any(pattern in name_lower for pattern in other_patterns):
             return StandardCategories.BOOKS
 
         # SOFTWARE: Check for software extensions and keywords
         software_patterns = [
-            '.exe', '.msi', '.dmg', '.pkg', '.deb', '.rpm', '.app',
-            'software', 'program', 'application', 'installer', 'setup',
-            'patch', 'crack', 'keygen', 'portable',
+            ".exe",
+            ".msi",
+            ".dmg",
+            ".pkg",
+            ".deb",
+            ".rpm",
+            ".app",
+            "software",
+            "program",
+            "application",
+            "installer",
+            "setup",
+            "patch",
+            "crack",
+            "keygen",
+            "portable",
         ]
         if any(pattern in name_lower for pattern in software_patterns):
             return StandardCategories.PC
 
         # GAMES: Check for game-related keywords
         games_patterns = [
-            'game', 'repack', 'fitgirl', 'codex', 'skidrow', 'plaza',
-            'gog', 'steam', 'gameplay', 'pc game', 'ps4', 'ps5',
-            'xbox', 'switch', 'nintendo',
+            "game",
+            "repack",
+            "fitgirl",
+            "codex",
+            "skidrow",
+            "plaza",
+            "gog",
+            "steam",
+            "gameplay",
+            "pc game",
+            "ps4",
+            "ps5",
+            "xbox",
+            "switch",
+            "nintendo",
         ]
         if any(pattern in name_lower for pattern in games_patterns):
             return StandardCategories.CONSOLE
 
         # XXX: Check for adult content keywords
-        xxx_patterns = ['xxx', 'adult', '18+', 'nsfw', 'porn']
+        xxx_patterns = ["xxx", "adult", "18+", "nsfw", "porn"]
         if any(pattern in name_lower for pattern in xxx_patterns):
             return StandardCategories.XXX
 
@@ -192,8 +261,8 @@ class BaseSearchProvider(ABC):
         return None
 
     def _refine_results(
-            self,
-            results: list[SearchResultDTO]) -> list[SearchResultDTO]:
+        self, results: list[SearchResultDTO]
+    ) -> list[SearchResultDTO]:
         """Refine empty categories by detecting from torrent names.
 
         Creates new DTOs with refined categories where detection succeeds,
@@ -228,7 +297,7 @@ class BaseSearchProvider(ABC):
                         page_url=result.page_url,
                         torrent_link=result.torrent_link,
                         freeleech=result.freeleech,
-                        fields=result.fields
+                        fields=result.fields,
                     )
             refined_results.append(result)
         return refined_results
@@ -247,7 +316,9 @@ class BaseSearchProvider(ABC):
 
         # Display categories with full names
         if result.categories:
-            category_names = ', '.join(cat.full_name for cat in result.categories)
+            category_names = ", ".join(
+                cat.full_name for cat in result.categories
+            )
             md += f"- **Category:** {category_names}\n"
         else:
             md += "- **Category:** Unknown\n"
@@ -269,7 +340,7 @@ class BaseSearchProvider(ABC):
             md += f"- **Files:** {result.files_count}\n"
 
         if result.upload_date:
-            date_str = result.upload_date.strftime('%Y-%m-%d %H:%M')
+            date_str = result.upload_date.strftime("%Y-%m-%d %H:%M")
             md += f"- **Uploaded:** {date_str}\n"
 
         if result.freeleech:

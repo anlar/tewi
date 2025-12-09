@@ -4,17 +4,25 @@ import math
 from abc import ABC, abstractmethod
 from dataclasses import replace
 
-from .models import (CategoryDTO, FilePriority, TorrentDTO,
-                     ClientMeta, ClientStats, ClientSession)
+from .models import (
+    CategoryDTO,
+    FilePriority,
+    TorrentDTO,
+    ClientMeta,
+    ClientStats,
+    ClientSession,
+)
 
 
 class BaseClient(ABC):
     """Abstract base class defining the interface for all torrent clients."""
 
-    TRACKER_STATUS_UNKNOWN = 'Unknown'
+    TRACKER_STATUS_UNKNOWN = "Unknown"
 
     @abstractmethod
-    def __init__(self, host: str, port: str, username: str = None, password: str = None):
+    def __init__(
+        self, host: str, port: str, username: str = None, password: str = None
+    ):
         """Initialize the client connection.
 
         Args:
@@ -134,23 +142,23 @@ class BaseClient(ABC):
             total_size += t.size_when_done
             complete_size += t.size_when_done - t.left_until_done
 
-            if t.status == 'downloading':
+            if t.status == "downloading":
                 down += 1
-            elif t.status == 'seeding':
+            elif t.status == "seeding":
                 seed += 1
-            elif t.status == 'checking':
+            elif t.status == "checking":
                 check += 1
 
         stop = count - down - seed - check
 
         return {
-            'count': count,
-            'down': down,
-            'seed': seed,
-            'check': check,
-            'stop': stop,
-            'complete_size': complete_size,
-            'total_size': total_size,
+            "count": count,
+            "down": down,
+            "seed": seed,
+            "check": check,
+            "stop": stop,
+            "complete_size": complete_size,
+            "total_size": total_size,
         }
 
     @abstractmethod
@@ -193,7 +201,11 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def remove_torrent(self, torrent_ids: int | str | list[int | str], delete_data: bool = False) -> None:
+    def remove_torrent(
+        self,
+        torrent_ids: int | str | list[int | str],
+        delete_data: bool = False,
+    ) -> None:
         """Remove one or more torrents.
 
         Args:
@@ -212,7 +224,9 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def reannounce_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+    def reannounce_torrent(
+        self, torrent_ids: int | str | list[int | str]
+    ) -> None:
         """Reannounce one or more torrents to their trackers.
 
         Args:
@@ -231,7 +245,9 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def update_labels(self, torrent_ids: int | str | list[int | str], labels: list[str]) -> None:
+    def update_labels(
+        self, torrent_ids: int | str | list[int | str], labels: list[str]
+    ) -> None:
         """Update labels/tags for one or more torrents.
 
         Args:
@@ -250,7 +266,9 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def set_category(self, torrent_ids: int | str | list[int | str], category: str | None) -> None:
+    def set_category(
+        self, torrent_ids: int | str | list[int | str], category: str | None
+    ) -> None:
         """Set category for one or more torrents.
 
         Args:
@@ -260,7 +278,9 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def edit_torrent(self, torrent_id: int | str, name: str, location: str) -> None:
+    def edit_torrent(
+        self, torrent_id: int | str, name: str, location: str
+    ) -> None:
         """Edit torrent name and location.
 
         Args:
@@ -280,7 +300,9 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def set_priority(self, torrent_ids: int | str | list[int | str], priority: int) -> None:
+    def set_priority(
+        self, torrent_ids: int | str | list[int | str], priority: int
+    ) -> None:
         """Set bandwidth priority for one or more torrents.
 
         Args:
@@ -290,7 +312,9 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def set_file_priority(self, torrent_id: int | str, file_ids: list[int], priority: FilePriority) -> None:
+    def set_file_priority(
+        self, torrent_id: int | str, file_ids: list[int], priority: FilePriority
+    ) -> None:
         """Set download priority for files within a torrent.
 
         Args:

@@ -6,16 +6,13 @@ from ...util.decorator import log_time
 
 
 class PreferencesDialog(ModalScreen[None]):
-
     BINDINGS = [
-            Binding("k", "scroll_up", "[Navigation] Scroll up"),
-            Binding("j", "scroll_down", "[Navigation] Scroll down"),
-
-            Binding("g", "scroll_top", "[Navigation] Scroll to the top"),
-            Binding("G", "scroll_bottom", "[Navigation] Scroll to the bottom"),
-
-            Binding("x,escape", "close", "[Navigation] Close"),
-            ]
+        Binding("k", "scroll_up", "[Navigation] Scroll up"),
+        Binding("j", "scroll_down", "[Navigation] Scroll down"),
+        Binding("g", "scroll_top", "[Navigation] Scroll to the top"),
+        Binding("G", "scroll_bottom", "[Navigation] Scroll to the bottom"),
+        Binding("x,escape", "close", "[Navigation] Close"),
+    ]
 
     @log_time
     def __init__(self, preferences):
@@ -48,7 +45,6 @@ class PreferencesDialog(ModalScreen[None]):
 
 
 class PreferencesWidget(Static):
-
     @log_time
     def __init__(self, preferences):
         self.preferences = preferences
@@ -56,13 +52,12 @@ class PreferencesWidget(Static):
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield DataTable(cursor_type="none",
-                        zebra_stripes=True)
+        yield DataTable(cursor_type="none", zebra_stripes=True)
 
     @log_time
     def on_mount(self) -> None:
-        self.border_title = 'Torrent Client Preferences'
-        self.border_subtitle = '(X) Close'
+        self.border_title = "Torrent Client Preferences"
+        self.border_subtitle = "(X) Close"
 
         table = self.query_one(DataTable)
         table.add_columns("Name", "Value")

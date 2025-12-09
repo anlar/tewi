@@ -45,8 +45,13 @@ def print_size(num: int, suffix: str = "B", size_bytes: int = 1000) -> str:
 
 @log_time
 @cache
-def print_speed(num: int, print_secs: bool = False, suffix: str = "B", speed_bytes: int = 1000,
-                dash_for_zero: bool = False) -> str:
+def print_speed(
+    num: int,
+    print_secs: bool = False,
+    suffix: str = "B",
+    speed_bytes: int = 1000,
+    dash_for_zero: bool = False,
+) -> str:
     """Format a number of bytes per second as a human-readable speed string.
 
     Args:
@@ -65,8 +70,17 @@ def print_speed(num: int, print_secs: bool = False, suffix: str = "B", speed_byt
     r_unit = None
     r_num = None
 
-    for i in (("", 0), ("K", 0), ("M", 2), ("G", 2), ("T", 2), ("P", 2), ("E", 2), ("Z", 2), ("Y", 2)):
-
+    for i in (
+        ("", 0),
+        ("K", 0),
+        ("M", 2),
+        ("G", 2),
+        ("T", 2),
+        ("P", 2),
+        ("E", 2),
+        ("Z", 2),
+        ("Y", 2),
+    ):
         if abs(num) < speed_bytes:
             r_unit = i[0]
             r_num = round(num, i[1])
@@ -95,11 +109,11 @@ def print_ratio(ratio: float) -> str:
 def print_time(seconds, abbr: bool = False, units: int = 1) -> str:
     """Format a number of seconds as a human-readable time string."""
     intervals = (
-            ('d', 'days', 86400),    # 60 * 60 * 24
-            ('h', 'hours', 3600),    # 60 * 60
-            ('m', 'minutes', 60),
-            ('s', 'seconds', 1),
-            )
+        ("d", "days", 86400),  # 60 * 60 * 24
+        ("h", "hours", 3600),  # 60 * 60
+        ("m", "minutes", 60),
+        ("s", "seconds", 1),
+    )
     result = []
 
     for key, name, count in intervals:
@@ -110,9 +124,9 @@ def print_time(seconds, abbr: bool = False, units: int = 1) -> str:
                 result.append(f"{value:.0f}{key}")
             else:
                 if value == 1:
-                    name = name.rstrip('s')
+                    name = name.rstrip("s")
                 result.append(f"{value:.0f} {name}")
-    return ', '.join(result[:units])
+    return ", ".join(result[:units])
 
 
 @log_time
@@ -122,7 +136,7 @@ def print_time_ago(dt: datetime) -> str:
         return ""
 
     # Ensure both datetimes are naive (no timezone info)
-    if hasattr(dt, 'tzinfo') and dt.tzinfo is not None:
+    if hasattr(dt, "tzinfo") and dt.tzinfo is not None:
         # Convert to naive datetime
         dt = dt.replace(tzinfo=None)
 
@@ -154,10 +168,14 @@ def print_time_ago(dt: datetime) -> str:
 
 @cache
 def escape_markup(value: str) -> str:
-    return value.replace('[', r'\[')
+    return value.replace("[", r"\[")
 
 
 @cache
 def esc_trunk(value: str, max_len: int) -> str:
-    result = value[:max_len] + "…" if (max_len > 0 and len(value) > max_len) else value
+    result = (
+        value[:max_len] + "…"
+        if (max_len > 0 and len(value) > max_len)
+        else value
+    )
     return escape_markup(result)

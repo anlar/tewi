@@ -15,11 +15,16 @@ from ...search.models import SearchResultDTO
 from ..messages import (
     OpenTorrentListCommand,
     AddTorrentFromWebSearchCommand,
-    Notification
+    Notification,
 )
-from ...search.providers import (YTSProvider, TorrentsCsvProvider,
-                                 TPBProvider, NyaaProvider,
-                                 JackettProvider, ProwlarrProvider)
+from ...search.providers import (
+    YTSProvider,
+    TorrentsCsvProvider,
+    TPBProvider,
+    NyaaProvider,
+    JackettProvider,
+    ProwlarrProvider,
+)
 from ...util.decorator import log_time
 from ...util.print import print_size, escape_markup
 
@@ -33,14 +38,11 @@ class TorrentWebSearch(Static):
         Binding("a", "add_torrent", "[Action] Add Torrent"),
         Binding("o", "open_link", "[Action] Open Link"),
         Binding("enter", "show_details", "[Action] Show Details"),
-
         Binding("x,escape", "close", "[Navigation] Close"),
-
         Binding("j,down", "cursor_down", "[Navigation] Move down"),
         Binding("k,up", "cursor_up", "[Navigation] Move up"),
         Binding("h,left", "cursor_left", "[Navigation] Move left"),
         Binding("l,right", "cursor_right", "[Navigation] Move right"),
-
         Binding("g", "scroll_top", "[Navigation] Scroll to the top"),
         Binding("G", "scroll_bottom", "[Navigation] Scroll to the bottom"),
     ]
@@ -51,45 +53,55 @@ class TorrentWebSearch(Static):
     # to cover case when search executes on the same query twice
     r_results: list[SearchResultDTO] = reactive(list, always_update=True)
 
-    def __init__(self,
-                 jackett_url: str | None = None,
-                 jackett_api_key: str | None = None,
-                 prowlarr_url: str | None = None,
-                 prowlarr_api_key: str | None = None,
-                 **kwargs) -> None:
+    def __init__(
+        self,
+        jackett_url: str | None = None,
+        jackett_api_key: str | None = None,
+        prowlarr_url: str | None = None,
+        prowlarr_api_key: str | None = None,
+        **kwargs,
+    ) -> None:
         super().__init__(**kwargs)
-        self.providers = [YTSProvider(),
-                          TorrentsCsvProvider(),
-                          TPBProvider(),
-                          NyaaProvider(),
-                          JackettProvider(jackett_url, jackett_api_key),
-                          ProwlarrProvider(prowlarr_url, prowlarr_api_key)]
+        self.providers = [
+            YTSProvider(),
+            TorrentsCsvProvider(),
+            TPBProvider(),
+            NyaaProvider(),
+            JackettProvider(jackett_url, jackett_api_key),
+            ProwlarrProvider(prowlarr_url, prowlarr_api_key),
+        ]
 
     @log_time
     def compose(self) -> ComposeResult:
         with Vertical():
             yield ReactiveLabel(id="search-query-label").data_bind(
-                    name=TorrentWebSearch.r_query)
+                name=TorrentWebSearch.r_query
+            )
             yield ReactiveLabel(id="search-status").data_bind(
-                    name=TorrentWebSearch.r_search_status)
-            yield DataTable(id="websearch-results",
-                            show_cursor=True,
-                            cursor_type="row",
-                            zebra_stripes=True)
+                name=TorrentWebSearch.r_search_status
+            )
+            yield DataTable(
+                id="websearch-results",
+                show_cursor=True,
+                cursor_type="row",
+                zebra_stripes=True,
+            )
 
     @log_time
     def on_mount(self) -> None:
         self.border_title = "Search Results"
-        self.border_subtitle = ("(A) Add / "
-                                "(O) Open Link / "
-                                "(Enter) Details / "
-                                "(X) Close")
+        self.border_subtitle = (
+            "(A) Add / (O) Open Link / (Enter) Details / (X) Close"
+        )
         self.create_table_columns()
 
     @log_time
-    def execute_search(self, query: str,
-                       selected_indexers: list[str] | None = None,
-                       selected_categories: list[str] | None = None) -> None:
+    def execute_search(
+        self,
+        query: str,
+        selected_indexers: list[str] | None = None,
+        selected_categories: list[str] | None = None,
+    ) -> None:
         """Execute search with given query.
 
         Args:
@@ -120,27 +132,30 @@ class TorrentWebSearch(Static):
             self.r_search_status = f"Found {len(results)} results"
 
         for r in results:
-            up_date = r.upload_date.strftime("%Y-%m-%d") \
-                if r.upload_date else '-'
+            up_date = (
+                r.upload_date.strftime("%Y-%m-%d") if r.upload_date else "-"
+            )
 
             # Display category full_name (first category if multiple)
-            category_display = r.categories[0].full_name if r.categories else '-'
+            category_display = (
+                r.categories[0].full_name if r.categories else "-"
+            )
 
             title = escape_markup(r.title)
             if r.freeleech:
-                title = f'[bold green]\\[F][/] {title}'
+                title = f"[bold green]\\[F][/] {title}"
 
             table.add_row(
                 r.provider,
                 up_date,
                 r.seeders,
                 r.leechers,
-                r.downloads or '-',
+                r.downloads or "-",
                 print_size(r.size),
-                r.files_count or '-',
+                r.files_count or "-",
                 category_display,
                 title,
-                key=r.info_hash
+                key=r.info_hash,
             )
 
         table.focus()
@@ -176,9 +191,7 @@ class TorrentWebSearch(Static):
 
         # Get selected row
         if table.cursor_row is None or table.cursor_row < 0:
-            self.post_message(Notification(
-                "No torrent selected",
-                "warning"))
+            self.post_message(Notification("No torrent selected", "warning"))
             return
 
         # Find the corresponding result
@@ -195,9 +208,12 @@ class TorrentWebSearch(Static):
                 break
 
         if not provider:
-            self.post_message(Notification(
-                f"Provider with ID '{result.provider_id}' not found",
-                "error"))
+            self.post_message(
+                Notification(
+                    f"Provider with ID '{result.provider_id}' not found",
+                    "error",
+                )
+            )
             return
 
         # Generate details using the provider
@@ -205,9 +221,16 @@ class TorrentWebSearch(Static):
         extended_content = provider.details_extended(result)
 
         # Show the details dialog
-        self.app.push_screen(TorrentDetailsDialog(
-            result.title, common_content, extended_content,
-            result.page_url, result.magnet_link, result.torrent_link))
+        self.app.push_screen(
+            TorrentDetailsDialog(
+                result.title,
+                common_content,
+                extended_content,
+                result.page_url,
+                result.magnet_link,
+                result.torrent_link,
+            )
+        )
 
     @log_time
     def action_add_torrent(self) -> None:
@@ -219,9 +242,7 @@ class TorrentWebSearch(Static):
 
         # Get selected row
         if table.cursor_row is None or table.cursor_row < 0:
-            self.post_message(Notification(
-                "No torrent selected",
-                "warning"))
+            self.post_message(Notification("No torrent selected", "warning"))
             return
 
         # Find the corresponding result
@@ -232,13 +253,20 @@ class TorrentWebSearch(Static):
 
         # Post command to add torrent
         if result.magnet_link:
-            self.post_message(AddTorrentFromWebSearchCommand(result.magnet_link))
+            self.post_message(
+                AddTorrentFromWebSearchCommand(result.magnet_link)
+            )
         elif result.torrent_link:
-            self.post_message(AddTorrentFromWebSearchCommand(result.torrent_link))
+            self.post_message(
+                AddTorrentFromWebSearchCommand(result.torrent_link)
+            )
         else:
-            self.post_message(Notification(
-                "No magnet/torrent link available for this torrent",
-                "warning"))
+            self.post_message(
+                Notification(
+                    "No magnet/torrent link available for this torrent",
+                    "warning",
+                )
+            )
 
     @log_time
     def action_open_link(self) -> None:
@@ -249,9 +277,7 @@ class TorrentWebSearch(Static):
 
         # Get selected row
         if table.cursor_row is None or table.cursor_row < 0:
-            self.post_message(Notification(
-                "No torrent selected",
-                "warning"))
+            self.post_message(Notification("No torrent selected", "warning"))
             return
 
         # Find the corresponding result
@@ -299,9 +325,12 @@ class TorrentWebSearch(Static):
 
     @log_time
     @work(exclusive=True, thread=True)
-    async def perform_search(self, query: str,
-                             selected_indexers: list[str] | None = None,
-                             selected_categories: list[str] | None = None) -> None:
+    async def perform_search(
+        self,
+        query: str,
+        selected_indexers: list[str] | None = None,
+        selected_categories: list[str] | None = None,
+    ) -> None:
         """Perform search in background thread using selected providers.
 
         Args:
@@ -311,15 +340,16 @@ class TorrentWebSearch(Static):
         """
         self.r_search_status = "Searching..."
 
-        all_results, errors = self.app.search.search(query,
-                                                     selected_indexers,
-                                                     selected_categories)
+        all_results, errors = self.app.search.search(
+            query, selected_indexers, selected_categories
+        )
 
         self.app.call_from_thread(self.update_results, all_results, errors)
 
     @log_time
-    def update_results(self, results: list[SearchResultDTO],
-                       errors: list[str] | None) -> None:
+    def update_results(
+        self, results: list[SearchResultDTO], errors: list[str] | None
+    ) -> None:
         """Update results in main thread.
 
         Args:
@@ -329,9 +359,9 @@ class TorrentWebSearch(Static):
 
         if errors:
             for error in errors:
-                self.post_message(Notification(
-                    f"Search provider failed: {error}",
-                    "warning"))
+                self.post_message(
+                    Notification(f"Search provider failed: {error}", "warning")
+                )
 
         self.r_results = results
 
