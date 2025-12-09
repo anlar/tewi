@@ -1,8 +1,7 @@
 from textual.message import Message
-from .models import PageState
-from .models import FilterOption
-from ..search.models import Category
 
+from ..search.models import Category
+from .models import FilterOption, PageState
 
 # Commands
 

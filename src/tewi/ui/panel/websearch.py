@@ -3,30 +3,30 @@
 from typing import ClassVar
 
 from textual import on, work
-from textual.binding import Binding, BindingType
-from textual.widgets import DataTable, Static
 from textual.app import ComposeResult
+from textual.binding import Binding, BindingType
 from textual.containers import Vertical
 from textual.reactive import reactive
+from textual.widgets import DataTable, Static
 
-from ..widget.common import ReactiveLabel
-from ..dialog.torrent_details import TorrentDetailsDialog
 from ...search.models import SearchResultDTO
-from ..messages import (
-    OpenTorrentListCommand,
-    AddTorrentFromWebSearchCommand,
-    Notification,
-)
 from ...search.providers import (
-    YTSProvider,
+    JackettProvider,
+    NyaaProvider,
+    ProwlarrProvider,
     TorrentsCsvProvider,
     TPBProvider,
-    NyaaProvider,
-    JackettProvider,
-    ProwlarrProvider,
+    YTSProvider,
 )
 from ...util.decorator import log_time
-from ...util.print import print_size, escape_markup
+from ...util.print import escape_markup, print_size
+from ..dialog.torrent_details import TorrentDetailsDialog
+from ..messages import (
+    AddTorrentFromWebSearchCommand,
+    Notification,
+    OpenTorrentListCommand,
+)
+from ..widget.common import ReactiveLabel
 
 
 class TorrentWebSearch(Static):

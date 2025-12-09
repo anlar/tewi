@@ -1,8 +1,10 @@
 from typing import TypeVar
+
 from textual import on
 from textual.binding import Binding
 from textual.reactive import reactive
-from textual.widgets import Static, Label, DataTable, SelectionList
+from textual.widgets import DataTable, Label, SelectionList, Static
+
 from ...util.decorator import log_time
 from ...util.print import print_speed
 

@@ -16,16 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from .version import __version__
-
 import argparse
 import logging
 import sys
-
 from pathlib import Path
 
 from platformdirs import user_log_dir
-
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -33,54 +29,17 @@ from textual.containers import Horizontal
 from textual.reactive import reactive
 from textual.widgets import ContentSwitcher
 
-from .ui.models import get_filter_by_id, sort_orders, FilterState
-from .torrent.models import TorrentDTO
 from .config import (
     TrackSetAction,
+    create_default_config,
+    get_available_profiles,
     get_config_path,
     load_config,
-    create_default_config,
     merge_config_with_args,
-    get_available_profiles,
 )
+from .search.manager import SearchClient, print_available_providers
 from .torrent.factory import create_client
-from .torrent.models import ClientError
-from .ui.messages import (
-    AddTorrentCommand,
-    TorrentLabelsUpdatedEvent,
-    SortOrderUpdatedEvent,
-    Notification,
-    Confirm,
-    OpenSortOrderCommand,
-    OpenFilterCommand,
-    FilterUpdatedEvent,
-    OpenSearchCommand,
-    PageChangedEvent,
-    VerifyTorrentCommand,
-    ReannounceTorrentCommand,
-    OpenTorrentInfoCommand,
-    OpenTorrentListCommand,
-    OpenAddTorrentCommand,
-    ToggleTorrentCommand,
-    RemoveTorrentCommand,
-    TorrentRemovedEvent,
-    TrashTorrentCommand,
-    TorrentTrashedEvent,
-    SearchCompletedEvent,
-    StartAllTorrentsCommand,
-    StopAllTorrentsCommand,
-    OpenUpdateTorrentLabelsCommand,
-    AddTorrentFromWebSearchCommand,
-    WebSearchQuerySubmitted,
-    ChangeTorrentPriorityCommand,
-    ToggleFileDownloadCommand,
-    OpenEditTorrentCommand,
-    EditTorrentCommand,
-    SearchStateChangedEvent,
-    OpenUpdateTorrentCategoryCommand,
-    UpdateTorrentCategoryCommand,
-)
-from .util.decorator import log_time
+from .torrent.models import ClientError, TorrentDTO
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
 from .ui.dialog.preferences import PreferencesDialog
@@ -88,19 +47,54 @@ from .ui.dialog.statistics import StatisticsDialog
 from .ui.dialog.torrent.add import AddTorrentDialog
 from .ui.dialog.torrent.category import UpdateTorrentCategoryDialog
 from .ui.dialog.torrent.edit import EditTorrentDialog
+from .ui.dialog.torrent.filter import FilterDialog
 from .ui.dialog.torrent.label import UpdateTorrentLabelsDialog
 from .ui.dialog.torrent.search import SearchDialog
-from .ui.dialog.torrent.filter import FilterDialog
 from .ui.dialog.torrent.sort import SortOrderDialog
 from .ui.dialog.websearch_query import WebSearchQueryDialog
-from .ui.panel.info import InfoPanel
-from .ui.panel.state import StatePanel
-from .ui.panel.listview import TorrentListViewPanel
+from .ui.messages import (
+    AddTorrentCommand,
+    AddTorrentFromWebSearchCommand,
+    ChangeTorrentPriorityCommand,
+    Confirm,
+    EditTorrentCommand,
+    FilterUpdatedEvent,
+    Notification,
+    OpenAddTorrentCommand,
+    OpenEditTorrentCommand,
+    OpenFilterCommand,
+    OpenSearchCommand,
+    OpenSortOrderCommand,
+    OpenTorrentInfoCommand,
+    OpenTorrentListCommand,
+    OpenUpdateTorrentCategoryCommand,
+    OpenUpdateTorrentLabelsCommand,
+    PageChangedEvent,
+    ReannounceTorrentCommand,
+    RemoveTorrentCommand,
+    SearchCompletedEvent,
+    SearchStateChangedEvent,
+    SortOrderUpdatedEvent,
+    StartAllTorrentsCommand,
+    StopAllTorrentsCommand,
+    ToggleFileDownloadCommand,
+    ToggleTorrentCommand,
+    TorrentLabelsUpdatedEvent,
+    TorrentRemovedEvent,
+    TorrentTrashedEvent,
+    TrashTorrentCommand,
+    UpdateTorrentCategoryCommand,
+    VerifyTorrentCommand,
+    WebSearchQuerySubmitted,
+)
+from .ui.models import FilterState, get_filter_by_id, sort_orders
 from .ui.panel.details import TorrentInfoPanel
+from .ui.panel.info import InfoPanel
+from .ui.panel.listview import TorrentListViewPanel
+from .ui.panel.state import StatePanel
 from .ui.panel.websearch import TorrentWebSearch
-
-from .search.manager import SearchClient, print_available_providers
-
+from .util.decorator import log_time
+from .version import __version__
 
 logger = logging.getLogger("tewi")
 

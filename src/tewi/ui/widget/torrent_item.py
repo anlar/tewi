@@ -19,11 +19,11 @@
 from textual.app import ComposeResult
 from textual.containers import Grid, Horizontal
 from textual.reactive import reactive
-from textual.widgets import Static, ProgressBar
+from textual.widgets import ProgressBar, Static
 
 from ...torrent.models import TorrentDTO
 from ...util.decorator import log_time
-from ...util.print import print_size, print_time, esc_trunk
+from ...util.print import esc_trunk, print_size, print_time
 from .common import ReactiveLabel, SpeedIndicator
 
 

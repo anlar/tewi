@@ -18,8 +18,8 @@
 
 import configparser
 import sys
-from pathlib import Path
 from argparse import Action, Namespace
+from pathlib import Path
 
 from platformdirs import user_config_dir
 

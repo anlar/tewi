@@ -4,23 +4,26 @@ import os
 import pathlib
 from datetime import datetime
 
-from transmission_rpc import Torrent
 from transmission_rpc import Client as TransmissionRPCClient
+from transmission_rpc import Torrent
 
-from ...util.misc import is_torrent_link
 from ...util.decorator import log_time
+from ...util.misc import is_torrent_link
+from ..base import BaseClient
 from ..models import (
     CategoryDTO,
-    TorrentDTO,
-    TorrentDetailDTO,
+    ClientError,
+    ClientMeta,
+    ClientSession,
+    ClientStats,
     FileDTO,
-    PeerDTO,
-    TrackerDTO,
-    PeerState,
     FilePriority,
+    PeerDTO,
+    PeerState,
+    TorrentDetailDTO,
+    TorrentDTO,
+    TrackerDTO,
 )
-from ..base import BaseClient
-from ..models import ClientMeta, ClientStats, ClientSession, ClientError
 
 
 class TransmissionClient(BaseClient):

@@ -1,11 +1,11 @@
+from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.screen import ModalScreen
-from textual.widgets import Static, DataTable
-from textual.app import ComposeResult
+from textual.widgets import DataTable, Static
 
 from ....torrent.models import CategoryDTO
-from ...messages import UpdateTorrentCategoryCommand
 from ....util.decorator import log_time
+from ...messages import UpdateTorrentCategoryCommand
 
 
 class UpdateTorrentCategoryDialog(ModalScreen):

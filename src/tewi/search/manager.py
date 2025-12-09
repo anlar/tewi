@@ -4,17 +4,16 @@ import logging
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from .models import SearchResultDTO, IndexerDTO, Category
 from .base import BaseSearchProvider
+from .models import Category, IndexerDTO, SearchResultDTO
 from .providers import (
-    YTSProvider,
+    JackettProvider,
+    NyaaProvider,
+    ProwlarrProvider,
     TorrentsCsvProvider,
     TPBProvider,
-    NyaaProvider,
-    JackettProvider,
-    ProwlarrProvider,
+    YTSProvider,
 )
-
 
 logger = logging.getLogger("tewi")
 

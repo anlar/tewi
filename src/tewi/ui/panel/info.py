@@ -1,6 +1,6 @@
 from textual.app import ComposeResult
-from textual.widgets import Static
 from textual.containers import Horizontal
+from textual.widgets import Static
 
 from ...util.decorator import log_time
 

@@ -17,10 +17,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import configparser
+
 from src.tewi.config import (
     _load_client_section,
-    _load_ui_section,
     _load_debug_section,
+    _load_ui_section,
 )
 
 

@@ -3,8 +3,9 @@
 import urllib.parse
 import urllib.request
 from abc import ABC, abstractmethod
-from .models import SearchResultDTO, Category, StandardCategories, IndexerDTO
+
 from ..util.print import print_size
+from .models import Category, IndexerDTO, SearchResultDTO, StandardCategories
 
 
 class BaseSearchProvider(ABC):

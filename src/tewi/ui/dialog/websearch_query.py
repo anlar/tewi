@@ -1,17 +1,18 @@
 """Web search query input dialog."""
 
-from textual.binding import Binding, BindingType
-from textual.containers import Horizontal
-from textual.widgets import Input, Static, SelectionList
-from textual.widgets.selection_list import Selection
-from textual.app import ComposeResult
-from textual.screen import ModalScreen
 from typing import ClassVar
 
+from textual.app import ComposeResult
+from textual.binding import Binding, BindingType
+from textual.containers import Horizontal
+from textual.screen import ModalScreen
+from textual.widgets import Input, SelectionList, Static
+from textual.widgets.selection_list import Selection
+
 from ...search.models import StandardCategories
-from ..messages import WebSearchQuerySubmitted, Notification
-from ...util.decorator import log_time
 from ...ui.widget.common import VimSelectionList
+from ...util.decorator import log_time
+from ..messages import Notification, WebSearchQuerySubmitted
 
 
 class WebSearchQueryDialog(ModalScreen[None]):

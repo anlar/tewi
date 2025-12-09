@@ -1,10 +1,10 @@
+from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.screen import ModalScreen
-from textual.widgets import Static, Input, Label
-from textual.app import ComposeResult
+from textual.widgets import Input, Label, Static
 
-from ...messages import EditTorrentCommand
 from ....util.decorator import log_time
+from ...messages import EditTorrentCommand
 
 
 class EditTorrentDialog(ModalScreen):

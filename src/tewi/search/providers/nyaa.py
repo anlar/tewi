@@ -1,14 +1,14 @@
 """Nyaa.si torrent search provider implementation."""
 
+import re
 import urllib.error
 import urllib.parse
-import re
 import xml.etree.ElementTree as ET
 from datetime import datetime
 
-from ..base import BaseSearchProvider
-from ..models import SearchResultDTO, StandardCategories, Category
 from ...util.decorator import log_time
+from ..base import BaseSearchProvider
+from ..models import Category, SearchResultDTO, StandardCategories
 
 
 class NyaaProvider(BaseSearchProvider):

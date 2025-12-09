@@ -8,18 +8,21 @@ from typing import Any
 import requests
 
 from ...util.decorator import log_time
+from ..base import BaseClient
 from ..models import (
     CategoryDTO,
-    TorrentDTO,
-    TorrentDetailDTO,
+    ClientError,
+    ClientMeta,
+    ClientSession,
+    ClientStats,
     FileDTO,
-    PeerDTO,
-    TrackerDTO,
-    PeerState,
     FilePriority,
+    PeerDTO,
+    PeerState,
+    TorrentDetailDTO,
+    TorrentDTO,
+    TrackerDTO,
 )
-from ..base import BaseClient
-from ..models import ClientMeta, ClientStats, ClientSession, ClientError
 
 
 class DelugeClient(BaseClient):

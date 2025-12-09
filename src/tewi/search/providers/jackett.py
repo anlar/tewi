@@ -1,16 +1,16 @@
 """Jackett torrent search provider implementation."""
 
+import json
 import logging
 import urllib.error
 import urllib.parse
-import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from typing import Any
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from ..base import BaseSearchProvider
-from ..models import SearchResultDTO, Category, StandardCategories, IndexerDTO
 from ...util.decorator import log_time
+from ..base import BaseSearchProvider
+from ..models import Category, IndexerDTO, SearchResultDTO, StandardCategories
 
 logger = logging.getLogger("tewi")
 

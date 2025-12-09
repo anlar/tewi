@@ -4,23 +4,22 @@ from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import (
-    ScrollableContainer,
-    Horizontal,
     Container,
+    Horizontal,
+    ScrollableContainer,
     Vertical,
 )
 from textual.reactive import reactive
 from textual.widgets import Static, TabbedContent, TabPane
 from textual.widgets.data_table import RowKey
 
-from ..messages import OpenTorrentListCommand, ToggleFileDownloadCommand
 from ...torrent.models import FilePriority
-
-from ..widget.common import ReactiveLabel, VimDataTable
-from ...util.print import print_size, print_speed, print_time_ago
+from ...util.data import get_file_list
 from ...util.decorator import log_time
 from ...util.geoip import get_country
-from ...util.data import get_file_list
+from ...util.print import print_size, print_speed, print_time_ago
+from ..messages import OpenTorrentListCommand, ToggleFileDownloadCommand
+from ..widget.common import ReactiveLabel, VimDataTable
 
 
 class TorrentInfoPanel(ScrollableContainer):

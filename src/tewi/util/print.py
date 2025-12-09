@@ -15,9 +15,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import math
-
-from functools import cache
 from datetime import datetime
+from functools import cache
 
 from .decorator import log_time
 

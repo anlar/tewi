@@ -1,10 +1,10 @@
+from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.widgets import Static, TextArea
-from textual.app import ComposeResult
 
-from ...messages import TorrentLabelsUpdatedEvent
 from ....util.decorator import log_time
+from ...messages import TorrentLabelsUpdatedEvent
 
 
 class UpdateTorrentLabelsDialog(ModalScreen):

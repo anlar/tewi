@@ -6,11 +6,11 @@ from dataclasses import replace
 
 from .models import (
     CategoryDTO,
+    ClientMeta,
+    ClientSession,
+    ClientStats,
     FilePriority,
     TorrentDTO,
-    ClientMeta,
-    ClientStats,
-    ClientSession,
 )
 
 

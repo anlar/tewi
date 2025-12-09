@@ -1,13 +1,12 @@
 from textual.app import ComposeResult
-from textual.widgets import Static
 from textual.containers import Grid
 from textual.reactive import reactive
+from textual.widgets import Static
 
-from ..widget.common import ReactiveLabel, PageIndicator, SpeedIndicator
-
-from ...util.print import print_size, print_speed
 from ...util.decorator import log_time
+from ...util.print import print_size, print_speed
 from ..models import FilterState, SortOrder
+from ..widget.common import PageIndicator, ReactiveLabel, SpeedIndicator
 
 
 class StatePanel(Static):

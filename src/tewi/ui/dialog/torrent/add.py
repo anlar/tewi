@@ -1,15 +1,14 @@
 import pyperclip
-
+from textual.app import ComposeResult
 from textual.binding import Binding
+from textual.reactive import reactive
 from textual.screen import ModalScreen
 from textual.widgets import Static, TextArea
-from textual.app import ComposeResult
-from textual.reactive import reactive
 
-from ...messages import AddTorrentCommand
-from ....util.print import print_size
-from ....util.misc import is_torrent_link
 from ....util.decorator import log_time
+from ....util.misc import is_torrent_link
+from ....util.print import print_size
+from ...messages import AddTorrentCommand
 from ...widget.common import ReactiveLabel
 
 

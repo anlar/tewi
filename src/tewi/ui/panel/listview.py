@@ -1,46 +1,44 @@
 import math
-
 from typing import ClassVar, Optional
 
-from textual import on, events
-
+from textual import events, on
 from textual.binding import Binding, BindingType
-from textual.widgets import ListView, ListItem
 from textual.reactive import reactive
+from textual.widgets import ListItem, ListView
 
-from ..models import PageState
 from ...torrent.models import TorrentDTO
+from ...util.decorator import log_time
+
+# from ..messages import Notification
+from ..messages import (
+    ChangeTorrentPriorityCommand,
+    Notification,
+    OpenAddTorrentCommand,
+    OpenEditTorrentCommand,
+    OpenFilterCommand,
+    OpenSearchCommand,
+    OpenSortOrderCommand,
+    OpenTorrentInfoCommand,
+    OpenUpdateTorrentCategoryCommand,
+    OpenUpdateTorrentLabelsCommand,
+    PageChangedEvent,
+    ReannounceTorrentCommand,
+    RemoveTorrentCommand,
+    SearchStateChangedEvent,
+    StartAllTorrentsCommand,
+    StopAllTorrentsCommand,
+    ToggleTorrentCommand,
+    TorrentRemovedEvent,
+    TorrentTrashedEvent,
+    TrashTorrentCommand,
+    VerifyTorrentCommand,
+)
+from ..models import PageState
 from ..widget.torrent_item import (
     TorrentItem,
     TorrentItemCard,
     TorrentItemCompact,
     TorrentItemOneline,
-)
-from ...util.decorator import log_time
-
-# from ..messages import Notification
-from ..messages import (
-    OpenTorrentInfoCommand,
-    OpenAddTorrentCommand,
-    ToggleTorrentCommand,
-    VerifyTorrentCommand,
-    ReannounceTorrentCommand,
-    RemoveTorrentCommand,
-    TorrentRemovedEvent,
-    TrashTorrentCommand,
-    TorrentTrashedEvent,
-    Notification,
-    OpenSearchCommand,
-    StartAllTorrentsCommand,
-    StopAllTorrentsCommand,
-    OpenUpdateTorrentLabelsCommand,
-    OpenSortOrderCommand,
-    OpenFilterCommand,
-    PageChangedEvent,
-    SearchStateChangedEvent,
-    ChangeTorrentPriorityCommand,
-    OpenEditTorrentCommand,
-    OpenUpdateTorrentCategoryCommand,
 )
 
 

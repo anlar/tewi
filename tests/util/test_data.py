@@ -16,8 +16,9 @@
 
 import pytest
 from rich.text import Text
-from src.tewi.torrent.models import FilePriority, FileDTO
-from src.tewi.util.data import print_priority, get_file_list
+
+from src.tewi.torrent.models import FileDTO, FilePriority
+from src.tewi.util.data import get_file_list, print_priority
 
 
 class TestPrintPriority:

@@ -6,17 +6,17 @@ or fail if the services are unavailable.
 Run with: pytest tests/test_search_providers_integration.py -v -m integration
 """
 
-import pytest
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from src.tewi.search.providers.yts import YTSProvider
-from src.tewi.search.providers.tpb import TPBProvider
-from src.tewi.search.providers.torrentscsv import TorrentsCsvProvider
-from src.tewi.search.providers.nyaa import NyaaProvider
-from src.tewi.search.providers.jackett import JackettProvider
-from src.tewi.search.models import SearchResultDTO, StandardCategories
+import pytest
 
+from src.tewi.search.models import SearchResultDTO, StandardCategories
+from src.tewi.search.providers.jackett import JackettProvider
+from src.tewi.search.providers.nyaa import NyaaProvider
+from src.tewi.search.providers.torrentscsv import TorrentsCsvProvider
+from src.tewi.search.providers.tpb import TPBProvider
+from src.tewi.search.providers.yts import YTSProvider
 
 # Mark all tests in this module as integration tests
 pytestmark = pytest.mark.integration

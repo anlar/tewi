@@ -2,10 +2,10 @@
 
 from ..util.decorator import log_time
 from .base import BaseClient
-from .models import ClientError
-from .clients.transmission import TransmissionClient
-from .clients.qbittorrent import QBittorrentClient
 from .clients.deluge import DelugeClient
+from .clients.qbittorrent import QBittorrentClient
+from .clients.transmission import TransmissionClient
+from .models import ClientError
 
 
 @log_time

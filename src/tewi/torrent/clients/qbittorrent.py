@@ -6,20 +6,23 @@ from datetime import datetime, timedelta
 from qbittorrentapi import Client as QBittorrentAPIClient
 from qbittorrentapi.torrents import Tracker
 
-from ...util.misc import is_torrent_link
 from ...util.decorator import log_time
+from ...util.misc import is_torrent_link
+from ..base import BaseClient
 from ..models import (
     CategoryDTO,
-    TorrentDTO,
-    TorrentDetailDTO,
+    ClientError,
+    ClientMeta,
+    ClientSession,
+    ClientStats,
     FileDTO,
-    PeerDTO,
-    TrackerDTO,
-    PeerState,
     FilePriority,
+    PeerDTO,
+    PeerState,
+    TorrentDetailDTO,
+    TorrentDTO,
+    TrackerDTO,
 )
-from ..base import BaseClient
-from ..models import ClientMeta, ClientStats, ClientSession, ClientError
 
 
 class QBittorrentClient(BaseClient):

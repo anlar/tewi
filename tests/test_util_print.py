@@ -16,13 +16,14 @@
 
 import math
 from datetime import datetime, timedelta
+
 from src.tewi.util.print import (
+    escape_markup,
+    print_ratio,
     print_size,
     print_speed,
-    print_ratio,
     print_time,
     print_time_ago,
-    escape_markup,
 )
 
 
