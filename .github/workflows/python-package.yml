@@ -59,7 +59,7 @@ jobs:
         
     - name: Verify Transmission is running
       run: |
-        transmission-remote --list
+        transmission-remote 9092 --list
         curl -s http://localhost:9091/transmission/rpc || true
 
     - name: Lint source code
