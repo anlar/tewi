@@ -42,7 +42,7 @@ jobs:
         cat > ~/transmission-config/settings.json <<EOF
         {
           "rpc-enabled": true,
-          "rpc-port": 9091,
+          "rpc-port": 9092,
           "rpc-bind-address": "127.0.0.1",
           "rpc-whitelist-enabled": false,
           "rpc-authentication-required": false,
