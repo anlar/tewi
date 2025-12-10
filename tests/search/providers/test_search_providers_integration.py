@@ -6,17 +6,17 @@ or fail if the services are unavailable.
 Run with: pytest tests/test_search_providers_integration.py -v -m integration
 """
 
-import pytest
 from abc import ABC, abstractmethod
 from datetime import datetime
 
-from src.tewi.search.providers.yts import YTSProvider
-from src.tewi.search.providers.tpb import TPBProvider
-from src.tewi.search.providers.torrentscsv import TorrentsCsvProvider
-from src.tewi.search.providers.nyaa import NyaaProvider
-from src.tewi.search.providers.jackett import JackettProvider
-from src.tewi.search.models import SearchResultDTO, StandardCategories
+import pytest
 
+from src.tewi.search.models import SearchResultDTO, StandardCategories
+from src.tewi.search.providers.jackett import JackettProvider
+from src.tewi.search.providers.nyaa import NyaaProvider
+from src.tewi.search.providers.torrentscsv import TorrentsCsvProvider
+from src.tewi.search.providers.tpb import TPBProvider
+from src.tewi.search.providers.yts import YTSProvider
 
 # Mark all tests in this module as integration tests
 pytestmark = pytest.mark.integration
@@ -81,13 +81,13 @@ class BaseProviderIntegrationTest(ABC):
         Args:
             result: SearchResultDTO instance
         """
-        assert isinstance(result, SearchResultDTO), \
+        assert isinstance(result, SearchResultDTO), (
             f"Result should be SearchResultDTO, got {type(result)}"
+        )
         assert result.title is not None, "Title should not be None"
         assert len(result.title) > 0, "Title should not be empty"
         # info_hash can now be None - removed assertion
-        assert result.magnet_link is not None, \
-            "Magnet link should not be None"
+        assert result.magnet_link is not None, "Magnet link should not be None"
 
     def validate_info_hash(self, info_hash: str | None):
         """Validate info hash format (40 hex characters) if present.
@@ -97,10 +97,12 @@ class BaseProviderIntegrationTest(ABC):
         """
         if info_hash is None:
             return  # Allow None
-        assert len(info_hash) == 40, \
+        assert len(info_hash) == 40, (
             f"Info hash should be 40 chars, got {len(info_hash)}"
-        assert all(c in '0123456789abcdefABCDEF' for c in info_hash), \
+        )
+        assert all(c in "0123456789abcdefABCDEF" for c in info_hash), (
             "Info hash should only contain hex characters"
+        )
 
     def validate_magnet_link(self, magnet_link: str, info_hash: str):
         """Validate magnet link format and content.
@@ -109,23 +111,28 @@ class BaseProviderIntegrationTest(ABC):
             magnet_link: Magnet URI string
             info_hash: Expected info hash
         """
-        assert magnet_link.startswith('magnet:?'), \
+        assert magnet_link.startswith("magnet:?"), (
             "Magnet link should start with 'magnet:?'"
-        assert 'xt=urn:btih:' in magnet_link, \
+        )
+        assert "xt=urn:btih:" in magnet_link, (
             "Magnet link should contain 'xt=urn:btih:'"
-        assert info_hash.lower() in magnet_link.lower(), \
+        )
+        assert info_hash.lower() in magnet_link.lower(), (
             "Magnet link should contain the info hash"
+        )
 
         # Check tracker requirements
         if self.requires_trackers():
-            assert '&tr=' in magnet_link, \
+            assert "&tr=" in magnet_link, (
                 "Magnet link should contain trackers (&tr=)"
+            )
         else:
             # For TorrentsCSV, explicitly check NO trackers
             provider = self.get_provider()
             if provider.name == "Torrents-CSV":
-                assert '&tr=' not in magnet_link, \
+                assert "&tr=" not in magnet_link, (
                     "TorrentsCSV magnet links should not have trackers"
+                )
 
     def validate_metadata(self, result: SearchResultDTO):
         """Validate metadata fields have reasonable values.
@@ -135,20 +142,24 @@ class BaseProviderIntegrationTest(ABC):
         """
         # Size should be positive and reasonable
         assert result.size >= 0, "Size should be non-negative"
-        assert result.size < 100 * 1024 ** 3, \
+        assert result.size < 100 * 1024**3, (
             f"Size should be less than 100GB, got {result.size}"
+        )
 
         # Seeders and leechers should be non-negative
-        assert result.seeders >= 0, \
+        assert result.seeders >= 0, (
             f"Seeders should be non-negative, got {result.seeders}"
-        assert result.leechers >= 0, \
+        )
+        assert result.leechers >= 0, (
             f"Leechers should be non-negative, got {result.leechers}"
+        )
 
         # Page URL should be None or valid URL
         if result.page_url is not None:
-            assert result.page_url.startswith(('http://', 'https://')), \
-                f"Page URL should start with http:// or https://, " \
+            assert result.page_url.startswith(("http://", "https://")), (
+                f"Page URL should start with http:// or https://, "
                 f"got {result.page_url}"
+            )
 
     def validate_upload_date(self, upload_date):
         """Validate upload date if present.
@@ -157,15 +168,18 @@ class BaseProviderIntegrationTest(ABC):
             upload_date: datetime object or None
         """
         if upload_date is not None:
-            assert isinstance(upload_date, datetime), \
+            assert isinstance(upload_date, datetime), (
                 f"Upload date should be datetime, got {type(upload_date)}"
+            )
 
             # Handle both timezone-aware and naive datetimes
-            now = datetime.now(upload_date.tzinfo) \
-                if upload_date.tzinfo else datetime.now()
+            now = (
+                datetime.now(upload_date.tzinfo)
+                if upload_date.tzinfo
+                else datetime.now()
+            )
 
-            assert upload_date < now, \
-                "Upload date should be in the past"
+            assert upload_date < now, "Upload date should be in the past"
 
     def validate_categories(self, categories: list, valid_categories: set):
         """Validate categories list contains valid categories.
@@ -174,15 +188,19 @@ class BaseProviderIntegrationTest(ABC):
             categories: List of Category objects
             valid_categories: Set of valid Category objects
         """
-        # Empty categories list is allowed (for providers without category support)
+        # Empty categories list is allowed (for providers without
+        # category support)
         if not categories:
             return
 
         for category in categories:
-            assert category in valid_categories, \
+            assert category in valid_categories, (
                 f"Category '{category.full_name}' not in valid set"
+            )
 
-    @pytest.mark.xfail(reason="External provider API may be unavailable or unreliable")
+    @pytest.mark.xfail(
+        reason="External provider API may be unavailable or unreliable"
+    )
     def test_provider_search(self):
         """Test provider search with single API call and validate all results.
 
@@ -248,10 +266,15 @@ class TestTPBProviderIntegration(BaseProviderIntegrationTest):
         return "ubuntu"
 
     def get_valid_categories(self) -> set:
-        return {StandardCategories.AUDIO, StandardCategories.MOVIES,
-                StandardCategories.PC, StandardCategories.CONSOLE,
-                StandardCategories.XXX, StandardCategories.OTHER,
-                StandardCategories.BOOKS}
+        return {
+            StandardCategories.AUDIO,
+            StandardCategories.MOVIES,
+            StandardCategories.PC,
+            StandardCategories.CONSOLE,
+            StandardCategories.XXX,
+            StandardCategories.OTHER,
+            StandardCategories.BOOKS,
+        }
 
     def requires_trackers(self) -> bool:
         return False
@@ -269,10 +292,15 @@ class TestTorrentsCsvProviderIntegration(BaseProviderIntegrationTest):
     def get_valid_categories(self) -> set:
         # TorrentsCSV returns empty categories, but refinement may detect
         # categories from torrent names
-        return {StandardCategories.AUDIO, StandardCategories.MOVIES,
-                StandardCategories.PC, StandardCategories.CONSOLE,
-                StandardCategories.XXX, StandardCategories.BOOKS,
-                StandardCategories.OTHER}
+        return {
+            StandardCategories.AUDIO,
+            StandardCategories.MOVIES,
+            StandardCategories.PC,
+            StandardCategories.CONSOLE,
+            StandardCategories.XXX,
+            StandardCategories.BOOKS,
+            StandardCategories.OTHER,
+        }
 
     def requires_trackers(self) -> bool:
         return False
@@ -288,7 +316,8 @@ class TestNyaaProviderIntegration(BaseProviderIntegrationTest):
         return "anime"
 
     def get_valid_categories(self) -> set:
-        # Nyaa categories are now mapped to Jackett categories based on categoryId
+        # Nyaa categories are now mapped to Jackett categories based on
+        # categoryId
         return {
             # Anime categories
             StandardCategories.TV_ANIME,
@@ -320,13 +349,12 @@ class TestJackettProviderIntegration(BaseProviderIntegrationTest):
 
     def get_provider(self):
         import os
+
         jackett_url = os.environ.get(
-            'TEST_JACKETT_URL',
-            'http://localhost:9117'
+            "TEST_JACKETT_URL", "http://localhost:9117"
         )
         api_key = os.environ.get(
-            'TEST_JACKETT_API_KEY',
-            '66uf0ahso78pjke00t09bzlf93ufq3we'
+            "TEST_JACKETT_API_KEY", "66uf0ahso78pjke00t09bzlf93ufq3we"
         )
         return JackettProvider(jackett_url, api_key)
 

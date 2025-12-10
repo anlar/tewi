@@ -1,15 +1,14 @@
+from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.screen import ModalScreen
-from textual.widgets import Static, DataTable
-from textual.app import ComposeResult
+from textual.widgets import DataTable, Static
 
 from ....torrent.models import CategoryDTO
-from ...messages import UpdateTorrentCategoryCommand
 from ....util.decorator import log_time
+from ...messages import UpdateTorrentCategoryCommand
 
 
 class UpdateTorrentCategoryDialog(ModalScreen):
-
     @log_time
     def __init__(self, torrent, categories: list[CategoryDTO]):
         self.torrent = torrent
@@ -22,13 +21,14 @@ class UpdateTorrentCategoryDialog(ModalScreen):
 
 
 class UpdateTorrentCategoryWidget(Static):
-
     BINDINGS = [
-            Binding("k", "cursor_up", "[Navigation] Cursor up"),
-            Binding("j", "cursor_down", "[Navigation] Cursor down"),
-            Binding("escape,x", "close", "[Navigation] Close"),
-            Binding("enter", "set_category", "[Torrent] Set category", priority=True),
-            ]
+        Binding("k", "cursor_up", "[Navigation] Cursor up"),
+        Binding("j", "cursor_down", "[Navigation] Cursor down"),
+        Binding("escape,x", "close", "[Navigation] Close"),
+        Binding(
+            "enter", "set_category", "[Torrent] Set category", priority=True
+        ),
+    ]
 
     @log_time
     def __init__(self, torrent, categories: list[CategoryDTO]):
@@ -49,8 +49,8 @@ class UpdateTorrentCategoryWidget(Static):
 
     @log_time
     def on_mount(self) -> None:
-        self.border_title = 'Set category'
-        self.border_subtitle = '(Enter) Set / (X) Close'
+        self.border_title = "Set category"
+        self.border_subtitle = "(Enter) Set / (X) Close"
 
         table = self.query_one(DataTable)
 
@@ -60,7 +60,9 @@ class UpdateTorrentCategoryWidget(Static):
         table.add_row("(No category)", "", key=None)
 
         # Add all categories
-        current_category = self.torrent.category if hasattr(self.torrent, 'category') else None
+        current_category = (
+            self.torrent.category if hasattr(self.torrent, "category") else None
+        )
         cursor_row = 0
 
         for idx, cat in enumerate(self.categories):
@@ -92,8 +94,9 @@ class UpdateTorrentCategoryWidget(Static):
         row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)
         category_value = row_key.value
 
-        self.post_message(UpdateTorrentCategoryCommand(
-            self.torrent.id, category_value))
+        self.post_message(
+            UpdateTorrentCategoryCommand(self.torrent.id, category_value)
+        )
 
         self.parent.dismiss(False)
 

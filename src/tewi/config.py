@@ -18,19 +18,18 @@
 
 import configparser
 import sys
-from pathlib import Path
 from argparse import Action, Namespace
+from pathlib import Path
 
 from platformdirs import user_config_dir
 
 
 class TrackSetAction(Action):
-
-    SET_POSTFIX = '_was_set'
+    SET_POSTFIX = "_was_set"
 
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
-        setattr(namespace, f'{self.dest}{self.SET_POSTFIX}', True)
+        setattr(namespace, f"{self.dest}{self.SET_POSTFIX}", True)
 
 
 def get_config_dir() -> Path:
@@ -39,7 +38,7 @@ def get_config_dir() -> Path:
 
     Returns the platform-appropriate user config directory for tewi.
     """
-    return Path(user_config_dir('tewi', appauthor=False))
+    return Path(user_config_dir("tewi", appauthor=False))
 
 
 def get_config_path(profile: str | None = None) -> Path:
@@ -55,9 +54,9 @@ def get_config_path(profile: str | None = None) -> Path:
     """
     config_dir = get_config_dir()
     if profile:
-        return config_dir / f'tewi-{profile}.conf'
+        return config_dir / f"tewi-{profile}.conf"
     else:
-        return config_dir / 'tewi.conf'
+        return config_dir / "tewi.conf"
 
 
 def get_available_profiles() -> list[str]:
@@ -72,16 +71,17 @@ def get_available_profiles() -> list[str]:
         return []
 
     profiles = []
-    for config_file in config_dir.glob('tewi-*.conf'):
+    for config_file in config_dir.glob("tewi-*.conf"):
         # Extract profile name from tewi-PROFILE.conf
-        profile_name = config_file.stem.removeprefix('tewi-')
+        profile_name = config_file.stem.removeprefix("tewi-")
         profiles.append(profile_name)
 
     return sorted(profiles)
 
 
-def _get_string_option(parser: configparser.ConfigParser,
-                       section: str, option: str) -> str | None:
+def _get_string_option(
+    parser: configparser.ConfigParser, section: str, option: str
+) -> str | None:
     """Get string option, returning None if empty or missing."""
     if parser.has_option(section, option):
         val = parser.get(section, option)
@@ -90,21 +90,25 @@ def _get_string_option(parser: configparser.ConfigParser,
     return None
 
 
-def _get_int_option(parser: configparser.ConfigParser,
-                    section: str, option: str) -> int | None:
+def _get_int_option(
+    parser: configparser.ConfigParser, section: str, option: str
+) -> int | None:
     """Get int option, returning None if empty, missing, or invalid."""
     val = _get_string_option(parser, section, option)
     if val is not None:
         try:
             return int(val)
         except ValueError as e:
-            print(f"Warning: Invalid {option} value in config: {e}",
-                  file=sys.stderr)
+            print(
+                f"Warning: Invalid {option} value in config: {e}",
+                file=sys.stderr,
+            )
     return None
 
 
-def _get_bool_option(parser: configparser.ConfigParser,
-                     section: str, option: str) -> bool | None:
+def _get_bool_option(
+    parser: configparser.ConfigParser, section: str, option: str
+) -> bool | None:
     """Get bool option, returning None if missing or invalid."""
     if parser.has_option(section, option):
         value = parser.get(section, option)
@@ -114,89 +118,97 @@ def _get_bool_option(parser: configparser.ConfigParser,
         try:
             return parser.getboolean(section, option)
         except ValueError as e:
-            print(f"Warning: Invalid {option} value in config: {e}",
-                  file=sys.stderr)
+            print(
+                f"Warning: Invalid {option} value in config: {e}",
+                file=sys.stderr,
+            )
     return None
 
 
-def _load_client_section(parser: configparser.ConfigParser,
-                         config: dict) -> None:
+def _load_client_section(
+    parser: configparser.ConfigParser, config: dict
+) -> None:
     """Load [client] section options into config dict."""
-    if not parser.has_section('client'):
+    if not parser.has_section("client"):
         return
 
-    for key, option in [('client_type', 'type'), ('host', 'host'),
-                        ('port', 'port'), ('username', 'username'),
-                        ('password', 'password')]:
-        val = _get_string_option(parser, 'client', option)
+    for key, option in [
+        ("client_type", "type"),
+        ("host", "host"),
+        ("port", "port"),
+        ("username", "username"),
+        ("password", "password"),
+    ]:
+        val = _get_string_option(parser, "client", option)
         if val:
             config[key] = val
 
 
-def _load_ui_section(parser: configparser.ConfigParser,
-                     config: dict) -> None:
+def _load_ui_section(parser: configparser.ConfigParser, config: dict) -> None:
     """Load [ui] section options into config dict."""
-    if not parser.has_section('ui'):
+    if not parser.has_section("ui"):
         return
 
-    val = _get_string_option(parser, 'ui', 'view_mode')
+    val = _get_string_option(parser, "ui", "view_mode")
     if val:
-        config['view_mode'] = val
-    val = _get_int_option(parser, 'ui', 'page_size')
+        config["view_mode"] = val
+    val = _get_int_option(parser, "ui", "page_size")
     if val is not None:
-        config['page_size'] = val
-    val = _get_int_option(parser, 'ui', 'refresh_interval')
+        config["page_size"] = val
+    val = _get_int_option(parser, "ui", "refresh_interval")
     if val is not None:
-        config['refresh_interval'] = val
-    val = _get_int_option(parser, 'ui', 'limit_torrents')
+        config["refresh_interval"] = val
+    val = _get_int_option(parser, "ui", "limit_torrents")
     if val is not None:
-        config['limit_torrents'] = val
-    val = _get_string_option(parser, 'ui', 'filter')
+        config["limit_torrents"] = val
+    val = _get_string_option(parser, "ui", "filter")
     if val:
-        config['filter'] = val
-    val = _get_int_option(parser, 'ui', 'badge_max_count')
+        config["filter"] = val
+    val = _get_int_option(parser, "ui", "badge_max_count")
     if val is not None:
-        config['badge_max_count'] = val
-    val = _get_int_option(parser, 'ui', 'badge_max_length')
+        config["badge_max_count"] = val
+    val = _get_int_option(parser, "ui", "badge_max_length")
     if val is not None:
-        config['badge_max_length'] = val
+        config["badge_max_length"] = val
 
 
-def _load_debug_section(parser: configparser.ConfigParser,
-                        config: dict) -> None:
+def _load_debug_section(
+    parser: configparser.ConfigParser, config: dict
+) -> None:
     """Load [debug] section options into config dict."""
-    if not parser.has_section('debug'):
+    if not parser.has_section("debug"):
         return
 
-    val = _get_bool_option(parser, 'debug', 'logs')
+    val = _get_bool_option(parser, "debug", "logs")
     if val is not None:
-        config['logs'] = val
-    val = _get_int_option(parser, 'debug', 'test_mode')
+        config["logs"] = val
+    val = _get_int_option(parser, "debug", "test_mode")
     if val is not None:
-        config['test_mode'] = val
+        config["test_mode"] = val
 
 
-def _load_search_section(parser: configparser.ConfigParser,
-                         config: dict) -> None:
+def _load_search_section(
+    parser: configparser.ConfigParser, config: dict
+) -> None:
     """Load [search] section options into config dict."""
-    if not parser.has_section('search'):
+    if not parser.has_section("search"):
         return
 
-    val = _get_string_option(parser, 'search', 'jackett_url')
+    val = _get_string_option(parser, "search", "jackett_url")
     if val:
-        config['jackett_url'] = val
-    val = _get_string_option(parser, 'search', 'jackett_api_key')
+        config["jackett_url"] = val
+    val = _get_string_option(parser, "search", "jackett_api_key")
     if val:
-        config['jackett_api_key'] = val
-    val = _get_string_option(parser, 'search', 'prowlarr_url')
+        config["jackett_api_key"] = val
+    val = _get_string_option(parser, "search", "prowlarr_url")
     if val:
-        config['prowlarr_url'] = val
-    val = _get_string_option(parser, 'search', 'prowlarr_api_key')
+        config["prowlarr_url"] = val
+    val = _get_string_option(parser, "search", "prowlarr_api_key")
     if val:
-        config['prowlarr_api_key'] = val
-    val = _get_string_option(parser, 'search', 'providers')
+        config["prowlarr_api_key"] = val
+    val = _get_string_option(parser, "search", "providers")
     if val:
-        config['search_providers'] = val
+        config["search_providers"] = val
 
 
 def _load_config_file(config_path: Path, config: dict) -> None:
@@ -214,8 +226,10 @@ def _load_config_file(config_path: Path, config: dict) -> None:
     try:
         parser.read(config_path)
     except configparser.Error as e:
-        print(f"Warning: Failed to parse config file "
-              f"{config_path}: {e}", file=sys.stderr)
+        print(
+            f"Warning: Failed to parse config file {config_path}: {e}",
+            file=sys.stderr,
+        )
         print("Continuing with default values...", file=sys.stderr)
         return
 
@@ -250,8 +264,10 @@ def load_config(profile: str | None = None) -> dict:
     if profile:
         profile_config_path = get_config_path(profile)
         if not profile_config_path.exists():
-            print(f"Error: Profile config not found: {profile_config_path}",
-                  file=sys.stderr)
+            print(
+                f"Error: Profile config not found: {profile_config_path}",
+                file=sys.stderr,
+            )
             sys.exit(1)
         _load_config_file(profile_config_path, config)
 
@@ -332,8 +348,9 @@ logs =
     try:
         path.write_text(config_content)
     except OSError as e:
-        print(f"Error: Failed to create config file {path}: {e}",
-              file=sys.stderr)
+        print(
+            f"Error: Failed to create config file {path}: {e}", file=sys.stderr
+        )
         sys.exit(1)
 
 

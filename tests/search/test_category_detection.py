@@ -28,167 +28,217 @@ class TestCategoryDetection:
 
     def test_detect_audio_by_extension(self):
         """Test detection of audio category by file extension."""
-        assert self.provider._detect_category_from_name(
-            "Artist - Album (2024) [FLAC].zip"
-        ) == StandardCategories.AUDIO
+        assert (
+            self.provider._detect_category_from_name(
+                "Artist - Album (2024) [FLAC].zip"
+            )
+            == StandardCategories.AUDIO
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Song.mp3"
-        ) == StandardCategories.AUDIO
+        assert (
+            self.provider._detect_category_from_name("Song.mp3")
+            == StandardCategories.AUDIO
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Soundtrack.m4a"
-        ) == StandardCategories.AUDIO
+        assert (
+            self.provider._detect_category_from_name("Soundtrack.m4a")
+            == StandardCategories.AUDIO
+        )
 
     def test_detect_audio_by_keyword(self):
         """Test detection of audio category by keyword."""
-        assert self.provider._detect_category_from_name(
-            "Artist Discography 1990-2024"
-        ) == StandardCategories.AUDIO
+        assert (
+            self.provider._detect_category_from_name(
+                "Artist Discography 1990-2024"
+            )
+            == StandardCategories.AUDIO
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Game Soundtrack OST"
-        ) == StandardCategories.AUDIO
+        assert (
+            self.provider._detect_category_from_name("Game Soundtrack OST")
+            == StandardCategories.AUDIO
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Music Collection"
-        ) == StandardCategories.AUDIO
+        assert (
+            self.provider._detect_category_from_name("Music Collection")
+            == StandardCategories.AUDIO
+        )
 
     def test_detect_video_by_extension(self):
         """Test detection of video category by file extension."""
-        assert self.provider._detect_category_from_name(
-            "Movie.2024.mkv"
-        ) == StandardCategories.MOVIES
+        assert (
+            self.provider._detect_category_from_name("Movie.2024.mkv")
+            == StandardCategories.MOVIES
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Series.S01E01.mp4"
-        ) == StandardCategories.MOVIES
+        assert (
+            self.provider._detect_category_from_name("Series.S01E01.mp4")
+            == StandardCategories.MOVIES
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Documentary.avi"
-        ) == StandardCategories.MOVIES
+        assert (
+            self.provider._detect_category_from_name("Documentary.avi")
+            == StandardCategories.MOVIES
+        )
 
     def test_detect_video_by_keyword(self):
         """Test detection of video category by keyword."""
-        assert self.provider._detect_category_from_name(
-            "The Matrix (1999) 1080p BluRay x264"
-        ) == StandardCategories.MOVIES
+        assert (
+            self.provider._detect_category_from_name(
+                "The Matrix (1999) 1080p BluRay x264"
+            )
+            == StandardCategories.MOVIES
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Film Title 2024 4K HEVC"
-        ) == StandardCategories.MOVIES
+        assert (
+            self.provider._detect_category_from_name("Film Title 2024 4K HEVC")
+            == StandardCategories.MOVIES
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Series S01 720p WEBRip"
-        ) == StandardCategories.MOVIES
+        assert (
+            self.provider._detect_category_from_name("Series S01 720p WEBRip")
+            == StandardCategories.MOVIES
+        )
 
     def test_detect_software_by_extension(self):
         """Test detection of software category by file extension."""
-        assert self.provider._detect_category_from_name(
-            "installer.exe"
-        ) == StandardCategories.PC
+        assert (
+            self.provider._detect_category_from_name("installer.exe")
+            == StandardCategories.PC
+        )
 
-        assert self.provider._detect_category_from_name(
-            "application.dmg"
-        ) == StandardCategories.PC
+        assert (
+            self.provider._detect_category_from_name("application.dmg")
+            == StandardCategories.PC
+        )
 
-        assert self.provider._detect_category_from_name(
-            "package.deb"
-        ) == StandardCategories.PC
+        assert (
+            self.provider._detect_category_from_name("package.deb")
+            == StandardCategories.PC
+        )
 
     def test_detect_software_by_keyword(self):
         """Test detection of software category by keyword."""
-        assert self.provider._detect_category_from_name(
-            "Adobe Software Suite 2024"
-        ) == StandardCategories.PC
+        assert (
+            self.provider._detect_category_from_name(
+                "Adobe Software Suite 2024"
+            )
+            == StandardCategories.PC
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Program Setup Installer"
-        ) == StandardCategories.PC
+        assert (
+            self.provider._detect_category_from_name("Program Setup Installer")
+            == StandardCategories.PC
+        )
 
-        assert self.provider._detect_category_from_name(
-            "App Portable v1.0 + Crack"
-        ) == StandardCategories.PC
+        assert (
+            self.provider._detect_category_from_name(
+                "App Portable v1.0 + Crack"
+            )
+            == StandardCategories.PC
+        )
 
     def test_detect_games_by_keyword(self):
         """Test detection of games category by keyword."""
-        assert self.provider._detect_category_from_name(
-            "Game Title Repack FitGirl"
-        ) == StandardCategories.CONSOLE
+        assert (
+            self.provider._detect_category_from_name(
+                "Game Title Repack FitGirl"
+            )
+            == StandardCategories.CONSOLE
+        )
 
-        assert self.provider._detect_category_from_name(
-            "PC Game CODEX"
-        ) == StandardCategories.CONSOLE
+        assert (
+            self.provider._detect_category_from_name("PC Game CODEX")
+            == StandardCategories.CONSOLE
+        )
 
-        assert self.provider._detect_category_from_name(
-            "PlayStation 5 Game"
-        ) == StandardCategories.CONSOLE
+        assert (
+            self.provider._detect_category_from_name("PlayStation 5 Game")
+            == StandardCategories.CONSOLE
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Nintendo Switch Gameplay"
-        ) == StandardCategories.CONSOLE
+        assert (
+            self.provider._detect_category_from_name("Nintendo Switch Gameplay")
+            == StandardCategories.CONSOLE
+        )
 
     def test_detect_xxx_by_keyword(self):
         """Test detection of XXX category by keyword."""
-        assert self.provider._detect_category_from_name(
-            "Adult Content XXX"
-        ) == StandardCategories.XXX
+        assert (
+            self.provider._detect_category_from_name("Adult Content XXX")
+            == StandardCategories.XXX
+        )
 
-        assert self.provider._detect_category_from_name(
-            "18+ NSFW Collection"
-        ) == StandardCategories.XXX
+        assert (
+            self.provider._detect_category_from_name("18+ NSFW Collection")
+            == StandardCategories.XXX
+        )
 
     def test_detect_other_by_extension(self):
         """Test detection of BOOKS category by file extension."""
-        assert self.provider._detect_category_from_name(
-            "Book Title.pdf"
-        ) == StandardCategories.BOOKS
+        assert (
+            self.provider._detect_category_from_name("Book Title.pdf")
+            == StandardCategories.BOOKS
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Novel.epub"
-        ) == StandardCategories.BOOKS
+        assert (
+            self.provider._detect_category_from_name("Novel.epub")
+            == StandardCategories.BOOKS
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Archive.zip"
-        ) == StandardCategories.BOOKS
+        assert (
+            self.provider._detect_category_from_name("Archive.zip")
+            == StandardCategories.BOOKS
+        )
 
     def test_detect_other_by_keyword(self):
         """Test detection of BOOKS category by keyword."""
-        assert self.provider._detect_category_from_name(
-            "Programming Ebook Collection"
-        ) == StandardCategories.BOOKS
+        assert (
+            self.provider._detect_category_from_name(
+                "Programming Ebook Collection"
+            )
+            == StandardCategories.BOOKS
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Magazine Archive 2024"
-        ) == StandardCategories.BOOKS
+        assert (
+            self.provider._detect_category_from_name("Magazine Archive 2024")
+            == StandardCategories.BOOKS
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Comic Book Series"
-        ) == StandardCategories.BOOKS
+        assert (
+            self.provider._detect_category_from_name("Comic Book Series")
+            == StandardCategories.BOOKS
+        )
 
     def test_no_detection_returns_none(self):
         """Test that unrecognizable names return None."""
-        assert self.provider._detect_category_from_name(
-            "Random Title Without Keywords"
-        ) is None
+        assert (
+            self.provider._detect_category_from_name(
+                "Random Title Without Keywords"
+            )
+            is None
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Something 2024"
-        ) is None
+        assert (
+            self.provider._detect_category_from_name("Something 2024") is None
+        )
 
     def test_case_insensitive_detection(self):
         """Test that detection is case-insensitive."""
-        assert self.provider._detect_category_from_name(
-            "ALBUM.FLAC"
-        ) == StandardCategories.AUDIO
+        assert (
+            self.provider._detect_category_from_name("ALBUM.FLAC")
+            == StandardCategories.AUDIO
+        )
 
-        assert self.provider._detect_category_from_name(
-            "Movie.MKV"
-        ) == StandardCategories.MOVIES
+        assert (
+            self.provider._detect_category_from_name("Movie.MKV")
+            == StandardCategories.MOVIES
+        )
 
-        assert self.provider._detect_category_from_name(
-            "GAME REPACK"
-        ) == StandardCategories.CONSOLE
+        assert (
+            self.provider._detect_category_from_name("GAME REPACK")
+            == StandardCategories.CONSOLE
+        )
 
 
 class TestResultsRefinement:
@@ -213,7 +263,7 @@ class TestResultsRefinement:
                 upload_date=None,
                 provider="Test",
                 provider_id="test",
-                torrent_link=None
+                torrent_link=None,
             ),
             SearchResultDTO(
                 title="Music Album [FLAC]",
@@ -227,7 +277,7 @@ class TestResultsRefinement:
                 upload_date=None,
                 provider="Test",
                 provider_id="test",
-                torrent_link=None
+                torrent_link=None,
             ),
         ]
 
@@ -255,7 +305,7 @@ class TestResultsRefinement:
                 upload_date=None,
                 provider="Test",
                 provider_id="test",
-                torrent_link=None
+                torrent_link=None,
             ),
         ]
 
@@ -280,7 +330,7 @@ class TestResultsRefinement:
                 upload_date=None,
                 provider="Test",
                 provider_id="test",
-                torrent_link=None
+                torrent_link=None,
             ),
         ]
 
@@ -304,7 +354,7 @@ class TestResultsRefinement:
                 upload_date=None,
                 provider="Test",
                 provider_id="test",
-                torrent_link=None
+                torrent_link=None,
             ),
         ]
 

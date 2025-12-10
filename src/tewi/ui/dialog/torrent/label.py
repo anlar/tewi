@@ -1,15 +1,13 @@
-
+from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.widgets import Static, TextArea
-from textual.app import ComposeResult
 
-from ...messages import TorrentLabelsUpdatedEvent
 from ....util.decorator import log_time
+from ...messages import TorrentLabelsUpdatedEvent
 
 
 class UpdateTorrentLabelsDialog(ModalScreen):
-
     @log_time
     def __init__(self, torrent, torrent_ids):
         self.torrent = torrent
@@ -22,11 +20,10 @@ class UpdateTorrentLabelsDialog(ModalScreen):
 
 
 class UpdateTorrentLabelsWidget(Static):
-
     BINDINGS = [
-            Binding("enter", "update", "[Torrent] Update labels", priority=True),
-            Binding("escape", "close", "[Torrent] Close"),
-            ]
+        Binding("enter", "update", "[Torrent] Update labels", priority=True),
+        Binding("escape", "close", "[Torrent] Close"),
+    ]
 
     @log_time
     def __init__(self, torrent, torrent_ids):
@@ -40,8 +37,8 @@ class UpdateTorrentLabelsWidget(Static):
 
     @log_time
     def on_mount(self) -> None:
-        self.border_title = 'Update torrent labels (comma-separated list)'
-        self.border_subtitle = '(Enter) Update / (ESC) Close'
+        self.border_title = "Update torrent labels (comma-separated list)"
+        self.border_subtitle = "(Enter) Update / (ESC) Close"
 
         text_area = self.query_one(TextArea)
 
@@ -59,8 +56,7 @@ class UpdateTorrentLabelsWidget(Static):
         else:
             torrent_ids = self.torrent_ids
 
-        self.post_message(TorrentLabelsUpdatedEvent(
-            torrent_ids, value))
+        self.post_message(TorrentLabelsUpdatedEvent(torrent_ids, value))
 
         self.parent.dismiss(False)
 

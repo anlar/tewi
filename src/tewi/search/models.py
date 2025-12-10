@@ -6,7 +6,7 @@ from typing import Optional
 class Category:
     """Represents a Jackett category with ID, name, and hierarchy support."""
 
-    def __init__(self, id: int, name: str, parent: Optional['Category'] = None):
+    def __init__(self, id: int, name: str, parent: Optional["Category"] = None):
         self.id = id
         self.name = name
         self.parent = parent
@@ -177,6 +177,7 @@ class SearchResultDTO:
     Note: All size fields are in bytes.
     The fields dict contains provider-specific additional metadata.
     """
+
     title: str
     categories: list[Category]
     seeders: int

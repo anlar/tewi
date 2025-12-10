@@ -6,7 +6,9 @@ class TestIsTorrentLink:
 
     def test_magnet_links(self):
         """Test that magnet URIs are correctly identified."""
-        magnet_uri = "magnet:?xt=urn:btih:1234567890abcdef1234567890abcdef12345678"
+        magnet_uri = (
+            "magnet:?xt=urn:btih:1234567890abcdef1234567890abcdef12345678"
+        )
         assert is_torrent_link(magnet_uri) is True
 
         # Test with additional parameters
@@ -58,7 +60,9 @@ class TestIsTorrentLink:
 
         # Partial matches
         assert is_torrent_link("not a magnet: link") is False
-        assert is_torrent_link("this contains http:// but not at start") is False
+        assert (
+            is_torrent_link("this contains http:// but not at start") is False
+        )
 
     def test_empty_and_edge_cases(self):
         """Test edge cases like empty strings and whitespace-only strings."""
@@ -87,10 +91,20 @@ class TestIsTorrentLink:
     def test_real_world_examples(self):
         """Test with realistic torrent links."""
         # Real-world magnet link structure
-        real_magnet = ("magnet:?xt=urn:btih:c12fe1c06bba254a9dc9f519b335aa7c1367a88a"
-                       "&dn=Example+Torrent&tr=udp%3A%2F%2Ftracker.example.com%3A80")
+        real_magnet = (
+            "magnet:?xt=urn:btih:c12fe1c06bba254a9dc9f519b335aa7c1367a88a"
+            "&dn=Example+Torrent&tr=udp%3A%2F%2Ftracker.example.com%3A80"
+        )
         assert is_torrent_link(real_magnet) is True
 
         # Common torrent site patterns
-        assert is_torrent_link("https://torrents.example.com/download.php?id=12345") is True
-        assert is_torrent_link("http://tracker.site.org/announce?passkey=abc123") is True
+        assert (
+            is_torrent_link(
+                "https://torrents.example.com/download.php?id=12345"
+            )
+            is True
+        )
+        assert (
+            is_torrent_link("http://tracker.site.org/announce?passkey=abc123")
+            is True
+        )

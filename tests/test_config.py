@@ -17,10 +17,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import configparser
+
 from src.tewi.config import (
     _load_client_section,
-    _load_ui_section,
     _load_debug_section,
+    _load_ui_section,
 )
 
 
@@ -73,11 +74,11 @@ password = secret123
         _load_client_section(parser, config)
 
         assert config == {
-            'client_type': 'qbittorrent',
-            'host': '192.168.1.100',
-            'port': '8080',
-            'username': 'admin',
-            'password': 'secret123'
+            "client_type": "qbittorrent",
+            "host": "192.168.1.100",
+            "port": "8080",
+            "username": "admin",
+            "password": "secret123",
         }
 
     def test_partial_values(self):
@@ -96,10 +97,7 @@ password =
 
         _load_client_section(parser, config)
 
-        assert config == {
-            'client_type': 'transmission',
-            'host': 'localhost'
-        }
+        assert config == {"client_type": "transmission", "host": "localhost"}
 
     def test_missing_options(self):
         """Test handling when some options are not present at all."""
@@ -113,9 +111,7 @@ type = transmission
 
         _load_client_section(parser, config)
 
-        assert config == {
-            'client_type': 'transmission'
-        }
+        assert config == {"client_type": "transmission"}
 
     def test_whitespace_only_values(self):
         """Test handling of whitespace-only values."""
@@ -134,9 +130,7 @@ password =
         _load_client_section(parser, config)
 
         # Only host should be included, whitespace-only treated as empty
-        assert config == {
-            'host': 'localhost'
-        }
+        assert config == {"host": "localhost"}
 
     def test_trimming_whitespace(self):
         """Test that values are trimmed from left/right whitespace."""
@@ -156,11 +150,11 @@ password = secret123
 
         # All values should be trimmed
         assert config == {
-            'client_type': 'transmission',
-            'host': 'localhost',
-            'port': '9091',
-            'username': 'admin',
-            'password': 'secret123'
+            "client_type": "transmission",
+            "host": "localhost",
+            "port": "9091",
+            "username": "admin",
+            "password": "secret123",
         }
 
 
@@ -206,10 +200,7 @@ page_size = 50
 
         _load_ui_section(parser, config)
 
-        assert config == {
-            'view_mode': 'compact',
-            'page_size': 50
-        }
+        assert config == {"view_mode": "compact", "page_size": 50}
 
     def test_partial_values_view_mode_only(self):
         """Test with only view_mode filled."""
@@ -224,9 +215,7 @@ page_size =
 
         _load_ui_section(parser, config)
 
-        assert config == {
-            'view_mode': 'oneline'
-        }
+        assert config == {"view_mode": "oneline"}
 
     def test_partial_values_page_size_only(self):
         """Test with only page_size filled."""
@@ -241,9 +230,7 @@ page_size = 25
 
         _load_ui_section(parser, config)
 
-        assert config == {
-            'page_size': 25
-        }
+        assert config == {"page_size": 25}
 
     def test_invalid_page_size(self, capsys):
         """Test handling of invalid page_size value."""
@@ -259,12 +246,10 @@ page_size = invalid
         _load_ui_section(parser, config)
 
         # Should only include view_mode, page_size should be skipped
-        assert config == {
-            'view_mode': 'card'
-        }
+        assert config == {"view_mode": "card"}
         # Check that warning was printed
         captured = capsys.readouterr()
-        assert 'Warning: Invalid page_size value in config' in captured.err
+        assert "Warning: Invalid page_size value in config" in captured.err
 
     def test_whitespace_only_values(self):
         """Test handling of whitespace-only values."""
@@ -296,10 +281,7 @@ page_size =   50
         _load_ui_section(parser, config)
 
         # All values should be trimmed
-        assert config == {
-            'view_mode': 'compact',
-            'page_size': 50
-        }
+        assert config == {"view_mode": "compact", "page_size": 50}
 
     def test_with_refresh_interval(self):
         """Test ui section with refresh_interval."""
@@ -316,9 +298,9 @@ refresh_interval = 10
         _load_ui_section(parser, config)
 
         assert config == {
-            'view_mode': 'card',
-            'page_size': 30,
-            'refresh_interval': 10
+            "view_mode": "card",
+            "page_size": 30,
+            "refresh_interval": 10,
         }
 
     def test_with_limit_torrents(self):
@@ -336,9 +318,9 @@ limit_torrents = 100
         _load_ui_section(parser, config)
 
         assert config == {
-            'view_mode': 'compact',
-            'page_size': 50,
-            'limit_torrents': 100
+            "view_mode": "compact",
+            "page_size": 50,
+            "limit_torrents": 100,
         }
 
     def test_with_all_options(self):
@@ -357,10 +339,10 @@ limit_torrents = 50
         _load_ui_section(parser, config)
 
         assert config == {
-            'view_mode': 'oneline',
-            'page_size': 25,
-            'refresh_interval': 15,
-            'limit_torrents': 50
+            "view_mode": "oneline",
+            "page_size": 25,
+            "refresh_interval": 15,
+            "limit_torrents": 50,
         }
 
     def test_invalid_refresh_interval(self, capsys):
@@ -377,13 +359,12 @@ refresh_interval = not_a_number
         _load_ui_section(parser, config)
 
         # Should only include view_mode
-        assert config == {
-            'view_mode': 'card'
-        }
+        assert config == {"view_mode": "card"}
         # Check that warning was printed
         captured = capsys.readouterr()
-        assert 'Warning: Invalid refresh_interval value in config' \
-            in captured.err
+        assert (
+            "Warning: Invalid refresh_interval value in config" in captured.err
+        )
 
     def test_invalid_limit_torrents(self, capsys):
         """Test handling of invalid limit_torrents value."""
@@ -399,13 +380,10 @@ limit_torrents = abc
         _load_ui_section(parser, config)
 
         # Should only include page_size
-        assert config == {
-            'page_size': 30
-        }
+        assert config == {"page_size": 30}
         # Check that warning was printed
         captured = capsys.readouterr()
-        assert 'Warning: Invalid limit_torrents value in config' \
-            in captured.err
+        assert "Warning: Invalid limit_torrents value in config" in captured.err
 
     def test_badge_options(self):
         """Test ui section with badge display options."""
@@ -420,10 +398,7 @@ badge_max_length = 10
 
         _load_ui_section(parser, config)
 
-        assert config == {
-            'badge_max_count': 2,
-            'badge_max_length': 10
-        }
+        assert config == {"badge_max_count": 2, "badge_max_length": 10}
 
     def test_badge_options_unlimited_count(self):
         """Test badge_max_count with unlimited (-1)."""
@@ -437,9 +412,7 @@ badge_max_count = -1
 
         _load_ui_section(parser, config)
 
-        assert config == {
-            'badge_max_count': -1
-        }
+        assert config == {"badge_max_count": -1}
 
     def test_badge_options_no_badges(self):
         """Test badge_max_count with no badges (0)."""
@@ -453,9 +426,7 @@ badge_max_count = 0
 
         _load_ui_section(parser, config)
 
-        assert config == {
-            'badge_max_count': 0
-        }
+        assert config == {"badge_max_count": 0}
 
     def test_badge_options_unlimited_length(self):
         """Test badge_max_length with unlimited (0)."""
@@ -469,9 +440,7 @@ badge_max_length = 0
 
         _load_ui_section(parser, config)
 
-        assert config == {
-            'badge_max_length': 0
-        }
+        assert config == {"badge_max_length": 0}
 
     def test_invalid_badge_max_count(self, capsys):
         """Test handling of invalid badge_max_count value."""
@@ -487,13 +456,12 @@ badge_max_count = invalid
         _load_ui_section(parser, config)
 
         # Should only include view_mode
-        assert config == {
-            'view_mode': 'card'
-        }
+        assert config == {"view_mode": "card"}
         # Check that warning was printed
         captured = capsys.readouterr()
-        assert 'Warning: Invalid badge_max_count value in config' \
-            in captured.err
+        assert (
+            "Warning: Invalid badge_max_count value in config" in captured.err
+        )
 
     def test_invalid_badge_max_length(self, capsys):
         """Test handling of invalid badge_max_length value."""
@@ -509,13 +477,12 @@ badge_max_length = abc
         _load_ui_section(parser, config)
 
         # Should only include view_mode
-        assert config == {
-            'view_mode': 'card'
-        }
+        assert config == {"view_mode": "card"}
         # Check that warning was printed
         captured = capsys.readouterr()
-        assert 'Warning: Invalid badge_max_length value in config' \
-            in captured.err
+        assert (
+            "Warning: Invalid badge_max_length value in config" in captured.err
+        )
 
 
 class TestLoadDebugSection:
@@ -560,10 +527,7 @@ test_mode = 1
 
         _load_debug_section(parser, config)
 
-        assert config == {
-            'logs': True,
-            'test_mode': 1
-        }
+        assert config == {"logs": True, "test_mode": 1}
 
     def test_filled_values_false(self):
         """Test handling of [debug] section with logs=false."""
@@ -578,10 +542,7 @@ test_mode = 0
 
         _load_debug_section(parser, config)
 
-        assert config == {
-            'logs': False,
-            'test_mode': 0
-        }
+        assert config == {"logs": False, "test_mode": 0}
 
     def test_partial_values_logs_only(self):
         """Test with only logs filled."""
@@ -596,9 +557,7 @@ test_mode =
 
         _load_debug_section(parser, config)
 
-        assert config == {
-            'logs': True
-        }
+        assert config == {"logs": True}
 
     def test_partial_values_test_mode_only(self):
         """Test with only test_mode filled."""
@@ -613,9 +572,7 @@ test_mode = 2
 
         _load_debug_section(parser, config)
 
-        assert config == {
-            'test_mode': 2
-        }
+        assert config == {"test_mode": 2}
 
     def test_bool_variations(self):
         """Test various boolean value formats."""
@@ -628,7 +585,7 @@ logs = on
         parser.read_string(config_text)
         config = {}
         _load_debug_section(parser, config)
-        assert config == {'logs': True}
+        assert config == {"logs": True}
 
         # Test 'off'
         config_text = """
@@ -639,7 +596,7 @@ logs = off
         parser.read_string(config_text)
         config = {}
         _load_debug_section(parser, config)
-        assert config == {'logs': False}
+        assert config == {"logs": False}
 
         # Test '1'
         config_text = """
@@ -650,7 +607,7 @@ logs = 1
         parser.read_string(config_text)
         config = {}
         _load_debug_section(parser, config)
-        assert config == {'logs': True}
+        assert config == {"logs": True}
 
         # Test '0'
         config_text = """
@@ -661,7 +618,7 @@ logs = 0
         parser.read_string(config_text)
         config = {}
         _load_debug_section(parser, config)
-        assert config == {'logs': False}
+        assert config == {"logs": False}
 
     def test_invalid_logs_value(self, capsys):
         """Test handling of invalid logs value."""
@@ -677,12 +634,10 @@ test_mode = 1
         _load_debug_section(parser, config)
 
         # Should only include test_mode
-        assert config == {
-            'test_mode': 1
-        }
+        assert config == {"test_mode": 1}
         # Check that warning was printed
         captured = capsys.readouterr()
-        assert 'Warning: Invalid logs value in config' in captured.err
+        assert "Warning: Invalid logs value in config" in captured.err
 
     def test_invalid_test_mode_value(self, capsys):
         """Test handling of invalid test_mode value."""
@@ -698,12 +653,10 @@ test_mode = invalid
         _load_debug_section(parser, config)
 
         # Should only include logs
-        assert config == {
-            'logs': True
-        }
+        assert config == {"logs": True}
         # Check that warning was printed
         captured = capsys.readouterr()
-        assert 'Warning: Invalid test_mode value in config' in captured.err
+        assert "Warning: Invalid test_mode value in config" in captured.err
 
     def test_whitespace_only_values(self):
         """Test handling of whitespace-only values."""
@@ -735,7 +688,4 @@ test_mode =   2
         _load_debug_section(parser, config)
 
         # All values should be trimmed
-        assert config == {
-            'logs': True,
-            'test_mode': 2
-        }
+        assert config == {"logs": True, "test_mode": 2}

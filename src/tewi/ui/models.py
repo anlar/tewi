@@ -15,33 +15,30 @@ class SortOrder(NamedTuple):
 
 
 sort_orders = [
-        SortOrder('age', 'Age', 'a', 'A',
-                  lambda t: t.added_date),
-        SortOrder('name', 'Name', 'n', 'N',
-                  lambda t: t.name.lower()),
-        SortOrder('size', 'Size', 'z', 'Z',
-                  lambda t: t.total_size),
-        SortOrder('status', 'Status', 't', 'T',
-                  lambda t: t.status),
-        SortOrder('priority', 'Priority', 'i', 'I',
-                  lambda t: t.priority),
-        SortOrder('queue_order', 'Queue Order', 'o', 'O',
-                  lambda t: t.queue_position if t.queue_position is not None else float('inf')),
-        SortOrder('ratio', 'Ratio', 'r', 'R',
-                  lambda t: t.ratio),
-        SortOrder('progress', 'Progress', 'p', 'P',
-                  lambda t: t.percent_done),
-        SortOrder('activity', 'Activity', 'y', 'Y',
-                  lambda t: t.activity_date),
-        SortOrder('uploaded', 'Uploaded', 'u', 'U',
-                  lambda t: t.uploaded_ever),
-        SortOrder('peers', 'Peers', 'e', 'E',
-                  lambda t: t.peers_connected),
-        SortOrder('seeders', 'Seeders', 's', 'S',
-                  lambda t: t.peers_sending_to_us),
-        SortOrder('leechers', 'Leechers', 'l', 'L',
-                  lambda t: t.peers_getting_from_us),
-        ]
+    SortOrder("age", "Age", "a", "A", lambda t: t.added_date),
+    SortOrder("name", "Name", "n", "N", lambda t: t.name.lower()),
+    SortOrder("size", "Size", "z", "Z", lambda t: t.total_size),
+    SortOrder("status", "Status", "t", "T", lambda t: t.status),
+    SortOrder("priority", "Priority", "i", "I", lambda t: t.priority),
+    SortOrder(
+        "queue_order",
+        "Queue Order",
+        "o",
+        "O",
+        lambda t: t.queue_position
+        if t.queue_position is not None
+        else float("inf"),
+    ),
+    SortOrder("ratio", "Ratio", "r", "R", lambda t: t.ratio),
+    SortOrder("progress", "Progress", "p", "P", lambda t: t.percent_done),
+    SortOrder("activity", "Activity", "y", "Y", lambda t: t.activity_date),
+    SortOrder("uploaded", "Uploaded", "u", "U", lambda t: t.uploaded_ever),
+    SortOrder("peers", "Peers", "e", "E", lambda t: t.peers_connected),
+    SortOrder("seeders", "Seeders", "s", "S", lambda t: t.peers_sending_to_us),
+    SortOrder(
+        "leechers", "Leechers", "l", "L", lambda t: t.peers_getting_from_us
+    ),
+]
 
 
 class FilterOption(NamedTuple):
@@ -58,19 +55,39 @@ class FilterState(NamedTuple):
 
 
 filter_options = [
-        FilterOption('all', 'All', 'a', '[u]A[/]ll',
-                     lambda t: True),
-        FilterOption('active', 'Active', 'c', 'A[u]c[/]tive',
-                     lambda t: t.rate_download > 0 or t.rate_upload > 0),
-        FilterOption('downloading', 'Downloading', 'd', '[u]D[/]ownloading',
-                     lambda t: t.status == 'downloading'),
-        FilterOption('seeding', 'Seeding', 's', '[u]S[/]eeding',
-                     lambda t: t.status == 'seeding'),
-        FilterOption('paused', 'Paused', 'p', '[u]P[/]aused',
-                     lambda t: t.status == 'stopped'),
-        FilterOption('finished', 'Finished', 'f', '[u]F[/]inished',
-                     lambda t: t.percent_done >= 1.0),
-        ]
+    FilterOption("all", "All", "a", "[u]A[/]ll", lambda t: True),
+    FilterOption(
+        "active",
+        "Active",
+        "c",
+        "A[u]c[/]tive",
+        lambda t: t.rate_download > 0 or t.rate_upload > 0,
+    ),
+    FilterOption(
+        "downloading",
+        "Downloading",
+        "d",
+        "[u]D[/]ownloading",
+        lambda t: t.status == "downloading",
+    ),
+    FilterOption(
+        "seeding",
+        "Seeding",
+        "s",
+        "[u]S[/]eeding",
+        lambda t: t.status == "seeding",
+    ),
+    FilterOption(
+        "paused", "Paused", "p", "[u]P[/]aused", lambda t: t.status == "stopped"
+    ),
+    FilterOption(
+        "finished",
+        "Finished",
+        "f",
+        "[u]F[/]inished",
+        lambda t: t.percent_done >= 1.0,
+    ),
+]
 
 
 def get_filter_by_id(filter_id: str) -> FilterOption:

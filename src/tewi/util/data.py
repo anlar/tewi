@@ -30,10 +30,14 @@ def get_file_list(files: list[FileDTO]) -> list[dict[str, Any]]:
     items_list: list[dict[str, Any]] = []
 
     def flatten_tree(
-            node: dict[str, Any], prefix: str = "", is_last: bool = True, depth: int = 0, current_path: str = ""
+        node: dict[str, Any],
+        prefix: str = "",
+        is_last: bool = True,
+        depth: int = 0,
+        current_path: str = "",
     ) -> None:
         """Recursively flatten tree structure into list with tree symbols."""
-        items = [(k, v) for k, v in node.items() if k != '__is_file__']
+        items = [(k, v) for k, v in node.items() if k != "__is_file__"]
         # Sort items by name (case-insensitive)
         items.sort(key=lambda x: x[0].lower())
 
@@ -53,38 +57,46 @@ def get_file_list(files: list[FileDTO]) -> list[dict[str, Any]]:
             # Build the path for this item
             item_path = f"{current_path}{name}" if current_path else name
 
-            if subtree.get('__is_file__', False):
-                f = subtree['file']
+            if subtree.get("__is_file__", False):
+                f = subtree["file"]
                 completion = (f.completed / f.size) * 100
-                items_list.append({
-                    'is_file': True,
-                    'display_name': display_name,
-                    'id': f.id,
-                    'size': print_size(f.size),
-                    'done': f'{completion:.0f}%',
-                    'priority': print_priority(f.priority),
-                    'file_priority': f.priority,  # Store raw priority for styling
-                    'depth': depth,  # Track tree depth
-                    'folder_path': None  # Files don't have folder_path
-                })
+                items_list.append(
+                    {
+                        "is_file": True,
+                        "display_name": display_name,
+                        "id": f.id,
+                        "size": print_size(f.size),
+                        "done": f"{completion:.0f}%",
+                        "priority": print_priority(f.priority),
+                        # Store raw priority for styling
+                        "file_priority": f.priority,
+                        "depth": depth,  # Track tree depth
+                        "folder_path": None,  # Files don't have folder_path
+                    }
+                )
             else:
-                items_list.append({
-                    'is_file': False,
-                    'display_name': display_name,
-                    'id': None,
-                    'size': None,
-                    'done': None,
-                    'priority': None,
-                    'file_priority': None,
-                    'depth': depth,  # Track tree depth
-                    'folder_path': item_path  # Store folder path for child detection
-                })
+                items_list.append(
+                    {
+                        "is_file": False,
+                        "display_name": display_name,
+                        "id": None,
+                        "size": None,
+                        "done": None,
+                        "priority": None,
+                        "file_priority": None,
+                        "depth": depth,  # Track tree depth
+                        # Store folder path for child detection
+                        "folder_path": item_path,
+                    }
+                )
 
                 extension = "│  " if not is_last_item else "  "
                 new_prefix = current_prefix + extension
                 # Pass folder path with trailing slash for next level
                 next_path = f"{item_path}/"
-                flatten_tree(subtree, new_prefix, is_last_item, depth + 1, next_path)
+                flatten_tree(
+                    subtree, new_prefix, is_last_item, depth + 1, next_path
+                )
 
     flatten_tree(node)
 
@@ -97,7 +109,7 @@ def create_file_tree(files: list[FileDTO]) -> dict[str, Any]:
     tree: dict[str, Any] = {}
 
     for file in files:
-        parts = file.name.split('/')
+        parts = file.name.split("/")
         current = tree
 
         # Navigate/create the path in the tree
@@ -107,8 +119,8 @@ def create_file_tree(files: list[FileDTO]) -> dict[str, Any]:
 
             # If this is the last part (filename), mark it as a file
             if i == len(parts) - 1:
-                current[part]['__is_file__'] = True
-                current[part]['file'] = file
+                current[part]["__is_file__"] = True
+                current[part]["file"] = file
 
             current = current[part]
 
@@ -125,6 +137,6 @@ def print_priority(priority: FilePriority) -> str:
         case FilePriority.LOW:
             return "[dim yellow]↓[/]"
         case FilePriority.MEDIUM:
-            return '→'
+            return "→"
         case FilePriority.HIGH:
-            return '[bold red]↑[/]'
+            return "[bold red]↑[/]"

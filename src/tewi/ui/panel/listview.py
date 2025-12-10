@@ -1,29 +1,50 @@
 import math
-
 from typing import ClassVar, Optional
 
-from textual import on, events
-
+from textual import events, on
 from textual.binding import Binding, BindingType
-from textual.widgets import ListView, ListItem
 from textual.reactive import reactive
+from textual.widgets import ListItem, ListView
 
-from ..models import PageState
 from ...torrent.models import TorrentDTO
-from ..widget.torrent_item import TorrentItem, TorrentItemCard, TorrentItemCompact, TorrentItemOneline
 from ...util.decorator import log_time
 
 # from ..messages import Notification
-from ..messages import OpenTorrentInfoCommand, OpenAddTorrentCommand, ToggleTorrentCommand, \
-        VerifyTorrentCommand, ReannounceTorrentCommand, RemoveTorrentCommand, TorrentRemovedEvent, \
-        TrashTorrentCommand, TorrentTrashedEvent, Notification, OpenSearchCommand, \
-        StartAllTorrentsCommand, StopAllTorrentsCommand, OpenUpdateTorrentLabelsCommand, OpenSortOrderCommand, \
-        OpenFilterCommand, PageChangedEvent, SearchStateChangedEvent, ChangeTorrentPriorityCommand, \
-        OpenEditTorrentCommand, OpenUpdateTorrentCategoryCommand
+from ..messages import (
+    ChangeTorrentPriorityCommand,
+    Notification,
+    OpenAddTorrentCommand,
+    OpenEditTorrentCommand,
+    OpenFilterCommand,
+    OpenSearchCommand,
+    OpenSortOrderCommand,
+    OpenTorrentInfoCommand,
+    OpenUpdateTorrentCategoryCommand,
+    OpenUpdateTorrentLabelsCommand,
+    PageChangedEvent,
+    ReannounceTorrentCommand,
+    RemoveTorrentCommand,
+    SearchStateChangedEvent,
+    StartAllTorrentsCommand,
+    StopAllTorrentsCommand,
+    ToggleTorrentCommand,
+    TorrentRemovedEvent,
+    TorrentTrashedEvent,
+    TrashTorrentCommand,
+    VerifyTorrentCommand,
+)
+from ..models import PageState
+from ..widget.torrent_item import (
+    TorrentItem,
+    TorrentItemCard,
+    TorrentItemCompact,
+    TorrentItemOneline,
+)
 
 
 class TorrentListItem(ListItem):
-    """List item wrapper for TorrentItem with cached torrent ID for fast comparison."""
+    """List item wrapper for TorrentItem with cached torrent ID for fast
+    comparison."""
 
     def __init__(self, *args, torrent_id=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -31,39 +52,32 @@ class TorrentListItem(ListItem):
 
 
 class TorrentListViewPanel(ListView):
-
     BINDINGS: ClassVar[list[BindingType]] = [
-            Binding("k", "cursor_up", "[Navigation] Move up"),
-            Binding("j", "cursor_down", "[Navigation] Move down"),
-
-            Binding("g", "move_top", "[Navigation] Go to first item"),
-            Binding("home", "move_top", "[Navigation] Go to first item"),
-            Binding("G", "move_bottom", "[Navigation] Go to last item"),
-            Binding("end", "move_bottom", "[Navigation] Go to last item"),
-
-            Binding("enter,l,right", "select_cursor", "[Navigation] Open"),
-
-            Binding("a", "add_torrent", "[Torrent] Add"),
-            Binding("e", "edit_torrent", "[Torrent] Edit"),
-            Binding("L", "update_torrent_labels", "[Torrent] Update labels"),
-            Binding("C", "update_torrent_category", "[Torrent] Set category"),
-            Binding("s", "sort_order", "[Torrent] Sort order"),
-            Binding("f", "filter", "[Torrent] Filter"),
-            Binding("p", "change_priority", "[Torrent] Change priority"),
-
-            Binding("space", "toggle_torrent", "[Torrent] Toggle state"),
-            Binding("r", "remove_torrent", "[Torrent] Remove"),
-            Binding("R", "trash_torrent", "[Torrent] Trash with data"),
-            Binding("v", "verify_torrent", "[Torrent] Verify"),
-            Binding("c", "reannounce_torrent", "[Torrent] Reannounce"),
-
-            Binding("y", "start_all_torrents", "[Torrent] Start all"),
-            Binding("Y", "stop_all_torrents", "[Torrent] Stop all"),
-
-            Binding("m", "toggle_view_mode", "[UI] Toggle view mode"),
-            Binding("/", "search", "[Search] Open"),
-            Binding("n", "search_next", "[Search] Next result"),
-            Binding("N", "search_previous", "[Search] Previous result"),
+        Binding("k", "cursor_up", "[Navigation] Move up"),
+        Binding("j", "cursor_down", "[Navigation] Move down"),
+        Binding("g", "move_top", "[Navigation] Go to first item"),
+        Binding("home", "move_top", "[Navigation] Go to first item"),
+        Binding("G", "move_bottom", "[Navigation] Go to last item"),
+        Binding("end", "move_bottom", "[Navigation] Go to last item"),
+        Binding("enter,l,right", "select_cursor", "[Navigation] Open"),
+        Binding("a", "add_torrent", "[Torrent] Add"),
+        Binding("e", "edit_torrent", "[Torrent] Edit"),
+        Binding("L", "update_torrent_labels", "[Torrent] Update labels"),
+        Binding("C", "update_torrent_category", "[Torrent] Set category"),
+        Binding("s", "sort_order", "[Torrent] Sort order"),
+        Binding("f", "filter", "[Torrent] Filter"),
+        Binding("p", "change_priority", "[Torrent] Change priority"),
+        Binding("space", "toggle_torrent", "[Torrent] Toggle state"),
+        Binding("r", "remove_torrent", "[Torrent] Remove"),
+        Binding("R", "trash_torrent", "[Torrent] Trash with data"),
+        Binding("v", "verify_torrent", "[Torrent] Verify"),
+        Binding("c", "reannounce_torrent", "[Torrent] Reannounce"),
+        Binding("y", "start_all_torrents", "[Torrent] Start all"),
+        Binding("Y", "stop_all_torrents", "[Torrent] Stop all"),
+        Binding("m", "toggle_view_mode", "[UI] Toggle view mode"),
+        Binding("/", "search", "[Search] Open"),
+        Binding("n", "search_next", "[Search] Next result"),
+        Binding("N", "search_previous", "[Search] Previous result"),
     ]
 
     r_torrents: list[TorrentDTO] | None = reactive(None)
@@ -74,11 +88,15 @@ class TorrentListViewPanel(ListView):
     search_active = False
 
     @log_time
-    def __init__(self, id: str, page_size: str, view_mode: str,
-                 capability_set_priority: bool,
-                 capability_label: bool,
-                 capability_category: bool) -> None:
-
+    def __init__(
+        self,
+        id: str,
+        page_size: str,
+        view_mode: str,
+        capability_set_priority: bool,
+        capability_label: bool,
+        capability_category: bool,
+    ) -> None:
         self.page_size = page_size
         self.view_mode = view_mode
         self.capability_set_priority = capability_set_priority
@@ -96,14 +114,16 @@ class TorrentListViewPanel(ListView):
 
     @log_time
     def is_equal_to_page(self, torrents) -> bool:
-        """Check if current page displays the same torrents (optimized with cached IDs)."""
+        """Check if current page displays the same torrents (optimized with
+        cached IDs)."""
         items = self.children
 
         if len(torrents) != len(items):
             return False
 
         for i, torrent in enumerate(torrents):
-            # Use cached torrent_id for fast comparison instead of accessing widget internals
+            # Use cached torrent_id for fast comparison instead of
+            # accessing widget internals
             if torrent.id != items[i].torrent_id:
                 return False
 
@@ -131,7 +151,12 @@ class TorrentListViewPanel(ListView):
             self.update_page(self.r_torrents, next_torrent_id)
 
     @log_time
-    def update_page(self, torrents: list[TorrentDTO], hl_torrent_id: int = None, force: bool = False) -> None:
+    def update_page(
+        self,
+        torrents: list[TorrentDTO],
+        hl_torrent_id: int = None,
+        force: bool = False,
+    ) -> None:
         # self.post_message(Notification(f"update_page: {hl_torrent_id}"))
         if hl_torrent_id is None:
             hl_torrent_id = self.get_hl_torrent_id()
@@ -139,7 +164,14 @@ class TorrentListViewPanel(ListView):
         if hl_torrent_id is None:
             torrent_idx = None
         else:
-            torrent_idx = next((i for i, item in enumerate(torrents) if item.id == hl_torrent_id), None)
+            torrent_idx = next(
+                (
+                    i
+                    for i, item in enumerate(torrents)
+                    if item.id == hl_torrent_id
+                ),
+                None,
+            )
 
         if torrent_idx is None:
             page = 0
@@ -152,12 +184,16 @@ class TorrentListViewPanel(ListView):
     def draw_page(self, torrents, page, torrent_id, force) -> None:
         """Draw a page of torrents with optimized widget recycling.
 
-        Performance optimization: Reuse existing widgets when possible instead of
-        recreating them, which is expensive (100+ ms for 50 items).
+        Performance optimization: Reuse existing widgets when possible
+        instead of recreating them, which is expensive (100+ ms for 50
+        items).
         """
-        # self.post_message(Notification(f"draw_page: page {page}, torrent_id {torrent_id}"))
+        # self.post_message(Notification(
+        #     f"draw_page: page {page}, torrent_id {torrent_id}"))
 
-        page_torrents = torrents[page * self.page_size:(page * self.page_size + self.page_size)]
+        page_torrents = torrents[
+            page * self.page_size : (page * self.page_size + self.page_size)
+        ]
         existing_widgets = list(self.children)
 
         # Fast path 1: Same page, same torrents - just update data
@@ -178,7 +214,9 @@ class TorrentListViewPanel(ListView):
                     # Reuse existing widget, update its data and cached ID
                     widget = existing_widgets[i]
                     widget.torrent_id = torrent.id  # Update cached ID
-                    widget._nodes[0].update_torrent(torrent)  # Update torrent data
+                    widget._nodes[0].update_torrent(
+                        torrent
+                    )  # Update torrent data
 
                     if torrent.id == torrent_id:
                         hl_idx = i
@@ -197,7 +235,9 @@ class TorrentListViewPanel(ListView):
 
             for i, t in enumerate(page_torrents):
                 item = self.create_item(t)
-                list_item = TorrentListItem(item, torrent_id=t.id)  # Pass cached ID
+                list_item = TorrentListItem(
+                    item, torrent_id=t.id
+                )  # Pass cached ID
 
                 if t.id == torrent_id:
                     hl_idx = i
@@ -205,7 +245,8 @@ class TorrentListViewPanel(ListView):
                     # self.post_message(Notification(f"HL: {t.name}"))
 
                 torrent_widgets.append(list_item)
-                # self.post_message(Notification(f"ITEM: {list_item.highlighted}"))
+                # self.post_message(
+                #     Notification(f"ITEM: {list_item.highlighted}"))
 
             self.clear()
             self.insert(0, torrent_widgets)
@@ -214,8 +255,7 @@ class TorrentListViewPanel(ListView):
             self.index = self.validate_index(hl_idx)
             # self.post_message(Notification(f"HL index: {self.index}"))
 
-            state = PageState(current=page,
-                              total=self.total_pages(torrents))
+            state = PageState(current=page, total=self.total_pages(torrents))
 
             self.post_message(PageChangedEvent(state))
 
@@ -228,19 +268,20 @@ class TorrentListViewPanel(ListView):
 
     @log_time
     def create_item(self, torrent) -> TorrentItem:
-        if self.view_mode == 'card':
+        if self.view_mode == "card":
             item = TorrentItemCard(torrent)
-        elif self.view_mode == 'compact':
+        elif self.view_mode == "compact":
             item = TorrentItemCompact(torrent)
-        elif self.view_mode == 'oneline':
+        elif self.view_mode == "oneline":
             item = TorrentItemOneline(torrent)
 
         return item
 
     # Actions
 
-    def check_action(self, action: str,
-                     parameters: tuple[object, ...]) -> bool | None:
+    def check_action(
+        self, action: str, parameters: tuple[object, ...]
+    ) -> bool | None:
         """Check if an action may run."""
         if action == "change_priority":
             return self.capability_set_priority
@@ -348,16 +389,18 @@ class TorrentListViewPanel(ListView):
     @log_time
     def action_change_priority(self) -> None:
         if (torrent := self.get_hl_torrent()) is not None:
-            self.post_message(ChangeTorrentPriorityCommand(torrent.id, torrent.priority))
+            self.post_message(
+                ChangeTorrentPriorityCommand(torrent.id, torrent.priority)
+            )
 
     @log_time
     def action_toggle_view_mode(self) -> None:
-        if self.view_mode == 'card':
-            self.view_mode = 'compact'
-        elif self.view_mode == 'compact':
-            self.view_mode = 'oneline'
-        elif self.view_mode == 'oneline':
-            self.view_mode = 'card'
+        if self.view_mode == "card":
+            self.view_mode = "compact"
+        elif self.view_mode == "compact":
+            self.view_mode = "oneline"
+        elif self.view_mode == "oneline":
+            self.view_mode = "card"
 
         self.update_page(self.r_torrents, force=True)
 
@@ -416,7 +459,9 @@ class TorrentListViewPanel(ListView):
             if search_term in self.r_torrents[i].name.lower():
                 self._select_found_torrent(i)
                 self._update_search_idx(total, forward)
-                self.post_message(SearchStateChangedEvent(self.search_idx, total))
+                self.post_message(
+                    SearchStateChangedEvent(self.search_idx, total)
+                )
                 return
 
         # Second search range (wrap around)
@@ -424,7 +469,9 @@ class TorrentListViewPanel(ListView):
             if search_term in self.r_torrents[i].name.lower():
                 self._select_found_torrent(i)
                 self._update_search_idx(total, forward)
-                self.post_message(SearchStateChangedEvent(self.search_idx, total))
+                self.post_message(
+                    SearchStateChangedEvent(self.search_idx, total)
+                )
                 return
 
         # If no match found, show notification
@@ -462,7 +509,7 @@ class TorrentListViewPanel(ListView):
     @log_time
     def on_key(self, event: events.Key) -> None:
         """Reset search status on any key press that are not search-related"""
-        if event.key != 'n' and event.key != 'N':
+        if event.key != "n" and event.key != "N":
             self._reset_search()
             self.post_message(SearchStateChangedEvent())
 
@@ -494,7 +541,14 @@ class TorrentListViewPanel(ListView):
 
     @log_time
     def torrent_idx(self, torrent) -> Optional[int]:
-        return next((idx for idx, t in enumerate(self.r_torrents) if t.id == torrent.id), None)
+        return next(
+            (
+                idx
+                for idx, t in enumerate(self.r_torrents)
+                if t.id == torrent.id
+            ),
+            None,
+        )
 
     @log_time
     def get_hl_torrent(self) -> Optional[int]:

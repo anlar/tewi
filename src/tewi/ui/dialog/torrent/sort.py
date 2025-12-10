@@ -1,44 +1,42 @@
+from rich.text import Text
+from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.screen import ModalScreen
-from textual.widgets import Static, DataTable
-from textual.app import ComposeResult
+from textual.widgets import DataTable, Static
 
-from rich.text import Text
-
+from ....util.decorator import log_time
 from ...messages import SortOrderUpdatedEvent
 from ...models import sort_orders
-from ....util.decorator import log_time
 
 
 class SortOrderDialog(ModalScreen):
-
     @log_time
     def compose(self) -> ComposeResult:
         yield SortOrderWidget()
 
 
 class SortOrderWidget(Static):
-
     BINDINGS = [
-            Binding("escape,x", "close", "[Navigation] Close"),
-            ]
+        Binding("escape,x", "close", "[Navigation] Close"),
+    ]
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield DataTable(cursor_type="none",
-                        zebra_stripes=True)
+        yield DataTable(cursor_type="none", zebra_stripes=True)
 
     @log_time
     def on_mount(self) -> None:
-        self.border_title = 'Sort order'
-        self.border_subtitle = '(X) Close'
+        self.border_title = "Sort order"
+        self.border_subtitle = "(X) Close"
 
         table = self.query_one(DataTable)
         table.add_columns("Order", "Key (ASC | DESC)")
 
         for o in sort_orders:
-            table.add_row(o.name,
-                          Text(str(f'   {o.key_asc} | {o.key_desc}'), justify="center"))
+            table.add_row(
+                o.name,
+                Text(str(f"   {o.key_asc} | {o.key_desc}"), justify="center"),
+            )
 
             b = Binding(o.key_asc, f"select_order('{o.id}', True)")
             self._bindings._add_binding(b)

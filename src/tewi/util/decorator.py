@@ -20,12 +20,10 @@ import logging
 import time
 from functools import wraps
 
-
-logger = logging.getLogger('tewi')
+logger = logging.getLogger("tewi")
 
 
 def log_time(func):
-
     @wraps(func)
     def log_time_wrapper(*args, **kwargs):
         start_time = time.perf_counter()
@@ -37,7 +35,9 @@ def log_time(func):
         total_time_ms = (end_time - start_time) * 1000
 
         if total_time_ms > 1:
-            logger.info(f'Function "{func.__qualname__}": {total_time_ms:.4f} ms')
+            logger.info(
+                f'Function "{func.__qualname__}": {total_time_ms:.4f} ms'
+            )
 
         return result
 

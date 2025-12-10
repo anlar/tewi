@@ -1,14 +1,14 @@
 """The Pirate Bay torrent search provider implementation."""
 
+import json
 import urllib.error
 import urllib.parse
-import json
 from datetime import datetime
 from typing import Any
 
-from ..base import BaseSearchProvider
-from ..models import SearchResultDTO, StandardCategories, Category
 from ...util.decorator import log_time
+from ..base import BaseSearchProvider
+from ..models import Category, SearchResultDTO, StandardCategories
 
 
 class TPBProvider(BaseSearchProvider):
@@ -24,9 +24,9 @@ class TPBProvider(BaseSearchProvider):
         return "The Pirate Bay"
 
     @log_time
-    def _search_impl(self, query: str,
-                     categories: list[Category] | None = None) -> list[
-            SearchResultDTO]:
+    def _search_impl(
+        self, query: str, categories: list[Category] | None = None
+    ) -> list[SearchResultDTO]:
         """Search The Pirate Bay for torrents.
 
         Args:
@@ -46,19 +46,20 @@ class TPBProvider(BaseSearchProvider):
         tpb_category = self._convert_categories_to_tpb(categories)
 
         params = {
-            'q': query.strip(),
-            'cat': tpb_category,
+            "q": query.strip(),
+            "cat": tpb_category,
         }
 
         url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
 
         try:
             with self._urlopen(url) as response:
-                data = json.loads(response.read().decode('utf-8'))
+                data = json.loads(response.read().decode("utf-8"))
 
             # API returns [{"name": "No results returned"}] when no results
-            if not data or (len(data) == 1 and
-                            data[0].get('name') == 'No results returned'):
+            if not data or (
+                len(data) == 1 and data[0].get("name") == "No results returned"
+            ):
                 return []
 
             results = []
@@ -74,57 +75,57 @@ class TPBProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
 
-    def _parse_torrent(self, torrent: dict[str, Any]
-                       ) -> SearchResultDTO | None:
+    def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResultDTO | None:
         """Parse a single torrent from TPB API response."""
         try:
-            info_hash = torrent.get('info_hash', '')
+            info_hash = torrent.get("info_hash", "")
             if not info_hash:
                 return None
 
-            name = torrent.get('name', 'Unknown')
+            name = torrent.get("name", "Unknown")
 
-            size = int(torrent.get('size', 0))
-            category_code = int(torrent.get('category', 0))
+            size = int(torrent.get("size", 0))
+            category_code = int(torrent.get("category", 0))
 
             magnet_link = self._build_magnet_link(
-                info_hash=info_hash,
-                name=name
+                info_hash=info_hash, name=name
             )
 
             # Parse upload date from unix timestamp
             upload_date = None
-            added = torrent.get('added')
+            added = torrent.get("added")
             if added:
                 upload_date = datetime.fromtimestamp(int(added))
 
             # Build provider-specific fields
             fields = {}
-            username = torrent.get('username')
+            username = torrent.get("username")
             if username:
-                fields['username'] = username
+                fields["username"] = username
 
-            status = torrent.get('status')
+            status = torrent.get("status")
             if status:
-                fields['status'] = status
+                fields["status"] = status
 
-            imdb = torrent.get('imdb')
+            imdb = torrent.get("imdb")
             if imdb:
-                fields['imdb'] = imdb
+                fields["imdb"] = imdb
 
             # Construct page URL from torrent ID
             page_url = None
-            torrent_id = torrent.get('id')
+            torrent_id = torrent.get("id")
             if torrent_id:
-                page_url = f"https://thepiratebay.org/description.php?id={torrent_id}"
+                page_url = (
+                    f"https://thepiratebay.org/description.php?id={torrent_id}"
+                )
 
             return SearchResultDTO(
                 title=name,
                 categories=self._get_category(category_code),
-                seeders=int(torrent.get('seeders', 0)),
-                leechers=int(torrent.get('leechers', 0)),
+                seeders=int(torrent.get("seeders", 0)),
+                leechers=int(torrent.get("leechers", 0)),
                 size=size,
-                files_count=int(torrent.get('num_files', None)),
+                files_count=int(torrent.get("num_files", None)),
                 magnet_link=magnet_link,
                 info_hash=info_hash,
                 upload_date=upload_date,
@@ -134,15 +135,15 @@ class TPBProvider(BaseSearchProvider):
                 page_url=page_url,
                 torrent_link=None,
                 freeleech=True,  # Public tracker
-                fields=fields
+                fields=fields,
             )
 
         except (KeyError, ValueError, TypeError):
             return None
 
     def _convert_categories_to_tpb(
-            self,
-            categories: list[Category] | None) -> int:
+        self, categories: list[Category] | None
+    ) -> int:
         """Convert Jackett categories to TPB category code.
 
         TPB uses category codes: 100 (Audio), 200 (Video), 300 (Apps),
@@ -292,27 +293,27 @@ class TPBProvider(BaseSearchProvider):
 
         md = "## Uploader\n"
 
-        if 'username' in result.fields:
+        if "username" in result.fields:
             md += f"- **Username:** {result.fields['username']}\n"
 
-        if 'status' in result.fields:
-            status = result.fields['status']
+        if "status" in result.fields:
+            status = result.fields["status"]
             md += "- **Status:** "
 
             match status:
-                case 'vip':
+                case "vip":
                     md += "VIP Uploader\n"
-                case 'trusted':
+                case "trusted":
                     md += "Trusted Uploader\n"
-                case 'member':
+                case "member":
                     md += "Member\n"
                 case _:
                     md += f"{status}\n"
 
-        if 'imdb' in result.fields and result.fields['imdb']:
+        if "imdb" in result.fields and result.fields["imdb"]:
             md += "## Movie\n"
 
-            imdb_code = result.fields['imdb']
+            imdb_code = result.fields["imdb"]
             imdb_url = f"https://www.imdb.com/title/{imdb_code}/"
             md += f"- **IMDB:** {imdb_url}\n"
 

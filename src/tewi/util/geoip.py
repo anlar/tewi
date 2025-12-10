@@ -1,5 +1,6 @@
-from geoip2fast import GeoIP2Fast
 from functools import cache
+
+from geoip2fast import GeoIP2Fast
 
 from .decorator import log_time
 

@@ -1,17 +1,17 @@
 """Torrent search provider implementations."""
 
-from .yts import YTSProvider
+from .jackett import JackettProvider
+from .nyaa import NyaaProvider
+from .prowlarr import ProwlarrProvider
 from .torrentscsv import TorrentsCsvProvider
 from .tpb import TPBProvider
-from .nyaa import NyaaProvider
-from .jackett import JackettProvider
-from .prowlarr import ProwlarrProvider
+from .yts import YTSProvider
 
 __all__ = [
-    'YTSProvider',
-    'TorrentsCsvProvider',
-    'TPBProvider',
-    'NyaaProvider',
-    'JackettProvider',
-    'ProwlarrProvider',
+    "YTSProvider",
+    "TorrentsCsvProvider",
+    "TPBProvider",
+    "NyaaProvider",
+    "JackettProvider",
+    "ProwlarrProvider",
 ]

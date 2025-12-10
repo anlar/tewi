@@ -8,10 +8,21 @@ from typing import Any
 import requests
 
 from ...util.decorator import log_time
-from ..models import (CategoryDTO, TorrentDTO, TorrentDetailDTO, FileDTO,
-                      PeerDTO, TrackerDTO, PeerState, FilePriority)
 from ..base import BaseClient
-from ..models import ClientMeta, ClientStats, ClientSession, ClientError
+from ..models import (
+    CategoryDTO,
+    ClientError,
+    ClientMeta,
+    ClientSession,
+    ClientStats,
+    FileDTO,
+    FilePriority,
+    PeerDTO,
+    PeerState,
+    TorrentDetailDTO,
+    TorrentDTO,
+    TrackerDTO,
+)
 
 
 class DelugeClient(BaseClient):
@@ -23,36 +34,62 @@ class DelugeClient(BaseClient):
 
     # Status mapping from Deluge to normalized status
     STATUS_MAP = {
-            'Downloading': 'downloading',
-            'Seeding': 'seeding',
-            'Paused': 'stopped',
-            'Checking': 'checking',
-            'Queued': 'stopped',
-            'Error': 'stopped',
-            'Active': 'downloading',  # Generic active state
-            }
+        "Downloading": "downloading",
+        "Seeding": "seeding",
+        "Paused": "stopped",
+        "Checking": "checking",
+        "Queued": "stopped",
+        "Error": "stopped",
+        "Active": "downloading",  # Generic active state
+    }
 
     FIELDS_LIST = [
-            "name", "hash", "state", "progress", "total_size", "total_wanted",
-            "total_remaining", "download_payload_rate",
-            "upload_payload_rate", "num_seeds", "num_peers", "ratio",
-            "total_uploaded", "priority", "time_added", "queue",
-            "save_path", "label", "active_time", "eta", "time_since_transfer"
-            ]
+        "name",
+        "hash",
+        "state",
+        "progress",
+        "total_size",
+        "total_wanted",
+        "total_remaining",
+        "download_payload_rate",
+        "upload_payload_rate",
+        "num_seeds",
+        "num_peers",
+        "ratio",
+        "total_uploaded",
+        "priority",
+        "time_added",
+        "queue",
+        "save_path",
+        "label",
+        "active_time",
+        "eta",
+        "time_since_transfer",
+    ]
 
     FIELDS_DETAIL = FIELDS_LIST + [
-            "num_pieces", "piece_length",
-            "private", "comment", "tracker_host", "completed_time",
-            "total_done", "total_uploaded", "creator", "all_time_download",
-            "message", "peers", "trackers",
-            "files", "file_priorities", "file_progress"
-            ]
+        "num_pieces",
+        "piece_length",
+        "private",
+        "comment",
+        "tracker_host",
+        "completed_time",
+        "total_done",
+        "total_uploaded",
+        "creator",
+        "all_time_download",
+        "message",
+        "peers",
+        "trackers",
+        "files",
+        "file_priorities",
+        "file_progress",
+    ]
 
     @log_time
-    def __init__(self,
-                 host: str, port: str,
-                 username: str = None, password: str = None):
-
+    def __init__(
+        self, host: str, port: str, username: str = None, password: str = None
+    ):
         self.base_url = f"http://{host}:{port}/json"
         self._session = requests.Session()
         self.password = password
@@ -115,7 +152,7 @@ class DelugeClient(BaseClient):
         data = {
             "method": method,
             "params": params,
-            "id": self._get_request_id()
+            "id": self._get_request_id(),
         }
 
         try:
@@ -133,13 +170,13 @@ class DelugeClient(BaseClient):
 
     def capable(self, capability_code: str) -> bool:
         match capability_code:
-            case 'torrent_id':
+            case "torrent_id":
                 return False  # Deluge uses hash strings as IDs
-            case 'set_priority':
+            case "set_priority":
                 return False
-            case 'toggle_alt_speed':
+            case "toggle_alt_speed":
                 return False
-            case 'label':
+            case "label":
                 return False
 
         return True
@@ -148,31 +185,33 @@ class DelugeClient(BaseClient):
     def meta(self) -> ClientMeta:
         """Get daemon name and version."""
         version = self._call("daemon.get_version")
-        return {
-            'name': 'Deluge',
-            'version': version
-        }
+        return {"name": "Deluge", "version": version}
 
     @log_time
     def stats(self) -> ClientStats:
         """Get current and cumulative session statistics."""
-        stats = self._call("core.get_session_status", [[
-            "total_upload",
-            "total_download",
-            "peer.num_peers_connected",
-            "ses.waste_piece_timed_out",
-            "ses.waste_piece_cancelled",
-            "ses.waste_piece_unknown",
-            "ses.waste_piece_seed",
-            "ses.waste_piece_end_game",
-            "ses.waste_piece_closing",
-            ]])
+        stats = self._call(
+            "core.get_session_status",
+            [
+                [
+                    "total_upload",
+                    "total_download",
+                    "peer.num_peers_connected",
+                    "ses.waste_piece_timed_out",
+                    "ses.waste_piece_cancelled",
+                    "ses.waste_piece_unknown",
+                    "ses.waste_piece_seed",
+                    "ses.waste_piece_end_game",
+                    "ses.waste_piece_closing",
+                ]
+            ],
+        )
 
         # Deluge tracks session stats only
         current_uploaded = stats.get("total_upload", 0)
         current_downloaded = stats.get("total_download", 0)
         current_ratio = (
-            float('inf')
+            float("inf")
             if current_downloaded == 0
             else current_uploaded / current_downloaded
         )
@@ -184,24 +223,24 @@ class DelugeClient(BaseClient):
         )
 
         return {
-            'current_uploaded_bytes': current_uploaded,
-            'current_downloaded_bytes': current_downloaded,
-            'current_ratio': current_ratio,
-            'current_active_seconds': None,
-            'current_waste': current_waste,
-            'current_connected_peers': stats.get("peer.num_peers_connected"),
-            'total_uploaded_bytes': None,
-            'total_downloaded_bytes': None,
-            'total_ratio': None,
-            'total_active_seconds': None,
-            'total_started_count': None,
-            'cache_read_hits': None,
-            'cache_total_buffers_size': None,
-            'perf_write_cache_overload': None,
-            'perf_read_cache_overload': None,
-            'perf_queued_io_jobs': None,
-            'perf_average_time_queue': None,
-            'perf_total_queued_size': None,
+            "current_uploaded_bytes": current_uploaded,
+            "current_downloaded_bytes": current_downloaded,
+            "current_ratio": current_ratio,
+            "current_active_seconds": None,
+            "current_waste": current_waste,
+            "current_connected_peers": stats.get("peer.num_peers_connected"),
+            "total_uploaded_bytes": None,
+            "total_downloaded_bytes": None,
+            "total_ratio": None,
+            "total_active_seconds": None,
+            "total_started_count": None,
+            "cache_read_hits": None,
+            "cache_total_buffers_size": None,
+            "perf_write_cache_overload": None,
+            "perf_read_cache_overload": None,
+            "perf_queued_io_jobs": None,
+            "perf_average_time_queue": None,
+            "perf_total_queued_size": None,
         }
 
     @log_time
@@ -209,9 +248,9 @@ class DelugeClient(BaseClient):
         """Get session information with computed torrent counts."""
         # Get config and session status
         config = self._call("core.get_config")
-        session_status = self._call("core.get_session_status", [
-            ["upload_rate", "download_rate"]
-        ])
+        session_status = self._call(
+            "core.get_session_status", [["upload_rate", "download_rate"]]
+        )
 
         # Get free space
         download_dir = config.get("download_location", "")
@@ -226,26 +265,23 @@ class DelugeClient(BaseClient):
         alt_speed_up = 0
 
         return {
-            'download_dir': download_dir,
-            'download_dir_free_space': free_space,
-            'upload_speed': session_status.get("upload_rate", 0),
-            'download_speed': session_status.get("download_rate", 0),
-            'alt_speed_enabled': alt_speed_enabled,
-            'alt_speed_up': alt_speed_up,
-            'alt_speed_down': alt_speed_down,
-
-            'torrents_complete_size': counts['complete_size'],
-            'torrents_total_size': counts['total_size'],
-
-            'torrents_count': counts['count'],
-            'torrents_down': counts['down'],
-            'torrents_seed': counts['seed'],
-            'torrents_check': counts['check'],
-            'torrents_stop': counts['stop'],
+            "download_dir": download_dir,
+            "download_dir_free_space": free_space,
+            "upload_speed": session_status.get("upload_rate", 0),
+            "download_speed": session_status.get("download_rate", 0),
+            "alt_speed_enabled": alt_speed_enabled,
+            "alt_speed_up": alt_speed_up,
+            "alt_speed_down": alt_speed_down,
+            "torrents_complete_size": counts["complete_size"],
+            "torrents_total_size": counts["total_size"],
+            "torrents_count": counts["count"],
+            "torrents_down": counts["down"],
+            "torrents_seed": counts["seed"],
+            "torrents_check": counts["check"],
+            "torrents_stop": counts["stop"],
         }
 
-    def _flatten_dict(self, data: dict, parent_key: str = ''
-                      ) -> dict[str, str]:
+    def _flatten_dict(self, data: dict, parent_key: str = "") -> dict[str, str]:
         """Flatten nested dictionary structures into key-value pairs.
 
         Args:
@@ -289,7 +325,7 @@ class DelugeClient(BaseClient):
     @log_time
     def _normalize_status(self, deluge_status: str) -> str:
         """Normalize Deluge status to common status string."""
-        return self.STATUS_MAP.get(deluge_status, 'Unknown')
+        return self.STATUS_MAP.get(deluge_status, "Unknown")
 
     @log_time
     def _torrent_to_dto(self, torrent_hash: str, t: dict) -> TorrentDTO:
@@ -318,11 +354,7 @@ class DelugeClient(BaseClient):
                 if t.get("time_since_transfer") > 0
                 else None
             ),
-            queue_position=(
-                t.get("queue")
-                if t.get("queue") > -1
-                else None
-                ),
+            queue_position=(t.get("queue") if t.get("queue") > -1 else None),
             download_dir=t.get("save_path"),
             category=t.get("label", None),
             labels=[],
@@ -332,16 +364,23 @@ class DelugeClient(BaseClient):
     def torrents(self) -> list[TorrentDTO]:
         """Get list of all torrents."""
 
-        torrents_data = self._call("core.get_torrents_status",
-                                   [{}, self.FIELDS_LIST])
+        torrents_data = self._call(
+            "core.get_torrents_status", [{}, self.FIELDS_LIST]
+        )
 
-        return [self._torrent_to_dto(hash_str, data)
-                for hash_str, data in torrents_data.items()]
+        return [
+            self._torrent_to_dto(hash_str, data)
+            for hash_str, data in torrents_data.items()
+        ]
 
     @log_time
-    def _file_to_dto(self, file_data: dict, index: int = None,
-                     priority_value: int = None, progress: float = None
-                     ) -> FileDTO:
+    def _file_to_dto(
+        self,
+        file_data: dict,
+        index: int = None,
+        priority_value: int = None,
+        progress: float = None,
+    ) -> FileDTO:
         """Convert Deluge file data to FileDTO.
 
         Args:
@@ -407,30 +446,31 @@ class DelugeClient(BaseClient):
         """Convert Deluge tracker data to TrackerDTO."""
 
         return TrackerDTO(
-                host=tracker.get("url"),
-                tier=tracker.get("tier"),
-                seeder_count=tracker.get("scrape_complete"),
-                leecher_count=tracker.get("scrape_incomplete"),
-                download_count=tracker.get("scrape_downloaded"),
-                peer_count=None,
-                status=None,
-                message=tracker.get("message"),
-                last_announce=None,
-                next_announce=(
-                    datetime.fromtimestamp(tracker.get("next_announce"))
-                    if tracker.get("next_announce")
-                    else None
-                    ),
-                last_scrape=None,
-                next_scrape=None,
-                )
+            host=tracker.get("url"),
+            tier=tracker.get("tier"),
+            seeder_count=tracker.get("scrape_complete"),
+            leecher_count=tracker.get("scrape_incomplete"),
+            download_count=tracker.get("scrape_downloaded"),
+            peer_count=None,
+            status=None,
+            message=tracker.get("message"),
+            last_announce=None,
+            next_announce=(
+                datetime.fromtimestamp(tracker.get("next_announce"))
+                if tracker.get("next_announce")
+                else None
+            ),
+            last_scrape=None,
+            next_scrape=None,
+        )
 
     @log_time
     def torrent(self, id: int | str) -> TorrentDetailDTO:
         """Get detailed information about a specific torrent."""
 
-        torrent_data = self._call("core.get_torrent_status",
-                                  [id, self.FIELDS_DETAIL])
+        torrent_data = self._call(
+            "core.get_torrent_status", [id, self.FIELDS_DETAIL]
+        )
 
         if not torrent_data:
             raise ClientError(f"Torrent with ID {id} not found")
@@ -443,17 +483,21 @@ class DelugeClient(BaseClient):
 
             for idx, file_info in enumerate(file_list):
                 # Get priority and progress for this file
-                priority_value = (file_priorities[idx]
-                                  if idx < len(file_priorities) else 4)
-                progress = (file_progress[idx]
-                            if idx < len(file_progress) else 0.0)
+                priority_value = (
+                    file_priorities[idx] if idx < len(file_priorities) else 4
+                )
+                progress = (
+                    file_progress[idx] if idx < len(file_progress) else 0.0
+                )
 
-                files.append(self._file_to_dto(
-                    file_info,
-                    index=idx,
-                    priority_value=priority_value,
-                    progress=progress
-                ))
+                files.append(
+                    self._file_to_dto(
+                        file_info,
+                        index=idx,
+                        priority_value=priority_value,
+                        progress=progress,
+                    )
+                )
 
         peers = []
         for p in torrent_data.get("peers", []):
@@ -482,7 +526,9 @@ class DelugeClient(BaseClient):
             downloaded_ever=t.get("all_time_download"),
             uploaded_ever=t.get("total_uploaded"),
             ratio=t.get("ratio"),
-            error_string=(t.get("message") if t.get("message") != "OK" else None),
+            error_string=(
+                t.get("message") if t.get("message") != "OK" else None
+            ),
             added_date=(datetime.fromtimestamp(t.get("time_added"))),
             start_date=None,
             done_date=(
@@ -506,17 +552,17 @@ class DelugeClient(BaseClient):
     @log_time
     def add_torrent(self, value: str) -> None:
         """Add a torrent from magnet link, HTTP URL, or file path."""
-        if value.startswith('magnet:'):
+        if value.startswith("magnet:"):
             # Magnet link - use existing method
             self._call("core.add_torrent_magnet", [value, {}])
-        elif value.startswith(('http://', 'https://')):
+        elif value.startswith(("http://", "https://")):
             # HTTP/HTTPS URL - download and add as file
             self._add_torrent_from_url(value)
         else:
             # Local file path
             file = os.path.expanduser(value)
-            with open(file, 'rb') as f:
-                file_data = base64.b64encode(f.read()).decode('utf-8')
+            with open(file, "rb") as f:
+                file_data = base64.b64encode(f.read()).decode("utf-8")
                 self._call("core.add_torrent_file", ["", file_data, {}])
 
     def _add_torrent_from_url(self, url: str) -> None:
@@ -542,13 +588,13 @@ class DelugeClient(BaseClient):
 
                 # Validate it's actually a torrent file
                 # (bencoded, starts with 'd')
-                if not torrent_data or torrent_data[0:1] != b'd':
+                if not torrent_data or torrent_data[0:1] != b"d":
                     raise ClientError(
                         "Downloaded file is not a valid torrent file"
                     )
 
                 # Encode and add to Deluge
-                file_data = base64.b64encode(torrent_data).decode('utf-8')
+                file_data = base64.b64encode(torrent_data).decode("utf-8")
                 self._call("core.add_torrent_file", ["", file_data, {}])
 
         except urllib.error.HTTPError as e:
@@ -563,8 +609,7 @@ class DelugeClient(BaseClient):
             raise ClientError(f"Error adding torrent from URL: {e}")
 
     @log_time
-    def start_torrent(self, torrent_ids: int | str | list[int | str]
-                      ) -> None:
+    def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Start one or more torrents."""
         if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
@@ -574,8 +619,7 @@ class DelugeClient(BaseClient):
         self._call("core.resume_torrent", [torrent_ids])
 
     @log_time
-    def stop_torrent(self, torrent_ids: int | str | list[int | str]
-                     ) -> None:
+    def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Stop one or more torrents."""
         if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
@@ -585,8 +629,11 @@ class DelugeClient(BaseClient):
         self._call("core.pause_torrent", [torrent_ids])
 
     @log_time
-    def remove_torrent(self, torrent_ids: int | str | list[int | str],
-                       delete_data: bool = False) -> None:
+    def remove_torrent(
+        self,
+        torrent_ids: int | str | list[int | str],
+        delete_data: bool = False,
+    ) -> None:
         """Remove one or more torrents."""
         if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
@@ -604,16 +651,14 @@ class DelugeClient(BaseClient):
             # This can happen with older Deluge versions
             for torrent_id in torrent_ids:
                 try:
-                    self._call("core.remove_torrent",
-                               [torrent_id, delete_data])
+                    self._call("core.remove_torrent", [torrent_id, delete_data])
                 except Exception:
                     # Ignore errors for individual torrents that can't be
                     # removed (e.g., already removed, or protected by plugin)
                     pass
 
     @log_time
-    def verify_torrent(self, torrent_ids: int | str | list[int | str]
-                       ) -> None:
+    def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         """Verify one or more torrents."""
         if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
@@ -623,8 +668,9 @@ class DelugeClient(BaseClient):
         self._call("core.force_recheck", [torrent_ids])
 
     @log_time
-    def reannounce_torrent(self, torrent_ids: int | str | list[int | str]
-                           ) -> None:
+    def reannounce_torrent(
+        self, torrent_ids: int | str | list[int | str]
+    ) -> None:
         """Reannounce one or more torrents to their trackers."""
         if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
@@ -636,7 +682,7 @@ class DelugeClient(BaseClient):
     @log_time
     def start_all_torrents(self) -> None:
         """Start all torrents."""
-        torrents_data = self._call("core.get_torrents_status", [{}, ['hash']])
+        torrents_data = self._call("core.get_torrents_status", [{}, ["hash"]])
         torrent_ids = list(torrents_data.keys())
         if torrent_ids:
             self._call("core.resume_torrent", [torrent_ids])
@@ -644,14 +690,15 @@ class DelugeClient(BaseClient):
     @log_time
     def stop_all_torrents(self) -> None:
         """Stop all torrents."""
-        torrents_data = self._call("core.get_torrents_status", [{}, ['hash']])
+        torrents_data = self._call("core.get_torrents_status", [{}, ["hash"]])
         torrent_ids = list(torrents_data.keys())
         if torrent_ids:
             self._call("core.pause_torrent", [torrent_ids])
 
     @log_time
-    def update_labels(self, torrent_ids: int | str | list[int | str],
-                      labels: list[str]) -> None:
+    def update_labels(
+        self, torrent_ids: int | str | list[int | str], labels: list[str]
+    ) -> None:
         """Update labels/tags for one or more torrents.
 
         Note: Deluge supports labels that acts like categories.
@@ -677,8 +724,9 @@ class DelugeClient(BaseClient):
                 # Use move_completed_path as save_path if it's set
                 # Only include path if move_completed is enabled
                 save_path = None
-                if (options.get("apply_move_completed") and
-                        options.get("move_completed_path")):
+                if options.get("apply_move_completed") and options.get(
+                    "move_completed_path"
+                ):
                     save_path = options["move_completed_path"]
 
                 categories.append(CategoryDTO(name=label, save_path=save_path))
@@ -689,8 +737,9 @@ class DelugeClient(BaseClient):
             return []
 
     @log_time
-    def set_category(self, torrent_ids: int | str | list[int | str],
-                     category: str | None) -> None:
+    def set_category(
+        self, torrent_ids: int | str | list[int | str], category: str | None
+    ) -> None:
         """Set category for one or more torrents.
 
         Note: Deluge uses labels which function as categories.
@@ -702,15 +751,15 @@ class DelugeClient(BaseClient):
         try:
             for torrent_id in torrent_ids:
                 label_value = category if category else ""
-                self._call("label.set_torrent",
-                           [str(torrent_id), label_value])
+                self._call("label.set_torrent", [str(torrent_id), label_value])
         except Exception:
             # If Label plugin is not enabled, silently fail
             pass
 
     @log_time
-    def edit_torrent(self, torrent_id: int | str, name: str, location: str
-                     ) -> None:
+    def edit_torrent(
+        self, torrent_id: int | str, name: str, location: str
+    ) -> None:
         """Edit torrent name and location."""
         torrent = self.torrent(torrent_id)
 
@@ -729,8 +778,9 @@ class DelugeClient(BaseClient):
         pass
 
     @log_time
-    def set_priority(self, torrent_ids: int | str | list[int | str],
-                     priority: int) -> None:
+    def set_priority(
+        self, torrent_ids: int | str | list[int | str], priority: int
+    ) -> None:
         """Set bandwidth priority for one or more torrents.
 
         Note: Deluge doesn't support torrent priorities.
@@ -738,8 +788,9 @@ class DelugeClient(BaseClient):
         pass
 
     @log_time
-    def set_file_priority(self, torrent_id: int | str, file_ids: list[int],
-                          priority: FilePriority) -> None:
+    def set_file_priority(
+        self, torrent_id: int | str, file_ids: list[int], priority: FilePriority
+    ) -> None:
         """Set download priority for files within a torrent."""
         # Map FilePriority enum to Deluge priority values
         # Deluge uses 0=Skip, 1=Low, 4=Normal, 7=High
@@ -756,8 +807,9 @@ class DelugeClient(BaseClient):
         # of priorities for all files, so we need to:
 
         # Get current file priorities
-        torrent_data = self._call("core.get_torrent_status",
-                                  [str(torrent_id), ["file_priorities"]])
+        torrent_data = self._call(
+            "core.get_torrent_status", [str(torrent_id), ["file_priorities"]]
+        )
         current_priorities = torrent_data.get("file_priorities", [])
 
         # Update priorities for specified files
@@ -767,5 +819,7 @@ class DelugeClient(BaseClient):
                 new_priorities[file_id] = deluge_priority
 
         # Set all file priorities
-        self._call("core.set_torrent_file_priorities",
-                   [str(torrent_id), new_priorities])
+        self._call(
+            "core.set_torrent_file_priorities",
+            [str(torrent_id), new_priorities],
+        )

@@ -4,15 +4,26 @@ import os
 import pathlib
 from datetime import datetime
 
-from transmission_rpc import Torrent
 from transmission_rpc import Client as TransmissionRPCClient
+from transmission_rpc import Torrent
 
-from ...util.misc import is_torrent_link
 from ...util.decorator import log_time
-from ..models import (CategoryDTO, TorrentDTO, TorrentDetailDTO, FileDTO,
-                      PeerDTO, TrackerDTO, PeerState, FilePriority)
+from ...util.misc import is_torrent_link
 from ..base import BaseClient
-from ..models import ClientMeta, ClientStats, ClientSession, ClientError
+from ..models import (
+    CategoryDTO,
+    ClientError,
+    ClientMeta,
+    ClientSession,
+    ClientStats,
+    FileDTO,
+    FilePriority,
+    PeerDTO,
+    PeerState,
+    TorrentDetailDTO,
+    TorrentDTO,
+    TrackerDTO,
+)
 
 
 class TransmissionClient(BaseClient):
@@ -28,22 +39,20 @@ class TransmissionClient(BaseClient):
         0: "Inactive",
         1: "Waiting",
         2: "Queued",
-        3: "Active"
+        3: "Active",
     }
 
     @log_time
-    def __init__(self,
-                 host: str, port: str,
-                 username: str = None, password: str = None):
-
-        self.client = TransmissionRPCClient(host=host,
-                                            port=port,
-                                            username=username,
-                                            password=password)
+    def __init__(
+        self, host: str, port: str, username: str = None, password: str = None
+    ):
+        self.client = TransmissionRPCClient(
+            host=host, port=port, username=username, password=password
+        )
 
     @log_time
     def capable(self, capability_code: str) -> bool:
-        if capability_code == 'category':
+        if capability_code == "category":
             return False
 
         return True
@@ -51,8 +60,8 @@ class TransmissionClient(BaseClient):
     @log_time
     def meta(self) -> ClientMeta:
         return {
-                'name': 'Transmission',
-                'version': self.client.get_session().version
+            "name": "Transmission",
+            "version": self.client.get_session().version,
         }
 
     @log_time
@@ -60,79 +69,97 @@ class TransmissionClient(BaseClient):
         s = self.client.session_stats()
 
         return {
-                'current_uploaded_bytes': s.current_stats.uploaded_bytes,
-                'current_downloaded_bytes': s.current_stats.downloaded_bytes,
-                'current_ratio': self._calculate_ratio(
-                    s.current_stats.downloaded_bytes,
-                    s.current_stats.uploaded_bytes),
-                'current_active_seconds': s.current_stats.seconds_active,
-                'current_waste': None,
-                'current_connected_peers': None,
-                'total_uploaded_bytes': s.cumulative_stats.uploaded_bytes,
-                'total_downloaded_bytes': s.cumulative_stats.downloaded_bytes,
-                'total_ratio': self._calculate_ratio(
-                    s.cumulative_stats.downloaded_bytes,
-                    s.cumulative_stats.uploaded_bytes),
-                'total_active_seconds': s.cumulative_stats.seconds_active,
-                'total_started_count': s.cumulative_stats.session_count,
-                'cache_read_hits': None,
-                'cache_total_buffers_size': None,
-                'perf_write_cache_overload': None,
-                'perf_read_cache_overload': None,
-                'perf_queued_io_jobs': None,
-                'perf_average_time_queue': None,
-                'perf_total_queued_size': None,
-                }
+            "current_uploaded_bytes": s.current_stats.uploaded_bytes,
+            "current_downloaded_bytes": s.current_stats.downloaded_bytes,
+            "current_ratio": self._calculate_ratio(
+                s.current_stats.downloaded_bytes, s.current_stats.uploaded_bytes
+            ),
+            "current_active_seconds": s.current_stats.seconds_active,
+            "current_waste": None,
+            "current_connected_peers": None,
+            "total_uploaded_bytes": s.cumulative_stats.uploaded_bytes,
+            "total_downloaded_bytes": s.cumulative_stats.downloaded_bytes,
+            "total_ratio": self._calculate_ratio(
+                s.cumulative_stats.downloaded_bytes,
+                s.cumulative_stats.uploaded_bytes,
+            ),
+            "total_active_seconds": s.cumulative_stats.seconds_active,
+            "total_started_count": s.cumulative_stats.session_count,
+            "cache_read_hits": None,
+            "cache_total_buffers_size": None,
+            "perf_write_cache_overload": None,
+            "perf_read_cache_overload": None,
+            "perf_queued_io_jobs": None,
+            "perf_average_time_queue": None,
+            "perf_total_queued_size": None,
+        }
 
     @log_time
     def session(self, torrents: list[TorrentDTO]) -> ClientSession:
-
         s = self.client.get_session()
         stats = self.client.session_stats()
 
         counts = self._count_torrents_by_status(torrents)
 
         return {
-                'download_dir': s.download_dir,
-                'download_dir_free_space': s.download_dir_free_space,
-                'upload_speed': stats.upload_speed,
-                'download_speed': stats.download_speed,
-                'alt_speed_enabled': s.alt_speed_enabled,
-                # Transmission returns KB/s - convert to bytes/s for consistency
-                'alt_speed_up': s.alt_speed_up * 1000,
-                'alt_speed_down': s.alt_speed_down * 1000,
-
-                'torrents_complete_size': counts['complete_size'],
-                'torrents_total_size': counts['total_size'],
-
-                'torrents_count': counts['count'],
-                'torrents_down': counts['down'],
-                'torrents_seed': counts['seed'],
-                'torrents_check': counts['check'],
-                'torrents_stop': counts['stop'],
+            "download_dir": s.download_dir,
+            "download_dir_free_space": s.download_dir_free_space,
+            "upload_speed": stats.upload_speed,
+            "download_speed": stats.download_speed,
+            "alt_speed_enabled": s.alt_speed_enabled,
+            # Transmission returns KB/s - convert to bytes/s for consistency
+            "alt_speed_up": s.alt_speed_up * 1000,
+            "alt_speed_down": s.alt_speed_down * 1000,
+            "torrents_complete_size": counts["complete_size"],
+            "torrents_total_size": counts["total_size"],
+            "torrents_count": counts["count"],
+            "torrents_down": counts["down"],
+            "torrents_seed": counts["seed"],
+            "torrents_check": counts["check"],
+            "torrents_stop": counts["stop"],
         }
 
     @log_time
     def preferences(self) -> dict[str, str]:
         session_dict = self.client.get_session().fields
 
-        excluded_prefixes = ('units', 'version')
-        filtered = {k: v for k, v in session_dict.items()
-                    if not k.startswith(excluded_prefixes)}
+        excluded_prefixes = ("units", "version")
+        filtered = {
+            k: v
+            for k, v in session_dict.items()
+            if not k.startswith(excluded_prefixes)
+        }
 
         return dict(sorted(filtered.items()))
 
     @log_time
     def torrents(self) -> list[TorrentDTO]:
         torrents = self.client.get_torrents(
-                arguments=['id', 'name', 'status', 'totalSize', 'downloadDir',
-                           'left_until_done', 'percentDone', 'eta',
-                           'rateUpload', 'rateDownload', 'uploadRatio',
-                           'sizeWhenDone', 'leftUntilDone', 'addedDate',
-                           'activityDate', 'queuePosition', 'peersConnected',
-                           'peersGettingFromUs', 'peersSendingToUs',
-                           'bandwidthPriority', 'uploadedEver', 'labels']
-                )
+            arguments=[
+                "id",
+                "name",
+                "status",
+                "totalSize",
+                "downloadDir",
+                "left_until_done",
+                "percentDone",
+                "eta",
+                "rateUpload",
+                "rateDownload",
+                "uploadRatio",
+                "sizeWhenDone",
+                "leftUntilDone",
+                "addedDate",
+                "activityDate",
+                "queuePosition",
+                "peersConnected",
+                "peersGettingFromUs",
+                "peersSendingToUs",
+                "bandwidthPriority",
+                "uploadedEver",
+                "labels",
+            ]
+        )
 
         return [self._torrent_to_dto(t) for t in torrents]
 
@@ -161,21 +188,21 @@ class TransmissionClient(BaseClient):
         self.client.stop_torrent(torrent_ids)
 
     @log_time
-    def remove_torrent(self,
-                       torrent_ids: int | str | list[int | str],
-                       delete_data: bool = False) -> None:
-
-        self.client.remove_torrent(torrent_ids,
-                                   delete_data=delete_data)
+    def remove_torrent(
+        self,
+        torrent_ids: int | str | list[int | str],
+        delete_data: bool = False,
+    ) -> None:
+        self.client.remove_torrent(torrent_ids, delete_data=delete_data)
 
     @log_time
     def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         self.client.verify_torrent(torrent_ids)
 
     @log_time
-    def reannounce_torrent(self,
-                           torrent_ids: int | str | list[int | str]) -> None:
-
+    def reannounce_torrent(
+        self, torrent_ids: int | str | list[int | str]
+    ) -> None:
         self.client.reannounce_torrent(torrent_ids)
 
     @log_time
@@ -184,19 +211,17 @@ class TransmissionClient(BaseClient):
 
     @log_time
     def stop_all_torrents(self) -> None:
-        torrents = self.client.get_torrents(arguments=['id'])
+        torrents = self.client.get_torrents(arguments=["id"])
         self.stop_torrent([t.id for t in torrents])
 
     @log_time
-    def update_labels(self,
-                      torrent_ids: int | str | list[int | str],
-                      labels: list[str]) -> None:
-
+    def update_labels(
+        self, torrent_ids: int | str | list[int | str], labels: list[str]
+    ) -> None:
         if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
 
-        self.client.change_torrent(torrent_ids,
-                                   labels=labels)
+        self.client.change_torrent(torrent_ids, labels=labels)
 
     @log_time
     def get_categories(self) -> list[CategoryDTO]:
@@ -207,8 +232,9 @@ class TransmissionClient(BaseClient):
         raise ClientError("Transmission doesn't support categories")
 
     @log_time
-    def set_category(self, torrent_ids: int | str | list[int | str],
-                     category: str | None) -> None:
+    def set_category(
+        self, torrent_ids: int | str | list[int | str], category: str | None
+    ) -> None:
         """Set category for one or more torrents.
 
         Note: Transmission does not support categories.
@@ -216,15 +242,13 @@ class TransmissionClient(BaseClient):
         raise ClientError("Transmission doesn't support categories")
 
     @log_time
-    def edit_torrent(self, torrent_id: int | str,
-                     name: str, location: str) -> None:
-
+    def edit_torrent(
+        self, torrent_id: int | str, name: str, location: str
+    ) -> None:
         torrent = self.torrent(torrent_id)
 
         if name != torrent.name:
-            self.client.rename_torrent_path(torrent_id,
-                                            torrent.name,
-                                            name)
+            self.client.rename_torrent_path(torrent_id, torrent.name, name)
 
         if location != torrent.download_dir:
             self.client.move_torrent_data(torrent_id, location)
@@ -236,8 +260,9 @@ class TransmissionClient(BaseClient):
         return not alt_speed_enabled
 
     @log_time
-    def set_priority(self, torrent_ids: int | str | list[int | str],
-                     priority: int) -> None:
+    def set_priority(
+        self, torrent_ids: int | str | list[int | str], priority: int
+    ) -> None:
         """Set bandwidth priority for one or more torrents."""
         if isinstance(torrent_ids, (int, str)):
             torrent_ids = [torrent_ids]
@@ -245,8 +270,9 @@ class TransmissionClient(BaseClient):
         self.client.change_torrent(torrent_ids, bandwidth_priority=priority)
 
     @log_time
-    def set_file_priority(self, torrent_id: int | str, file_ids: list[int],
-                          priority: FilePriority) -> None:
+    def set_file_priority(
+        self, torrent_id: int | str, file_ids: list[int], priority: FilePriority
+    ) -> None:
         """Set download priority for files within a torrent."""
         # Transmission uses different arguments based on priority:
         # - files_wanted/files_unwanted for selection
@@ -255,16 +281,16 @@ class TransmissionClient(BaseClient):
 
         match priority:
             case FilePriority.NOT_DOWNLOADING:
-                args['files_unwanted'] = file_ids
+                args["files_unwanted"] = file_ids
             case FilePriority.LOW:
-                args['files_wanted'] = file_ids
-                args['priority_low'] = file_ids
+                args["files_wanted"] = file_ids
+                args["priority_low"] = file_ids
             case FilePriority.MEDIUM:
-                args['files_wanted'] = file_ids
-                args['priority_normal'] = file_ids
+                args["files_wanted"] = file_ids
+                args["priority_normal"] = file_ids
             case FilePriority.HIGH:
-                args['files_wanted'] = file_ids
-                args['priority_high'] = file_ids
+                args["files_wanted"] = file_ids
+                args["priority_high"] = file_ids
 
         self.client.change_torrent(torrent_id, **args)
 
@@ -327,10 +353,12 @@ class TransmissionClient(BaseClient):
 
         direction = "Incoming" if peer.get("isIncoming", False) else "Outgoing"
 
-        dl_state = self._get_peer_state(peer['clientIsInterested'],
-                                        peer['clientIsChoked'])
-        ul_state = self._get_peer_state(peer['peerIsInterested'],
-                                        peer['peerIsChoked'])
+        dl_state = self._get_peer_state(
+            peer["clientIsInterested"], peer["clientIsChoked"]
+        )
+        ul_state = self._get_peer_state(
+            peer["peerIsInterested"], peer["peerIsChoked"]
+        )
 
         return PeerDTO(
             address=peer["address"],
@@ -358,14 +386,17 @@ class TransmissionClient(BaseClient):
             seeder_count=t.seeder_count if t.seeder_count >= 0 else None,
             leecher_count=t.leecher_count if t.leecher_count >= 0 else None,
             download_count=t.download_count if t.download_count >= 0 else None,
-            peer_count=t.last_announce_peer_count if t.last_announce_peer_count >= 0 else None,
-            status=self.TRACKER_ANNOUNCE_STATE.get(t.announce_state,
-                                                   self.TRACKER_STATUS_UNKNOWN),
+            peer_count=t.last_announce_peer_count
+            if t.last_announce_peer_count >= 0
+            else None,
+            status=self.TRACKER_ANNOUNCE_STATE.get(
+                t.announce_state, self.TRACKER_STATUS_UNKNOWN
+            ),
             message=t.last_announce_result,
             last_announce=self._ts_to_dt(t.last_announce_time),
             next_announce=self._ts_to_dt(t.next_announce_time),
             last_scrape=self._ts_to_dt(t.last_scrape_time),
-            next_scrape=self._ts_to_dt(t.next_scrape_time)
+            next_scrape=self._ts_to_dt(t.next_scrape_time),
         )
 
     @log_time
@@ -403,14 +434,14 @@ class TransmissionClient(BaseClient):
             files=files,
             peers=peers,
             trackers=trackers,
-            )
+        )
 
     @staticmethod
     @log_time
     def _calculate_ratio(downloaded: int, uploaded: int) -> float:
         """Calculate download ratio (zero div safe)."""
         if downloaded == 0:
-            return float('inf')
+            return float("inf")
         else:
             return uploaded / downloaded
 

@@ -1,17 +1,18 @@
 """Web search query input dialog."""
 
-from textual.binding import Binding, BindingType
-from textual.containers import Horizontal
-from textual.widgets import Input, Static, SelectionList
-from textual.widgets.selection_list import Selection
-from textual.app import ComposeResult
-from textual.screen import ModalScreen
 from typing import ClassVar
 
+from textual.app import ComposeResult
+from textual.binding import Binding, BindingType
+from textual.containers import Horizontal
+from textual.screen import ModalScreen
+from textual.widgets import Input, SelectionList, Static
+from textual.widgets.selection_list import Selection
+
 from ...search.models import StandardCategories
-from ..messages import WebSearchQuerySubmitted, Notification
-from ...util.decorator import log_time
 from ...ui.widget.common import VimSelectionList
+from ...util.decorator import log_time
+from ..messages import Notification, WebSearchQuerySubmitted
 
 
 class WebSearchQueryDialog(ModalScreen[None]):
@@ -44,17 +45,15 @@ class WebSearchQueryWidget(Static):
     @log_time
     def compose(self) -> ComposeResult:
         yield Input(
-            placeholder="Search for torrents...",
-            id="websearch-query-input"
+            placeholder="Search for torrents...", id="websearch-query-input"
         )
         with Horizontal():
             yield VimSelectionList[str](
-                *self._build_indexer_selections(),
-                id="websearch-indexers-list"
+                *self._build_indexer_selections(), id="websearch-indexers-list"
             )
             yield VimSelectionList[str](
                 *self._build_category_selections(),
-                id="websearch-categories-list"
+                id="websearch-categories-list",
             )
 
     def _build_indexer_selections(self) -> list[Selection]:
@@ -65,26 +64,28 @@ class WebSearchQueryWidget(Static):
         """
         selections = []
         for indexer in self.app.search.get_indexers():
-            selections.append(
-                Selection(indexer.name, indexer.id, True))
+            selections.append(Selection(indexer.name, indexer.id, True))
         return selections
 
     def _build_category_selections(self) -> list[Selection]:
         selections = []
         for category in StandardCategories.parent_categories():
             # Use category object as value instead of ID
-            selections.append(
-                Selection(category.full_path, category, True))
+            selections.append(Selection(category.full_path, category, True))
         return selections
 
     @log_time
     def on_mount(self) -> None:
         """Focus on input when dialog opens."""
-        self.border_title = 'Search torrents'
-        self.border_subtitle = ('(Enter) Search / (Tab) Switch / '
-                                '(Space) Toggle selection / (ESC) Close')
+        self.border_title = "Search torrents"
+        self.border_subtitle = (
+            "(Enter) Search / (Tab) Switch / "
+            "(Space) Toggle selection / (ESC) Close"
+        )
 
-        self.query_one("#websearch-indexers-list").border_title = "Search indexers"
+        self.query_one(
+            "#websearch-indexers-list"
+        ).border_title = "Search indexers"
         self.query_one("#websearch-categories-list").border_title = "Categories"
 
         input_widget = self.query_one("#websearch-query-input", Input)
@@ -99,31 +100,33 @@ class WebSearchQueryWidget(Static):
         query = input_widget.value.strip()
 
         if not query:
-            self.post_message(Notification(
-                "Please enter a search term",
-                "warning"))
+            self.post_message(
+                Notification("Please enter a search term", "warning")
+            )
             return
 
         # Get selected indexers
         indexers_list = self.query_one(
-            "#websearch-indexers-list", SelectionList)
+            "#websearch-indexers-list", SelectionList
+        )
         selected_indexers = list(indexers_list.selected)
 
         # Get selected categories (Category objects)
         categories_list = self.query_one(
-            "#websearch-categories-list", SelectionList)
+            "#websearch-categories-list", SelectionList
+        )
         selected_categories = list(categories_list.selected)
 
         if not selected_indexers:
-            self.post_message(Notification(
-                "Please select at least one indexer",
-                "warning"))
+            self.post_message(
+                Notification("Please select at least one indexer", "warning")
+            )
             return
 
         if not selected_categories:
-            self.post_message(Notification(
-                "Please select at least one category",
-                "warning"))
+            self.post_message(
+                Notification("Please select at least one category", "warning")
+            )
             return
 
         # If all categories are selected, pass None to search everything
@@ -132,9 +135,11 @@ class WebSearchQueryWidget(Static):
             selected_categories = None
 
         # Post message with query, selected indexers, selected Category objects
-        self.post_message(WebSearchQuerySubmitted(query,
-                                                  selected_indexers,
-                                                  selected_categories))
+        self.post_message(
+            WebSearchQuerySubmitted(
+                query, selected_indexers, selected_categories
+            )
+        )
 
         # Close dialog
         self.parent.dismiss()

@@ -1,17 +1,17 @@
 """Prowlarr torrent search provider implementation."""
 
+import json
 import logging
 import urllib.error
 import urllib.parse
-import json
 from datetime import datetime, timedelta
 from typing import Any
 
-from ..base import BaseSearchProvider
-from ..models import SearchResultDTO, Category, StandardCategories, IndexerDTO
 from ...util.decorator import log_time
+from ..base import BaseSearchProvider
+from ..models import Category, IndexerDTO, SearchResultDTO, StandardCategories
 
-logger = logging.getLogger('tewi')
+logger = logging.getLogger("tewi")
 
 
 class ProwlarrProvider(BaseSearchProvider):
@@ -22,9 +22,9 @@ class ProwlarrProvider(BaseSearchProvider):
     Documentation: https://github.com/Prowlarr/Prowlarr
     """
 
-    def __init__(self,
-                 prowlarr_url: str | None = None,
-                 api_key: str | None = None):
+    def __init__(
+        self, prowlarr_url: str | None = None, api_key: str | None = None
+    ):
         """Initialize Prowlarr provider with configuration.
 
         Args:
@@ -43,9 +43,9 @@ class ProwlarrProvider(BaseSearchProvider):
         self._cache_time: datetime | None = None
         self._cache_duration = timedelta(minutes=10)
 
-    def _validate_config(self,
-                         prowlarr_url: str | None,
-                         api_key: str | None) -> str | None:
+    def _validate_config(
+        self, prowlarr_url: str | None, api_key: str | None
+    ) -> str | None:
         """Validate configuration and return error message if invalid.
 
         Args:
@@ -56,11 +56,15 @@ class ProwlarrProvider(BaseSearchProvider):
             Error message string if invalid, None if valid
         """
         if not prowlarr_url or not prowlarr_url.strip():
-            return ("Prowlarr URL not configured. "
-                    "Set prowlarr_url in [search] section.")
+            return (
+                "Prowlarr URL not configured. "
+                "Set prowlarr_url in [search] section."
+            )
         if not api_key or not api_key.strip():
-            return ("Prowlarr API key not configured. "
-                    "Set prowlarr_api_key in [search] section.")
+            return (
+                "Prowlarr API key not configured. "
+                "Set prowlarr_api_key in [search] section."
+            )
         return None
 
     def id(self) -> str:
@@ -118,9 +122,9 @@ class ProwlarrProvider(BaseSearchProvider):
         Returns:
             Complete URL to fetch indexers list
         """
-        base_url = self.prowlarr_url.rstrip('/')
+        base_url = self.prowlarr_url.rstrip("/")
         endpoint = f"{base_url}/api/v1/indexer"
-        params = {'apikey': self.api_key}
+        params = {"apikey": self.api_key}
         return f"{endpoint}?{urllib.parse.urlencode(params)}"
 
     def _fetch_indexers(self, url: str) -> list:
@@ -137,15 +141,14 @@ class ProwlarrProvider(BaseSearchProvider):
         """
         try:
             with self._urlopen(url, timeout=10) as response:
-                return json.loads(response.read().decode('utf-8'))
+                return json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
                 raise Exception("Invalid Prowlarr API key")
             raise Exception(f"HTTP error {e.code}: {e.reason}")
         except urllib.error.URLError as e:
             raise Exception(
-                f"Cannot connect to Prowlarr at {self.prowlarr_url}: "
-                f"{e.reason}"
+                f"Cannot connect to Prowlarr at {self.prowlarr_url}: {e.reason}"
             )
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse Prowlarr JSON response: {e}")
@@ -162,19 +165,19 @@ class ProwlarrProvider(BaseSearchProvider):
         indexers = []
 
         # Sort indexers by name
-        indexers_data = sorted(data, key=lambda x: x.get('name', ''))
+        indexers_data = sorted(data, key=lambda x: x.get("name", ""))
 
         for indexer in indexers_data:
-            indexer_id = indexer.get('id')
-            indexer_name = indexer.get('name')
+            indexer_id = indexer.get("id")
+            indexer_name = indexer.get("name")
             # Only include enabled indexers with valid ID and Name
-            enable = indexer.get('enable', False)
+            enable = indexer.get("enable", False)
             if indexer_id and indexer_name and enable:
                 # Prefix with prowlarr: to distinguish from other providers
                 full_id = f"prowlarr:{indexer_id}"
-                indexers.append(IndexerDTO(
-                    full_id,
-                    f"{indexer_name} [dim](Prowlarr)[/]"))
+                indexers.append(
+                    IndexerDTO(full_id, f"{indexer_name} [dim](Prowlarr)[/]")
+                )
         return indexers
 
     @property
@@ -182,9 +185,9 @@ class ProwlarrProvider(BaseSearchProvider):
         return "Prowlarr"
 
     @log_time
-    def _search_impl(self, query: str,
-                     categories: list[Category] | None = None) -> list[
-            SearchResultDTO]:
+    def _search_impl(
+        self, query: str, categories: list[Category] | None = None
+    ) -> list[SearchResultDTO]:
         """Search Prowlarr for torrents across indexers.
 
         Args:
@@ -229,26 +232,26 @@ class ProwlarrProvider(BaseSearchProvider):
         Returns:
             Complete URL with parameters
         """
-        base_url = self.prowlarr_url.rstrip('/')
+        base_url = self.prowlarr_url.rstrip("/")
         endpoint = f"{base_url}/api/v1/search"
 
         # Build query parameters list (for repeated params)
         params_list = [
-            ('apikey', self.api_key),
-            ('query', query.strip()),
+            ("apikey", self.api_key),
+            ("query", query.strip()),
         ]
 
         # Add indexer filter if specific indexers selected
         # Prowlarr expects multiple 'indexerIds' params, not comma-separated
         if self._selected_indexers:
             for indexer_id in self._selected_indexers:
-                params_list.append(('indexerIds', indexer_id))
+                params_list.append(("indexerIds", indexer_id))
 
         # Add category filter if specified
         # Prowlarr expects multiple 'categories' params
         if self._selected_categories:
             for cat in self._selected_categories:
-                params_list.append(('categories', str(cat.id)))
+                params_list.append(("categories", str(cat.id)))
 
         return f"{endpoint}?{urllib.parse.urlencode(params_list)}"
 
@@ -267,15 +270,16 @@ class ProwlarrProvider(BaseSearchProvider):
         try:
             logger.debug(f"Prowlarr: requesting URL: {url}")
             with self._urlopen(url) as response:
-                return json.loads(response.read().decode('utf-8'))
+                return json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             # Read error response body for more details
-            error_body = ''
+            error_body = ""
             try:
                 if e.fp:
-                    error_body = e.fp.read().decode('utf-8')
-                    logger.error(f"Prowlarr HTTP {e.code} response: "
-                                 f"{error_body}")
+                    error_body = e.fp.read().decode("utf-8")
+                    logger.error(
+                        f"Prowlarr HTTP {e.code} response: {error_body}"
+                    )
             except Exception:
                 pass
             if e.code in (401, 403):
@@ -283,8 +287,7 @@ class ProwlarrProvider(BaseSearchProvider):
             raise Exception(f"HTTP error {e.code}: {e.reason}")
         except urllib.error.URLError as e:
             raise Exception(
-                f"Cannot connect to Prowlarr at {self.prowlarr_url}: "
-                f"{e.reason}"
+                f"Cannot connect to Prowlarr at {self.prowlarr_url}: {e.reason}"
             )
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse Prowlarr response: {e}")
@@ -308,8 +311,7 @@ class ProwlarrProvider(BaseSearchProvider):
                 results.append(result)
         return results
 
-    def _parse_result(self,
-                      result: dict[str, Any]) -> SearchResultDTO | None:
+    def _parse_result(self, result: dict[str, Any]) -> SearchResultDTO | None:
         """Parse a single result from Prowlarr API response.
 
         Args:
@@ -320,9 +322,9 @@ class ProwlarrProvider(BaseSearchProvider):
         """
         try:
             # Allow None for info_hash
-            info_hash_raw = result.get('infoHash', '')
+            info_hash_raw = result.get("infoHash", "")
             info_hash = info_hash_raw.strip() if info_hash_raw else None
-            if info_hash == '':
+            if info_hash == "":
                 info_hash = None
 
             # Extract both link types
@@ -334,21 +336,21 @@ class ProwlarrProvider(BaseSearchProvider):
                 return None
 
             # Detect freeleech
-            freeleech = 'freeleech' in result.get('indexerFlags')
+            freeleech = "freeleech" in result.get("indexerFlags")
 
             # Extract downloads from grabs field
             downloads = None
-            grabs = result.get('grabs')
+            grabs = result.get("grabs")
             if grabs is not None:
                 downloads = int(grabs)
 
             return SearchResultDTO(
-                title=result.get('title', 'Unknown'),
+                title=result.get("title", "Unknown"),
                 categories=self._map_prowlarr_category(result),
-                seeders=int(result.get('seeders', 0)),
-                leechers=int(result.get('leechers', 0)),
+                seeders=int(result.get("seeders", 0)),
+                leechers=int(result.get("leechers", 0)),
                 downloads=downloads,
-                size=int(result.get('size', 0)),
+                size=int(result.get("size", 0)),
                 files_count=self._get_files_count(result),
                 magnet_link=magnet_link,
                 info_hash=info_hash,
@@ -358,14 +360,14 @@ class ProwlarrProvider(BaseSearchProvider):
                 page_url=self._get_page_url(result),
                 torrent_link=torrent_link,
                 freeleech=freeleech,
-                fields=self._build_fields(result)
+                fields=self._build_fields(result),
             )
         except (KeyError, ValueError, TypeError):
             return None
 
-    def _extract_magnet_link(self,
-                             result: dict[str, Any],
-                             info_hash: str | None) -> str | None:
+    def _extract_magnet_link(
+        self, result: dict[str, Any], info_hash: str | None
+    ) -> str | None:
         """Extract or generate magnet link from result.
 
         Priority: guid field (if magnet) → Generated from infoHash → None
@@ -378,22 +380,20 @@ class ProwlarrProvider(BaseSearchProvider):
             Magnet URI string or None if unavailable
         """
         # Prowlarr puts the actual magnet link in 'guid' field
-        guid_raw = result.get('guid', '')
-        guid = guid_raw.strip() if guid_raw else ''
-        if guid and guid.startswith('magnet:'):
+        guid_raw = result.get("guid", "")
+        guid = guid_raw.strip() if guid_raw else ""
+        if guid and guid.startswith("magnet:"):
             return guid
 
         # Generate magnet from info hash if available
         if info_hash:
             return self._build_magnet_link(
-                info_hash=info_hash,
-                name=result.get('title', 'Unknown')
+                info_hash=info_hash, name=result.get("title", "Unknown")
             )
 
         return None
 
-    def _extract_torrent_link(self,
-                              result: dict[str, Any]) -> str | None:
+    def _extract_torrent_link(self, result: dict[str, Any]) -> str | None:
         """Extract HTTP/HTTPS torrent file URL from result.
 
         Prowlarr provides magnetUrl as a download proxy link.
@@ -405,23 +405,23 @@ class ProwlarrProvider(BaseSearchProvider):
             HTTP/HTTPS URL or None if unavailable
         """
         # Try downloadUrl first (if exists)
-        link_raw = result.get('downloadUrl', '')
-        link = link_raw.strip() if link_raw else ''
-        if link and (link.startswith('http://') or
-                     link.startswith('https://')):
+        link_raw = result.get("downloadUrl", "")
+        link = link_raw.strip() if link_raw else ""
+        if link and (link.startswith("http://") or link.startswith("https://")):
             return link
 
         # Fall back to magnetUrl (Prowlarr's download proxy)
-        magnet_url_raw = result.get('magnetUrl', '')
-        magnet_url = magnet_url_raw.strip() if magnet_url_raw else ''
-        if magnet_url and (magnet_url.startswith('http://') or
-                           magnet_url.startswith('https://')):
+        magnet_url_raw = result.get("magnetUrl", "")
+        magnet_url = magnet_url_raw.strip() if magnet_url_raw else ""
+        if magnet_url and (
+            magnet_url.startswith("http://")
+            or magnet_url.startswith("https://")
+        ):
             return magnet_url
 
         return None
 
-    def _parse_publish_date(self,
-                            result: dict[str, Any]) -> datetime | None:
+    def _parse_publish_date(self, result: dict[str, Any]) -> datetime | None:
         """Parse publish date from result.
 
         Args:
@@ -430,14 +430,12 @@ class ProwlarrProvider(BaseSearchProvider):
         Returns:
             datetime object or None if parsing fails
         """
-        publish_date = result.get('publishDate')
+        publish_date = result.get("publishDate")
         if not publish_date:
             return None
 
         try:
-            return datetime.fromisoformat(
-                publish_date.replace('Z', '+00:00')
-            )
+            return datetime.fromisoformat(publish_date.replace("Z", "+00:00"))
         except (ValueError, AttributeError):
             return None
 
@@ -450,7 +448,7 @@ class ProwlarrProvider(BaseSearchProvider):
         Returns:
             Provider name string
         """
-        indexer = result.get('indexer', 'Unknown')
+        indexer = result.get("indexer", "Unknown")
         return f"{indexer} [dim](P)[/]"
 
     def _get_page_url(self, result: dict[str, Any]) -> str | None:
@@ -462,7 +460,7 @@ class ProwlarrProvider(BaseSearchProvider):
         Returns:
             Page URL or None
         """
-        return result.get('infoUrl')
+        return result.get("infoUrl")
 
     def _get_files_count(self, result: dict[str, Any]) -> int | None:
         """Get file count from result.
@@ -473,7 +471,7 @@ class ProwlarrProvider(BaseSearchProvider):
         Returns:
             File count as integer or None
         """
-        files_count = result.get('files')
+        files_count = result.get("files")
         if files_count is not None:
             return int(files_count)
         return None
@@ -493,26 +491,26 @@ class ProwlarrProvider(BaseSearchProvider):
         """
         # Fields already mapped to SearchResultDTO attributes
         excluded_fields = {
-            'title',           # -> title
-            'fileName',        # -> title
-            'categories',      # -> categories (objects, not IDs)
-            'seeders',         # -> seeders
-            'leechers',        # -> leechers
-            'grabs',           # -> downloads
-            'size',            # -> size
-            'files',           # -> files_count
-            'magnetUrl',       # -> torrent_link
-            'infoHash',        # -> info_hash
-            'publishDate',     # -> upload_date
-            'indexer',         # -> provider
-            'indexerId',       # -> provider
-            'infoUrl',         # -> page_url
-            'guid',            # -> magnet_link (actual magnet)
-            'downloadUrl',     # -> torrent_link
-            'sortTitle',       # internal field
-            'age',             # -> publish_date
-            'ageHours',        # -> publish_date
-            'ageMinutes',      # -> publish_date
+            "title",  # -> title
+            "fileName",  # -> title
+            "categories",  # -> categories (objects, not IDs)
+            "seeders",  # -> seeders
+            "leechers",  # -> leechers
+            "grabs",  # -> downloads
+            "size",  # -> size
+            "files",  # -> files_count
+            "magnetUrl",  # -> torrent_link
+            "infoHash",  # -> info_hash
+            "publishDate",  # -> upload_date
+            "indexer",  # -> provider
+            "indexerId",  # -> provider
+            "infoUrl",  # -> page_url
+            "guid",  # -> magnet_link (actual magnet)
+            "downloadUrl",  # -> torrent_link
+            "sortTitle",  # internal field
+            "age",  # -> publish_date
+            "ageHours",  # -> publish_date
+            "ageMinutes",  # -> publish_date
         }
 
         fields = {}
@@ -522,7 +520,7 @@ class ProwlarrProvider(BaseSearchProvider):
                 continue
 
             # Skip null/empty values
-            if value is None or value == '' or value == []:
+            if value is None or value == "" or value == []:
                 continue
 
             # Convert to string representation
@@ -534,8 +532,7 @@ class ProwlarrProvider(BaseSearchProvider):
 
         return fields if fields else None
 
-    def _map_prowlarr_category(self,
-                               result: dict[str, Any]) -> list[Category]:
+    def _map_prowlarr_category(self, result: dict[str, Any]) -> list[Category]:
         """Map Prowlarr category codes to Category objects.
 
         Prowlarr returns categories as array of objects with 'id' field.
@@ -546,16 +543,16 @@ class ProwlarrProvider(BaseSearchProvider):
         Returns:
             List of Category objects (may contain parent and subcategory)
         """
-        category_objects = result.get('categories', [])
+        category_objects = result.get("categories", [])
         if not category_objects:
             return []
 
         # Extract category IDs from category objects
         codes = []
         for cat_obj in category_objects:
-            if isinstance(cat_obj, dict) and 'id' in cat_obj:
+            if isinstance(cat_obj, dict) and "id" in cat_obj:
                 try:
-                    codes.append(int(cat_obj['id']))
+                    codes.append(int(cat_obj["id"]))
                 except (ValueError, TypeError):
                     pass
 
@@ -584,20 +581,20 @@ class ProwlarrProvider(BaseSearchProvider):
         Returns:
             Tuple of (display_name, display_value)
         """
-        if key == 'imdbId':
+        if key == "imdbId":
             if value:
-                return 'IMDB', f"https://www.imdb.com/title/tt{value}/"
+                return "IMDB", f"https://www.imdb.com/title/tt{value}/"
             else:
                 return None, None
-        elif key in ['tmdbId', 'tvMazeId', 'tvdbId']:
+        elif key in ["tmdbId", "tvMazeId", "tvdbId"]:
             if not value:
                 return None, None
-        elif key in ['protocol']:
+        elif key in ["protocol"]:
             return key.capitalize(), value
-        elif key == 'indexerFlags':
-            return 'Indexer Flags', value
-        elif key == 'posterUrl':
-            return 'Poster', value
+        elif key == "indexerFlags":
+            return "Indexer Flags", value
+        elif key == "posterUrl":
+            return "Poster", value
 
         return key, value
 
