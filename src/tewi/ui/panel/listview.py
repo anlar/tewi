@@ -43,7 +43,8 @@ from ..widget.torrent_item import (
 
 
 class TorrentListItem(ListItem):
-    """List item wrapper for TorrentItem with cached torrent ID for fast comparison."""
+    """List item wrapper for TorrentItem with cached torrent ID for fast
+    comparison."""
 
     def __init__(self, *args, torrent_id=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -113,14 +114,16 @@ class TorrentListViewPanel(ListView):
 
     @log_time
     def is_equal_to_page(self, torrents) -> bool:
-        """Check if current page displays the same torrents (optimized with cached IDs)."""
+        """Check if current page displays the same torrents (optimized with
+        cached IDs)."""
         items = self.children
 
         if len(torrents) != len(items):
             return False
 
         for i, torrent in enumerate(torrents):
-            # Use cached torrent_id for fast comparison instead of accessing widget internals
+            # Use cached torrent_id for fast comparison instead of
+            # accessing widget internals
             if torrent.id != items[i].torrent_id:
                 return False
 
@@ -181,10 +184,12 @@ class TorrentListViewPanel(ListView):
     def draw_page(self, torrents, page, torrent_id, force) -> None:
         """Draw a page of torrents with optimized widget recycling.
 
-        Performance optimization: Reuse existing widgets when possible instead of
-        recreating them, which is expensive (100+ ms for 50 items).
+        Performance optimization: Reuse existing widgets when possible
+        instead of recreating them, which is expensive (100+ ms for 50
+        items).
         """
-        # self.post_message(Notification(f"draw_page: page {page}, torrent_id {torrent_id}"))
+        # self.post_message(Notification(
+        #     f"draw_page: page {page}, torrent_id {torrent_id}"))
 
         page_torrents = torrents[
             page * self.page_size : (page * self.page_size + self.page_size)
@@ -240,7 +245,8 @@ class TorrentListViewPanel(ListView):
                     # self.post_message(Notification(f"HL: {t.name}"))
 
                 torrent_widgets.append(list_item)
-                # self.post_message(Notification(f"ITEM: {list_item.highlighted}"))
+                # self.post_message(
+                #     Notification(f"ITEM: {list_item.highlighted}"))
 
             self.clear()
             self.insert(0, torrent_widgets)

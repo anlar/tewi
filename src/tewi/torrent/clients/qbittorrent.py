@@ -236,7 +236,8 @@ class QBittorrentClient(BaseClient):
             peers_getting_from_us=torrent.num_leechs,
             peers_sending_to_us=torrent.num_seeds,
             uploaded_ever=torrent.uploaded,
-            priority=None,  # qBittorrent doesn't have whole-torrent priority (like Transmission)
+            # qBittorrent doesn't have whole-torrent priority
+            priority=None,
             added_date=(
                 datetime.fromtimestamp(torrent.added_on)
                 if torrent.added_on > 0
@@ -354,7 +355,8 @@ class QBittorrentClient(BaseClient):
     1 - Tracker has not been contacted yet
     2 - Tracker has been contacted and is working
     3 - Tracker is updating
-    4 - Tracker has been contacted, but it is not working (or doesn't send proper replies)
+    4 - Tracker has been contacted, but it is not working (or doesn't
+        send proper replies)
     """
 
     @log_time
@@ -424,7 +426,8 @@ class QBittorrentClient(BaseClient):
             downloaded_ever=torrent.downloaded,
             uploaded_ever=torrent.uploaded,
             ratio=torrent.ratio,
-            error_string="",  # qBittorrent doesn't provide error string in the same way
+            # qBittorrent doesn't provide error string in the same way
+            error_string="",
             added_date=(
                 datetime.fromtimestamp(torrent.added_on)
                 if torrent.added_on > 0

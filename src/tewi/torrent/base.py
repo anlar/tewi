@@ -89,7 +89,8 @@ class BaseClient(ABC):
         """Get test torrent list (for performance testing).
 
         Args:
-            target_count: Target number of test torrents to generate (approximate)
+            target_count: Target number of test torrents to generate
+                (approximate)
 
         Returns:
             List of duplicated TorrentDTO objects (~target_count items)

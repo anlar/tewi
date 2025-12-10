@@ -161,8 +161,8 @@ class ClientMeta(TypedDict):
 class ClientStats(TypedDict):
     """Statistics about current and cumulative session data.
 
-    Note: All fields are optional as some clients may not provide certain statistics.
-    Fields that are None will be displayed as "N/A" in the UI.
+    Note: All fields are optional as some clients may not provide certain
+    statistics. Fields that are None will be displayed as "N/A" in the UI.
     """
 
     current_uploaded_bytes: int | None

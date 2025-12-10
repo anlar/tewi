@@ -76,7 +76,8 @@ class HelpWidget(Static):
         # Sort and combine keys for each command group
         rows = []
         for (category, command), keys in command_groups.items():
-            # Sort keys: single-char first, then multi-char (both alphabetically)
+            # Sort keys: single-char first, then multi-char
+            # (both alphabetically)
             single_char = sorted([k for k in keys if len(k) == 1])
             multi_char = sorted([k for k in keys if len(k) > 1])
             sorted_keys = single_char + multi_char

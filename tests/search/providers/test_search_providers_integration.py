@@ -188,7 +188,8 @@ class BaseProviderIntegrationTest(ABC):
             categories: List of Category objects
             valid_categories: Set of valid Category objects
         """
-        # Empty categories list is allowed (for providers without category support)
+        # Empty categories list is allowed (for providers without
+        # category support)
         if not categories:
             return
 
@@ -315,7 +316,8 @@ class TestNyaaProviderIntegration(BaseProviderIntegrationTest):
         return "anime"
 
     def get_valid_categories(self) -> set:
-        # Nyaa categories are now mapped to Jackett categories based on categoryId
+        # Nyaa categories are now mapped to Jackett categories based on
+        # categoryId
         return {
             # Anime categories
             StandardCategories.TV_ANIME,

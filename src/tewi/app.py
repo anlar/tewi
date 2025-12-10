@@ -407,7 +407,7 @@ class MainApp(App):
     def handle_change_torrent_priority_command(
         self, event: ChangeTorrentPriorityCommand
     ) -> None:
-        # Cycle through priorities: None/0 -> 1 (high) -> -1 (low) -> 0 (normal) -> 1 (high)...
+        # Cycle: None/0 -> 1 (high) -> -1 (low) -> 0 (normal) -> 1...
         if event.current_priority is None or event.current_priority == 0:
             new_priority = 1
             priority_label = "High"
@@ -459,7 +459,8 @@ class MainApp(App):
 
             self.post_message(
                 Notification(
-                    f"Updated torrent labels ({count_label}):\n{','.join(labels)}"
+                    f"Updated torrent labels ({count_label}):\n"
+                    f"{','.join(labels)}"
                 )
             )
         else:

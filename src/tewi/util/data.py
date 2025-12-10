@@ -68,7 +68,8 @@ def get_file_list(files: list[FileDTO]) -> list[dict[str, Any]]:
                         "size": print_size(f.size),
                         "done": f"{completion:.0f}%",
                         "priority": print_priority(f.priority),
-                        "file_priority": f.priority,  # Store raw priority for styling
+                        # Store raw priority for styling
+                        "file_priority": f.priority,
                         "depth": depth,  # Track tree depth
                         "folder_path": None,  # Files don't have folder_path
                     }
@@ -84,7 +85,8 @@ def get_file_list(files: list[FileDTO]) -> list[dict[str, Any]]:
                         "priority": None,
                         "file_priority": None,
                         "depth": depth,  # Track tree depth
-                        "folder_path": item_path,  # Store folder path for child detection
+                        # Store folder path for child detection
+                        "folder_path": item_path,
                     }
                 )
 

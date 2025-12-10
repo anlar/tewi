@@ -140,10 +140,12 @@ class TorrentItem(Static):
 
         if self.t_size_left > 0:
             size_current = print_size(self.t_size_total - self.t_size_left)
-            result = f"{size_current} / {size_total} | {(self.t_progress * 100):.1f}%"
+            progress = (self.t_progress * 100)
+            result = f"{size_current} / {size_total} | {progress:.1f}%"
 
             if self.t_eta:
-                result = f"{result} | {print_time(self.t_eta.total_seconds(), True, 1)}"
+                eta = print_time(self.t_eta.total_seconds(), True, 1)
+                result = f"{result} | {eta}"
         else:
             result = f"{size_total} | R: {self.t_ratio:.2f}"
 
@@ -320,7 +322,8 @@ class TorrentItemCard(TorrentItem):
 
         if self.t_size_left > 0:
             size_current = print_size(self.t_size_total - self.t_size_left)
-            result = f"{size_current} / {size_total} | {(self.t_progress * 100):.1f}%"
+            progress = (self.t_progress * 100)
+            result = f"{size_current} / {size_total} | {progress:.1f}%"
 
             if self.t_eta:
                 result = (

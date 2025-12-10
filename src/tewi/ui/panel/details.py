@@ -92,7 +92,10 @@ class TorrentInfoPanel(ScrollableContainer):
 
     @log_time
     def compose(self) -> ComposeResult:
-        self.border_subtitle = "(1/O) Overview / (2/F) Files / (3/P) Peers / (4/T) Trackers / (X) Close"
+        self.border_subtitle = (
+            "(1/O) Overview / (2/F) Files / (3/P) Peers / "
+            "(4/T) Trackers / (X) Close"
+        )
         with TabbedContent():
             with TabPane("[u]O[/]verview", id="tab-overview"):
                 with ScrollableContainer(id="overview"):
@@ -104,7 +107,8 @@ class TorrentInfoPanel(ScrollableContainer):
                             yield ReactiveLabel().data_bind(
                                 name=TorrentInfoPanel.t_name
                             )
-                            # Only show ID if client has separate ID field (not same as hash)
+                            # Only show ID if client has separate ID field
+                            # (not same as hash)
                             if self.capability_torrent_id:
                                 yield Static("ID:", classes="name")
                                 yield ReactiveLabel().data_bind(
@@ -158,9 +162,10 @@ class TorrentInfoPanel(ScrollableContainer):
                             )
 
                         with Horizontal(classes="overview-bottom"):
-                            # Should be the largest block in the bottom row for all other
-                            # blocks to use height=100% to maximize their heights,
-                            # that is why it is missing 'overview-small-block' CSS class
+                            # Should be the largest block in the bottom row
+                            # for all other blocks to use height=100% to
+                            # maximize their heights, that is why it is
+                            # missing 'overview-small-block' CSS class
                             # State panel - 25% width
                             with Container(
                                 classes="overview-block state-panel"
@@ -185,7 +190,8 @@ class TorrentInfoPanel(ScrollableContainer):
                                 )
 
                             with Container(
-                                classes="overview-block overview-small-block dates-panel"
+                                classes="overview-block overview-small-block "
+                                "dates-panel"
                             ) as block:
                                 block.border_title = "Dates"
 
@@ -207,7 +213,8 @@ class TorrentInfoPanel(ScrollableContainer):
                                 )
 
                             with Container(
-                                classes="overview-block overview-small-block peers-panel"
+                                classes="overview-block overview-small-block "
+                                "peers-panel"
                             ) as block:
                                 block.border_title = "Peers"
 
@@ -296,7 +303,8 @@ class TorrentInfoPanel(ScrollableContainer):
             self.t_name = torrent.name
             self.t_size = print_size(torrent.total_size)
             self.t_files = str(len(torrent.files))
-            self.t_pieces = f"{torrent.piece_count} @ {print_size(torrent.piece_size, size_bytes=1024)}"
+            piece_size = print_size(torrent.piece_size, size_bytes=1024)
+            self.t_pieces = f"{torrent.piece_count} @ {piece_size}"
 
             if torrent.is_private:
                 self.t_privacy = (
@@ -555,7 +563,8 @@ class TorrentInfoPanel(ScrollableContainer):
 
     @log_time
     def _determine_target_priority(self, file_ids: list[int]) -> FilePriority:
-        """Determine target priority by checking first file's current priority."""
+        """Determine target priority by checking first file's current
+        priority."""
         first_file = next(
             (f for f in self.r_torrent.files if f.id == file_ids[0]), None
         )

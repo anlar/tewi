@@ -73,7 +73,8 @@ class TestGetCountry:
             )
 
     def test_get_country_not_found_in_database(self):
-        """Test that IPs not found in database return None instead of technical error message"""
+        """Test that IPs not found in database return None instead of
+        technical error message"""
         # Documentation IP ranges (RFC 5737) that may not be in the database
         test_ips = [
             "198.51.100.1",  # TEST-NET-2
@@ -84,7 +85,8 @@ class TestGetCountry:
             result = get_country(ip)
             # Should not return the technical error message
             assert result != "<not found in database>", (
-                f"Should return None instead of '<not found in database>' for {ip}"
+                f"Should return None instead of "
+                f"'<not found in database>' for {ip}"
             )
             # Should return either a valid country name (string) or None
             assert result is None or isinstance(result, str), (
