@@ -4,6 +4,7 @@ from textual.screen import ModalScreen
 from textual.widgets import DataTable, Static
 
 from ...util.decorator import log_time
+from ..util import subtitle_keys
 
 
 class PreferencesDialog(ModalScreen[None]):
@@ -58,7 +59,7 @@ class PreferencesWidget(Static):
     @log_time
     def on_mount(self) -> None:
         self.border_title = "Torrent Client Preferences"
-        self.border_subtitle = "(X) Close"
+        self.border_subtitle = subtitle_keys(("X", "Close"))
 
         table = self.query_one(DataTable)
         table.add_columns("Name", "Value")

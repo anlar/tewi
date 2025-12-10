@@ -5,6 +5,7 @@ from textual.widgets import Input, Static
 
 from ....util.decorator import log_time
 from ...messages import SearchCompletedEvent
+from ...util import subtitle_keys
 
 
 class SearchDialog(ModalScreen):
@@ -26,7 +27,9 @@ class SearchWidget(Static):
     @log_time
     def on_mount(self) -> None:
         self.border_title = "Search"
-        self.border_subtitle = "(Enter) Search / (ESC) Close"
+        self.border_subtitle = subtitle_keys(
+            ("Enter", "Search"), ("ESC", "Close")
+        )
         self.query_one("#search-input").focus()
 
     @log_time

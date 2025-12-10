@@ -9,6 +9,7 @@ from ....util.decorator import log_time
 from ....util.misc import is_torrent_link
 from ....util.print import print_size
 from ...messages import AddTorrentCommand
+from ...util import subtitle_keys
 from ...widget.common import ReactiveLabel
 
 
@@ -46,7 +47,7 @@ class AddTorrentWidget(Static):
     @log_time
     def on_mount(self) -> None:
         self.border_title = "Add torrent (local file, magnet link, URL)"
-        self.border_subtitle = "(Enter) Add / (ESC) Close"
+        self.border_subtitle = subtitle_keys(("Enter", "Add"), ("ESC", "Close"))
 
         free_space = print_size(self.download_dir_free_space)
 

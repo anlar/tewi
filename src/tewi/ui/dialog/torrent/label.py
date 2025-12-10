@@ -5,6 +5,7 @@ from textual.widgets import Static, TextArea
 
 from ....util.decorator import log_time
 from ...messages import TorrentLabelsUpdatedEvent
+from ...util import subtitle_keys
 
 
 class UpdateTorrentLabelsDialog(ModalScreen):
@@ -38,7 +39,9 @@ class UpdateTorrentLabelsWidget(Static):
     @log_time
     def on_mount(self) -> None:
         self.border_title = "Update torrent labels (comma-separated list)"
-        self.border_subtitle = "(Enter) Update / (ESC) Close"
+        self.border_subtitle = subtitle_keys(
+            ("Enter", "Update"), ("ESC", "Close")
+        )
 
         text_area = self.query_one(TextArea)
 

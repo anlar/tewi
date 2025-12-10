@@ -7,6 +7,7 @@ from textual.widgets import DataTable, Static
 from ....util.decorator import log_time
 from ...messages import SortOrderUpdatedEvent
 from ...models import sort_orders
+from ...util import subtitle_keys
 
 
 class SortOrderDialog(ModalScreen):
@@ -27,7 +28,7 @@ class SortOrderWidget(Static):
     @log_time
     def on_mount(self) -> None:
         self.border_title = "Sort order"
-        self.border_subtitle = "(X) Close"
+        self.border_subtitle = subtitle_keys(("X", "Close"))
 
         table = self.query_one(DataTable)
         table.add_columns("Order", "Key (ASC | DESC)")

@@ -10,6 +10,7 @@ from textual.widgets import Markdown, Static
 
 from ...util.decorator import log_time
 from ..messages import AddTorrentFromWebSearchCommand, Notification
+from ..util import subtitle_keys
 
 
 class TorrentDetailsDialog(ModalScreen[None]):
@@ -135,4 +136,6 @@ class TorrentDetailsWidget(Static):
     def on_mount(self) -> None:
         """Set border title and subtitle, focus left column."""
         self.border_title = "Torrent Details"
-        self.border_subtitle = "(A) Add / (O) Open Link / (X) Close"
+        self.border_subtitle = subtitle_keys(
+            ("A", "Add"), ("O", "Open Link"), ("X", "Close")
+        )

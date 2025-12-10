@@ -6,6 +6,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Label, Static
 
 from ...util.decorator import log_time
+from ..util import subtitle_keys
 
 
 class ConfirmDialog(ModalScreen[bool]):
@@ -53,4 +54,4 @@ class ConfirmWidget(Static):
     @log_time
     def on_mount(self):
         self.border_title = "Confirmation"
-        self.border_subtitle = "(Y) Yes / (N) No"
+        self.border_subtitle = subtitle_keys(("Y", "Yes"), ("N", "No"))

@@ -26,6 +26,7 @@ from ..messages import (
     Notification,
     OpenTorrentListCommand,
 )
+from ..util import subtitle_keys
 from ..widget.common import ReactiveLabel
 
 
@@ -90,8 +91,9 @@ class TorrentWebSearch(Static):
     @log_time
     def on_mount(self) -> None:
         self.border_title = "Search Results"
-        self.border_subtitle = (
-            "(A) Add / (O) Open Link / (Enter) Details / (X) Close"
+        self.border_subtitle = subtitle_keys(
+            ("A", "Add"), ("O", "Open Link"),
+            ("Enter", "Details"), ("X", "Close")
         )
         self.create_table_columns()
 

@@ -6,6 +6,7 @@ from textual.widgets import Label, Static
 from ...torrent.models import ClientStats
 from ...util.decorator import log_time
 from ...util.print import print_ratio, print_size, print_time
+from ..util import subtitle_keys
 
 
 class StatisticsDialog(ModalScreen[None]):
@@ -43,7 +44,7 @@ class StatisticsWidget(Static):
     @log_time
     def on_mount(self) -> None:
         self.border_title = "Statistics"
-        self.border_subtitle = "(X) Close"
+        self.border_subtitle = subtitle_keys(("X", "Close"))
 
     def _compose_current_session(self) -> ComposeResult:
         yield Static("Current Session", classes="title")

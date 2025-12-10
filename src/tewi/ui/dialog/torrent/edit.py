@@ -5,6 +5,7 @@ from textual.widgets import Input, Label, Static
 
 from ....util.decorator import log_time
 from ...messages import EditTorrentCommand
+from ...util import subtitle_keys
 
 
 class EditTorrentDialog(ModalScreen):
@@ -39,8 +40,8 @@ class EditTorrentWidget(Static):
     @log_time
     def on_mount(self) -> None:
         self.border_title = "Edit torrent"
-        self.border_subtitle = (
-            "(Enter) Update / (Tab) Switch field / (ESC) Close"
+        self.border_subtitle = subtitle_keys(
+            ("Enter", "Update"), ("Tab", "Switch field"), ("ESC", "Close")
         )
 
         name_input = self.query_one("#name-input", Input)

@@ -6,6 +6,7 @@ from textual.widgets import DataTable, Static
 from ....torrent.models import CategoryDTO
 from ....util.decorator import log_time
 from ...messages import UpdateTorrentCategoryCommand
+from ...util import subtitle_keys
 
 
 class UpdateTorrentCategoryDialog(ModalScreen):
@@ -50,7 +51,7 @@ class UpdateTorrentCategoryWidget(Static):
     @log_time
     def on_mount(self) -> None:
         self.border_title = "Set category"
-        self.border_subtitle = "(Enter) Set / (X) Close"
+        self.border_subtitle = subtitle_keys(("Enter", "Set"), ("X", "Close"))
 
         table = self.query_one(DataTable)
 

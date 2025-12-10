@@ -19,6 +19,7 @@ from ...util.decorator import log_time
 from ...util.geoip import get_country
 from ...util.print import print_size, print_speed, print_time_ago
 from ..messages import OpenTorrentListCommand, ToggleFileDownloadCommand
+from ..util import subtitle_keys
 from ..widget.common import ReactiveLabel, VimDataTable
 
 
@@ -92,9 +93,9 @@ class TorrentInfoPanel(ScrollableContainer):
 
     @log_time
     def compose(self) -> ComposeResult:
-        self.border_subtitle = (
-            "(1/O) Overview / (2/F) Files / (3/P) Peers / "
-            "(4/T) Trackers / (X) Close"
+        self.border_subtitle = subtitle_keys(
+            ("1/O", "Overview"), ("2/F", "Files"), ("3/P", "Peers"),
+            ("4/T", "Trackers"), ("X", "Close")
         )
         with TabbedContent():
             with TabPane("[u]O[/]verview", id="tab-overview"):

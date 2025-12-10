@@ -13,6 +13,7 @@ from ...search.models import StandardCategories
 from ...ui.widget.common import VimSelectionList
 from ...util.decorator import log_time
 from ..messages import Notification, WebSearchQuerySubmitted
+from ..util import subtitle_keys
 
 
 class WebSearchQueryDialog(ModalScreen[None]):
@@ -78,9 +79,9 @@ class WebSearchQueryWidget(Static):
     def on_mount(self) -> None:
         """Focus on input when dialog opens."""
         self.border_title = "Search torrents"
-        self.border_subtitle = (
-            "(Enter) Search / (Tab) Switch / "
-            "(Space) Toggle selection / (ESC) Close"
+        self.border_subtitle = subtitle_keys(
+            ("Enter", "Search"), ("Tab", "Switch"),
+            ("Space", "Toggle selection"), ("ESC", "Close")
         )
 
         self.query_one(
