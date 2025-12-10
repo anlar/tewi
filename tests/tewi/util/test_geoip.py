@@ -92,3 +92,29 @@ class TestGetCountry:
             assert result is None or isinstance(result, str), (
                 f"Result for {ip} should be None or string, got {type(result)}"
             )
+
+    def test_get_country_module_not_available(self):
+        """Test that function returns None when geoip module flag
+        indicates unavailability"""
+        import src.tewi.util.geoip as geoip_module
+
+        # Save original state
+        original_available = geoip_module._geoip_available
+        original_geoip = geoip_module.geoip
+
+        try:
+            # Simulate module not being available
+            geoip_module._geoip_available = False
+            geoip_module.geoip = None
+
+            # Test with a different IP to avoid cache hits
+            # Use a private IP that won't be cached from other tests
+            result = geoip_module.get_country("10.10.10.10")
+            assert result is None, (
+                "get_country should return None when "
+                "geoip2fast is not available"
+            )
+        finally:
+            # Restore original state
+            geoip_module._geoip_available = original_available
+            geoip_module.geoip = original_geoip
