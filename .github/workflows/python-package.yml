@@ -27,14 +27,16 @@ jobs:
         python-version: ${{ matrix.python-version }}
         cache: "pip"
 
-    - name: Install dependencies
+    - name: Install project dependencies
       run: |
         python -m pip install .[dev]
-   
-    - name: Install Transmission
-      run: |
-        sudo apt-get install -y transmission-daemon transmission-cli
         
+    - name: Install Transmission
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: transmission-daemon transmission-cli
+        version: 1.0
+
     - name: Configure Transmission
       run: |
         mkdir -p ~/transmission-config
