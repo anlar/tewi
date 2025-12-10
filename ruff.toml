@@ -7,4 +7,5 @@ lint.select = [
     "F",  # pyflakes
     "I",  # isort (import sorting)
     "N",  # pep8-naming
+    "C90" # McCabe complexity (default: 10)
 ]
