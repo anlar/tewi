@@ -21,6 +21,11 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
+    - uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: transmission-common transmission-daemon transmission-cli
+        version: 1.0
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v6
       with:
