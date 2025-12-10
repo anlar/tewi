@@ -8,8 +8,6 @@ from textual.widgets import ListItem, ListView
 
 from ...torrent.models import TorrentDTO
 from ...util.decorator import log_time
-
-# from ..messages import Notification
 from ..messages import (
     ChangeTorrentPriorityCommand,
     Notification,
@@ -157,7 +155,6 @@ class TorrentListViewPanel(ListView):
         hl_torrent_id: int = None,
         force: bool = False,
     ) -> None:
-        # self.post_message(Notification(f"update_page: {hl_torrent_id}"))
         if hl_torrent_id is None:
             hl_torrent_id = self.get_hl_torrent_id()
 
@@ -188,8 +185,6 @@ class TorrentListViewPanel(ListView):
         instead of recreating them, which is expensive (100+ ms for 50
         items).
         """
-        # self.post_message(Notification(
-        #     f"draw_page: page {page}, torrent_id {torrent_id}"))
 
         page_torrents = torrents[
             page * self.page_size : (page * self.page_size + self.page_size)
@@ -242,18 +237,14 @@ class TorrentListViewPanel(ListView):
                 if t.id == torrent_id:
                     hl_idx = i
                     list_item.highlighted = True
-                    # self.post_message(Notification(f"HL: {t.name}"))
 
                 torrent_widgets.append(list_item)
-                # self.post_message(
-                #     Notification(f"ITEM: {list_item.highlighted}"))
 
             self.clear()
             self.insert(0, torrent_widgets)
 
             # select
             self.index = self.validate_index(hl_idx)
-            # self.post_message(Notification(f"HL index: {self.index}"))
 
             state = PageState(current=page, total=self.total_pages(torrents))
 
@@ -300,18 +291,15 @@ class TorrentListViewPanel(ListView):
     def action_move_top(self) -> None:
         if len(self.children) > 0:
             self.index = 0
-            # self.post_message(Notification("Go to zero"))
 
     @log_time
     def action_move_bottom(self) -> None:
         if len(self.children) > 0:
             self.index = len(self.children) - 1
-            # self.post_message(Notification("Go to bottom"))
 
     @log_time
     def action_cursor_down(self) -> None:
         if self.index == len(self.children) - 1:
-            # self.post_message(Notification("To next page"))
             self.next_page(True)
         else:
             super().action_cursor_down()
@@ -319,7 +307,6 @@ class TorrentListViewPanel(ListView):
     @log_time
     def action_cursor_up(self) -> None:
         if self.index == 0:
-            # self.post_message(Notification("To prev page"))
             self.next_page(False)
         else:
             super().action_cursor_up()
