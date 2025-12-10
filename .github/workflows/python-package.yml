@@ -27,6 +27,41 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install .[dev]
+   
+    - name: Install Transmission
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y transmission-daemon transmission-cli
+        
+    - name: Configure Transmission
+      run: |
+        sudo systemctl stop transmission-daemon
+        sudo mkdir -p /var/lib/transmission-daemon/downloads
+        sudo chown -R debian-transmission:debian-transmission /var/lib/transmission-daemon
+        
+        # Configure settings
+        sudo tee /etc/transmission-daemon/settings.json > /dev/null <<EOF
+        {
+          "rpc-enabled": true,
+          "rpc-port": 9092,
+          "rpc-bind-address": "127.0.0.1",
+          "rpc-whitelist-enabled": false,
+          "rpc-authentication-required": false,
+          "download-dir": "/var/lib/transmission-daemon/downloads",
+          "incomplete-dir-enabled": false
+        }
+        EOF
+        
+    - name: Start Transmission
+      run: |
+        sudo systemctl start transmission-daemon
+        sleep 3
+        
+    - name: Verify Transmission is running
+      run: |
+        transmission-remote --list
+        curl -s http://localhost:9091/transmission/rpc || true
+
     - name: Lint source code
       run: |
         make check
