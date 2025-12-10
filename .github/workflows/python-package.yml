@@ -21,22 +21,22 @@ jobs:
     steps:
     - uses: actions/checkout@v6
 
-    - name: Install Transmission
-      uses: awalsh128/cache-apt-pkgs-action@latest
-      with:
-        packages: transmission-daemon transmission-cli
-        version: 1.0
-
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.python-version }}
         cache: "pip"
 
-    - name: Install dependencies
+    - name: Install project dependencies
       run: |
         python -m pip install .[dev]
         
+    - name: Install Transmission
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: transmission-daemon transmission-cli
+        version: 1.0
+
     - name: Configure Transmission
       run: |
         mkdir -p ~/transmission-config
