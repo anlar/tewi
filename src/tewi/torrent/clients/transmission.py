@@ -2,6 +2,7 @@
 
 import os
 import pathlib
+from dataclasses import asdict
 from datetime import datetime
 
 from transmission_rpc import Client as TransmissionRPCClient
@@ -324,7 +325,10 @@ class TransmissionClient(BaseClient):
 
     @log_time
     def _torrent_to_dto(self, torrent: Torrent) -> TorrentDTO:
-        """Convert transmission-rpc Torrent to TorrentDTO."""
+        """Convert transmission-rpc Torrent to TorrentDTO.
+
+        Populates list view fields only.
+        """
         return TorrentDTO(
             id=torrent.id,
             name=torrent.name,
@@ -352,36 +356,33 @@ class TransmissionClient(BaseClient):
 
     @log_time
     def _torrent_detail_to_dto(self, torrent: Torrent) -> TorrentDetailDTO:
-        """Convert transmission-rpc Torrent to TorrentDetailDTO."""
+        """Convert transmission-rpc Torrent to TorrentDetailDTO.
+
+        Reuses _torrent_to_dto for base fields and adds detail-specific
+        fields plus files, peers, and trackers.
+        """
+
+        # Get base torrent data
+        base_torrent = self._torrent_to_dto(torrent)
+        base_dict = asdict(base_torrent)
+
+        # Parse files, peers, and trackers
         files = [self._file_to_dto(f) for f in torrent.get_files()]
         peers = [self._peer_to_dto(p) for p in torrent.peers]
         trackers = [self._tracker_to_dto(t) for t in torrent.tracker_stats]
 
         return TorrentDetailDTO(
-            id=torrent.id,
-            name=torrent.name,
+            **base_dict,
             hash_string=torrent.hash_string,
-            total_size=torrent.total_size,
             piece_count=torrent.piece_count,
             piece_size=torrent.piece_size,
             is_private=torrent.is_private,
             comment=torrent.comment,
             creator=torrent.creator,
-            labels=list(torrent.labels) if torrent.labels else [],
-            category=None,  # Transmission does not support categories
-            status=torrent.status,
-            download_dir=torrent.download_dir,
             downloaded_ever=torrent.downloaded_ever,
-            uploaded_ever=torrent.uploaded_ever,
-            ratio=torrent.ratio,
             error_string=torrent.error_string,
-            added_date=torrent.added_date,
             start_date=torrent.start_date,
             done_date=torrent.done_date,
-            activity_date=torrent.activity_date,
-            peers_connected=torrent.peers_connected,
-            peers_sending_to_us=torrent.peers_sending_to_us,
-            peers_getting_from_us=torrent.peers_getting_from_us,
             files=files,
             peers=peers,
             trackers=trackers,

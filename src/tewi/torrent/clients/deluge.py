@@ -2,6 +2,8 @@
 
 import base64
 import os
+import urllib.request
+from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -267,7 +269,11 @@ class DelugeClient(BaseClient):
 
     @log_time
     def torrent(self, id: int | str) -> TorrentDetailDTO:
-        """Get detailed information about a specific torrent."""
+        """Get detailed information about a specific torrent.
+
+        Reuses _torrent_to_dto for base fields and adds detail-specific
+        fields plus files, peers, and trackers.
+        """
 
         torrent_data = self._call(
             "core.get_torrent_status", [id, self.FIELDS_DETAIL]
@@ -276,6 +282,11 @@ class DelugeClient(BaseClient):
         if not torrent_data:
             raise ClientError(f"Torrent with ID {id} not found")
 
+        # Get base torrent data using _torrent_to_dto
+        base_torrent = self._torrent_to_dto(id, torrent_data)
+        base_dict = asdict(base_torrent)
+
+        # Parse files
         files = []
         if torrent_data:
             file_list = torrent_data.get("files", [])
@@ -300,10 +311,12 @@ class DelugeClient(BaseClient):
                     )
                 )
 
+        # Parse peers
         peers = []
         for p in torrent_data.get("peers", []):
             peers.append(self._peer_to_dto(p))
 
+        # Parse trackers
         trackers = []
         for t in torrent_data.get("trackers", []):
             trackers.append(self._tracker_to_dto(t))
@@ -311,40 +324,23 @@ class DelugeClient(BaseClient):
         t = torrent_data
 
         return TorrentDetailDTO(
-            id=t.get("hash"),
-            name=t.get("name"),
+            **base_dict,
             hash_string=t.get("hash"),
-            total_size=t.get("total_size"),
             piece_count=t.get("num_pieces"),
             piece_size=t.get("piece_length"),
             is_private=t.get("private"),
             comment=t.get("comment"),
             creator=t.get("creator"),
-            labels=[],
-            category=t.get("label"),
-            status=self._normalize_status(t.get("state")),
-            download_dir=t.get("save_path"),
             downloaded_ever=t.get("all_time_download"),
-            uploaded_ever=t.get("total_uploaded"),
-            ratio=t.get("ratio"),
             error_string=(
                 t.get("message") if t.get("message") != "OK" else None
             ),
-            added_date=(datetime.fromtimestamp(t.get("time_added"))),
-            start_date=None,
+            start_date=None,  # Deluge doesn't provide start date
             done_date=(
                 datetime.fromtimestamp(t.get("completed_time"))
                 if t.get("completed_time")
                 else None
             ),
-            activity_date=(
-                datetime.now() - timedelta(seconds=t.get("time_since_transfer"))
-                if t.get("time_since_transfer") > 0
-                else None
-            ),
-            peers_connected=(t.get("num_peers") + t.get("num_seeds")),
-            peers_sending_to_us=t.get("num_seeds"),
-            peers_getting_from_us=t.get("num_peers"),
             files=files,
             peers=peers,
             trackers=trackers,
@@ -687,7 +683,10 @@ class DelugeClient(BaseClient):
 
     @log_time
     def _torrent_to_dto(self, torrent_hash: str, t: dict) -> TorrentDTO:
-        """Convert Deluge torrent data to TorrentDTO."""
+        """Convert Deluge torrent data to TorrentDTO.
+
+        Populates list view fields only.
+        """
 
         return TorrentDTO(
             id=torrent_hash,
@@ -818,7 +817,6 @@ class DelugeClient(BaseClient):
         Raises:
             ClientError: If download or add operation fails
         """
-        import urllib.request
 
         try:
             # Download torrent file with 30-second timeout

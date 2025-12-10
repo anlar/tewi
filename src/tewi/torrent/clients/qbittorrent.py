@@ -1,6 +1,7 @@
 """qBittorrent torrent client implementation."""
 
 import os
+from dataclasses import asdict
 from datetime import datetime, timedelta
 
 from qbittorrentapi import Client as QBittorrentAPIClient
@@ -483,7 +484,10 @@ class QBittorrentClient(BaseClient):
 
     @log_time
     def _torrent_to_dto(self, torrent) -> TorrentDTO:
-        """Convert qBittorrent torrent to TorrentDTO."""
+        """Convert qBittorrent torrent to TorrentDTO.
+
+        Populates list view fields only.
+        """
         # Calculate ETA
         if torrent.dlspeed > 0 and torrent.amount_left > 0:
             eta_seconds = torrent.amount_left / torrent.dlspeed
@@ -529,8 +533,26 @@ class QBittorrentClient(BaseClient):
 
     @log_time
     def _torrent_detail_to_dto(self, torrent) -> TorrentDetailDTO:
-        """Convert qBittorrent torrent to TorrentDetailDTO."""
-        # Get files
+        """Convert qBittorrent torrent to TorrentDetailDTO.
+
+        Reuses _torrent_to_dto for base fields and adds detail-specific
+        fields plus files, peers, and trackers.
+        """
+
+        # Get base torrent data
+        base_torrent = self._torrent_to_dto(torrent)
+        base_dict = asdict(base_torrent)
+
+        # Get piece information from properties
+        try:
+            props = self.client.torrents.properties(torrent_hash=torrent.hash)
+            piece_size = props.piece_size
+            piece_count = props.pieces_num
+        except Exception:
+            piece_size = 0
+            piece_count = 0
+
+        # Parse files, peers, and trackers
         files_data = self.client.torrents.files(torrent_hash=torrent.hash)
         files = [self._file_to_dto(f, torrent.hash) for f in files_data]
 
@@ -547,20 +569,9 @@ class QBittorrentClient(BaseClient):
         trackers_data = self.client.torrents.trackers(torrent_hash=torrent.hash)
         trackers = [self._tracker_to_dto(t) for t in trackers_data]
 
-        # Get piece information from properties
-        try:
-            props = self.client.torrents.properties(torrent_hash=torrent.hash)
-            piece_size = props.piece_size
-            piece_count = props.pieces_num
-        except Exception:
-            piece_size = 0
-            piece_count = 0
-
         return TorrentDetailDTO(
-            id=torrent.hash,
-            name=torrent.name,
+            **base_dict,
             hash_string=torrent.hash,
-            total_size=torrent.total_size,
             piece_count=piece_count,
             piece_size=piece_size,
             is_private=getattr(torrent, "is_private", False),
@@ -568,22 +579,8 @@ class QBittorrentClient(BaseClient):
             creator=torrent.created_by
             if hasattr(torrent, "created_by")
             else "",
-            labels=[tag.strip() for tag in torrent.tags.split(",")]
-            if torrent.tags
-            else [],
-            category=torrent.category if torrent.category else None,
-            status=self._normalize_status(torrent.state),
-            download_dir=torrent.save_path,
             downloaded_ever=torrent.downloaded,
-            uploaded_ever=torrent.uploaded,
-            ratio=torrent.ratio,
-            # qBittorrent doesn't provide error string in the same way
-            error_string="",
-            added_date=(
-                datetime.fromtimestamp(torrent.added_on)
-                if torrent.added_on > 0
-                else datetime.now()
-            ),
+            error_string="",  # qBittorrent doesn't provide error string
             start_date=(
                 datetime.fromtimestamp(torrent.completion_on)
                 if hasattr(torrent, "completion_on")
@@ -595,14 +592,6 @@ class QBittorrentClient(BaseClient):
                 if torrent.completion_on > 0
                 else None
             ),
-            activity_date=(
-                datetime.fromtimestamp(torrent.last_activity)
-                if torrent.last_activity > 0
-                else datetime.now()
-            ),
-            peers_connected=torrent.num_leechs + torrent.num_seeds,
-            peers_sending_to_us=torrent.num_seeds,
-            peers_getting_from_us=torrent.num_leechs,
             files=files,
             peers=peers,
             trackers=trackers,

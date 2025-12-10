@@ -31,8 +31,8 @@ class TorrentDTO:
     activity_date: datetime
     queue_position: int | None
     download_dir: str
-    category: str | None = None
-    labels: list[str] = field(default_factory=list)
+    category: str | None
+    labels: list[str]
 
 
 class FilePriority(Enum):
@@ -116,39 +116,31 @@ class TrackerDTO:
 
 
 @dataclass(frozen=True)
-class TorrentDetailDTO:
+class TorrentDetailDTO(TorrentDTO):
     """Data Transfer Object for detailed torrent view (immutable).
+
+    Extends TorrentDTO and adds detail-specific fields plus files, peers,
+    and trackers lists.
 
     Note: All size fields are in bytes.
     """
 
-    id: int | str
-    name: str
+    # Detail-specific fields
     hash_string: str
-    total_size: int  # bytes
     piece_count: int
     piece_size: int  # bytes
     is_private: bool
     comment: str
     creator: str
-    labels: list[str]
-    category: str | None
-    status: str
-    download_dir: str
     downloaded_ever: int  # bytes
-    uploaded_ever: int  # bytes
-    ratio: float
-    error_string: str
-    added_date: datetime
-    start_date: datetime
-    done_date: datetime
-    activity_date: datetime
-    peers_connected: int
-    peers_sending_to_us: int
-    peers_getting_from_us: int
-    files: list[FileDTO]
-    peers: list[PeerDTO]
-    trackers: list[TrackerDTO]
+    error_string: str | None
+    start_date: datetime | None
+    done_date: datetime | None
+
+    # Collections
+    files: list[FileDTO] = field(default_factory=list)
+    peers: list[PeerDTO] = field(default_factory=list)
+    trackers: list[TrackerDTO] = field(default_factory=list)
 
 
 class ClientMeta(TypedDict):
