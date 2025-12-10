@@ -35,26 +35,26 @@ jobs:
         
     - name: Configure Transmission
       run: |
-        sudo systemctl stop transmission-daemon
-        sudo mkdir -p /var/lib/transmission-daemon/downloads
-        sudo chown -R debian-transmission:debian-transmission /var/lib/transmission-daemon
+        mkdir -p ~/transmission-config
+        mkdir -p ~/transmission-downloads
         
-        # Configure settings
-        sudo tee /etc/transmission-daemon/settings.json > /dev/null <<EOF
+        # Create settings file
+        cat > ~/transmission-config/settings.json <<EOF
         {
           "rpc-enabled": true,
-          "rpc-port": 9092,
+          "rpc-port": 9091,
           "rpc-bind-address": "127.0.0.1",
           "rpc-whitelist-enabled": false,
           "rpc-authentication-required": false,
-          "download-dir": "/var/lib/transmission-daemon/downloads",
-          "incomplete-dir-enabled": false
+          "download-dir": "$HOME/transmission-downloads",
+          "incomplete-dir-enabled": false,
+          "peer-port": 51413
         }
         EOF
         
     - name: Start Transmission
       run: |
-        sudo systemctl start transmission-daemon
+        transmission-daemon --config-dir ~/transmission-config --log-level=info &
         sleep 3
         
     - name: Verify Transmission is running
