@@ -19,6 +19,10 @@ class BaseClient(ABC):
 
     TRACKER_STATUS_UNKNOWN = "Unknown"
 
+    # ========================================================================
+    # Client Lifecycle & Metadata
+    # ========================================================================
+
     @abstractmethod
     def __init__(
         self, host: str, port: str, username: str = None, password: str = None
@@ -35,6 +39,21 @@ class BaseClient(ABC):
 
     @abstractmethod
     def capable(self, capability_code: str) -> bool:
+        """Check if the client supports a specific capability.
+
+        Available capabilities:
+            - "category": Support for torrent categories
+            - "label": Support for torrent labels/tags
+            - "set_priority": Support for setting bandwidth priority
+            - "toggle_alt_speed": Support for alternative speed limits
+            - "torrent_id": Use of numeric IDs (vs hash strings)
+
+        Args:
+            capability_code: The capability to check
+
+        Returns:
+            True if the capability is supported, False otherwise
+        """
         pass
 
     @abstractmethod
@@ -46,14 +65,9 @@ class BaseClient(ABC):
         """
         pass
 
-    @abstractmethod
-    def stats(self) -> ClientStats:
-        """Get current and cumulative session statistics.
-
-        Returns:
-            ClientStats with upload/download bytes, ratios, and active seconds
-        """
-        pass
+    # ========================================================================
+    # Session & Global Settings
+    # ========================================================================
 
     @abstractmethod
     def session(self, torrents: list[TorrentDTO]) -> ClientSession:
@@ -68,6 +82,15 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
+    def stats(self) -> ClientStats:
+        """Get current and cumulative session statistics.
+
+        Returns:
+            ClientStats with upload/download bytes, ratios, and active seconds
+        """
+        pass
+
+    @abstractmethod
     def preferences(self) -> dict[str, str]:
         """Get session preferences as key-value pairs.
 
@@ -75,6 +98,19 @@ class BaseClient(ABC):
             Dictionary of preference keys and values
         """
         pass
+
+    @abstractmethod
+    def toggle_alt_speed(self) -> bool:
+        """Toggle alternative speed limits.
+
+        Returns:
+            True if alt speed is now enabled, False otherwise
+        """
+        pass
+
+    # ========================================================================
+    # Torrent Retrieval
+    # ========================================================================
 
     @abstractmethod
     def torrents(self) -> list[TorrentDTO]:
@@ -114,10 +150,183 @@ class BaseClient(ABC):
 
         return result
 
+    @abstractmethod
+    def torrent(self, id: int | str):
+        """Get detailed information about a specific torrent.
+
+        Args:
+            id: The torrent ID
+
+        Returns:
+            TorrentDetailDTO with complete torrent information
+        """
+        pass
+
+    # ========================================================================
+    # Torrent Lifecycle Operations
+    # ========================================================================
+
+    @abstractmethod
+    def add_torrent(self, value: str) -> None:
+        """Add a torrent from magnet link or file path.
+
+        Args:
+            value: Magnet link or path to .torrent file
+        """
+        pass
+
+    @abstractmethod
+    def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+        """Start one or more torrents.
+
+        Args:
+            torrent_ids: Single torrent ID or list of IDs
+        """
+        pass
+
+    @abstractmethod
+    def start_all_torrents(self) -> None:
+        """Start all torrents in the client."""
+        pass
+
+    @abstractmethod
+    def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+        """Stop one or more torrents.
+
+        Args:
+            torrent_ids: Single torrent ID or list of IDs
+        """
+        pass
+
+    @abstractmethod
+    def stop_all_torrents(self) -> None:
+        """Stop all torrents in the client."""
+        pass
+
+    @abstractmethod
+    def remove_torrent(
+        self,
+        torrent_ids: int | str | list[int | str],
+        delete_data: bool = False,
+    ) -> None:
+        """Remove one or more torrents.
+
+        Args:
+            torrent_ids: Single torrent ID or list of IDs
+            delete_data: Whether to delete downloaded data
+        """
+        pass
+
+    @abstractmethod
+    def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+        """Verify one or more torrents (rehash data).
+
+        Args:
+            torrent_ids: Single torrent ID or list of IDs
+        """
+        pass
+
+    @abstractmethod
+    def reannounce_torrent(
+        self, torrent_ids: int | str | list[int | str]
+    ) -> None:
+        """Reannounce one or more torrents to their trackers.
+
+        Args:
+            torrent_ids: Single torrent ID or list of IDs
+        """
+        pass
+
+    # ========================================================================
+    # Torrent Organization & Metadata
+    # ========================================================================
+
+    @abstractmethod
+    def edit_torrent(
+        self, torrent_id: int | str, name: str, location: str
+    ) -> None:
+        """Edit torrent name and download location.
+
+        Args:
+            torrent_id: The torrent ID
+            name: New torrent name
+            location: New download location path
+        """
+        pass
+
+    @abstractmethod
+    def get_categories(self) -> list[CategoryDTO]:
+        """Get list of available torrent categories.
+
+        Returns:
+            List of CategoryDTO objects with name and save_path
+        """
+        pass
+
+    @abstractmethod
+    def set_category(
+        self, torrent_ids: int | str | list[int | str], category: str | None
+    ) -> None:
+        """Set category for one or more torrents.
+
+        Args:
+            torrent_ids: Single torrent ID or list of IDs
+            category: Category name or None to clear category
+        """
+        pass
+
+    @abstractmethod
+    def update_labels(
+        self, torrent_ids: int | str | list[int | str], labels: list[str]
+    ) -> None:
+        """Update labels/tags for one or more torrents.
+
+        Args:
+            torrent_ids: Single torrent ID or list of IDs
+            labels: List of label strings to apply
+        """
+        pass
+
+    # ========================================================================
+    # Priority Management
+    # ========================================================================
+
+    @abstractmethod
+    def set_priority(
+        self, torrent_ids: int | str | list[int | str], priority: int
+    ) -> None:
+        """Set bandwidth priority for one or more torrents.
+
+        Args:
+            torrent_ids: Single torrent ID or list of IDs
+            priority: Priority level (-1=low, 0=normal, 1=high)
+        """
+        pass
+
+    @abstractmethod
+    def set_file_priority(
+        self, torrent_id: int | str, file_ids: list[int], priority: FilePriority
+    ) -> None:
+        """Set download priority for files within a torrent.
+
+        Args:
+            torrent_id: The torrent ID
+            file_ids: List of file IDs to update
+            priority: FilePriority enum value
+        """
+        pass
+
+    # ========================================================================
+    # Internal Helpers
+    # ========================================================================
+
     def _count_torrents_by_status(
         self, torrents: list[TorrentDTO]
     ) -> dict[str, int]:
         """Count torrents by status and calculate sizes.
+
+        This is a helper method used internally by session() implementations
+        to compute torrent statistics.
 
         Args:
             torrents: List of torrents to count
@@ -161,166 +370,3 @@ class BaseClient(ABC):
             "complete_size": complete_size,
             "total_size": total_size,
         }
-
-    @abstractmethod
-    def torrent(self, id: int | str):
-        """Get detailed information about a specific torrent.
-
-        Args:
-            id: The torrent ID
-
-        Returns:
-            TorrentDetailDTO with complete torrent information
-        """
-        pass
-
-    @abstractmethod
-    def add_torrent(self, value: str) -> None:
-        """Add a torrent from magnet link or file path.
-
-        Args:
-            value: Magnet link or path to .torrent file
-        """
-        pass
-
-    @abstractmethod
-    def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
-        """Start one or more torrents.
-
-        Args:
-            torrent_ids: Single torrent ID or list of IDs
-        """
-        pass
-
-    @abstractmethod
-    def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
-        """Stop one or more torrents.
-
-        Args:
-            torrent_ids: Single torrent ID or list of IDs
-        """
-        pass
-
-    @abstractmethod
-    def remove_torrent(
-        self,
-        torrent_ids: int | str | list[int | str],
-        delete_data: bool = False,
-    ) -> None:
-        """Remove one or more torrents.
-
-        Args:
-            torrent_ids: Single torrent ID or list of IDs
-            delete_data: Whether to delete downloaded data
-        """
-        pass
-
-    @abstractmethod
-    def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
-        """Verify one or more torrents.
-
-        Args:
-            torrent_ids: Single torrent ID or list of IDs
-        """
-        pass
-
-    @abstractmethod
-    def reannounce_torrent(
-        self, torrent_ids: int | str | list[int | str]
-    ) -> None:
-        """Reannounce one or more torrents to their trackers.
-
-        Args:
-            torrent_ids: Single torrent ID or list of IDs
-        """
-        pass
-
-    @abstractmethod
-    def start_all_torrents(self) -> None:
-        """Start all torrents."""
-        pass
-
-    @abstractmethod
-    def stop_all_torrents(self) -> None:
-        """Stop all torrents."""
-        pass
-
-    @abstractmethod
-    def update_labels(
-        self, torrent_ids: int | str | list[int | str], labels: list[str]
-    ) -> None:
-        """Update labels/tags for one or more torrents.
-
-        Args:
-            torrent_ids: Single torrent ID or list of IDs
-            labels: List of label strings
-        """
-        pass
-
-    @abstractmethod
-    def get_categories(self) -> list[CategoryDTO]:
-        """Get list of available torrent categories.
-
-        Returns:
-            List of CategoryDTO objects with name and save_path
-        """
-        pass
-
-    @abstractmethod
-    def set_category(
-        self, torrent_ids: int | str | list[int | str], category: str | None
-    ) -> None:
-        """Set category for one or more torrents.
-
-        Args:
-            torrent_ids: Single torrent ID or list of IDs
-            category: Category name or None to clear category
-        """
-        pass
-
-    @abstractmethod
-    def edit_torrent(
-        self, torrent_id: int | str, name: str, location: str
-    ) -> None:
-        """Edit torrent name and location.
-
-        Args:
-            torrent_id: The torrent ID
-            name: New torrent name
-            location: New download location path
-        """
-        pass
-
-    @abstractmethod
-    def toggle_alt_speed(self) -> bool:
-        """Toggle alternative speed limits.
-
-        Returns:
-            True if alt speed is now enabled, False otherwise
-        """
-        pass
-
-    @abstractmethod
-    def set_priority(
-        self, torrent_ids: int | str | list[int | str], priority: int
-    ) -> None:
-        """Set bandwidth priority for one or more torrents.
-
-        Args:
-            torrent_ids: Single torrent ID or list of IDs
-            priority: Priority level (-1=low, 0=normal, 1=high)
-        """
-        pass
-
-    @abstractmethod
-    def set_file_priority(
-        self, torrent_id: int | str, file_ids: list[int], priority: FilePriority
-    ) -> None:
-        """Set download priority for files within a torrent.
-
-        Args:
-            torrent_id: The torrent ID
-            file_ids: List of file IDs to update
-            priority: FilePriority enum value
-        """
-        pass

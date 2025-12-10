@@ -50,6 +50,28 @@ class QBittorrentClient(BaseClient):
         "moving": "stopped",
     }
 
+    TRACKER_STATUS: dict[int, str] = {
+        0: "Disabled",
+        1: "Not contacted",
+        2: "Working",
+        3: "Updating",
+        4: "Not working",
+    }
+    """
+    Maps tracker status codes to human-readable status labels.
+
+    0 - Tracker is disabled (used for DHT, PeX, and LSD)
+    1 - Tracker has not been contacted yet
+    2 - Tracker has been contacted and is working
+    3 - Tracker is updating
+    4 - Tracker has been contacted, but it is not working (or doesn't
+        send proper replies)
+    """
+
+    # ========================================================================
+    # Client Lifecycle & Metadata
+    # ========================================================================
+
     @log_time
     def __init__(
         self, host: str, port: str, username: str = None, password: str = None
@@ -82,6 +104,46 @@ class QBittorrentClient(BaseClient):
     def meta(self) -> ClientMeta:
         """Get daemon name and version."""
         return {"name": "qBittorrent", "version": self.client.app.version}
+
+    # ========================================================================
+    # Session & Global Settings
+    # ========================================================================
+
+    @log_time
+    def session(self, torrents: list[TorrentDTO]) -> ClientSession:
+        transfer_info = self.client.transfer.info
+        prefs = self.client.app.preferences
+
+        counts = self._count_torrents_by_status(torrents)
+
+        # Get free space for download directory
+        try:
+            main_data = self.client.sync.maindata()
+            free_space = main_data.server_state.free_space_on_disk
+        except Exception:
+            free_space = 0
+
+        # Check if alternative speed limits are enabled
+        # Note: speed_limits_mode returns a string '0' or '1', not an integer
+        alt_speed_enabled = self.client.transfer.speed_limits_mode == "1"
+
+        return {
+            "download_dir": prefs.save_path,
+            "download_dir_free_space": free_space,
+            "upload_speed": transfer_info.up_info_speed,
+            "download_speed": transfer_info.dl_info_speed,
+            "alt_speed_enabled": alt_speed_enabled,
+            # qBittorrent returns bytes/s - store as-is
+            "alt_speed_up": prefs.alt_up_limit,
+            "alt_speed_down": prefs.alt_dl_limit,
+            "torrents_complete_size": counts["complete_size"],
+            "torrents_total_size": counts["total_size"],
+            "torrents_count": counts["count"],
+            "torrents_down": counts["down"],
+            "torrents_seed": counts["seed"],
+            "torrents_check": counts["check"],
+            "torrents_stop": counts["stop"],
+        }
 
     @log_time
     def stats(self) -> ClientStats:
@@ -162,48 +224,257 @@ class QBittorrentClient(BaseClient):
         }
 
     @log_time
-    def session(self, torrents: list[TorrentDTO]) -> ClientSession:
-        transfer_info = self.client.transfer.info
-        prefs = self.client.app.preferences
-
-        counts = self._count_torrents_by_status(torrents)
-
-        # Get free space for download directory
-        try:
-            main_data = self.client.sync.maindata()
-            free_space = main_data.server_state.free_space_on_disk
-        except Exception:
-            free_space = 0
-
-        # Check if alternative speed limits are enabled
-        # Note: speed_limits_mode returns a string '0' or '1', not an integer
-        alt_speed_enabled = self.client.transfer.speed_limits_mode == "1"
-
-        return {
-            "download_dir": prefs.save_path,
-            "download_dir_free_space": free_space,
-            "upload_speed": transfer_info.up_info_speed,
-            "download_speed": transfer_info.dl_info_speed,
-            "alt_speed_enabled": alt_speed_enabled,
-            # qBittorrent returns bytes/s - store as-is
-            "alt_speed_up": prefs.alt_up_limit,
-            "alt_speed_down": prefs.alt_dl_limit,
-            "torrents_complete_size": counts["complete_size"],
-            "torrents_total_size": counts["total_size"],
-            "torrents_count": counts["count"],
-            "torrents_down": counts["down"],
-            "torrents_seed": counts["seed"],
-            "torrents_check": counts["check"],
-            "torrents_stop": counts["stop"],
-        }
-
-    @log_time
     def preferences(self) -> dict[str, str]:
         """Get session preferences as key-value pairs."""
         prefs = self.client.app.preferences
         # Convert preferences object to dict and filter
         prefs_dict = prefs.dict() if hasattr(prefs, "dict") else dict(prefs)
         return {k: str(v) for k, v in sorted(prefs_dict.items())}
+
+    @log_time
+    def toggle_alt_speed(self) -> bool:
+        """Toggle alternative speed limits."""
+        current_state = self.client.transfer.speed_limits_mode
+        # Toggle: '0' = normal, '1' = alternative (API returns strings)
+        new_state = "0" if current_state == "1" else "1"
+        self.client.transfer.set_speed_limits_mode(mode=new_state)
+        return new_state == "1"
+
+    # ========================================================================
+    # Torrent Retrieval
+    # ========================================================================
+
+    @log_time
+    def torrents(self) -> list[TorrentDTO]:
+        """Get list of all torrents."""
+        qb_torrents = self.client.torrents.info()
+        return [self._torrent_to_dto(t) for t in qb_torrents]
+
+    @log_time
+    def torrent(self, id: int | str) -> TorrentDetailDTO:
+        """Get detailed information about a specific torrent."""
+        # In qBittorrent, the ID is the hash string itself
+        # Get the torrent directly by hash
+        qb_torrents = self.client.torrents.info(torrent_hashes=id)
+
+        if not qb_torrents:
+            raise ClientError(f"Torrent with ID {id} not found")
+
+        return self._torrent_detail_to_dto(qb_torrents[0])
+
+    # ========================================================================
+    # Torrent Lifecycle Operations
+    # ========================================================================
+
+    @log_time
+    def add_torrent(self, value: str) -> None:
+        """Add a torrent from magnet link or file path."""
+        if is_torrent_link(value):
+            self.client.torrents.add(urls=value)
+        else:
+            file = os.path.expanduser(value)
+            with open(file, "rb") as f:
+                self.client.torrents.add(torrent_files=f)
+
+    @log_time
+    def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+        """Start one or more torrents."""
+        if isinstance(torrent_ids, (int, str)):
+            torrent_ids = [torrent_ids]
+
+        # Convert IDs back to hashes
+        hashes = self._ids_to_hashes(torrent_ids)
+        self.client.torrents.resume(torrent_hashes=hashes)
+
+    @log_time
+    def start_all_torrents(self) -> None:
+        """Start all torrents."""
+        self.client.torrents.resume(torrent_hashes="all")
+
+    @log_time
+    def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+        """Stop one or more torrents."""
+        if isinstance(torrent_ids, (int, str)):
+            torrent_ids = [torrent_ids]
+
+        # Convert IDs back to hashes
+        hashes = self._ids_to_hashes(torrent_ids)
+        self.client.torrents.pause(torrent_hashes=hashes)
+
+    @log_time
+    def stop_all_torrents(self) -> None:
+        """Stop all torrents."""
+        self.client.torrents.pause(torrent_hashes="all")
+
+    @log_time
+    def remove_torrent(
+        self,
+        torrent_ids: int | str | list[int | str],
+        delete_data: bool = False,
+    ) -> None:
+        """Remove one or more torrents."""
+        if isinstance(torrent_ids, (int, str)):
+            torrent_ids = [torrent_ids]
+
+        # Convert IDs back to hashes
+        hashes = self._ids_to_hashes(torrent_ids)
+        self.client.torrents.delete(
+            delete_files=delete_data, torrent_hashes=hashes
+        )
+
+    @log_time
+    def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+        """Verify one or more torrents."""
+        if isinstance(torrent_ids, (int, str)):
+            torrent_ids = [torrent_ids]
+
+        # Convert IDs back to hashes
+        hashes = self._ids_to_hashes(torrent_ids)
+        self.client.torrents.recheck(torrent_hashes=hashes)
+
+    @log_time
+    def reannounce_torrent(
+        self, torrent_ids: int | str | list[int | str]
+    ) -> None:
+        """Reannounce one or more torrents to their trackers."""
+        if isinstance(torrent_ids, (int, str)):
+            torrent_ids = [torrent_ids]
+
+        # Convert IDs back to hashes
+        hashes = self._ids_to_hashes(torrent_ids)
+        self.client.torrents.reannounce(torrent_hashes=hashes)
+
+    # ========================================================================
+    # Torrent Organization & Metadata
+    # ========================================================================
+
+    @log_time
+    def edit_torrent(
+        self, torrent_id: int | str, name: str, location: str
+    ) -> None:
+        torrent = self.torrent(torrent_id)
+
+        if name != torrent.name:
+            self.client.torrents.rename(
+                torrent_hash=torrent_id, new_torrent_name=name
+            )
+
+        if location != torrent.download_dir:
+            self.client.torrents.set_location(
+                torrent_hashes=torrent_id, location=location
+            )
+
+    @log_time
+    def get_categories(self) -> list[CategoryDTO]:
+        """Get list of available torrent categories."""
+        try:
+            categories_dict = self.client.torrents_categories()
+            categories = []
+            for name, data in categories_dict.items():
+                save_path = data.get("savePath") or None
+                categories.append(CategoryDTO(name=name, save_path=save_path))
+            return sorted(categories, key=lambda c: c.name)
+        except Exception:
+            return []
+
+    @log_time
+    def set_category(
+        self, torrent_ids: int | str | list[int | str], category: str | None
+    ) -> None:
+        """Set category for one or more torrents."""
+        if isinstance(torrent_ids, (int, str)):
+            torrent_ids = [torrent_ids]
+
+        # Convert IDs back to hashes
+        hashes = self._ids_to_hashes(torrent_ids)
+
+        # qBittorrent API accepts empty string for clearing category
+        category_value = category if category else ""
+
+        for hash_str in hashes:
+            self.client.torrents_set_category(
+                category=category_value, torrent_hashes=hash_str
+            )
+
+    @log_time
+    def update_labels(
+        self, torrent_ids: int | str | list[int | str], labels: list[str]
+    ) -> None:
+        """Update labels/tags for one or more torrents."""
+        if isinstance(torrent_ids, (int, str)):
+            torrent_ids = [torrent_ids]
+
+        # Convert IDs back to hashes
+        hashes = self._ids_to_hashes(torrent_ids)
+
+        # Convert labels list to comma-separated string for qBittorrent
+        tags_str = ",".join(labels) if labels else ""
+
+        for hash_str in hashes:
+            # Get current torrent to find existing tags
+            torrents = self.client.torrents.info(torrent_hashes=hash_str)
+            if torrents:
+                existing_tags = torrents[0].tags
+                # If there are existing tags, remove them first
+                if existing_tags:
+                    try:
+                        self.client.torrents_delete_tags(
+                            tags=existing_tags, torrent_hashes=hash_str
+                        )
+                    except Exception:
+                        pass  # Ignore if tag removal fails
+
+            # Add new tags
+            if tags_str:
+                try:
+                    self.client.torrents_add_tags(
+                        tags=tags_str, torrent_hashes=hash_str
+                    )
+                except Exception:
+                    pass  # Ignore if tag addition fails
+
+    # ========================================================================
+    # Priority Management
+    # ========================================================================
+
+    @log_time
+    def set_priority(
+        self, torrent_ids: int | str | list[int | str], priority: int
+    ) -> None:
+        """Set bandwidth priority for one or more torrents.
+
+        Note: qBittorrent doesn't support whole-torrent bandwidth priority
+        (only individual file priorities and queue positions). This method
+        is a no-op for qBittorrent.
+        """
+        pass
+
+    @log_time
+    def set_file_priority(
+        self, torrent_id: int | str, file_ids: list[int], priority: FilePriority
+    ) -> None:
+        """Set download priority for files within a torrent."""
+        # Map FilePriority enum to qBittorrent priority values
+        priority_map = {
+            FilePriority.NOT_DOWNLOADING: 0,
+            FilePriority.LOW: 1,
+            FilePriority.MEDIUM: 6,
+            FilePriority.HIGH: 7,
+        }
+
+        qb_priority = priority_map[priority]
+
+        # qBittorrent uses hash as torrent ID
+        torrent_hash = str(torrent_id)
+
+        # Set priority for each file
+        self.client.torrents.file_priority(
+            torrent_hash=torrent_hash, file_ids=file_ids, priority=qb_priority
+        )
+
+    # ========================================================================
+    # Internal Helpers
+    # ========================================================================
 
     @log_time
     def _normalize_status(self, qb_status: str) -> str:
@@ -254,126 +525,6 @@ class QBittorrentClient(BaseClient):
             labels=[tag.strip() for tag in torrent.tags.split(",")]
             if torrent.tags
             else [],
-        )
-
-    @log_time
-    def torrents(self) -> list[TorrentDTO]:
-        """Get list of all torrents."""
-        qb_torrents = self.client.torrents.info()
-        return [self._torrent_to_dto(t) for t in qb_torrents]
-
-    @log_time
-    def torrent(self, id: int | str) -> TorrentDetailDTO:
-        """Get detailed information about a specific torrent."""
-        # In qBittorrent, the ID is the hash string itself
-        # Get the torrent directly by hash
-        qb_torrents = self.client.torrents.info(torrent_hashes=id)
-
-        if not qb_torrents:
-            raise ClientError(f"Torrent with ID {id} not found")
-
-        return self._torrent_detail_to_dto(qb_torrents[0])
-
-    @log_time
-    def _file_to_dto(self, file, torrent_hash: str) -> FileDTO:
-        """Convert qBittorrent file to FileDTO."""
-
-        match file.priority:
-            case 0:
-                priority = FilePriority.NOT_DOWNLOADING
-            case 1:
-                priority = FilePriority.LOW
-            case 6:
-                priority = FilePriority.MEDIUM
-            case 7:
-                priority = FilePriority.HIGH
-
-        return FileDTO(
-            id=file.index,
-            name=file.name,
-            size=file.size,
-            completed=int(file.size * file.progress),
-            priority=priority,
-        )
-
-    @log_time
-    def _peer_to_dto(self, peer) -> PeerDTO:
-        """Convert qBittorrent peer to PeerDTO."""
-
-        match peer.connection:
-            case "BT":
-                connection_type = "TCP"
-            case None:
-                connection_type = "Unknown"
-            case _:
-                connection_type = peer.connection
-
-        # Determine direction from 'I' flag in flags string
-        direction = "Incoming" if "I" in peer.flags else "Outgoing"
-
-        if "D" in peer.flags:
-            dl_state = PeerState.INTERESTED
-        elif "d" in peer.flags:
-            dl_state = PeerState.CHOKED
-        else:
-            dl_state = PeerState.NONE
-
-        if "U" in peer.flags:
-            ul_state = PeerState.INTERESTED
-        elif "u" in peer.flags:
-            ul_state = PeerState.CHOKED
-        else:
-            ul_state = PeerState.NONE
-
-        return PeerDTO(
-            address=peer.ip,
-            client_name=peer.client,
-            progress=peer.progress,
-            is_encrypted=peer.connection.startswith("uTP") or "E" in peer.flags,
-            rate_to_client=peer.dl_speed,
-            rate_to_peer=peer.up_speed,
-            flag_str=peer.flags,
-            port=peer.port if hasattr(peer, "port") else -1,
-            connection_type=connection_type,
-            direction=direction,
-            country=peer.country.split(",", 1)[0] if peer.country else None,
-            dl_state=dl_state,
-            ul_state=ul_state,
-        )
-
-    TRACKER_STATUS: dict[int, str] = {
-        0: "Disabled",
-        1: "Not contacted",
-        2: "Working",
-        3: "Updating",
-        4: "Not working",
-    }
-    """
-    Maps tracker status codes to human-readable status labels.
-
-    0 - Tracker is disabled (used for DHT, PeX, and LSD)
-    1 - Tracker has not been contacted yet
-    2 - Tracker has been contacted and is working
-    3 - Tracker is updating
-    4 - Tracker has been contacted, but it is not working (or doesn't
-        send proper replies)
-    """
-
-    @log_time
-    def _tracker_to_dto(self, t: Tracker) -> TrackerDTO:
-        """Convert qBittorrent tracker to TrackerDTO."""
-
-        return TrackerDTO(
-            host=t.url,
-            tier=t.tier if t.tier >= 0 else None,
-            status=self.TRACKER_STATUS.get(
-                t.status, self.TRACKER_STATUS_UNKNOWN
-            ),
-            message=t.msg,
-            peer_count=t.num_peers if t.num_peers >= 0 else None,
-            seeder_count=t.num_seeds if t.num_seeds >= 0 else None,
-            leecher_count=t.num_leeches if t.num_leeches >= 0 else None,
-            download_count=t.num_downloaded if t.num_downloaded >= 0 else None,
         )
 
     @log_time
@@ -458,210 +609,87 @@ class QBittorrentClient(BaseClient):
         )
 
     @log_time
-    def add_torrent(self, value: str) -> None:
-        """Add a torrent from magnet link or file path."""
-        if is_torrent_link(value):
-            self.client.torrents.add(urls=value)
-        else:
-            file = os.path.expanduser(value)
-            with open(file, "rb") as f:
-                self.client.torrents.add(torrent_files=f)
+    def _file_to_dto(self, file, torrent_hash: str) -> FileDTO:
+        """Convert qBittorrent file to FileDTO."""
 
-    @log_time
-    def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
-        """Start one or more torrents."""
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
+        match file.priority:
+            case 0:
+                priority = FilePriority.NOT_DOWNLOADING
+            case 1:
+                priority = FilePriority.LOW
+            case 6:
+                priority = FilePriority.MEDIUM
+            case 7:
+                priority = FilePriority.HIGH
 
-        # Convert IDs back to hashes
-        hashes = self._ids_to_hashes(torrent_ids)
-        self.client.torrents.resume(torrent_hashes=hashes)
-
-    @log_time
-    def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
-        """Stop one or more torrents."""
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
-
-        # Convert IDs back to hashes
-        hashes = self._ids_to_hashes(torrent_ids)
-        self.client.torrents.pause(torrent_hashes=hashes)
-
-    @log_time
-    def remove_torrent(
-        self,
-        torrent_ids: int | str | list[int | str],
-        delete_data: bool = False,
-    ) -> None:
-        """Remove one or more torrents."""
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
-
-        # Convert IDs back to hashes
-        hashes = self._ids_to_hashes(torrent_ids)
-        self.client.torrents.delete(
-            delete_files=delete_data, torrent_hashes=hashes
+        return FileDTO(
+            id=file.index,
+            name=file.name,
+            size=file.size,
+            completed=int(file.size * file.progress),
+            priority=priority,
         )
 
     @log_time
-    def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
-        """Verify one or more torrents."""
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
+    def _peer_to_dto(self, peer) -> PeerDTO:
+        """Convert qBittorrent peer to PeerDTO."""
 
-        # Convert IDs back to hashes
-        hashes = self._ids_to_hashes(torrent_ids)
-        self.client.torrents.recheck(torrent_hashes=hashes)
+        match peer.connection:
+            case "BT":
+                connection_type = "TCP"
+            case None:
+                connection_type = "Unknown"
+            case _:
+                connection_type = peer.connection
 
-    @log_time
-    def reannounce_torrent(
-        self, torrent_ids: int | str | list[int | str]
-    ) -> None:
-        """Reannounce one or more torrents to their trackers."""
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
+        # Determine direction from 'I' flag in flags string
+        direction = "Incoming" if "I" in peer.flags else "Outgoing"
 
-        # Convert IDs back to hashes
-        hashes = self._ids_to_hashes(torrent_ids)
-        self.client.torrents.reannounce(torrent_hashes=hashes)
+        if "D" in peer.flags:
+            dl_state = PeerState.INTERESTED
+        elif "d" in peer.flags:
+            dl_state = PeerState.CHOKED
+        else:
+            dl_state = PeerState.NONE
 
-    @log_time
-    def start_all_torrents(self) -> None:
-        """Start all torrents."""
-        self.client.torrents.resume(torrent_hashes="all")
+        if "U" in peer.flags:
+            ul_state = PeerState.INTERESTED
+        elif "u" in peer.flags:
+            ul_state = PeerState.CHOKED
+        else:
+            ul_state = PeerState.NONE
 
-    @log_time
-    def stop_all_torrents(self) -> None:
-        """Stop all torrents."""
-        self.client.torrents.pause(torrent_hashes="all")
-
-    @log_time
-    def update_labels(
-        self, torrent_ids: int | str | list[int | str], labels: list[str]
-    ) -> None:
-        """Update labels/tags for one or more torrents."""
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
-
-        # Convert IDs back to hashes
-        hashes = self._ids_to_hashes(torrent_ids)
-
-        # Convert labels list to comma-separated string for qBittorrent
-        tags_str = ",".join(labels) if labels else ""
-
-        for hash_str in hashes:
-            # Get current torrent to find existing tags
-            torrents = self.client.torrents.info(torrent_hashes=hash_str)
-            if torrents:
-                existing_tags = torrents[0].tags
-                # If there are existing tags, remove them first
-                if existing_tags:
-                    try:
-                        self.client.torrents_delete_tags(
-                            tags=existing_tags, torrent_hashes=hash_str
-                        )
-                    except Exception:
-                        pass  # Ignore if tag removal fails
-
-            # Add new tags
-            if tags_str:
-                try:
-                    self.client.torrents_add_tags(
-                        tags=tags_str, torrent_hashes=hash_str
-                    )
-                except Exception:
-                    pass  # Ignore if tag addition fails
+        return PeerDTO(
+            address=peer.ip,
+            client_name=peer.client,
+            progress=peer.progress,
+            is_encrypted=peer.connection.startswith("uTP") or "E" in peer.flags,
+            rate_to_client=peer.dl_speed,
+            rate_to_peer=peer.up_speed,
+            flag_str=peer.flags,
+            port=peer.port if hasattr(peer, "port") else -1,
+            connection_type=connection_type,
+            direction=direction,
+            country=peer.country.split(",", 1)[0] if peer.country else None,
+            dl_state=dl_state,
+            ul_state=ul_state,
+        )
 
     @log_time
-    def get_categories(self) -> list[CategoryDTO]:
-        """Get list of available torrent categories."""
-        try:
-            categories_dict = self.client.torrents_categories()
-            categories = []
-            for name, data in categories_dict.items():
-                save_path = data.get("savePath") or None
-                categories.append(CategoryDTO(name=name, save_path=save_path))
-            return sorted(categories, key=lambda c: c.name)
-        except Exception:
-            return []
+    def _tracker_to_dto(self, t: Tracker) -> TrackerDTO:
+        """Convert qBittorrent tracker to TrackerDTO."""
 
-    @log_time
-    def set_category(
-        self, torrent_ids: int | str | list[int | str], category: str | None
-    ) -> None:
-        """Set category for one or more torrents."""
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
-
-        # Convert IDs back to hashes
-        hashes = self._ids_to_hashes(torrent_ids)
-
-        # qBittorrent API accepts empty string for clearing category
-        category_value = category if category else ""
-
-        for hash_str in hashes:
-            self.client.torrents_set_category(
-                category=category_value, torrent_hashes=hash_str
-            )
-
-    @log_time
-    def edit_torrent(
-        self, torrent_id: int | str, name: str, location: str
-    ) -> None:
-        torrent = self.torrent(torrent_id)
-
-        if name != torrent.name:
-            self.client.torrents.rename(
-                torrent_hash=torrent_id, new_torrent_name=name
-            )
-
-        if location != torrent.download_dir:
-            self.client.torrents.set_location(
-                torrent_hashes=torrent_id, location=location
-            )
-
-    @log_time
-    def toggle_alt_speed(self) -> bool:
-        """Toggle alternative speed limits."""
-        current_state = self.client.transfer.speed_limits_mode
-        # Toggle: '0' = normal, '1' = alternative (API returns strings)
-        new_state = "0" if current_state == "1" else "1"
-        self.client.transfer.set_speed_limits_mode(mode=new_state)
-        return new_state == "1"
-
-    @log_time
-    def set_priority(
-        self, torrent_ids: int | str | list[int | str], priority: int
-    ) -> None:
-        """Set bandwidth priority for one or more torrents.
-
-        Note: qBittorrent doesn't support whole-torrent bandwidth priority
-        (only individual file priorities and queue positions). This method
-        is a no-op for qBittorrent.
-        """
-        pass
-
-    @log_time
-    def set_file_priority(
-        self, torrent_id: int | str, file_ids: list[int], priority: FilePriority
-    ) -> None:
-        """Set download priority for files within a torrent."""
-        # Map FilePriority enum to qBittorrent priority values
-        priority_map = {
-            FilePriority.NOT_DOWNLOADING: 0,
-            FilePriority.LOW: 1,
-            FilePriority.MEDIUM: 6,
-            FilePriority.HIGH: 7,
-        }
-
-        qb_priority = priority_map[priority]
-
-        # qBittorrent uses hash as torrent ID
-        torrent_hash = str(torrent_id)
-
-        # Set priority for each file
-        self.client.torrents.file_priority(
-            torrent_hash=torrent_hash, file_ids=file_ids, priority=qb_priority
+        return TrackerDTO(
+            host=t.url,
+            tier=t.tier if t.tier >= 0 else None,
+            status=self.TRACKER_STATUS.get(
+                t.status, self.TRACKER_STATUS_UNKNOWN
+            ),
+            message=t.msg,
+            peer_count=t.num_peers if t.num_peers >= 0 else None,
+            seeder_count=t.num_seeds if t.num_seeds >= 0 else None,
+            leecher_count=t.num_leeches if t.num_leeches >= 0 else None,
+            download_count=t.num_downloaded if t.num_downloaded >= 0 else None,
         )
 
     @log_time

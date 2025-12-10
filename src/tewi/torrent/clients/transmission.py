@@ -42,6 +42,10 @@ class TransmissionClient(BaseClient):
         3: "Active",
     }
 
+    # ========================================================================
+    # Client Lifecycle & Metadata
+    # ========================================================================
+
     @log_time
     def __init__(
         self, host: str, port: str, username: str = None, password: str = None
@@ -62,6 +66,35 @@ class TransmissionClient(BaseClient):
         return {
             "name": "Transmission",
             "version": self.client.get_session().version,
+        }
+
+    # ========================================================================
+    # Session & Global Settings
+    # ========================================================================
+
+    @log_time
+    def session(self, torrents: list[TorrentDTO]) -> ClientSession:
+        s = self.client.get_session()
+        stats = self.client.session_stats()
+
+        counts = self._count_torrents_by_status(torrents)
+
+        return {
+            "download_dir": s.download_dir,
+            "download_dir_free_space": s.download_dir_free_space,
+            "upload_speed": stats.upload_speed,
+            "download_speed": stats.download_speed,
+            "alt_speed_enabled": s.alt_speed_enabled,
+            # Transmission returns KB/s - convert to bytes/s for consistency
+            "alt_speed_up": s.alt_speed_up * 1000,
+            "alt_speed_down": s.alt_speed_down * 1000,
+            "torrents_complete_size": counts["complete_size"],
+            "torrents_total_size": counts["total_size"],
+            "torrents_count": counts["count"],
+            "torrents_down": counts["down"],
+            "torrents_seed": counts["seed"],
+            "torrents_check": counts["check"],
+            "torrents_stop": counts["stop"],
         }
 
     @log_time
@@ -95,31 +128,6 @@ class TransmissionClient(BaseClient):
         }
 
     @log_time
-    def session(self, torrents: list[TorrentDTO]) -> ClientSession:
-        s = self.client.get_session()
-        stats = self.client.session_stats()
-
-        counts = self._count_torrents_by_status(torrents)
-
-        return {
-            "download_dir": s.download_dir,
-            "download_dir_free_space": s.download_dir_free_space,
-            "upload_speed": stats.upload_speed,
-            "download_speed": stats.download_speed,
-            "alt_speed_enabled": s.alt_speed_enabled,
-            # Transmission returns KB/s - convert to bytes/s for consistency
-            "alt_speed_up": s.alt_speed_up * 1000,
-            "alt_speed_down": s.alt_speed_down * 1000,
-            "torrents_complete_size": counts["complete_size"],
-            "torrents_total_size": counts["total_size"],
-            "torrents_count": counts["count"],
-            "torrents_down": counts["down"],
-            "torrents_seed": counts["seed"],
-            "torrents_check": counts["check"],
-            "torrents_stop": counts["stop"],
-        }
-
-    @log_time
     def preferences(self) -> dict[str, str]:
         session_dict = self.client.get_session().fields
 
@@ -131,6 +139,16 @@ class TransmissionClient(BaseClient):
         }
 
         return dict(sorted(filtered.items()))
+
+    @log_time
+    def toggle_alt_speed(self) -> bool:
+        alt_speed_enabled = self.client.get_session().alt_speed_enabled
+        self.client.set_session(alt_speed_enabled=not alt_speed_enabled)
+        return not alt_speed_enabled
+
+    # ========================================================================
+    # Torrent Retrieval
+    # ========================================================================
 
     @log_time
     def torrents(self) -> list[TorrentDTO]:
@@ -169,6 +187,10 @@ class TransmissionClient(BaseClient):
         torrent = self.client.get_torrent(id)
         return self._torrent_detail_to_dto(torrent)
 
+    # ========================================================================
+    # Torrent Lifecycle Operations
+    # ========================================================================
+
     @log_time
     def add_torrent(self, value: str) -> None:
         if is_torrent_link(value):
@@ -184,8 +206,17 @@ class TransmissionClient(BaseClient):
         self.client.start_torrent(torrent_ids)
 
     @log_time
+    def start_all_torrents(self) -> None:
+        self.client.start_all()
+
+    @log_time
     def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
         self.client.stop_torrent(torrent_ids)
+
+    @log_time
+    def stop_all_torrents(self) -> None:
+        torrents = self.client.get_torrents(arguments=["id"])
+        self.stop_torrent([t.id for t in torrents])
 
     @log_time
     def remove_torrent(
@@ -205,23 +236,21 @@ class TransmissionClient(BaseClient):
     ) -> None:
         self.client.reannounce_torrent(torrent_ids)
 
-    @log_time
-    def start_all_torrents(self) -> None:
-        self.client.start_all()
+    # ========================================================================
+    # Torrent Organization & Metadata
+    # ========================================================================
 
     @log_time
-    def stop_all_torrents(self) -> None:
-        torrents = self.client.get_torrents(arguments=["id"])
-        self.stop_torrent([t.id for t in torrents])
-
-    @log_time
-    def update_labels(
-        self, torrent_ids: int | str | list[int | str], labels: list[str]
+    def edit_torrent(
+        self, torrent_id: int | str, name: str, location: str
     ) -> None:
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
+        torrent = self.torrent(torrent_id)
 
-        self.client.change_torrent(torrent_ids, labels=labels)
+        if name != torrent.name:
+            self.client.rename_torrent_path(torrent_id, torrent.name, name)
+
+        if location != torrent.download_dir:
+            self.client.move_torrent_data(torrent_id, location)
 
     @log_time
     def get_categories(self) -> list[CategoryDTO]:
@@ -242,22 +271,17 @@ class TransmissionClient(BaseClient):
         raise ClientError("Transmission doesn't support categories")
 
     @log_time
-    def edit_torrent(
-        self, torrent_id: int | str, name: str, location: str
+    def update_labels(
+        self, torrent_ids: int | str | list[int | str], labels: list[str]
     ) -> None:
-        torrent = self.torrent(torrent_id)
+        if isinstance(torrent_ids, (int, str)):
+            torrent_ids = [torrent_ids]
 
-        if name != torrent.name:
-            self.client.rename_torrent_path(torrent_id, torrent.name, name)
+        self.client.change_torrent(torrent_ids, labels=labels)
 
-        if location != torrent.download_dir:
-            self.client.move_torrent_data(torrent_id, location)
-
-    @log_time
-    def toggle_alt_speed(self) -> bool:
-        alt_speed_enabled = self.client.get_session().alt_speed_enabled
-        self.client.set_session(alt_speed_enabled=not alt_speed_enabled)
-        return not alt_speed_enabled
+    # ========================================================================
+    # Priority Management
+    # ========================================================================
 
     @log_time
     def set_priority(
@@ -294,6 +318,10 @@ class TransmissionClient(BaseClient):
 
         self.client.change_torrent(torrent_id, **args)
 
+    # ========================================================================
+    # Internal Helpers
+    # ========================================================================
+
     @log_time
     def _torrent_to_dto(self, torrent: Torrent) -> TorrentDTO:
         """Convert transmission-rpc Torrent to TorrentDTO."""
@@ -320,6 +348,43 @@ class TransmissionClient(BaseClient):
             download_dir=torrent.download_dir,
             category=None,  # Transmission does not support categories
             labels=list(torrent.labels) if torrent.labels else [],
+        )
+
+    @log_time
+    def _torrent_detail_to_dto(self, torrent: Torrent) -> TorrentDetailDTO:
+        """Convert transmission-rpc Torrent to TorrentDetailDTO."""
+        files = [self._file_to_dto(f) for f in torrent.get_files()]
+        peers = [self._peer_to_dto(p) for p in torrent.peers]
+        trackers = [self._tracker_to_dto(t) for t in torrent.tracker_stats]
+
+        return TorrentDetailDTO(
+            id=torrent.id,
+            name=torrent.name,
+            hash_string=torrent.hash_string,
+            total_size=torrent.total_size,
+            piece_count=torrent.piece_count,
+            piece_size=torrent.piece_size,
+            is_private=torrent.is_private,
+            comment=torrent.comment,
+            creator=torrent.creator,
+            labels=list(torrent.labels) if torrent.labels else [],
+            category=None,  # Transmission does not support categories
+            status=torrent.status,
+            download_dir=torrent.download_dir,
+            downloaded_ever=torrent.downloaded_ever,
+            uploaded_ever=torrent.uploaded_ever,
+            ratio=torrent.ratio,
+            error_string=torrent.error_string,
+            added_date=torrent.added_date,
+            start_date=torrent.start_date,
+            done_date=torrent.done_date,
+            activity_date=torrent.activity_date,
+            peers_connected=torrent.peers_connected,
+            peers_sending_to_us=torrent.peers_sending_to_us,
+            peers_getting_from_us=torrent.peers_getting_from_us,
+            files=files,
+            peers=peers,
+            trackers=trackers,
         )
 
     @log_time
@@ -397,43 +462,6 @@ class TransmissionClient(BaseClient):
             next_announce=self._ts_to_dt(t.next_announce_time),
             last_scrape=self._ts_to_dt(t.last_scrape_time),
             next_scrape=self._ts_to_dt(t.next_scrape_time),
-        )
-
-    @log_time
-    def _torrent_detail_to_dto(self, torrent: Torrent) -> TorrentDetailDTO:
-        """Convert transmission-rpc Torrent to TorrentDetailDTO."""
-        files = [self._file_to_dto(f) for f in torrent.get_files()]
-        peers = [self._peer_to_dto(p) for p in torrent.peers]
-        trackers = [self._tracker_to_dto(t) for t in torrent.tracker_stats]
-
-        return TorrentDetailDTO(
-            id=torrent.id,
-            name=torrent.name,
-            hash_string=torrent.hash_string,
-            total_size=torrent.total_size,
-            piece_count=torrent.piece_count,
-            piece_size=torrent.piece_size,
-            is_private=torrent.is_private,
-            comment=torrent.comment,
-            creator=torrent.creator,
-            labels=list(torrent.labels) if torrent.labels else [],
-            category=None,  # Transmission does not support categories
-            status=torrent.status,
-            download_dir=torrent.download_dir,
-            downloaded_ever=torrent.downloaded_ever,
-            uploaded_ever=torrent.uploaded_ever,
-            ratio=torrent.ratio,
-            error_string=torrent.error_string,
-            added_date=torrent.added_date,
-            start_date=torrent.start_date,
-            done_date=torrent.done_date,
-            activity_date=torrent.activity_date,
-            peers_connected=torrent.peers_connected,
-            peers_sending_to_us=torrent.peers_sending_to_us,
-            peers_getting_from_us=torrent.peers_getting_from_us,
-            files=files,
-            peers=peers,
-            trackers=trackers,
         )
 
     @staticmethod
