@@ -526,7 +526,7 @@ class ProwlarrProvider(BaseSearchProvider):
             # Convert to string representation
             if isinstance(value, list):
                 # skip, if flags contains only freelech
-                if key == 'indexerFlags' and set(value) == {"freeleech"}:
+                if key == "indexerFlags" and set(value) == {"freeleech"}:
                     continue
                 else:
                     # For complex types, convert to string
