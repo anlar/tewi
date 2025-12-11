@@ -21,7 +21,7 @@ from textual.containers import Grid, Horizontal
 from textual.reactive import reactive
 from textual.widgets import ProgressBar, Static
 
-from ...torrent.models import TorrentDTO
+from ...torrent.models import Torrent
 from ...util.decorator import log_time
 from ...util.print import esc_trunk, print_size, print_time
 from .common import ReactiveLabel, SpeedIndicator
@@ -30,7 +30,7 @@ from .common import ReactiveLabel, SpeedIndicator
 class TorrentItem(Static):
     selected = reactive(False)
     marked = reactive(False)
-    torrent: TorrentDTO | None = reactive(None)
+    torrent: Torrent | None = reactive(None)
 
     t_id = reactive(None)
     t_name = reactive(None)
@@ -55,7 +55,7 @@ class TorrentItem(Static):
     w_prev = None
 
     @log_time
-    def __init__(self, torrent: TorrentDTO):
+    def __init__(self, torrent: Torrent):
         super().__init__()
         self.update_torrent(torrent)
 
@@ -111,7 +111,7 @@ class TorrentItem(Static):
             self.add_class("priority-none")
 
     @log_time
-    def update_torrent(self, torrent: TorrentDTO) -> None:
+    def update_torrent(self, torrent: Torrent) -> None:
         with self.app.batch_update():
             self.torrent = torrent
 
@@ -286,7 +286,7 @@ class TorrentItemCard(TorrentItem):
             yield ReactiveLabel().data_bind(name=TorrentItemCard.t_size_stats)
 
     @log_time
-    def update_torrent(self, torrent: TorrentDTO) -> None:
+    def update_torrent(self, torrent: Torrent) -> None:
         super().update_torrent(torrent)
 
         with self.app.batch_update():

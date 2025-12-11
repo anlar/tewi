@@ -13,7 +13,7 @@ from textual.reactive import reactive
 from textual.widgets import Static, TabbedContent, TabPane
 from textual.widgets.data_table import RowKey
 
-from ...torrent.models import FilePriority
+from ...torrent.models import TorrentFilePriority
 from ...util.data import get_file_list
 from ...util.decorator import log_time
 from ...util.geoip import get_country
@@ -440,7 +440,7 @@ class TorrentInfoPanel(ScrollableContainer):
             row_key = row_keys[row_idx]
 
             # Apply dim styling for not-downloading files
-            if item.get("file_priority") == FilePriority.NOT_DOWNLOADING:
+            if item.get("file_priority") == TorrentFilePriority.NOT_DOWNLOADING:
                 table.update_cell(row_key, "ID", f"[dim]{item['id']}[/dim]")
                 table.update_cell(row_key, "Size", f"[dim]{item['size']}[/dim]")
                 table.update_cell(row_key, "Done", f"[dim]{item['done']}[/dim]")
@@ -459,7 +459,7 @@ class TorrentInfoPanel(ScrollableContainer):
     def draw_file_table(self, table, file_list) -> None:
         for item in file_list:
             # Apply dim styling for not-downloading files
-            if item.get("file_priority") == FilePriority.NOT_DOWNLOADING:
+            if item.get("file_priority") == TorrentFilePriority.NOT_DOWNLOADING:
                 table.add_row(
                     f"[dim]{item['id']}[/dim]",
                     f"[dim]{item['size']}[/dim]",
@@ -566,19 +566,21 @@ class TorrentInfoPanel(ScrollableContainer):
         return file_ids
 
     @log_time
-    def _determine_target_priority(self, file_ids: list[int]) -> FilePriority:
+    def _determine_target_priority(
+        self, file_ids: list[int]
+    ) -> TorrentFilePriority:
         """Determine target priority by checking first file's current
         priority."""
         first_file = next(
             (f for f in self.r_torrent.files if f.id == file_ids[0]), None
         )
         if not first_file:
-            return FilePriority.MEDIUM
+            return TorrentFilePriority.MEDIUM
 
-        if first_file.priority == FilePriority.NOT_DOWNLOADING:
-            return FilePriority.MEDIUM
+        if first_file.priority == TorrentFilePriority.NOT_DOWNLOADING:
+            return TorrentFilePriority.MEDIUM
         else:
-            return FilePriority.NOT_DOWNLOADING
+            return TorrentFilePriority.NOT_DOWNLOADING
 
     @log_time
     def action_toggle_file_download(self, action_code: str | None):
@@ -618,11 +620,11 @@ class TorrentInfoPanel(ScrollableContainer):
 
         match action_code:
             case "high":
-                target_priority = FilePriority.HIGH
+                target_priority = TorrentFilePriority.HIGH
             case "medium":
-                target_priority = FilePriority.MEDIUM
+                target_priority = TorrentFilePriority.MEDIUM
             case "low":
-                target_priority = FilePriority.LOW
+                target_priority = TorrentFilePriority.LOW
             case _:
                 target_priority = self._determine_target_priority(file_ids)
 

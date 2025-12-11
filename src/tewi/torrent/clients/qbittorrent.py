@@ -11,18 +11,18 @@ from ...util.decorator import log_time
 from ...util.misc import is_torrent_link
 from ..base import BaseClient
 from ..models import (
-    CategoryDTO,
     ClientError,
     ClientMeta,
     ClientSession,
     ClientStats,
-    FileDTO,
-    FilePriority,
-    PeerDTO,
-    PeerState,
-    TorrentDetailDTO,
-    TorrentDTO,
-    TrackerDTO,
+    Torrent,
+    TorrentCategory,
+    TorrentDetail,
+    TorrentFile,
+    TorrentFilePriority,
+    TorrentPeer,
+    TorrentPeerState,
+    TorrentTracker,
 )
 
 
@@ -111,7 +111,7 @@ class QBittorrentClient(BaseClient):
     # ========================================================================
 
     @log_time
-    def session(self, torrents: list[TorrentDTO]) -> ClientSession:
+    def session(self, torrents: list[Torrent]) -> ClientSession:
         transfer_info = self.client.transfer.info
         prefs = self.client.app.preferences
 
@@ -246,13 +246,13 @@ class QBittorrentClient(BaseClient):
     # ========================================================================
 
     @log_time
-    def torrents(self) -> list[TorrentDTO]:
+    def torrents(self) -> list[Torrent]:
         """Get list of all torrents."""
         qb_torrents = self.client.torrents.info()
         return [self._torrent_to_dto(t) for t in qb_torrents]
 
     @log_time
-    def torrent(self, id: int | str) -> TorrentDetailDTO:
+    def torrent(self, id: int | str) -> TorrentDetail:
         """Get detailed information about a specific torrent."""
         # In qBittorrent, the ID is the hash string itself
         # Get the torrent directly by hash
@@ -366,14 +366,16 @@ class QBittorrentClient(BaseClient):
             )
 
     @log_time
-    def get_categories(self) -> list[CategoryDTO]:
+    def get_categories(self) -> list[TorrentCategory]:
         """Get list of available torrent categories."""
         try:
             categories_dict = self.client.torrents_categories()
             categories = []
             for name, data in categories_dict.items():
                 save_path = data.get("savePath") or None
-                categories.append(CategoryDTO(name=name, save_path=save_path))
+                categories.append(
+                    TorrentCategory(name=name, save_path=save_path)
+                )
             return sorted(categories, key=lambda c: c.name)
         except Exception:
             return []
@@ -452,15 +454,18 @@ class QBittorrentClient(BaseClient):
 
     @log_time
     def set_file_priority(
-        self, torrent_id: int | str, file_ids: list[int], priority: FilePriority
+        self,
+        torrent_id: int | str,
+        file_ids: list[int],
+        priority: TorrentFilePriority,
     ) -> None:
         """Set download priority for files within a torrent."""
-        # Map FilePriority enum to qBittorrent priority values
+        # Map TorrentFilePriority enum to qBittorrent priority values
         priority_map = {
-            FilePriority.NOT_DOWNLOADING: 0,
-            FilePriority.LOW: 1,
-            FilePriority.MEDIUM: 6,
-            FilePriority.HIGH: 7,
+            TorrentFilePriority.NOT_DOWNLOADING: 0,
+            TorrentFilePriority.LOW: 1,
+            TorrentFilePriority.MEDIUM: 6,
+            TorrentFilePriority.HIGH: 7,
         }
 
         qb_priority = priority_map[priority]
@@ -483,8 +488,8 @@ class QBittorrentClient(BaseClient):
         return self.STATUS_MAP.get(qb_status, "stopped")
 
     @log_time
-    def _torrent_to_dto(self, torrent) -> TorrentDTO:
-        """Convert qBittorrent torrent to TorrentDTO.
+    def _torrent_to_dto(self, torrent) -> Torrent:
+        """Convert qBittorrent torrent to Torrent.
 
         Populates list view fields only.
         """
@@ -495,7 +500,7 @@ class QBittorrentClient(BaseClient):
         else:
             eta = timedelta(seconds=-1)  # Transmission uses -1 for unknown
 
-        return TorrentDTO(
+        return Torrent(
             id=torrent.hash,  # qBittorrent uses hash as ID
             name=torrent.name,
             status=self._normalize_status(torrent.state),
@@ -532,8 +537,8 @@ class QBittorrentClient(BaseClient):
         )
 
     @log_time
-    def _torrent_detail_to_dto(self, torrent) -> TorrentDetailDTO:
-        """Convert qBittorrent torrent to TorrentDetailDTO.
+    def _torrent_detail_to_dto(self, torrent) -> TorrentDetail:
+        """Convert qBittorrent torrent to TorrentDetail.
 
         Reuses _torrent_to_dto for base fields and adds detail-specific
         fields plus files, peers, and trackers.
@@ -569,7 +574,7 @@ class QBittorrentClient(BaseClient):
         trackers_data = self.client.torrents.trackers(torrent_hash=torrent.hash)
         trackers = [self._tracker_to_dto(t) for t in trackers_data]
 
-        return TorrentDetailDTO(
+        return TorrentDetail(
             **base_dict,
             hash_string=torrent.hash,
             piece_count=piece_count,
@@ -598,20 +603,20 @@ class QBittorrentClient(BaseClient):
         )
 
     @log_time
-    def _file_to_dto(self, file, torrent_hash: str) -> FileDTO:
-        """Convert qBittorrent file to FileDTO."""
+    def _file_to_dto(self, file, torrent_hash: str) -> TorrentFile:
+        """Convert qBittorrent file to TorrentFile."""
 
         match file.priority:
             case 0:
-                priority = FilePriority.NOT_DOWNLOADING
+                priority = TorrentFilePriority.NOT_DOWNLOADING
             case 1:
-                priority = FilePriority.LOW
+                priority = TorrentFilePriority.LOW
             case 6:
-                priority = FilePriority.MEDIUM
+                priority = TorrentFilePriority.MEDIUM
             case 7:
-                priority = FilePriority.HIGH
+                priority = TorrentFilePriority.HIGH
 
-        return FileDTO(
+        return TorrentFile(
             id=file.index,
             name=file.name,
             size=file.size,
@@ -620,8 +625,8 @@ class QBittorrentClient(BaseClient):
         )
 
     @log_time
-    def _peer_to_dto(self, peer) -> PeerDTO:
-        """Convert qBittorrent peer to PeerDTO."""
+    def _peer_to_dto(self, peer) -> TorrentPeer:
+        """Convert qBittorrent peer to TorrentPeer."""
 
         match peer.connection:
             case "BT":
@@ -635,20 +640,20 @@ class QBittorrentClient(BaseClient):
         direction = "Incoming" if "I" in peer.flags else "Outgoing"
 
         if "D" in peer.flags:
-            dl_state = PeerState.INTERESTED
+            dl_state = TorrentPeerState.INTERESTED
         elif "d" in peer.flags:
-            dl_state = PeerState.CHOKED
+            dl_state = TorrentPeerState.CHOKED
         else:
-            dl_state = PeerState.NONE
+            dl_state = TorrentPeerState.NONE
 
         if "U" in peer.flags:
-            ul_state = PeerState.INTERESTED
+            ul_state = TorrentPeerState.INTERESTED
         elif "u" in peer.flags:
-            ul_state = PeerState.CHOKED
+            ul_state = TorrentPeerState.CHOKED
         else:
-            ul_state = PeerState.NONE
+            ul_state = TorrentPeerState.NONE
 
-        return PeerDTO(
+        return TorrentPeer(
             address=peer.ip,
             client_name=peer.client,
             progress=peer.progress,
@@ -665,10 +670,10 @@ class QBittorrentClient(BaseClient):
         )
 
     @log_time
-    def _tracker_to_dto(self, t: Tracker) -> TrackerDTO:
-        """Convert qBittorrent tracker to TrackerDTO."""
+    def _tracker_to_dto(self, t: Tracker) -> TorrentTracker:
+        """Convert qBittorrent tracker to TorrentTracker."""
 
-        return TrackerDTO(
+        return TorrentTracker(
             host=t.url,
             tier=t.tier if t.tier >= 0 else None,
             status=self.TRACKER_STATUS.get(

@@ -3,7 +3,7 @@ from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.widgets import DataTable, Static
 
-from ....torrent.models import CategoryDTO
+from ....torrent.models import TorrentCategory
 from ....util.decorator import log_time
 from ...messages import UpdateTorrentCategoryCommand
 from ...util import subtitle_keys
@@ -11,7 +11,7 @@ from ...util import subtitle_keys
 
 class UpdateTorrentCategoryDialog(ModalScreen):
     @log_time
-    def __init__(self, torrent, categories: list[CategoryDTO]):
+    def __init__(self, torrent, categories: list[TorrentCategory]):
         self.torrent = torrent
         self.categories = categories
         super().__init__()
@@ -32,7 +32,7 @@ class UpdateTorrentCategoryWidget(Static):
     ]
 
     @log_time
-    def __init__(self, torrent, categories: list[CategoryDTO]):
+    def __init__(self, torrent, categories: list[TorrentCategory]):
         self.torrent = torrent
         self.categories = categories
 

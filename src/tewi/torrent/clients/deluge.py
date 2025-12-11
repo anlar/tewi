@@ -12,18 +12,18 @@ import requests
 from ...util.decorator import log_time
 from ..base import BaseClient
 from ..models import (
-    CategoryDTO,
     ClientError,
     ClientMeta,
     ClientSession,
     ClientStats,
-    FileDTO,
-    FilePriority,
-    PeerDTO,
-    PeerState,
-    TorrentDetailDTO,
-    TorrentDTO,
-    TrackerDTO,
+    Torrent,
+    TorrentCategory,
+    TorrentDetail,
+    TorrentFile,
+    TorrentFilePriority,
+    TorrentPeer,
+    TorrentPeerState,
+    TorrentTracker,
 )
 
 
@@ -138,7 +138,7 @@ class DelugeClient(BaseClient):
     # ========================================================================
 
     @log_time
-    def session(self, torrents: list[TorrentDTO]) -> ClientSession:
+    def session(self, torrents: list[Torrent]) -> ClientSession:
         """Get session information with computed torrent counts."""
         # Get config and session status
         config = self._call("core.get_config")
@@ -261,7 +261,7 @@ class DelugeClient(BaseClient):
     # ========================================================================
 
     @log_time
-    def torrents(self) -> list[TorrentDTO]:
+    def torrents(self) -> list[Torrent]:
         """Get list of all torrents."""
 
         torrents_data = self._call(
@@ -274,7 +274,7 @@ class DelugeClient(BaseClient):
         ]
 
     @log_time
-    def torrent(self, id: int | str) -> TorrentDetailDTO:
+    def torrent(self, id: int | str) -> TorrentDetail:
         """Get detailed information about a specific torrent.
 
         Reuses _torrent_to_dto for base fields and adds detail-specific
@@ -329,7 +329,7 @@ class DelugeClient(BaseClient):
 
         t = torrent_data
 
-        return TorrentDetailDTO(
+        return TorrentDetail(
             **base_dict,
             hash_string=t.get("hash"),
             piece_count=t.get("num_pieces"),
@@ -477,7 +477,7 @@ class DelugeClient(BaseClient):
             self._call("core.move_storage", [[str(torrent_id)], location])
 
     @log_time
-    def get_categories(self) -> list[CategoryDTO]:
+    def get_categories(self) -> list[TorrentCategory]:
         """Get list of available torrent categories.
 
         Note: Deluge uses labels which function as categories.
@@ -500,7 +500,9 @@ class DelugeClient(BaseClient):
                 ):
                     save_path = options["move_completed_path"]
 
-                categories.append(CategoryDTO(name=label, save_path=save_path))
+                categories.append(
+                    TorrentCategory(name=label, save_path=save_path)
+                )
 
             return categories
         except Exception:
@@ -553,16 +555,19 @@ class DelugeClient(BaseClient):
 
     @log_time
     def set_file_priority(
-        self, torrent_id: int | str, file_ids: list[int], priority: FilePriority
+        self,
+        torrent_id: int | str,
+        file_ids: list[int],
+        priority: TorrentFilePriority,
     ) -> None:
         """Set download priority for files within a torrent."""
-        # Map FilePriority enum to Deluge priority values
+        # Map TorrentFilePriority enum to Deluge priority values
         # Deluge uses 0=Skip, 1=Low, 4=Normal, 7=High
         priority_map = {
-            FilePriority.NOT_DOWNLOADING: 0,
-            FilePriority.LOW: 1,
-            FilePriority.MEDIUM: 4,
-            FilePriority.HIGH: 7,
+            TorrentFilePriority.NOT_DOWNLOADING: 0,
+            TorrentFilePriority.LOW: 1,
+            TorrentFilePriority.MEDIUM: 4,
+            TorrentFilePriority.HIGH: 7,
         }
 
         deluge_priority = priority_map[priority]
@@ -688,13 +693,13 @@ class DelugeClient(BaseClient):
         return self.STATUS_MAP.get(deluge_status, "Unknown")
 
     @log_time
-    def _torrent_to_dto(self, torrent_hash: str, t: dict) -> TorrentDTO:
-        """Convert Deluge torrent data to TorrentDTO.
+    def _torrent_to_dto(self, torrent_hash: str, t: dict) -> Torrent:
+        """Convert Deluge torrent data to Torrent.
 
         Populates list view fields only.
         """
 
-        return TorrentDTO(
+        return Torrent(
             id=torrent_hash,
             name=t.get("name"),
             status=self._normalize_status(t.get("state")),
@@ -730,8 +735,8 @@ class DelugeClient(BaseClient):
         index: int = None,
         priority_value: int = None,
         progress: float = None,
-    ) -> FileDTO:
-        """Convert Deluge file data to FileDTO.
+    ) -> TorrentFile:
+        """Convert Deluge file data to TorrentFile.
 
         Args:
             file_data: File information dict with 'path', 'size', etc.
@@ -746,13 +751,13 @@ class DelugeClient(BaseClient):
             priority_value = file_data.get("priority", 4)
 
         if priority_value == 0:
-            priority = FilePriority.NOT_DOWNLOADING
+            priority = TorrentFilePriority.NOT_DOWNLOADING
         elif priority_value == 1:
-            priority = FilePriority.LOW
+            priority = TorrentFilePriority.LOW
         elif priority_value <= 4:
-            priority = FilePriority.MEDIUM
+            priority = TorrentFilePriority.MEDIUM
         else:
-            priority = FilePriority.HIGH
+            priority = TorrentFilePriority.HIGH
 
         size = file_data.get("size", 0)
         if progress is None:
@@ -761,7 +766,7 @@ class DelugeClient(BaseClient):
         if index is None:
             index = file_data.get("index", 0)
 
-        return FileDTO(
+        return TorrentFile(
             id=index,
             name=file_data.get("path", "Unknown"),
             size=size,
@@ -770,12 +775,12 @@ class DelugeClient(BaseClient):
         )
 
     @log_time
-    def _peer_to_dto(self, peer: dict) -> PeerDTO:
-        """Convert Deluge peer data to PeerDTO."""
+    def _peer_to_dto(self, peer: dict) -> TorrentPeer:
+        """Convert Deluge peer data to TorrentPeer."""
 
         address, port = peer.get("ip").split(":", 1)
 
-        return PeerDTO(
+        return TorrentPeer(
             address=address,
             port=port,
             client_name=peer.get("client"),
@@ -787,15 +792,15 @@ class DelugeClient(BaseClient):
             connection_type=None,
             direction=None,
             country=peer.get("country"),
-            dl_state=PeerState.NONE,
-            ul_state=PeerState.NONE,
+            dl_state=TorrentPeerState.NONE,
+            ul_state=TorrentPeerState.NONE,
         )
 
     @log_time
-    def _tracker_to_dto(self, tracker: dict) -> TrackerDTO:
-        """Convert Deluge tracker data to TrackerDTO."""
+    def _tracker_to_dto(self, tracker: dict) -> TorrentTracker:
+        """Convert Deluge tracker data to TorrentTracker."""
 
-        return TrackerDTO(
+        return TorrentTracker(
             host=tracker.get("url"),
             tier=tracker.get("tier"),
             seeder_count=tracker.get("scrape_complete"),

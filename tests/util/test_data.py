@@ -17,14 +17,14 @@
 import pytest
 from rich.text import Text
 
-from src.tewi.torrent.models import FileDTO, FilePriority
+from src.tewi.torrent.models import TorrentFile, TorrentFilePriority
 from src.tewi.util.data import get_file_list, print_priority
 
 
 class TestPrintPriority:
     """Test cases for print_priority function."""
 
-    @pytest.mark.parametrize("priority", list(FilePriority))
+    @pytest.mark.parametrize("priority", list(TorrentFilePriority))
     def test_returns_non_empty_string(self, priority):
         """Test that all priorities return non-empty string values."""
         result = print_priority(priority)
@@ -33,10 +33,10 @@ class TestPrintPriority:
 
     def test_unique_outputs(self):
         """Test that each priority level has a unique output."""
-        results = [print_priority(p) for p in list(FilePriority)]
+        results = [print_priority(p) for p in list(TorrentFilePriority)]
         assert len(results) == len(set(results))
 
-    @pytest.mark.parametrize("priority", list(FilePriority))
+    @pytest.mark.parametrize("priority", list(TorrentFilePriority))
     def test_rich_text_parseable(self, priority):
         """Test that outputs can be parsed by Rich Text."""
         result = print_priority(priority)
@@ -56,12 +56,12 @@ class TestGetFileList:
             # One file
             (
                 [
-                    FileDTO(
+                    TorrentFile(
                         id=0,
                         name="file.txt",
                         size=1024,
                         completed=512,
-                        priority=FilePriority.MEDIUM,
+                        priority=TorrentFilePriority.MEDIUM,
                     ),
                 ],
                 1,
@@ -70,40 +70,40 @@ class TestGetFileList:
             # 5 files flat (no directories)
             (
                 [
-                    FileDTO(
+                    TorrentFile(
                         id=0,
                         name="file1.txt",
                         size=1024,
                         completed=1024,
-                        priority=FilePriority.HIGH,
+                        priority=TorrentFilePriority.HIGH,
                     ),
-                    FileDTO(
+                    TorrentFile(
                         id=1,
                         name="file2.txt",
                         size=2048,
                         completed=0,
-                        priority=FilePriority.NOT_DOWNLOADING,
+                        priority=TorrentFilePriority.NOT_DOWNLOADING,
                     ),
-                    FileDTO(
+                    TorrentFile(
                         id=2,
                         name="file3.txt",
                         size=512,
                         completed=256,
-                        priority=FilePriority.LOW,
+                        priority=TorrentFilePriority.LOW,
                     ),
-                    FileDTO(
+                    TorrentFile(
                         id=3,
                         name="file4.txt",
                         size=4096,
                         completed=4096,
-                        priority=FilePriority.MEDIUM,
+                        priority=TorrentFilePriority.MEDIUM,
                     ),
-                    FileDTO(
+                    TorrentFile(
                         id=4,
                         name="file5.txt",
                         size=8192,
                         completed=4096,
-                        priority=FilePriority.HIGH,
+                        priority=TorrentFilePriority.HIGH,
                     ),
                 ],
                 5,
@@ -112,12 +112,12 @@ class TestGetFileList:
             # One dir with one file
             (
                 [
-                    FileDTO(
+                    TorrentFile(
                         id=0,
                         name="dir/file.txt",
                         size=1024,
                         completed=512,
-                        priority=FilePriority.MEDIUM,
+                        priority=TorrentFilePriority.MEDIUM,
                     ),
                 ],
                 1,
@@ -126,75 +126,75 @@ class TestGetFileList:
             # Complex structure
             (
                 [
-                    FileDTO(
+                    TorrentFile(
                         id=0,
                         name="README.md",
                         size=1024,
                         completed=1024,
-                        priority=FilePriority.MEDIUM,
+                        priority=TorrentFilePriority.MEDIUM,
                     ),
-                    FileDTO(
+                    TorrentFile(
                         id=1,
                         name="src/main.py",
                         size=2048,
                         completed=1024,
-                        priority=FilePriority.HIGH,
+                        priority=TorrentFilePriority.HIGH,
                     ),
-                    FileDTO(
+                    TorrentFile(
                         id=2,
                         name="src/utils.py",
                         size=512,
                         completed=512,
-                        priority=FilePriority.MEDIUM,
+                        priority=TorrentFilePriority.MEDIUM,
                     ),
-                    FileDTO(
+                    TorrentFile(
                         id=3,
                         name="docs/guide.md",
                         size=4096,
                         completed=0,
-                        priority=FilePriority.NOT_DOWNLOADING,
+                        priority=TorrentFilePriority.NOT_DOWNLOADING,
                     ),
-                    FileDTO(
+                    TorrentFile(
                         id=4,
                         name="docs/api/index.html",
                         size=8192,
                         completed=4096,
-                        priority=FilePriority.LOW,
+                        priority=TorrentFilePriority.LOW,
                     ),
-                    FileDTO(
+                    TorrentFile(
                         id=5,
                         name="docs/api/reference.html",
                         size=16384,
                         completed=16384,
-                        priority=FilePriority.HIGH,
+                        priority=TorrentFilePriority.HIGH,
                     ),
-                    FileDTO(
+                    TorrentFile(
                         id=6,
                         name="tests/test_one.py",
                         size=1536,
                         completed=768,
-                        priority=FilePriority.MEDIUM,
+                        priority=TorrentFilePriority.MEDIUM,
                     ),
-                    FileDTO(
+                    TorrentFile(
                         id=7,
                         name="tests/unit/test_two.py",
                         size=2560,
                         completed=2560,
-                        priority=FilePriority.LOW,
+                        priority=TorrentFilePriority.LOW,
                     ),
-                    FileDTO(
+                    TorrentFile(
                         id=8,
                         name="tests/unit/fixtures/data.json",
                         size=128,
                         completed=64,
-                        priority=FilePriority.HIGH,
+                        priority=TorrentFilePriority.HIGH,
                     ),
-                    FileDTO(
+                    TorrentFile(
                         id=9,
                         name="LICENSE",
                         size=2048,
                         completed=2048,
-                        priority=FilePriority.MEDIUM,
+                        priority=TorrentFilePriority.MEDIUM,
                     ),
                 ],
                 10,

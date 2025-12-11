@@ -6,7 +6,7 @@ from textual.binding import Binding, BindingType
 from textual.reactive import reactive
 from textual.widgets import ListItem, ListView
 
-from ...torrent.models import TorrentDTO
+from ...torrent.models import Torrent
 from ...util.decorator import log_time
 from ..messages import (
     ChangeTorrentPriorityCommand,
@@ -78,7 +78,7 @@ class TorrentListViewPanel(ListView):
         Binding("N", "search_previous", "[Search] Previous result"),
     ]
 
-    r_torrents: list[TorrentDTO] | None = reactive(None)
+    r_torrents: list[Torrent] | None = reactive(None)
 
     # Search state
     search_term = ""
@@ -151,7 +151,7 @@ class TorrentListViewPanel(ListView):
     @log_time
     def update_page(
         self,
-        torrents: list[TorrentDTO],
+        torrents: list[Torrent],
         hl_torrent_id: int = None,
         force: bool = False,
     ) -> None:

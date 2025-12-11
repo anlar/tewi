@@ -5,7 +5,7 @@ from typing import TypedDict
 
 
 @dataclass(frozen=True)
-class TorrentDTO:
+class Torrent:
     """Data Transfer Object for torrent list view (immutable).
 
     Note: All size fields are in bytes, all speed fields are in bytes/second.
@@ -35,7 +35,7 @@ class TorrentDTO:
     labels: list[str]
 
 
-class FilePriority(Enum):
+class TorrentFilePriority(Enum):
     NOT_DOWNLOADING = auto()
     LOW = auto()
     MEDIUM = auto()
@@ -43,7 +43,7 @@ class FilePriority(Enum):
 
 
 @dataclass(frozen=True)
-class FileDTO:
+class TorrentFile:
     """Data Transfer Object for torrent file information.
 
     Note: All size fields are in bytes.
@@ -53,10 +53,10 @@ class FileDTO:
     name: str
     size: int  # bytes
     completed: int  # bytes
-    priority: FilePriority
+    priority: TorrentFilePriority
 
 
-class PeerState(Enum):
+class TorrentPeerState(Enum):
     INTERESTED = "Interested"
     """Peer is interested in data and unchoked."""
 
@@ -68,7 +68,7 @@ class PeerState(Enum):
 
 
 @dataclass(frozen=True)
-class CategoryDTO:
+class TorrentCategory:
     """Data Transfer Object for torrent categories (immutable)."""
 
     name: str
@@ -76,7 +76,7 @@ class CategoryDTO:
 
 
 @dataclass(frozen=True)
-class PeerDTO:
+class TorrentPeer:
     """Data Transfer Object for peer information.
 
     Note: All speed fields are in bytes/second.
@@ -93,12 +93,12 @@ class PeerDTO:
     connection_type: str
     direction: str
     country: str | None
-    dl_state: PeerState
-    ul_state: PeerState
+    dl_state: TorrentPeerState
+    ul_state: TorrentPeerState
 
 
 @dataclass(frozen=True)
-class TrackerDTO:
+class TorrentTracker:
     """Data Transfer Object for tracker information."""
 
     host: str
@@ -116,10 +116,10 @@ class TrackerDTO:
 
 
 @dataclass(frozen=True)
-class TorrentDetailDTO(TorrentDTO):
+class TorrentDetail(Torrent):
     """Data Transfer Object for detailed torrent view (immutable).
 
-    Extends TorrentDTO and adds detail-specific fields plus files, peers,
+    Extends Torrent and adds detail-specific fields plus files, peers,
     and trackers lists.
 
     Note: All size fields are in bytes.
@@ -138,9 +138,9 @@ class TorrentDetailDTO(TorrentDTO):
     done_date: datetime | None
 
     # Collections
-    files: list[FileDTO] = field(default_factory=list)
-    peers: list[PeerDTO] = field(default_factory=list)
-    trackers: list[TrackerDTO] = field(default_factory=list)
+    files: list[TorrentFile] = field(default_factory=list)
+    peers: list[TorrentPeer] = field(default_factory=list)
+    trackers: list[TorrentTracker] = field(default_factory=list)
 
 
 class ClientMeta(TypedDict):

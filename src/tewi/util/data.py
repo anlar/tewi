@@ -17,13 +17,13 @@
 from functools import cache
 from typing import Any
 
-from ..torrent.models import FileDTO, FilePriority
+from ..torrent.models import TorrentFile, TorrentFilePriority
 from .decorator import log_time
 from .print import print_size
 
 
 @log_time
-def get_file_list(files: list[FileDTO]) -> list[dict[str, Any]]:
+def get_file_list(files: list[TorrentFile]) -> list[dict[str, Any]]:
     """Convert file list to flattened tree structure with display formatting."""
     node = create_file_tree(files)
 
@@ -104,7 +104,7 @@ def get_file_list(files: list[FileDTO]) -> list[dict[str, Any]]:
 
 
 @log_time
-def create_file_tree(files: list[FileDTO]) -> dict[str, Any]:
+def create_file_tree(files: list[TorrentFile]) -> dict[str, Any]:
     """Build hierarchical tree structure from flat list of files."""
     tree: dict[str, Any] = {}
 
@@ -129,14 +129,14 @@ def create_file_tree(files: list[FileDTO]) -> dict[str, Any]:
 
 @log_time
 @cache
-def print_priority(priority: FilePriority) -> str:
+def print_priority(priority: TorrentFilePriority) -> str:
     """Convert file priority to Rich markup string with visual indicator."""
     match priority:
-        case FilePriority.NOT_DOWNLOADING:
+        case TorrentFilePriority.NOT_DOWNLOADING:
             return "[dim]-[/]"
-        case FilePriority.LOW:
+        case TorrentFilePriority.LOW:
             return "[dim yellow]↓[/]"
-        case FilePriority.MEDIUM:
+        case TorrentFilePriority.MEDIUM:
             return "→"
-        case FilePriority.HIGH:
+        case TorrentFilePriority.HIGH:
             return "[bold red]↑[/]"

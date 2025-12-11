@@ -85,19 +85,22 @@ Clients implement feature detection via the `capable()` method:
 - Example: Transmission doesn't support categories
 - Use this pattern when adding features that not all clients support
 
-### Data Transfer Objects (DTOs)
+### Data Transfer Objects
 
-All data structures are defined in `common.py` as immutable dataclasses:
+All data structures are defined in `torrent/models.py` as immutable dataclasses:
 
-- `TorrentDTO`: Torrent information for list views
-- `FileDTO`: File information within torrents
-- `CategoryDTO`: Category information
-- `PeerDTO`, `TrackerDTO`: Peer and tracker information
+- `Torrent`: Torrent information for list views
+- `TorrentDetail`: Extended torrent information with files, peers, and trackers
+- `TorrentFile`: File information within torrents
+- `TorrentCategory`: Category information
+- `TorrentPeer`, `TorrentTracker`: Peer and tracker information
+- `TorrentFilePriority`: Enum for file download priorities
+- `TorrentPeerState`: Enum for peer connection states
 
 **Important conventions:**
 - All size fields are in **bytes**
 - All speed fields are in **bytes/second**
-- DTOs are frozen (immutable) for consistency
+- All data objects are frozen (immutable) for consistency
 
 ### Message-Based Communication
 

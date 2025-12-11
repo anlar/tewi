@@ -39,7 +39,7 @@ from .config import (
 )
 from .search.manager import SearchClient, print_available_providers
 from .torrent.factory import create_client
-from .torrent.models import ClientError, TorrentDTO
+from .torrent.models import ClientError, Torrent
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
 from .ui.dialog.preferences import PreferencesDialog
@@ -118,7 +118,7 @@ class MainApp(App):
         Binding("q", "quit", "[App] Quit", priority=True),
     ]
 
-    r_torrents: list[TorrentDTO] | None = reactive(None)
+    r_torrents: list[Torrent] | None = reactive(None)
     r_session = reactive(None)
     r_page = reactive(None)
     r_search = reactive(None)
@@ -286,12 +286,12 @@ class MainApp(App):
             self.call_from_thread(self.set_tdata_info, torrent)
 
     @log_time
-    def set_tdata_info(self, torrent: TorrentDTO) -> None:
+    def set_tdata_info(self, torrent: Torrent) -> None:
         self.query_one(TorrentInfoPanel).r_torrent = torrent
 
     @log_time
     def set_tdata_list(
-        self, torrents: list[TorrentDTO], session, filter_state: FilterState
+        self, torrents: list[Torrent], session, filter_state: FilterState
     ) -> None:
         self.r_torrents = torrents
         self.r_session = session

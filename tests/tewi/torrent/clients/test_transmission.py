@@ -201,10 +201,10 @@ class TestTransmissionClientTorrents:
 
         # If torrents exist (depends on docker-init)
         if len(torrents) > 0:
-            # Check first torrent is TorrentDTO
+            # Check first torrent is Torrent
             first = torrents[0]
 
-            # Check required TorrentDTO fields
+            # Check required Torrent fields
             assert hasattr(first, "id")
             assert hasattr(first, "name")
             assert hasattr(first, "status")

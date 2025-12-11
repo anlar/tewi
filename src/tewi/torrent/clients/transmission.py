@@ -6,24 +6,24 @@ from dataclasses import asdict
 from datetime import datetime
 
 from transmission_rpc import Client as TransmissionRPCClient
-from transmission_rpc import Torrent
+from transmission_rpc import Torrent as TransmissionTorrent
 
 from ...util.decorator import log_time
 from ...util.misc import is_torrent_link
 from ..base import BaseClient
 from ..models import (
-    CategoryDTO,
     ClientError,
     ClientMeta,
     ClientSession,
     ClientStats,
-    FileDTO,
-    FilePriority,
-    PeerDTO,
-    PeerState,
-    TorrentDetailDTO,
-    TorrentDTO,
-    TrackerDTO,
+    Torrent,
+    TorrentCategory,
+    TorrentDetail,
+    TorrentFile,
+    TorrentFilePriority,
+    TorrentPeer,
+    TorrentPeerState,
+    TorrentTracker,
 )
 
 
@@ -86,7 +86,7 @@ class TransmissionClient(BaseClient):
     # ========================================================================
 
     @log_time
-    def session(self, torrents: list[TorrentDTO]) -> ClientSession:
+    def session(self, torrents: list[Torrent]) -> ClientSession:
         s = self.client.get_session()
         stats = self.client.session_stats()
 
@@ -164,7 +164,7 @@ class TransmissionClient(BaseClient):
     # ========================================================================
 
     @log_time
-    def torrents(self) -> list[TorrentDTO]:
+    def torrents(self) -> list[Torrent]:
         torrents = self.client.get_torrents(
             arguments=[
                 "id",
@@ -195,7 +195,7 @@ class TransmissionClient(BaseClient):
         return [self._torrent_to_dto(t) for t in torrents]
 
     @log_time
-    def torrent(self, id: int | str) -> TorrentDetailDTO:
+    def torrent(self, id: int | str) -> TorrentDetail:
         """Get detailed information about a specific torrent."""
         torrent = self.client.get_torrent(id)
         return self._torrent_detail_to_dto(torrent)
@@ -266,7 +266,7 @@ class TransmissionClient(BaseClient):
             self.client.move_torrent_data(torrent_id, location)
 
     @log_time
-    def get_categories(self) -> list[CategoryDTO]:
+    def get_categories(self) -> list[TorrentCategory]:
         """Get list of available torrent categories.
 
         Note: Transmission does not support categories.
@@ -308,7 +308,10 @@ class TransmissionClient(BaseClient):
 
     @log_time
     def set_file_priority(
-        self, torrent_id: int | str, file_ids: list[int], priority: FilePriority
+        self,
+        torrent_id: int | str,
+        file_ids: list[int],
+        priority: TorrentFilePriority,
     ) -> None:
         """Set download priority for files within a torrent."""
         # Transmission uses different arguments based on priority:
@@ -317,15 +320,15 @@ class TransmissionClient(BaseClient):
         args = {}
 
         match priority:
-            case FilePriority.NOT_DOWNLOADING:
+            case TorrentFilePriority.NOT_DOWNLOADING:
                 args["files_unwanted"] = file_ids
-            case FilePriority.LOW:
+            case TorrentFilePriority.LOW:
                 args["files_wanted"] = file_ids
                 args["priority_low"] = file_ids
-            case FilePriority.MEDIUM:
+            case TorrentFilePriority.MEDIUM:
                 args["files_wanted"] = file_ids
                 args["priority_normal"] = file_ids
-            case FilePriority.HIGH:
+            case TorrentFilePriority.HIGH:
                 args["files_wanted"] = file_ids
                 args["priority_high"] = file_ids
 
@@ -336,12 +339,12 @@ class TransmissionClient(BaseClient):
     # ========================================================================
 
     @log_time
-    def _torrent_to_dto(self, torrent: Torrent) -> TorrentDTO:
-        """Convert transmission-rpc Torrent to TorrentDTO.
+    def _torrent_to_dto(self, torrent: TransmissionTorrent) -> Torrent:
+        """Convert transmission-rpc Torrent to Torrent DTO.
 
         Populates list view fields only.
         """
-        return TorrentDTO(
+        return Torrent(
             id=torrent.id,
             name=torrent.name,
             status=torrent.status,
@@ -367,8 +370,10 @@ class TransmissionClient(BaseClient):
         )
 
     @log_time
-    def _torrent_detail_to_dto(self, torrent: Torrent) -> TorrentDetailDTO:
-        """Convert transmission-rpc Torrent to TorrentDetailDTO.
+    def _torrent_detail_to_dto(
+        self, torrent: TransmissionTorrent
+    ) -> TorrentDetail:
+        """Convert transmission-rpc Torrent to TorrentDetail.
 
         Reuses _torrent_to_dto for base fields and adds detail-specific
         fields plus files, peers, and trackers.
@@ -383,7 +388,7 @@ class TransmissionClient(BaseClient):
         peers = [self._peer_to_dto(p) for p in torrent.peers]
         trackers = [self._tracker_to_dto(t) for t in torrent.tracker_stats]
 
-        return TorrentDetailDTO(
+        return TorrentDetail(
             **base_dict,
             hash_string=torrent.hash_string,
             piece_count=torrent.piece_count,
@@ -401,21 +406,21 @@ class TransmissionClient(BaseClient):
         )
 
     @log_time
-    def _file_to_dto(self, file) -> FileDTO:
-        """Convert transmission-rpc File to FileDTO."""
+    def _file_to_dto(self, file) -> TorrentFile:
+        """Convert transmission-rpc File to TorrentFile."""
 
         if file.selected:
             match file.priority:
                 case self.PRIORITY_LOW:
-                    priority = FilePriority.LOW
+                    priority = TorrentFilePriority.LOW
                 case self.PRIORITY_NORMAL:
-                    priority = FilePriority.MEDIUM
+                    priority = TorrentFilePriority.MEDIUM
                 case self.PRIORITY_HIGH:
-                    priority = FilePriority.HIGH
+                    priority = TorrentFilePriority.HIGH
         else:
-            priority = FilePriority.NOT_DOWNLOADING
+            priority = TorrentFilePriority.NOT_DOWNLOADING
 
-        return FileDTO(
+        return TorrentFile(
             id=file.id,
             name=file.name,
             size=file.size,
@@ -424,8 +429,8 @@ class TransmissionClient(BaseClient):
         )
 
     @log_time
-    def _peer_to_dto(self, peer: dict) -> PeerDTO:
-        """Convert transmission-rpc peer dict to PeerDTO."""
+    def _peer_to_dto(self, peer: dict) -> TorrentPeer:
+        """Convert transmission-rpc peer dict to TorrentPeer."""
 
         connection_type = "μTP" if peer.get("isUTP", False) else "TCP"
 
@@ -438,7 +443,7 @@ class TransmissionClient(BaseClient):
             peer["peerIsInterested"], peer["peerIsChoked"]
         )
 
-        return PeerDTO(
+        return TorrentPeer(
             address=peer["address"],
             client_name=peer["clientName"],
             progress=peer["progress"],
@@ -455,10 +460,10 @@ class TransmissionClient(BaseClient):
         )
 
     @log_time
-    def _tracker_to_dto(self, t) -> TrackerDTO:
-        """Convert transmission-rpc Tracker to TrackerDTO."""
+    def _tracker_to_dto(self, t) -> TorrentTracker:
+        """Convert transmission-rpc Tracker to TorrentTracker."""
 
-        return TrackerDTO(
+        return TorrentTracker(
             host=t.host,
             tier=t.tier,
             seeder_count=t.seeder_count if t.seeder_count >= 0 else None,
@@ -494,8 +499,12 @@ class TransmissionClient(BaseClient):
 
     @staticmethod
     @log_time
-    def _get_peer_state(is_interested: bool, is_choked: bool) -> PeerState:
+    def _get_peer_state(
+        is_interested: bool, is_choked: bool
+    ) -> TorrentPeerState:
         """Determine peer state from interest and choke flags."""
         if not is_interested:
-            return PeerState.NONE
-        return PeerState.CHOKED if is_choked else PeerState.INTERESTED
+            return TorrentPeerState.NONE
+        if is_choked:
+            return TorrentPeerState.CHOKED
+        return TorrentPeerState.INTERESTED

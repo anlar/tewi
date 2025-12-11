@@ -5,12 +5,12 @@ from abc import ABC, abstractmethod
 from dataclasses import replace
 
 from .models import (
-    CategoryDTO,
     ClientMeta,
     ClientSession,
     ClientStats,
-    FilePriority,
-    TorrentDTO,
+    Torrent,
+    TorrentCategory,
+    TorrentFilePriority,
 )
 
 
@@ -70,7 +70,7 @@ class BaseClient(ABC):
     # ========================================================================
 
     @abstractmethod
-    def session(self, torrents: list[TorrentDTO]) -> ClientSession:
+    def session(self, torrents: list[Torrent]) -> ClientSession:
         """Get session information with computed torrent counts.
 
         Args:
@@ -113,15 +113,15 @@ class BaseClient(ABC):
     # ========================================================================
 
     @abstractmethod
-    def torrents(self) -> list[TorrentDTO]:
+    def torrents(self) -> list[Torrent]:
         """Get list of all torrents.
 
         Returns:
-            List of TorrentDTO objects
+            List of Torrent objects
         """
         pass
 
-    def torrents_test(self, target_count: int) -> list[TorrentDTO]:
+    def torrents_test(self, target_count: int) -> list[Torrent]:
         """Get test torrent list (for performance testing).
 
         Args:
@@ -129,7 +129,7 @@ class BaseClient(ABC):
                 (approximate)
 
         Returns:
-            List of duplicated TorrentDTO objects (~target_count items)
+            List of duplicated Torrent objects (~target_count items)
         """
         torrents = self.torrents()
 
@@ -158,7 +158,7 @@ class BaseClient(ABC):
             id: The torrent ID
 
         Returns:
-            TorrentDetailDTO with complete torrent information
+            TorrentDetail with complete torrent information
         """
         pass
 
@@ -255,11 +255,11 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def get_categories(self) -> list[CategoryDTO]:
+    def get_categories(self) -> list[TorrentCategory]:
         """Get list of available torrent categories.
 
         Returns:
-            List of CategoryDTO objects with name and save_path
+            List of TorrentCategory objects with name and save_path
         """
         pass
 
@@ -305,14 +305,17 @@ class BaseClient(ABC):
 
     @abstractmethod
     def set_file_priority(
-        self, torrent_id: int | str, file_ids: list[int], priority: FilePriority
+        self,
+        torrent_id: int | str,
+        file_ids: list[int],
+        priority: TorrentFilePriority,
     ) -> None:
         """Set download priority for files within a torrent.
 
         Args:
             torrent_id: The torrent ID
             file_ids: List of file IDs to update
-            priority: FilePriority enum value
+            priority: TorrentFilePriority enum value
         """
         pass
 
@@ -321,7 +324,7 @@ class BaseClient(ABC):
     # ========================================================================
 
     def _count_torrents_by_status(
-        self, torrents: list[TorrentDTO]
+        self, torrents: list[Torrent]
     ) -> dict[str, int]:
         """Count torrents by status and calculate sizes.
 
