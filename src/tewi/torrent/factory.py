@@ -15,6 +15,7 @@ def create_client(
     port: str,
     username: str = None,
     password: str = None,
+    path: str = None,
 ) -> BaseClient:
     """Create a torrent client instance based on the specified type.
 
@@ -24,6 +25,7 @@ def create_client(
         port: The port number as a string
         username: Optional authentication username
         password: Optional authentication password
+        path: Optional RPC path for Transmission or base JSON path for Deluge
 
     Returns:
         BaseClient instance (TransmissionClient, QBittorrentClient,
@@ -36,7 +38,11 @@ def create_client(
 
     if client_type == "transmission":
         return TransmissionClient(
-            host=host, port=port, username=username, password=password
+            host=host,
+            port=port,
+            path=path,
+            username=username,
+            password=password,
         )
     elif client_type == "qbittorrent":
         return QBittorrentClient(
@@ -44,7 +50,11 @@ def create_client(
         )
     elif client_type == "deluge":
         return DelugeClient(
-            host=host, port=port, username=username, password=password
+            host=host,
+            port=port,
+            path=path,
+            username=username,
+            password=password,
         )
     else:
         raise ClientError(

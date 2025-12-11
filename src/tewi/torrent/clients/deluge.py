@@ -94,9 +94,15 @@ class DelugeClient(BaseClient):
 
     @log_time
     def __init__(
-        self, host: str, port: str, username: str = None, password: str = None
+        self,
+        host: str,
+        port: str,
+        path: str = None,
+        username: str = None,
+        password: str = None,
     ):
-        self.base_url = f"http://{host}:{port}/json"
+        json_path = path or "/json"
+        self.base_url = f"http://{host}:{port}{json_path}"
         self._session = requests.Session()
         self.password = password
         self._request_id = 0

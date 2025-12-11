@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add Prowlarr torrent search provider [#133](https://github.com/anlar/tewi/issues/133)
 - Display download count in search results [#137](https://github.com/anlar/tewi/issues/137)
 - Display freeleech flag in torrent search results [#136](https://github.com/anlar/tewi/issues/136)
+- Add `--path` CLI and config option to customize RPC path for Transmission and base JSON path for Deluge [#148](https://github.com/anlar/tewi/issues/148)
 
 ### Changed
 

@@ -49,11 +49,23 @@ class TransmissionClient(BaseClient):
 
     @log_time
     def __init__(
-        self, host: str, port: str, username: str = None, password: str = None
+        self,
+        host: str,
+        port: str,
+        path: str = None,
+        username: str = None,
+        password: str = None,
     ):
-        self.client = TransmissionRPCClient(
-            host=host, port=port, username=username, password=password
-        )
+        kwargs = {
+            "host": host,
+            "port": port,
+            "username": username,
+            "password": password,
+        }
+        if path is not None:
+            kwargs["path"] = path
+
+        self.client = TransmissionRPCClient(**kwargs)
 
     @log_time
     def capable(self, capability_code: str) -> bool:

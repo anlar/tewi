@@ -136,6 +136,7 @@ def _load_client_section(
         ("client_type", "type"),
         ("host", "host"),
         ("port", "port"),
+        ("path", "path"),
         ("username", "username"),
         ("password", "password"),
     ]:
@@ -299,6 +300,10 @@ port =
 # Authentication (leave empty if not required)
 username =
 password =
+
+# RPC path for Transmission or base JSON path for Deluge
+# (leave empty for defaults)
+path =
 
 [ui]
 # View mode for torrent list: card, compact, or oneline

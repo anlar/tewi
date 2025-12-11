@@ -135,6 +135,7 @@ class MainApp(App):
         client_type: str,
         host: str,
         port: str,
+        path: str,
         username: str,
         password: str,
         view_mode: str,
@@ -180,6 +181,7 @@ class MainApp(App):
             client_type=self.c_type,
             host=self.c_host,
             port=self.c_port,
+            path=path,
             username=username,
             password=password,
         )
@@ -751,6 +753,14 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         help="BitTorrent daemon port for connection",
     )
     p.add_argument(
+        "--path",
+        type=str,
+        action=TrackSetAction,
+        default=argparse.SUPPRESS,
+        help="RPC path for Transmission (default: /transmission/rpc) "
+        "or base JSON path for Deluge (default: /json)",
+    )
+    p.add_argument(
         "--username",
         type=str,
         action=TrackSetAction,
@@ -904,6 +914,7 @@ def _handle_add_torrent_mode(args) -> None:
             client_type=args.client_type,
             host=args.host,
             port=args.port,
+            path=args.path,
             username=args.username,
             password=args.password,
         )
@@ -1020,6 +1031,7 @@ def create_app():
             client_type=args.client_type,
             host=args.host,
             port=args.port,
+            path=args.path,
             username=args.username,
             password=args.password,
             view_mode=args.view_mode,
