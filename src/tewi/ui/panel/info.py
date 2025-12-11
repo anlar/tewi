@@ -3,6 +3,7 @@ from textual.containers import Horizontal
 from textual.widgets import Static
 
 from ...util.decorator import log_time
+from ..util import subtitle_keys
 
 
 class InfoPanel(Static):
@@ -34,6 +35,6 @@ class InfoPanel(Static):
             yield Static("»»»", classes="column delimiter")
             yield Static(f"{self.host}:{self.port}", classes="column")
             yield Static("", classes="column space")
-            yield Static("?: Help", classes="column")
-            yield Static("", classes="column")
-            yield Static("Q: Quit", classes="column")
+            yield Static(
+                subtitle_keys(("?", "Help"), ("Q", "Quit")), classes="column"
+            )
