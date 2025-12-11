@@ -168,6 +168,7 @@ class TransmissionClient(BaseClient):
         torrents = self.client.get_torrents(
             arguments=[
                 "id",
+                "hashString",
                 "name",
                 "status",
                 "totalSize",
@@ -195,9 +196,9 @@ class TransmissionClient(BaseClient):
         return [self._torrent_to_dto(t) for t in torrents]
 
     @log_time
-    def torrent(self, id: int | str) -> TorrentDetail:
+    def torrent(self, hash: str) -> TorrentDetail:
         """Get detailed information about a specific torrent."""
-        torrent = self.client.get_torrent(id)
+        torrent = self.client.get_torrent(hash)
         return self._torrent_detail_to_dto(torrent)
 
     # ========================================================================
@@ -215,55 +216,51 @@ class TransmissionClient(BaseClient):
             self.client.add_torrent(pathlib.Path(file))
 
     @log_time
-    def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
-        self.client.start_torrent(torrent_ids)
+    def start_torrent(self, hashes: str | list[str]) -> None:
+        self.client.start_torrent(hashes)
 
     @log_time
     def start_all_torrents(self) -> None:
         self.client.start_all()
 
     @log_time
-    def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
-        self.client.stop_torrent(torrent_ids)
+    def stop_torrent(self, hashes: str | list[str]) -> None:
+        self.client.stop_torrent(hashes)
 
     @log_time
     def stop_all_torrents(self) -> None:
-        torrents = self.client.get_torrents(arguments=["id"])
-        self.stop_torrent([t.id for t in torrents])
+        torrents = self.client.get_torrents(arguments=["hashString"])
+        self.stop_torrent([t.hash_string for t in torrents])
 
     @log_time
     def remove_torrent(
         self,
-        torrent_ids: int | str | list[int | str],
+        hashes: str | list[str],
         delete_data: bool = False,
     ) -> None:
-        self.client.remove_torrent(torrent_ids, delete_data=delete_data)
+        self.client.remove_torrent(hashes, delete_data=delete_data)
 
     @log_time
-    def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
-        self.client.verify_torrent(torrent_ids)
+    def verify_torrent(self, hashes: str | list[str]) -> None:
+        self.client.verify_torrent(hashes)
 
     @log_time
-    def reannounce_torrent(
-        self, torrent_ids: int | str | list[int | str]
-    ) -> None:
-        self.client.reannounce_torrent(torrent_ids)
+    def reannounce_torrent(self, hashes: str | list[str]) -> None:
+        self.client.reannounce_torrent(hashes)
 
     # ========================================================================
     # Torrent Organization & Metadata
     # ========================================================================
 
     @log_time
-    def edit_torrent(
-        self, torrent_id: int | str, name: str, location: str
-    ) -> None:
-        torrent = self.torrent(torrent_id)
+    def edit_torrent(self, hash: str, name: str, location: str) -> None:
+        torrent = self.torrent(hash)
 
         if name != torrent.name:
-            self.client.rename_torrent_path(torrent_id, torrent.name, name)
+            self.client.rename_torrent_path(hash, torrent.name, name)
 
         if location != torrent.download_dir:
-            self.client.move_torrent_data(torrent_id, location)
+            self.client.move_torrent_data(hash, location)
 
     @log_time
     def get_categories(self) -> list[TorrentCategory]:
@@ -275,7 +272,7 @@ class TransmissionClient(BaseClient):
 
     @log_time
     def set_category(
-        self, torrent_ids: int | str | list[int | str], category: str | None
+        self, hashes: str | list[str], category: str | None
     ) -> None:
         """Set category for one or more torrents.
 
@@ -284,32 +281,28 @@ class TransmissionClient(BaseClient):
         raise ClientError("Transmission doesn't support categories")
 
     @log_time
-    def update_labels(
-        self, torrent_ids: int | str | list[int | str], labels: list[str]
-    ) -> None:
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
+    def update_labels(self, hashes: str | list[str], labels: list[str]) -> None:
+        if isinstance(hashes, str):
+            hashes = [hashes]
 
-        self.client.change_torrent(torrent_ids, labels=labels)
+        self.client.change_torrent(hashes, labels=labels)
 
     # ========================================================================
     # Priority Management
     # ========================================================================
 
     @log_time
-    def set_priority(
-        self, torrent_ids: int | str | list[int | str], priority: int
-    ) -> None:
+    def set_priority(self, hashes: str | list[str], priority: int) -> None:
         """Set bandwidth priority for one or more torrents."""
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
+        if isinstance(hashes, str):
+            hashes = [hashes]
 
-        self.client.change_torrent(torrent_ids, bandwidth_priority=priority)
+        self.client.change_torrent(hashes, bandwidth_priority=priority)
 
     @log_time
     def set_file_priority(
         self,
-        torrent_id: int | str,
+        hash: str,
         file_ids: list[int],
         priority: TorrentFilePriority,
     ) -> None:
@@ -332,7 +325,7 @@ class TransmissionClient(BaseClient):
                 args["files_wanted"] = file_ids
                 args["priority_high"] = file_ids
 
-        self.client.change_torrent(torrent_id, **args)
+        self.client.change_torrent(hash, **args)
 
     # ========================================================================
     # Internal Helpers
@@ -346,6 +339,7 @@ class TransmissionClient(BaseClient):
         """
         return Torrent(
             id=torrent.id,
+            hash=torrent.hash_string,
             name=torrent.name,
             status=torrent.status,
             total_size=torrent.total_size,

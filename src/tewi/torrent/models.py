@@ -9,9 +9,11 @@ class Torrent:
     """Data Transfer Object for torrent list view (immutable).
 
     Note: All size fields are in bytes, all speed fields are in bytes/second.
+    Note: id field is optional and only populated by Transmission client.
     """
 
-    id: int | str
+    id: int | None
+    hash: str
     name: str
     status: str
     total_size: int  # bytes

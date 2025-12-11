@@ -151,11 +151,11 @@ class BaseClient(ABC):
         return result
 
     @abstractmethod
-    def torrent(self, id: int | str):
+    def torrent(self, hash: str):
         """Get detailed information about a specific torrent.
 
         Args:
-            id: The torrent ID
+            hash: The torrent hash string
 
         Returns:
             TorrentDetail with complete torrent information
@@ -176,11 +176,11 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+    def start_torrent(self, hashes: str | list[str]) -> None:
         """Start one or more torrents.
 
         Args:
-            torrent_ids: Single torrent ID or list of IDs
+            hashes: Single torrent hash or list of hashes
         """
         pass
 
@@ -190,11 +190,11 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+    def stop_torrent(self, hashes: str | list[str]) -> None:
         """Stop one or more torrents.
 
         Args:
-            torrent_ids: Single torrent ID or list of IDs
+            hashes: Single torrent hash or list of hashes
         """
         pass
 
@@ -206,34 +206,32 @@ class BaseClient(ABC):
     @abstractmethod
     def remove_torrent(
         self,
-        torrent_ids: int | str | list[int | str],
+        hashes: str | list[str],
         delete_data: bool = False,
     ) -> None:
         """Remove one or more torrents.
 
         Args:
-            torrent_ids: Single torrent ID or list of IDs
+            hashes: Single torrent hash or list of hashes
             delete_data: Whether to delete downloaded data
         """
         pass
 
     @abstractmethod
-    def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+    def verify_torrent(self, hashes: str | list[str]) -> None:
         """Verify one or more torrents (rehash data).
 
         Args:
-            torrent_ids: Single torrent ID or list of IDs
+            hashes: Single torrent hash or list of hashes
         """
         pass
 
     @abstractmethod
-    def reannounce_torrent(
-        self, torrent_ids: int | str | list[int | str]
-    ) -> None:
+    def reannounce_torrent(self, hashes: str | list[str]) -> None:
         """Reannounce one or more torrents to their trackers.
 
         Args:
-            torrent_ids: Single torrent ID or list of IDs
+            hashes: Single torrent hash or list of hashes
         """
         pass
 
@@ -242,13 +240,11 @@ class BaseClient(ABC):
     # ========================================================================
 
     @abstractmethod
-    def edit_torrent(
-        self, torrent_id: int | str, name: str, location: str
-    ) -> None:
+    def edit_torrent(self, hash: str, name: str, location: str) -> None:
         """Edit torrent name and download location.
 
         Args:
-            torrent_id: The torrent ID
+            hash: The torrent hash string
             name: New torrent name
             location: New download location path
         """
@@ -265,24 +261,22 @@ class BaseClient(ABC):
 
     @abstractmethod
     def set_category(
-        self, torrent_ids: int | str | list[int | str], category: str | None
+        self, hashes: str | list[str], category: str | None
     ) -> None:
         """Set category for one or more torrents.
 
         Args:
-            torrent_ids: Single torrent ID or list of IDs
+            hashes: Single torrent hash or list of hashes
             category: Category name or None to clear category
         """
         pass
 
     @abstractmethod
-    def update_labels(
-        self, torrent_ids: int | str | list[int | str], labels: list[str]
-    ) -> None:
+    def update_labels(self, hashes: str | list[str], labels: list[str]) -> None:
         """Update labels/tags for one or more torrents.
 
         Args:
-            torrent_ids: Single torrent ID or list of IDs
+            hashes: Single torrent hash or list of hashes
             labels: List of label strings to apply
         """
         pass
@@ -292,13 +286,11 @@ class BaseClient(ABC):
     # ========================================================================
 
     @abstractmethod
-    def set_priority(
-        self, torrent_ids: int | str | list[int | str], priority: int
-    ) -> None:
+    def set_priority(self, hashes: str | list[str], priority: int) -> None:
         """Set bandwidth priority for one or more torrents.
 
         Args:
-            torrent_ids: Single torrent ID or list of IDs
+            hashes: Single torrent hash or list of hashes
             priority: Priority level (-1=low, 0=normal, 1=high)
         """
         pass
@@ -306,14 +298,14 @@ class BaseClient(ABC):
     @abstractmethod
     def set_file_priority(
         self,
-        torrent_id: int | str,
+        hash: str,
         file_ids: list[int],
         priority: TorrentFilePriority,
     ) -> None:
         """Set download priority for files within a torrent.
 
         Args:
-            torrent_id: The torrent ID
+            hash: The torrent hash string
             file_ids: List of file IDs to update
             priority: TorrentFilePriority enum value
         """

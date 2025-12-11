@@ -302,7 +302,7 @@ class TorrentInfoPanel(ScrollableContainer):
         if new_r_torrent:
             torrent = new_r_torrent
 
-            self.t_id = str(torrent.id)
+            self.t_id = str(torrent.id) if torrent.id else None
             self.t_hash = torrent.hash_string
             self.t_name = torrent.name
             self.t_size = print_size(torrent.total_size)
@@ -631,7 +631,7 @@ class TorrentInfoPanel(ScrollableContainer):
         # Post command to toggle files
         self.post_message(
             ToggleFileDownloadCommand(
-                torrent_id=self.r_torrent.id,
+                torrent_hash=self.r_torrent.hash_string,
                 file_ids=file_ids,
                 priority=target_priority,
             )

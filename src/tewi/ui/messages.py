@@ -7,9 +7,9 @@ from .models import FilterOption, PageState
 
 
 class OpenTorrentInfoCommand(Message):
-    def __init__(self, torrent_id: int) -> None:
+    def __init__(self, torrent_hash: str) -> None:
         super().__init__()
-        self.torrent_id = torrent_id
+        self.torrent_hash = torrent_hash
 
 
 class OpenTorrentListCommand(Message):
@@ -53,48 +53,48 @@ class OpenUpdateTorrentCategoryCommand(Message):
 
 
 class EditTorrentCommand(Message):
-    def __init__(self, torrent_id: int | str, name: str, location: str) -> None:
+    def __init__(self, torrent_hash: str, name: str, location: str) -> None:
         super().__init__()
-        self.torrent_id = torrent_id
+        self.torrent_hash = torrent_hash
         self.name = name
         self.location = location
 
 
 class UpdateTorrentCategoryCommand(Message):
-    def __init__(self, torrent_id: int | str, category: str | None) -> None:
+    def __init__(self, torrent_hash: str, category: str | None) -> None:
         super().__init__()
-        self.torrent_id = torrent_id
+        self.torrent_hash = torrent_hash
         self.category = category
 
 
 class RemoveTorrentCommand(Message):
-    def __init__(self, torrent_id: int) -> None:
+    def __init__(self, torrent_hash: str) -> None:
         super().__init__()
-        self.torrent_id = torrent_id
+        self.torrent_hash = torrent_hash
 
 
 class TrashTorrentCommand(Message):
-    def __init__(self, torrent_id: int) -> None:
+    def __init__(self, torrent_hash: str) -> None:
         super().__init__()
-        self.torrent_id = torrent_id
+        self.torrent_hash = torrent_hash
 
 
 class VerifyTorrentCommand(Message):
-    def __init__(self, torrent_id: int) -> None:
+    def __init__(self, torrent_hash: str) -> None:
         super().__init__()
-        self.torrent_id = torrent_id
+        self.torrent_hash = torrent_hash
 
 
 class ReannounceTorrentCommand(Message):
-    def __init__(self, torrent_id: int) -> None:
+    def __init__(self, torrent_hash: str) -> None:
         super().__init__()
-        self.torrent_id = torrent_id
+        self.torrent_hash = torrent_hash
 
 
 class ToggleTorrentCommand(Message):
-    def __init__(self, torrent_id: int, torrent_status) -> None:
+    def __init__(self, torrent_hash: str, torrent_status) -> None:
         super().__init__()
-        self.torrent_id = torrent_id
+        self.torrent_hash = torrent_hash
         self.torrent_status = torrent_status
 
 
@@ -107,18 +107,18 @@ class StopAllTorrentsCommand(Message):
 
 
 class ChangeTorrentPriorityCommand(Message):
-    def __init__(self, torrent_id: int, current_priority: int | None) -> None:
+    def __init__(self, torrent_hash: str, current_priority: int | None) -> None:
         super().__init__()
-        self.torrent_id = torrent_id
+        self.torrent_hash = torrent_hash
         self.current_priority = current_priority
 
 
 class ToggleFileDownloadCommand(Message):
     def __init__(
-        self, torrent_id: int | str, file_ids: list[int], priority
+        self, torrent_hash: str, file_ids: list[int], priority
     ) -> None:
         super().__init__()
-        self.torrent_id = torrent_id
+        self.torrent_hash = torrent_hash
         self.file_ids = file_ids
         self.priority = priority
 
@@ -150,15 +150,15 @@ class WebSearchQuerySubmitted(Message):
 
 
 class TorrentRemovedEvent(Message):
-    def __init__(self, torrent_id: int) -> None:
+    def __init__(self, torrent_hash: str) -> None:
         super().__init__()
-        self.torrent_id = torrent_id
+        self.torrent_hash = torrent_hash
 
 
 class TorrentTrashedEvent(Message):
-    def __init__(self, torrent_id: int) -> None:
+    def __init__(self, torrent_hash: str) -> None:
         super().__init__()
-        self.torrent_id = torrent_id
+        self.torrent_hash = torrent_hash
 
 
 class SearchCompletedEvent(Message):
@@ -168,22 +168,22 @@ class SearchCompletedEvent(Message):
 
 
 class TorrentLabelsUpdatedEvent(Message):
-    def __init__(self, torrent_ids, value: str) -> None:
+    def __init__(self, torrent_hashes: list[str], value: str) -> None:
         super().__init__()
-        self.torrent_ids = torrent_ids
+        self.torrent_hashes = torrent_hashes
         self.value = value
 
 
 class TorrentEditedEvent(Message):
-    def __init__(self, torrent_id: int | str) -> None:
+    def __init__(self, torrent_hash: str) -> None:
         super().__init__()
-        self.torrent_id = torrent_id
+        self.torrent_hash = torrent_hash
 
 
 class TorrentCategoryUpdatedEvent(Message):
-    def __init__(self, torrent_id: int | str, category: str | None) -> None:
+    def __init__(self, torrent_hash: str, category: str | None) -> None:
         super().__init__()
-        self.torrent_id = torrent_id
+        self.torrent_hash = torrent_hash
         self.category = category
 
 

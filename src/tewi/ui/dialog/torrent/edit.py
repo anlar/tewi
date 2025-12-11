@@ -67,7 +67,7 @@ class EditTorrentWidget(Static):
             return
 
         self.post_message(
-            EditTorrentCommand(self.torrent.id, new_name, new_location)
+            EditTorrentCommand(self.torrent.hash, new_name, new_location)
         )
 
         self.parent.dismiss(False)

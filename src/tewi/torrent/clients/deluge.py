@@ -274,7 +274,7 @@ class DelugeClient(BaseClient):
         ]
 
     @log_time
-    def torrent(self, id: int | str) -> TorrentDetail:
+    def torrent(self, hash: str) -> TorrentDetail:
         """Get detailed information about a specific torrent.
 
         Reuses _torrent_to_dto for base fields and adds detail-specific
@@ -282,14 +282,14 @@ class DelugeClient(BaseClient):
         """
 
         torrent_data = self._call(
-            "core.get_torrent_status", [id, self.FIELDS_DETAIL]
+            "core.get_torrent_status", [hash, self.FIELDS_DETAIL]
         )
 
         if not torrent_data:
-            raise ClientError(f"Torrent with ID {id} not found")
+            raise ClientError(f"Torrent with hash {hash} not found")
 
         # Get base torrent data using _torrent_to_dto
-        base_torrent = self._torrent_to_dto(id, torrent_data)
+        base_torrent = self._torrent_to_dto(hash, torrent_data)
         base_dict = asdict(base_torrent)
 
         # Parse files
@@ -373,14 +373,12 @@ class DelugeClient(BaseClient):
                 self._call("core.add_torrent_file", ["", file_data, {}])
 
     @log_time
-    def start_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+    def start_torrent(self, hashes: str | list[str]) -> None:
         """Start one or more torrents."""
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
+        if isinstance(hashes, str):
+            hashes = [hashes]
 
-        # Convert to strings and use batch API
-        torrent_ids = [str(tid) for tid in torrent_ids]
-        self._call("core.resume_torrent", [torrent_ids])
+        self._call("core.resume_torrent", [hashes])
 
     @log_time
     def start_all_torrents(self) -> None:
@@ -391,90 +389,77 @@ class DelugeClient(BaseClient):
             self._call("core.resume_torrent", [torrent_ids])
 
     @log_time
-    def stop_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+    def stop_torrent(self, hashes: str | list[str]) -> None:
         """Stop one or more torrents."""
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
+        if isinstance(hashes, str):
+            hashes = [hashes]
 
-        # Convert to strings and use batch API
-        torrent_ids = [str(tid) for tid in torrent_ids]
-        self._call("core.pause_torrent", [torrent_ids])
+        self._call("core.pause_torrent", [hashes])
 
     @log_time
     def stop_all_torrents(self) -> None:
         """Stop all torrents."""
         torrents_data = self._call("core.get_torrents_status", [{}, ["hash"]])
-        torrent_ids = list(torrents_data.keys())
-        if torrent_ids:
-            self._call("core.pause_torrent", [torrent_ids])
+        hashes = list(torrents_data.keys())
+        if hashes:
+            self._call("core.pause_torrent", [hashes])
 
     @log_time
     def remove_torrent(
         self,
-        torrent_ids: int | str | list[int | str],
+        hashes: str | list[str],
         delete_data: bool = False,
     ) -> None:
         """Remove one or more torrents."""
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
-
-        # Convert to strings
-        torrent_ids = [str(tid) for tid in torrent_ids]
+        if isinstance(hashes, str):
+            hashes = [hashes]
 
         # Deluge has a batch remove API: core.remove_torrents
         # This is more efficient and handles errors better than
         # calling core.remove_torrent multiple times
         try:
-            self._call("core.remove_torrents", [torrent_ids, delete_data])
+            self._call("core.remove_torrents", [hashes, delete_data])
         except Exception:
             # If batch remove fails, try removing one by one
             # This can happen with older Deluge versions
-            for torrent_id in torrent_ids:
+            for hash_str in hashes:
                 try:
-                    self._call("core.remove_torrent", [torrent_id, delete_data])
+                    self._call("core.remove_torrent", [hash_str, delete_data])
                 except Exception:
                     # Ignore errors for individual torrents that can't be
                     # removed (e.g., already removed, or protected by plugin)
                     pass
 
     @log_time
-    def verify_torrent(self, torrent_ids: int | str | list[int | str]) -> None:
+    def verify_torrent(self, hashes: str | list[str]) -> None:
         """Verify one or more torrents."""
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
+        if isinstance(hashes, str):
+            hashes = [hashes]
 
-        # Convert to strings and use batch API
-        torrent_ids = [str(tid) for tid in torrent_ids]
-        self._call("core.force_recheck", [torrent_ids])
+        self._call("core.force_recheck", [hashes])
 
     @log_time
-    def reannounce_torrent(
-        self, torrent_ids: int | str | list[int | str]
-    ) -> None:
+    def reannounce_torrent(self, hashes: str | list[str]) -> None:
         """Reannounce one or more torrents to their trackers."""
-        if isinstance(torrent_ids, (int, str)):
-            torrent_ids = [torrent_ids]
+        if isinstance(hashes, str):
+            hashes = [hashes]
 
-        # Convert to strings and use batch API
-        torrent_ids = [str(tid) for tid in torrent_ids]
-        self._call("core.force_reannounce", [torrent_ids])
+        self._call("core.force_reannounce", [hashes])
 
     # ========================================================================
     # Torrent Organization & Metadata
     # ========================================================================
 
     @log_time
-    def edit_torrent(
-        self, torrent_id: int | str, name: str, location: str
-    ) -> None:
+    def edit_torrent(self, hash: str, name: str, location: str) -> None:
         """Edit torrent name and location."""
-        torrent = self.torrent(torrent_id)
+        torrent = self.torrent(hash)
 
         if name != torrent.name:
-            self._call("core.rename_files", [str(torrent_id), [[0, name]]])
+            self._call("core.rename_files", [hash, [[0, name]]])
 
         if location != torrent.download_dir:
-            self._call("core.move_storage", [[str(torrent_id)], location])
+            self._call("core.move_storage", [[hash], location])
 
     @log_time
     def get_categories(self) -> list[TorrentCategory]:
@@ -511,28 +496,26 @@ class DelugeClient(BaseClient):
 
     @log_time
     def set_category(
-        self, torrent_ids: int | str | list[int | str], category: str | None
+        self, hashes: str | list[str], category: str | None
     ) -> None:
         """Set category for one or more torrents.
 
         Note: Deluge uses labels which function as categories.
         """
 
-        if not isinstance(torrent_ids, list):
-            torrent_ids = [torrent_ids]
+        if isinstance(hashes, str):
+            hashes = [hashes]
 
         try:
-            for torrent_id in torrent_ids:
+            for hash_str in hashes:
                 label_value = category if category else ""
-                self._call("label.set_torrent", [str(torrent_id), label_value])
+                self._call("label.set_torrent", [hash, label_value])
         except Exception:
             # If Label plugin is not enabled, silently fail
             pass
 
     @log_time
-    def update_labels(
-        self, torrent_ids: int | str | list[int | str], labels: list[str]
-    ) -> None:
+    def update_labels(self, hashes: str | list[str], labels: list[str]) -> None:
         """Update labels/tags for one or more torrents.
 
         Note: Deluge supports labels that acts like categories.
@@ -544,9 +527,7 @@ class DelugeClient(BaseClient):
     # ========================================================================
 
     @log_time
-    def set_priority(
-        self, torrent_ids: int | str | list[int | str], priority: int
-    ) -> None:
+    def set_priority(self, hashes: str | list[str], priority: int) -> None:
         """Set bandwidth priority for one or more torrents.
 
         Note: Deluge doesn't support torrent priorities.
@@ -556,7 +537,7 @@ class DelugeClient(BaseClient):
     @log_time
     def set_file_priority(
         self,
-        torrent_id: int | str,
+        hash: str,
         file_ids: list[int],
         priority: TorrentFilePriority,
     ) -> None:
@@ -577,7 +558,7 @@ class DelugeClient(BaseClient):
 
         # Get current file priorities
         torrent_data = self._call(
-            "core.get_torrent_status", [str(torrent_id), ["file_priorities"]]
+            "core.get_torrent_status", [hash, ["file_priorities"]]
         )
         current_priorities = torrent_data.get("file_priorities", [])
 
@@ -590,7 +571,7 @@ class DelugeClient(BaseClient):
         # Set all file priorities
         self._call(
             "core.set_torrent_file_priorities",
-            [str(torrent_id), new_priorities],
+            [hash, new_priorities],
         )
 
     # ========================================================================
@@ -693,14 +674,15 @@ class DelugeClient(BaseClient):
         return self.STATUS_MAP.get(deluge_status, "Unknown")
 
     @log_time
-    def _torrent_to_dto(self, torrent_hash: str, t: dict) -> Torrent:
+    def _torrent_to_dto(self, hash: str, t: dict) -> Torrent:
         """Convert Deluge torrent data to Torrent.
 
         Populates list view fields only.
         """
 
         return Torrent(
-            id=torrent_hash,
+            id=None,  # Deluge doesn't use numeric IDs
+            hash=hash,
             name=t.get("name"),
             status=self._normalize_status(t.get("state")),
             total_size=t.get("total_size"),

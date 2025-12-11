@@ -115,7 +115,7 @@ class TorrentItem(Static):
         with self.app.batch_update():
             self.torrent = torrent
 
-            self.t_id = torrent.id
+            self.t_id = torrent.hash
             self.t_name = torrent.name
             self.t_status = torrent.status
             self.t_queue_position = torrent.queue_position

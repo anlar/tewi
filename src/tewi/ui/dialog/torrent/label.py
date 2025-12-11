@@ -55,7 +55,7 @@ class UpdateTorrentLabelsWidget(Static):
         value = self.query_one(TextArea).text
 
         if self.torrent:
-            torrent_ids = [self.torrent.id]
+            torrent_ids = [self.torrent.hash]
         else:
             torrent_ids = self.torrent_ids
 

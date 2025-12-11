@@ -207,7 +207,7 @@ class TorrentWebSearch(Static):
         # Find the provider instance using provider_id
         provider = None
         for p in self.providers:
-            if p.id() == result.provider_id:
+            if p.hash() == result.provider_id:
                 provider = p
                 break
 

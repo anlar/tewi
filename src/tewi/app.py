@@ -282,7 +282,7 @@ class MainApp(App):
             )
         elif current_pane == "torrent-info":
             info_panel = self.query_one(TorrentInfoPanel)
-            torrent = self.client.torrent(info_panel.r_torrent.id)
+            torrent = self.client.torrent(info_panel.r_torrent.hash)
             self.call_from_thread(self.set_tdata_info, torrent)
 
     @log_time
@@ -393,7 +393,7 @@ class MainApp(App):
     def handle_verify_torrent_command(
         self, event: VerifyTorrentCommand
     ) -> None:
-        self.client.verify_torrent(event.torrent_id)
+        self.client.verify_torrent(event.torrent_hash)
         self.post_message(Notification("Torrent sent to verification"))
 
     @log_time
@@ -401,7 +401,7 @@ class MainApp(App):
     def handle_reannounce_torrent_command(
         self, event: ReannounceTorrentCommand
     ) -> None:
-        self.client.reannounce_torrent(event.torrent_id)
+        self.client.reannounce_torrent(event.torrent_hash)
         self.post_message(Notification("Torrent reannounce started"))
 
     @log_time
@@ -420,7 +420,7 @@ class MainApp(App):
             new_priority = 0
             priority_label = "Normal"
 
-        self.client.set_priority(event.torrent_id, new_priority)
+        self.client.set_priority(event.torrent_hash, new_priority)
         self.post_message(
             Notification(f"Torrent priority set to {priority_label}")
         )
@@ -431,10 +431,10 @@ class MainApp(App):
         self, event: ToggleFileDownloadCommand
     ) -> None:
         self.client.set_file_priority(
-            event.torrent_id, event.file_ids, event.priority
+            event.torrent_hash, event.file_ids, event.priority
         )
         # Refresh torrent details to show updated file priorities
-        torrent = self.client.torrent(event.torrent_id)
+        torrent = self.client.torrent(event.torrent_hash)
         self.query_one(TorrentInfoPanel).r_torrent = torrent
 
     @log_time
@@ -451,13 +451,13 @@ class MainApp(App):
     ) -> None:
         labels = [x.strip() for x in event.value.split(",") if x.strip()]
 
-        if len(event.torrent_ids) == 1:
+        if len(event.torrent_hashes) == 1:
             count_label = "1 torrent"
         else:
-            count_label = f"{len(event.torrent_ids)} torrents"
+            count_label = f"{len(event.torrent_hashes)} torrents"
 
         if len(labels) > 0:
-            self.client.update_labels(event.torrent_ids, labels)
+            self.client.update_labels(event.torrent_hashes, labels)
 
             self.post_message(
                 Notification(
@@ -466,7 +466,7 @@ class MainApp(App):
                 )
             )
         else:
-            self.client.update_labels(event.torrent_ids, [])
+            self.client.update_labels(event.torrent_hashes, [])
 
             self.post_message(
                 Notification(f"Removed torrent labels ({count_label})")
@@ -477,7 +477,7 @@ class MainApp(App):
     def handle_edit_torrent_command(self, event: EditTorrentCommand) -> None:
         try:
             self.client.edit_torrent(
-                event.torrent_id, event.name, event.location
+                event.torrent_hash, event.name, event.location
             )
             self.post_message(Notification("Torrent updated successfully"))
         except Exception as e:
@@ -499,7 +499,7 @@ class MainApp(App):
         self, event: UpdateTorrentCategoryCommand
     ) -> None:
         try:
-            self.client.set_category(event.torrent_id, event.category)
+            self.client.set_category(event.torrent_hash, event.category)
             category_name = event.category if event.category else "None"
             self.post_message(Notification(f"Category set to: {category_name}"))
         except Exception as e:
@@ -551,7 +551,7 @@ class MainApp(App):
     def handle_open_torrent_info_command(
         self, event: OpenTorrentInfoCommand
     ) -> None:
-        torrent = self.client.torrent(event.torrent_id)
+        torrent = self.client.torrent(event.torrent_hash)
 
         self.query_one(ContentSwitcher).current = "torrent-info"
         self.query_one(TorrentInfoPanel).r_torrent = torrent
@@ -586,10 +586,10 @@ class MainApp(App):
         self, event: ToggleTorrentCommand
     ) -> None:
         if event.torrent_status == "stopped":
-            self.client.start_torrent(event.torrent_id)
+            self.client.start_torrent(event.torrent_hash)
             self.post_message(Notification("Torrent started"))
         else:
-            self.client.stop_torrent(event.torrent_id)
+            self.client.stop_torrent(event.torrent_hash)
             self.post_message(Notification("Torrent stopped"))
 
     @log_time
@@ -599,10 +599,12 @@ class MainApp(App):
     ) -> None:
         def check_quit(confirmed: bool | None) -> None:
             if confirmed:
-                self.client.remove_torrent(event.torrent_id, delete_data=False)
+                self.client.remove_torrent(
+                    event.torrent_hash, delete_data=False
+                )
 
                 self.query_one(TorrentListViewPanel).post_message(
-                    TorrentRemovedEvent(event.torrent_id)
+                    TorrentRemovedEvent(event.torrent_hash)
                 )
                 self.post_message(Notification("Torrent removed"))
 
@@ -624,10 +626,10 @@ class MainApp(App):
     def handle_trash_torrent_command(self, event: TrashTorrentCommand) -> None:
         def check_quit(confirmed: bool | None) -> None:
             if confirmed:
-                self.client.remove_torrent(event.torrent_id, delete_data=True)
+                self.client.remove_torrent(event.torrent_hash, delete_data=True)
 
                 self.query_one(TorrentListViewPanel).post_message(
-                    TorrentTrashedEvent(event.torrent_id)
+                    TorrentTrashedEvent(event.torrent_hash)
                 )
                 self.post_message(Notification("Torrent and its data removed"))
 

@@ -102,6 +102,7 @@ class MockClient(BaseClient):
 
 def create_torrent(
     id=1,
+    hash="0" * 40,
     name="test",
     status="downloading",
     size_when_done=1000,
@@ -110,6 +111,7 @@ def create_torrent(
     """Create a test Torrent object with minimal required fields."""
     return Torrent(
         id=id,
+        hash=hash,
         name=name,
         status=status,
         total_size=size_when_done,

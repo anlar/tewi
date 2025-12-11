@@ -122,7 +122,7 @@ class TorrentListViewPanel(ListView):
         for i, torrent in enumerate(torrents):
             # Use cached torrent_id for fast comparison instead of
             # accessing widget internals
-            if torrent.id != items[i].torrent_id:
+            if torrent.hash != items[i].torrent_id:
                 return False
 
         return True
@@ -133,15 +133,15 @@ class TorrentListViewPanel(ListView):
 
         if hl_torrent_id:
             for i, item in enumerate(self.r_torrents):
-                if item.id == hl_torrent_id:
+                if item.hash == hl_torrent_id:
                     if forward is True:
                         if i + 1 < len(self.r_torrents):
-                            next_torrent_id = self.r_torrents[i + 1].id
+                            next_torrent_id = self.r_torrents[i + 1].hash
                         else:
                             next_torrent_id = None
                     else:
                         if i > 0:
-                            next_torrent_id = self.r_torrents[i - 1].id
+                            next_torrent_id = self.r_torrents[i - 1].hash
                         else:
                             next_torrent_id = None
 
@@ -165,7 +165,7 @@ class TorrentListViewPanel(ListView):
                 (
                     i
                     for i, item in enumerate(torrents)
-                    if item.id == hl_torrent_id
+                    if item.hash == hl_torrent_id
                 ),
                 None,
             )
@@ -197,7 +197,7 @@ class TorrentListViewPanel(ListView):
                 for i, torrent in enumerate(page_torrents):
                     existing_widgets[i]._nodes[0].update_torrent(torrent)
 
-                    if torrent_id == torrent.id:
+                    if torrent_id == torrent.hash:
                         self.index = self.validate_index(i)
 
         # Fast path 2: Different page but same widget count - RECYCLE widgets
@@ -208,12 +208,12 @@ class TorrentListViewPanel(ListView):
                 for i, torrent in enumerate(page_torrents):
                     # Reuse existing widget, update its data and cached ID
                     widget = existing_widgets[i]
-                    widget.torrent_id = torrent.id  # Update cached ID
+                    widget.torrent_id = torrent.hash  # Update cached ID
                     widget._nodes[0].update_torrent(
                         torrent
                     )  # Update torrent data
 
-                    if torrent.id == torrent_id:
+                    if torrent.hash == torrent_id:
                         hl_idx = i
 
             # Update highlight
@@ -231,10 +231,10 @@ class TorrentListViewPanel(ListView):
             for i, t in enumerate(page_torrents):
                 item = self.create_item(t)
                 list_item = TorrentListItem(
-                    item, torrent_id=t.id
+                    item, torrent_id=t.hash
                 )  # Pass cached ID
 
-                if t.id == torrent_id:
+                if t.hash == torrent_id:
                     hl_idx = i
                     list_item.highlighted = True
 
@@ -341,7 +341,9 @@ class TorrentListViewPanel(ListView):
     @log_time
     def action_toggle_torrent(self) -> None:
         if (torrent := self.get_hl_torrent()) is not None:
-            self.post_message(ToggleTorrentCommand(torrent.id, torrent.status))
+            self.post_message(
+                ToggleTorrentCommand(torrent.hash, torrent.status)
+            )
 
     @log_time
     def action_remove_torrent(self) -> None:
@@ -377,7 +379,7 @@ class TorrentListViewPanel(ListView):
     def action_change_priority(self) -> None:
         if (torrent := self.get_hl_torrent()) is not None:
             self.post_message(
-                ChangeTorrentPriorityCommand(torrent.id, torrent.priority)
+                ChangeTorrentPriorityCommand(torrent.hash, torrent.priority)
             )
 
     @log_time
@@ -478,7 +480,7 @@ class TorrentListViewPanel(ListView):
 
     @log_time
     def _select_found_torrent(self, index: int) -> None:
-        self.update_page(self.r_torrents, self.r_torrents[index].id)
+        self.update_page(self.r_torrents, self.r_torrents[index].hash)
 
     @log_time
     def search_torrent(self, search_term: str) -> None:
@@ -505,23 +507,23 @@ class TorrentListViewPanel(ListView):
     @log_time
     @on(ListView.Selected)
     def handle_selected(self, event: ListView.Selected) -> None:
-        torrent_id = event.item._nodes[0].torrent.id
+        torrent_id = event.item._nodes[0].torrent.hash
         self.post_message(OpenTorrentInfoCommand(torrent_id))
 
     @log_time
     @on(TorrentRemovedEvent)
     def handle_torrent_removed_event(self, event: TorrentRemovedEvent) -> None:
-        self._remove_child(event.torrent_id)
+        self._remove_child(event.torrent_hash)
 
     @log_time
     @on(TorrentTrashedEvent)
     def handle_torrent_trashed_event(self, event: TorrentRemovedEvent) -> None:
-        self._remove_child(event.torrent_id)
+        self._remove_child(event.torrent_hash)
 
     @log_time
-    def _remove_child(self, torrent_id: int) -> None:
+    def _remove_child(self, torrent_hash: str) -> None:
         for i, child in enumerate(self.children):
-            if torrent_id == child._nodes[0].torrent.id:
+            if torrent_hash == child._nodes[0].torrent.hash:
                 self.remove_items([i])
 
     # Common helpers
@@ -532,7 +534,7 @@ class TorrentListViewPanel(ListView):
             (
                 idx
                 for idx, t in enumerate(self.r_torrents)
-                if t.id == torrent.id
+                if t.hash == torrent.hash
             ),
             None,
         )
@@ -545,4 +547,4 @@ class TorrentListViewPanel(ListView):
     @log_time
     def get_hl_torrent_id(self) -> Optional[int]:
         if (hl_torrent := self.get_hl_torrent()) is not None:
-            return hl_torrent.id
+            return hl_torrent.hash

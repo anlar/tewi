@@ -96,7 +96,7 @@ class UpdateTorrentCategoryWidget(Static):
         category_value = row_key.value
 
         self.post_message(
-            UpdateTorrentCategoryCommand(self.torrent.id, category_value)
+            UpdateTorrentCategoryCommand(self.torrent.hash, category_value)
         )
 
         self.parent.dismiss(False)

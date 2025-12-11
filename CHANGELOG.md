@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Use ruff as linter (reformatted whole code base) [#135](https://github.com/anlar/tewi/issues/135)
 - GeoIP module gracefully handles missing geoip2fast dependency
 - clipboard module gracefully handles missing pyperclip dependency
+- Refactor torrents clients: use torrent hash as ID in Transmission
 
 ### Removed
 
