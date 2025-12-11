@@ -35,8 +35,6 @@ def print_size(num: int, suffix: str = "B", size_bytes: int = 1000) -> str:
             break
         num /= size_bytes
 
-    round(r_num, 2)
-
     r_size = f"{r_num:.2f}".rstrip("0").rstrip(".")
 
     return f"{r_size} {r_unit}{suffix}"
