@@ -1,10 +1,10 @@
-import pyperclip
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.reactive import reactive
 from textual.screen import ModalScreen
 from textual.widgets import Static, TextArea
 
+from ....util import clipboard
 from ....util.decorator import log_time
 from ....util.misc import is_torrent_link
 from ....util.print import print_size
@@ -68,14 +68,10 @@ class AddTorrentWidget(Static):
 
     @log_time
     def get_link_from_clipboard(self) -> str:
-        try:
-            text = pyperclip.paste()
+        text = clipboard.paste()
 
-            if text:
-                if is_torrent_link(text):
-                    return text
-        except pyperclip.PyperclipException:
-            return None
+        if text and is_torrent_link(text):
+            return text
 
         return None
 
