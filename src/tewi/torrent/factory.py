@@ -1,11 +1,14 @@
 """Factory for creating torrent client instances."""
 
 from ..util.decorator import log_time
-from .base import BaseClient
+from .base import BaseClient, ClientCapability
 from .clients.deluge import DelugeClient
 from .clients.qbittorrent import QBittorrentClient
 from .clients.transmission import TransmissionClient
 from .models import ClientError
+
+# Re-export for convenience
+__all__ = ["create_client", "ClientCapability"]
 
 
 @log_time

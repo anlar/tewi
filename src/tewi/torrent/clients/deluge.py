@@ -10,7 +10,7 @@ from typing import Any
 import requests
 
 from ...util.decorator import log_time
-from ..base import BaseClient
+from ..base import BaseClient, ClientCapability
 from ..models import (
     ClientError,
     ClientMeta,
@@ -114,15 +114,15 @@ class DelugeClient(BaseClient):
         except Exception as e:
             raise ClientError(f"Failed to authenticate with Deluge: {e}")
 
-    def capable(self, capability_code: str) -> bool:
-        match capability_code:
-            case "torrent_id":
+    def capable(self, capability: ClientCapability) -> bool:
+        match capability:
+            case ClientCapability.TORRENT_ID:
                 return False  # Deluge uses hash strings as IDs
-            case "set_priority":
+            case ClientCapability.SET_PRIORITY:
                 return False
-            case "toggle_alt_speed":
+            case ClientCapability.TOGGLE_ALT_SPEED:
                 return False
-            case "label":
+            case ClientCapability.LABEL:
                 return False
 
         return True

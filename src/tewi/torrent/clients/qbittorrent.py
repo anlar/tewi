@@ -9,7 +9,7 @@ from qbittorrentapi.torrents import Tracker
 
 from ...util.decorator import log_time
 from ...util.misc import is_torrent_link
-from ..base import BaseClient
+from ..base import BaseClient, ClientCapability
 from ..models import (
     ClientError,
     ClientMeta,
@@ -90,13 +90,13 @@ class QBittorrentClient(BaseClient):
         except Exception as e:
             raise ClientError(f"Failed to authenticate with qBittorrent: {e}")
 
-    def capable(self, capability_code: str) -> bool:
-        match capability_code:
-            case "torrent_id":
+    def capable(self, capability: ClientCapability) -> bool:
+        match capability:
+            case ClientCapability.TORRENT_ID:
                 return False
-            case "set_priority":
+            case ClientCapability.SET_PRIORITY:
                 return False
-            case "category":
+            case ClientCapability.CATEGORY:
                 return True
 
         return True

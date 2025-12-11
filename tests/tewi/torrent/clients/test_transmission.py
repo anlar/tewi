@@ -18,6 +18,7 @@
 
 import pytest
 
+from src.tewi.torrent.base import ClientCapability
 from src.tewi.torrent.clients.transmission import TransmissionClient
 
 
@@ -46,31 +47,31 @@ class TestTransmissionClientLifecycle:
 
     def test_capable_category(self, client):
         """Test that Transmission doesn't support categories."""
-        result = client.capable("category")
+        result = client.capable(ClientCapability.CATEGORY)
         assert isinstance(result, bool)
         assert result is False
 
     def test_capable_label(self, client):
         """Test that Transmission supports labels."""
-        result = client.capable("label")
+        result = client.capable(ClientCapability.LABEL)
         assert isinstance(result, bool)
         assert result is True
 
     def test_capable_toggle_alt_speed(self, client):
         """Test that Transmission supports alt speed toggling."""
-        result = client.capable("toggle_alt_speed")
+        result = client.capable(ClientCapability.TOGGLE_ALT_SPEED)
         assert isinstance(result, bool)
         assert result is True
 
     def test_capable_set_priority(self, client):
         """Test that Transmission supports priority setting."""
-        result = client.capable("set_priority")
+        result = client.capable(ClientCapability.SET_PRIORITY)
         assert isinstance(result, bool)
         assert result is True
 
     def test_capable_torrent_id(self, client):
         """Test that Transmission uses numeric torrent IDs."""
-        result = client.capable("torrent_id")
+        result = client.capable(ClientCapability.TORRENT_ID)
         assert isinstance(result, bool)
         assert result is True
 

@@ -3,6 +3,7 @@
 import math
 from abc import ABC, abstractmethod
 from dataclasses import replace
+from enum import Enum
 
 from .models import (
     ClientMeta,
@@ -12,6 +13,29 @@ from .models import (
     TorrentCategory,
     TorrentFilePriority,
 )
+
+
+class ClientCapability(str, Enum):
+    """Client capability identifiers.
+
+    These constants define features that may or may not be supported
+    by different torrent client implementations.
+    """
+
+    CATEGORY = "category"
+    """Support for torrent categories."""
+
+    LABEL = "label"
+    """Support for torrent labels/tags."""
+
+    SET_PRIORITY = "set_priority"
+    """Support for setting bandwidth priority."""
+
+    TOGGLE_ALT_SPEED = "toggle_alt_speed"
+    """Support for alternative speed limits."""
+
+    TORRENT_ID = "torrent_id"
+    """Use of numeric IDs (vs hash strings)."""
 
 
 class BaseClient(ABC):
@@ -38,18 +62,13 @@ class BaseClient(ABC):
         pass
 
     @abstractmethod
-    def capable(self, capability_code: str) -> bool:
+    def capable(self, capability: ClientCapability) -> bool:
         """Check if the client supports a specific capability.
 
-        Available capabilities:
-            - "category": Support for torrent categories
-            - "label": Support for torrent labels/tags
-            - "set_priority": Support for setting bandwidth priority
-            - "toggle_alt_speed": Support for alternative speed limits
-            - "torrent_id": Use of numeric IDs (vs hash strings)
+        Available capabilities are defined in ClientCapability enum.
 
         Args:
-            capability_code: The capability to check
+            capability: The capability to check (ClientCapability enum value)
 
         Returns:
             True if the capability is supported, False otherwise

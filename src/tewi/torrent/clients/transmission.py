@@ -10,7 +10,7 @@ from transmission_rpc import Torrent as TransmissionTorrent
 
 from ...util.decorator import log_time
 from ...util.misc import is_torrent_link
-from ..base import BaseClient
+from ..base import BaseClient, ClientCapability
 from ..models import (
     ClientError,
     ClientMeta,
@@ -68,8 +68,8 @@ class TransmissionClient(BaseClient):
         self.client = TransmissionRPCClient(**kwargs)
 
     @log_time
-    def capable(self, capability_code: str) -> bool:
-        if capability_code == "category":
+    def capable(self, capability: ClientCapability) -> bool:
+        if capability == ClientCapability.CATEGORY:
             return False
 
         return True

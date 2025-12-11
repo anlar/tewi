@@ -38,7 +38,7 @@ from .config import (
     merge_config_with_args,
 )
 from .search.manager import SearchClient, print_available_providers
-from .torrent.factory import create_client
+from .torrent.factory import ClientCapability, create_client
 from .torrent.models import ClientError, Torrent
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -213,12 +213,20 @@ class MainApp(App):
                     id="torrent-list",
                     page_size=self.page_size,
                     view_mode=self.view_mode,
-                    capability_set_priority=self.client.capable("set_priority"),
-                    capability_label=self.client.capable("label"),
-                    capability_category=self.client.capable("category"),
+                    capability_set_priority=self.client.capable(
+                        ClientCapability.SET_PRIORITY
+                    ),
+                    capability_label=self.client.capable(
+                        ClientCapability.LABEL
+                    ),
+                    capability_category=self.client.capable(
+                        ClientCapability.CATEGORY
+                    ),
                 ).data_bind(r_torrents=MainApp.r_torrents)
                 yield TorrentInfoPanel(
-                    capability_torrent_id=self.client.capable("torrent_id"),
+                    capability_torrent_id=self.client.capable(
+                        ClientCapability.TORRENT_ID
+                    ),
                     id="torrent-info",
                 )
                 yield TorrentWebSearch(
@@ -696,7 +704,7 @@ class MainApp(App):
     ) -> bool | None:
         """Check if an action may run."""
         if action == "toggle_alt_speed":
-            return self.client.capable("toggle_alt_speed")
+            return self.client.capable(ClientCapability.TOGGLE_ALT_SPEED)
 
         return True
 
