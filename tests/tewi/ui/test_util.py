@@ -35,8 +35,10 @@ class TestSubtitleKeys:
     def test_multiple_keys(self):
         """Test formatting multiple key-description pairs."""
         result = subtitle_keys(
-            ("A", "Add"), ("O", "Open Link"), ("Enter", "Details"),
-            ("X", "Close")
+            ("A", "Add"),
+            ("O", "Open Link"),
+            ("Enter", "Details"),
+            ("X", "Close"),
         )
         expected = "(A) Add / (O) Open Link / (Enter) Details / (X) Close"
         assert result == expected
@@ -52,12 +54,9 @@ class TestSubtitleKeys:
     def test_mixed_key_types(self):
         """Test formatting with mixed single-letter and word keys."""
         result = subtitle_keys(
-            ("Enter", "Update"), ("Tab", "Switch field"),
-            ("ESC", "Close")
+            ("Enter", "Update"), ("Tab", "Switch field"), ("ESC", "Close")
         )
-        expected = (
-            "(Enter) Update / (Tab) Switch field / (ESC) Close"
-        )
+        expected = "(Enter) Update / (Tab) Switch field / (ESC) Close"
         assert result == expected
 
     def test_empty_input(self):
@@ -70,7 +69,5 @@ class TestSubtitleKeys:
         result = subtitle_keys(
             ("1/O", "Overview"), ("2/F", "Files"), ("3/P", "Peers")
         )
-        expected = (
-            "(1/O) Overview / (2/F) Files / (3/P) Peers"
-        )
+        expected = "(1/O) Overview / (2/F) Files / (3/P) Peers"
         assert result == expected

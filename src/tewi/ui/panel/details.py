@@ -94,8 +94,11 @@ class TorrentInfoPanel(ScrollableContainer):
     @log_time
     def compose(self) -> ComposeResult:
         self.border_subtitle = subtitle_keys(
-            ("1/O", "Overview"), ("2/F", "Files"), ("3/P", "Peers"),
-            ("4/T", "Trackers"), ("X", "Close")
+            ("1/O", "Overview"),
+            ("2/F", "Files"),
+            ("3/P", "Peers"),
+            ("4/T", "Trackers"),
+            ("X", "Close"),
         )
         with TabbedContent():
             with TabPane("[u]O[/]verview", id="tab-overview"):

@@ -3,17 +3,20 @@ from functools import cache
 
 from .decorator import log_time
 
-logger = logging.getLogger('tewi')
+logger = logging.getLogger("tewi")
 
 # Try to import geoip module, set flag if not available
 try:
     from geoip2fast import GeoIP2Fast
+
     geoip = GeoIP2Fast()
     _geoip_available = True
 except ImportError:
-    logger.warning("GeoIP module (geoip2fast) not available, "
-                   "country detection for peers will not work, "
-                   "unless provided by torrent client itself")
+    logger.warning(
+        "GeoIP module (geoip2fast) not available, "
+        "country detection for peers will not work, "
+        "unless provided by torrent client itself"
+    )
     geoip = None
     _geoip_available = False
 

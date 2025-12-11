@@ -80,8 +80,10 @@ class WebSearchQueryWidget(Static):
         """Focus on input when dialog opens."""
         self.border_title = "Search torrents"
         self.border_subtitle = subtitle_keys(
-            ("Enter", "Search"), ("Tab", "Switch"),
-            ("Space", "Toggle selection"), ("ESC", "Close")
+            ("Enter", "Search"),
+            ("Tab", "Switch"),
+            ("Space", "Toggle selection"),
+            ("ESC", "Close"),
         )
 
         self.query_one(
