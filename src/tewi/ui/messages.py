@@ -1,237 +1,211 @@
+from dataclasses import dataclass
+
 from textual.message import Message
 
 from ..search.models import Category
+from ..torrent.models import Torrent, TorrentFilePriority
 from .models import FilterOption, PageState
 
 # Commands
 
 
+@dataclass
 class OpenTorrentInfoCommand(Message):
-    def __init__(self, torrent_hash: str) -> None:
-        super().__init__()
-        self.torrent_hash = torrent_hash
+    torrent_hash: str
 
 
+@dataclass
 class OpenTorrentListCommand(Message):
     pass
 
 
+@dataclass
 class OpenAddTorrentCommand(Message):
     pass
 
 
+@dataclass
 class AddTorrentCommand(Message):
-    def __init__(self, value: str) -> None:
-        super().__init__()
-        self.value = value
+    value: str
 
 
+@dataclass
 class OpenSortOrderCommand(Message):
     pass
 
 
+@dataclass
 class OpenFilterCommand(Message):
     pass
 
 
+@dataclass
 class OpenUpdateTorrentLabelsCommand(Message):
-    def __init__(self, torrent):
-        super().__init__()
-        self.torrent = torrent
+    torrent: Torrent
 
 
+@dataclass
 class OpenEditTorrentCommand(Message):
-    def __init__(self, torrent):
-        super().__init__()
-        self.torrent = torrent
+    torrent: Torrent
 
 
+@dataclass
 class OpenUpdateTorrentCategoryCommand(Message):
-    def __init__(self, torrent):
-        super().__init__()
-        self.torrent = torrent
+    torrent: Torrent
 
 
+@dataclass
 class EditTorrentCommand(Message):
-    def __init__(self, torrent_hash: str, name: str, location: str) -> None:
-        super().__init__()
-        self.torrent_hash = torrent_hash
-        self.name = name
-        self.location = location
+    torrent_hash: str
+    name: str
+    location: str
 
 
+@dataclass
 class UpdateTorrentCategoryCommand(Message):
-    def __init__(self, torrent_hash: str, category: str | None) -> None:
-        super().__init__()
-        self.torrent_hash = torrent_hash
-        self.category = category
+    torrent_hash: str
+    category: str | None
 
 
+@dataclass
 class RemoveTorrentCommand(Message):
-    def __init__(self, torrent_hash: str) -> None:
-        super().__init__()
-        self.torrent_hash = torrent_hash
+    torrent_hash: str
 
 
+@dataclass
 class TrashTorrentCommand(Message):
-    def __init__(self, torrent_hash: str) -> None:
-        super().__init__()
-        self.torrent_hash = torrent_hash
+    torrent_hash: str
 
 
+@dataclass
 class VerifyTorrentCommand(Message):
-    def __init__(self, torrent_hash: str) -> None:
-        super().__init__()
-        self.torrent_hash = torrent_hash
+    torrent_hash: str
 
 
+@dataclass
 class ReannounceTorrentCommand(Message):
-    def __init__(self, torrent_hash: str) -> None:
-        super().__init__()
-        self.torrent_hash = torrent_hash
+    torrent_hash: str
 
 
+@dataclass
 class ToggleTorrentCommand(Message):
-    def __init__(self, torrent_hash: str, torrent_status) -> None:
-        super().__init__()
-        self.torrent_hash = torrent_hash
-        self.torrent_status = torrent_status
+    torrent_hash: str
+    torrent_status: str
 
 
+@dataclass
 class StartAllTorrentsCommand(Message):
     pass
 
 
+@dataclass
 class StopAllTorrentsCommand(Message):
     pass
 
 
+@dataclass
 class ChangeTorrentPriorityCommand(Message):
-    def __init__(self, torrent_hash: str, current_priority: int | None) -> None:
-        super().__init__()
-        self.torrent_hash = torrent_hash
-        self.current_priority = current_priority
+    torrent_hash: str
+    current_priority: int | None
 
 
+@dataclass
 class ToggleFileDownloadCommand(Message):
-    def __init__(
-        self, torrent_hash: str, file_ids: list[int], priority
-    ) -> None:
-        super().__init__()
-        self.torrent_hash = torrent_hash
-        self.file_ids = file_ids
-        self.priority = priority
+    torrent_hash: str
+    file_ids: list[int]
+    priority: TorrentFilePriority
 
 
+@dataclass
 class OpenSearchCommand(Message):
     pass
 
 
+@dataclass
 class AddTorrentFromWebSearchCommand(Message):
-    def __init__(self, magnet_link: str) -> None:
-        super().__init__()
-        self.magnet_link = magnet_link
+    magnet_link: str
 
 
+@dataclass
 class WebSearchQuerySubmitted(Message):
-    def __init__(
-        self,
-        query: str,
-        selected_indexers: list[str] | None = None,
-        selected_categories: list[Category] | None = None,
-    ) -> None:
-        super().__init__()
-        self.query = query
-        self.selected_indexers = selected_indexers
-        self.selected_categories = selected_categories
+    query: str
+    selected_indexers: list[str] | None = None
+    selected_categories: list[Category] | None = None
 
 
 # Events
 
 
+@dataclass
 class TorrentRemovedEvent(Message):
-    def __init__(self, torrent_hash: str) -> None:
-        super().__init__()
-        self.torrent_hash = torrent_hash
+    torrent_hash: str
 
 
+@dataclass
 class TorrentTrashedEvent(Message):
-    def __init__(self, torrent_hash: str) -> None:
-        super().__init__()
-        self.torrent_hash = torrent_hash
+    torrent_hash: str
 
 
+@dataclass
 class SearchCompletedEvent(Message):
-    def __init__(self, search_term: str) -> None:
-        super().__init__()
-        self.search_term = search_term
+    search_term: str
 
 
+@dataclass
 class TorrentLabelsUpdatedEvent(Message):
-    def __init__(self, torrent_hashes: list[str], value: str) -> None:
-        super().__init__()
-        self.torrent_hashes = torrent_hashes
-        self.value = value
+    torrent_hashes: list[str]
+    value: str
 
 
+@dataclass
 class TorrentEditedEvent(Message):
-    def __init__(self, torrent_hash: str) -> None:
-        super().__init__()
-        self.torrent_hash = torrent_hash
+    torrent_hash: str
 
 
+@dataclass
 class TorrentCategoryUpdatedEvent(Message):
-    def __init__(self, torrent_hash: str, category: str | None) -> None:
-        super().__init__()
-        self.torrent_hash = torrent_hash
-        self.category = category
+    torrent_hash: str
+    category: str | None
 
 
+@dataclass
 class SortOrderUpdatedEvent(Message):
-    def __init__(self, order: str, is_asc: bool) -> None:
-        super().__init__()
-        self.order = order
-        self.is_asc = is_asc
+    order: str
+    is_asc: bool
 
 
+@dataclass
 class FilterUpdatedEvent(Message):
-    def __init__(self, filter_option: FilterOption) -> None:
-        super().__init__()
-        self.filter_option = filter_option
+    filter_option: FilterOption
 
 
+@dataclass
 class PageChangedEvent(Message):
-    def __init__(self, state: PageState) -> None:
-        super().__init__()
-        self.state = state
+    state: PageState
 
 
+@dataclass
 class SearchStateChangedEvent(Message):
-    def __init__(self, current: int = None, total: int = None) -> None:
-        super().__init__()
-        self.current = current
-        self.total = total
+    current: int | None = None
+    total: int | None = None
 
 
+@dataclass
 class WebSearchCompletedEvent(Message):
-    def __init__(self, results: list) -> None:
-        super().__init__()
-        self.results = results
+    results: list
 
 
 # Common
 
 
+@dataclass
 class Notification(Message):
-    def __init__(self, message: str, severity: str = "information"):
-        super().__init__()
-        self.message = message
-        self.severity = severity
+    message: str
+    severity: str = "information"
 
 
+@dataclass
 class Confirm(Message):
-    def __init__(self, message, description, check_quit):
-        super().__init__()
-        self.message = message
-        self.description = description
-        self.check_quit = check_quit
+    message: str
+    description: str
+    check_quit: bool
