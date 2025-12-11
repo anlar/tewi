@@ -20,6 +20,12 @@ qBittorrent, and Deluge.
 
 ### Development
 
+To format code and fix style errors use:
+
+```bash
+make fix
+```
+
 To perform linting, test execution and test run application execute single
 command:
 
@@ -27,7 +33,7 @@ command:
 make auto-test
 ```
 
-Always execute it after completed changes on code-base.
+Always execute these commands after completed changes on code-base.
 
 ## Architecture
 
