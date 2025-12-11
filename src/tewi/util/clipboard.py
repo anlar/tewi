@@ -36,5 +36,5 @@ def paste() -> str | None:
         text = pyperclip.paste()
         return text if text else None
     except Exception as e:
-        logger.debug(f"Failed to access clipboard: {e}")
+        logger.warning(f"Failed to access clipboard: {e}")
         return None
