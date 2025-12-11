@@ -3,6 +3,7 @@
 import os
 from dataclasses import asdict
 from datetime import datetime, timedelta
+from typing import Any
 
 from qbittorrentapi import Client as QBittorrentAPIClient
 from qbittorrentapi.torrents import Tracker
@@ -75,8 +76,12 @@ class QBittorrentClient(BaseClient):
 
     @log_time
     def __init__(
-        self, host: str, port: str, username: str = None, password: str = None
-    ):
+        self,
+        host: str,
+        port: str,
+        username: str | None = None,
+        password: str | None = None,
+    ) -> None:
         self.client = QBittorrentAPIClient(
             host=host,
             port=port,
@@ -460,7 +465,7 @@ class QBittorrentClient(BaseClient):
         return self.STATUS_MAP.get(qb_status, "stopped")
 
     @log_time
-    def _torrent_to_dto(self, torrent) -> Torrent:
+    def _torrent_to_dto(self, torrent: Any) -> Torrent:
         """Convert qBittorrent torrent to Torrent.
 
         Populates list view fields only.
@@ -510,7 +515,7 @@ class QBittorrentClient(BaseClient):
         )
 
     @log_time
-    def _torrent_detail_to_dto(self, torrent) -> TorrentDetail:
+    def _torrent_detail_to_dto(self, torrent: Any) -> TorrentDetail:
         """Convert qBittorrent torrent to TorrentDetail.
 
         Reuses _torrent_to_dto for base fields and adds detail-specific
@@ -576,7 +581,7 @@ class QBittorrentClient(BaseClient):
         )
 
     @log_time
-    def _file_to_dto(self, file, torrent_hash: str) -> TorrentFile:
+    def _file_to_dto(self, file: Any, torrent_hash: str) -> TorrentFile:
         """Convert qBittorrent file to TorrentFile."""
 
         match file.priority:
@@ -598,7 +603,7 @@ class QBittorrentClient(BaseClient):
         )
 
     @log_time
-    def _peer_to_dto(self, peer) -> TorrentPeer:
+    def _peer_to_dto(self, peer: Any) -> TorrentPeer:
         """Convert qBittorrent peer to TorrentPeer."""
 
         match peer.connection:

@@ -4,6 +4,7 @@ import os
 import pathlib
 from dataclasses import asdict
 from datetime import datetime
+from typing import Any
 
 from transmission_rpc import Client as TransmissionRPCClient
 from transmission_rpc import Torrent as TransmissionTorrent
@@ -52,10 +53,10 @@ class TransmissionClient(BaseClient):
         self,
         host: str,
         port: str,
-        path: str = None,
-        username: str = None,
-        password: str = None,
-    ):
+        path: str | None = None,
+        username: str | None = None,
+        password: str | None = None,
+    ) -> None:
         kwargs = {
             "host": host,
             "port": port,
@@ -400,7 +401,7 @@ class TransmissionClient(BaseClient):
         )
 
     @log_time
-    def _file_to_dto(self, file) -> TorrentFile:
+    def _file_to_dto(self, file: Any) -> TorrentFile:
         """Convert transmission-rpc File to TorrentFile."""
 
         if file.selected:
@@ -423,7 +424,7 @@ class TransmissionClient(BaseClient):
         )
 
     @log_time
-    def _peer_to_dto(self, peer: dict) -> TorrentPeer:
+    def _peer_to_dto(self, peer: dict[str, Any]) -> TorrentPeer:
         """Convert transmission-rpc peer dict to TorrentPeer."""
 
         connection_type = "μTP" if peer.get("isUTP", False) else "TCP"
@@ -454,7 +455,7 @@ class TransmissionClient(BaseClient):
         )
 
     @log_time
-    def _tracker_to_dto(self, t) -> TorrentTracker:
+    def _tracker_to_dto(self, t: Any) -> TorrentTracker:
         """Convert transmission-rpc Tracker to TorrentTracker."""
 
         return TorrentTracker(

@@ -11,6 +11,7 @@ from .models import (
     ClientStats,
     Torrent,
     TorrentCategory,
+    TorrentDetail,
     TorrentFilePriority,
 )
 
@@ -49,8 +50,12 @@ class BaseClient(ABC):
 
     @abstractmethod
     def __init__(
-        self, host: str, port: str, username: str = None, password: str = None
-    ):
+        self,
+        host: str,
+        port: str,
+        username: str | None = None,
+        password: str | None = None,
+    ) -> None:
         """Initialize the client connection.
 
         Args:
@@ -170,7 +175,7 @@ class BaseClient(ABC):
         return result
 
     @abstractmethod
-    def torrent(self, hash: str):
+    def torrent(self, hash: str) -> TorrentDetail:
         """Get detailed information about a specific torrent.
 
         Args:

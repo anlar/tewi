@@ -16,9 +16,9 @@ def create_client(
     client_type: str,
     host: str,
     port: str,
-    username: str = None,
-    password: str = None,
-    path: str = None,
+    username: str | None = None,
+    password: str | None = None,
+    path: str | None = None,
 ) -> BaseClient:
     """Create a torrent client instance based on the specified type.
 

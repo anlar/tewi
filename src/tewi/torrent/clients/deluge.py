@@ -97,10 +97,10 @@ class DelugeClient(BaseClient):
         self,
         host: str,
         port: str,
-        path: str = None,
-        username: str = None,
-        password: str = None,
-    ):
+        path: str | None = None,
+        username: str | None = None,
+        password: str | None = None,
+    ) -> None:
         json_path = path or "/json"
         self.base_url = f"http://{host}:{port}{json_path}"
         self._session = requests.Session()
@@ -254,7 +254,7 @@ class DelugeClient(BaseClient):
 
         Note: Deluge doesn't have a built-in alt speed mode.
         """
-        pass
+        return False
 
     # ========================================================================
     # Torrent Retrieval
@@ -583,7 +583,7 @@ class DelugeClient(BaseClient):
         self._request_id += 1
         return self._request_id
 
-    def _call(self, method: str, params: list = None) -> Any:
+    def _call(self, method: str, params: list[Any] | None = None) -> Any:
         """Make RPC call to Deluge Web API.
 
         Args:
@@ -644,7 +644,9 @@ class DelugeClient(BaseClient):
         host_id = hosts[0][0]  # First element is host ID
         self._call("web.connect", [host_id])
 
-    def _flatten_dict(self, data: dict, parent_key: str = "") -> dict[str, str]:
+    def _flatten_dict(
+        self, data: dict[str, Any], parent_key: str = ""
+    ) -> dict[str, str]:
         """Flatten nested dictionary structures into key-value pairs.
 
         Args:
@@ -674,7 +676,7 @@ class DelugeClient(BaseClient):
         return self.STATUS_MAP.get(deluge_status, "Unknown")
 
     @log_time
-    def _torrent_to_dto(self, hash: str, t: dict) -> Torrent:
+    def _torrent_to_dto(self, hash: str, t: dict[str, Any]) -> Torrent:
         """Convert Deluge torrent data to Torrent.
 
         Populates list view fields only.
@@ -713,10 +715,10 @@ class DelugeClient(BaseClient):
     @log_time
     def _file_to_dto(
         self,
-        file_data: dict,
-        index: int = None,
-        priority_value: int = None,
-        progress: float = None,
+        file_data: dict[str, Any],
+        index: int | None = None,
+        priority_value: int | None = None,
+        progress: float | None = None,
     ) -> TorrentFile:
         """Convert Deluge file data to TorrentFile.
 
@@ -757,10 +759,11 @@ class DelugeClient(BaseClient):
         )
 
     @log_time
-    def _peer_to_dto(self, peer: dict) -> TorrentPeer:
+    def _peer_to_dto(self, peer: dict[str, Any]) -> TorrentPeer:
         """Convert Deluge peer data to TorrentPeer."""
 
-        address, port = peer.get("ip").split(":", 1)
+        address, port_str = peer.get("ip").split(":", 1)
+        port: int = int(port_str)
 
         return TorrentPeer(
             address=address,
@@ -779,7 +782,7 @@ class DelugeClient(BaseClient):
         )
 
     @log_time
-    def _tracker_to_dto(self, tracker: dict) -> TorrentTracker:
+    def _tracker_to_dto(self, tracker: dict[str, Any]) -> TorrentTracker:
         """Convert Deluge tracker data to TorrentTracker."""
 
         return TorrentTracker(
