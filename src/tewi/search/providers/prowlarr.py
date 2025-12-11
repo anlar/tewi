@@ -524,9 +524,13 @@ class ProwlarrProvider(BaseSearchProvider):
                 continue
 
             # Convert to string representation
-            if isinstance(value, (list, dict)):
-                # For complex types, convert to string
-                fields[key] = str(value)
+            if isinstance(value, list):
+                # skip, if flags contains only freelech
+                if key == 'indexerFlags' and set(value) == {"freeleech"}:
+                    continue
+                else:
+                    # For complex types, convert to string
+                    fields[key] = ",".join(value)
             else:
                 fields[key] = value
 
