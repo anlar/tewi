@@ -756,7 +756,6 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         "--path",
         type=str,
         action=TrackSetAction,
-        default=argparse.SUPPRESS,
         help="RPC path for Transmission (default: /transmission/rpc) "
         "or base JSON path for Deluge (default: /json)",
     )
