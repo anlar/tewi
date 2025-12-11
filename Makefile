@@ -4,6 +4,10 @@ check:
 test:
 	python -m pytest -v
 
+fix:
+	ruff format
+	ruff check --fix
+
 clean:
 	rm --force dist/*
 
