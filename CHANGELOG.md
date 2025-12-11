@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - GeoIP module gracefully handles missing geoip2fast dependency
 - clipboard module gracefully handles missing pyperclip dependency
 - Refactor torrents clients: use torrent hash as ID in Transmission
+- Use non-existent category during indexers loading from Jackett (speed up loading)
 
 ### Removed
 

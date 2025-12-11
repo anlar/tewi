@@ -124,7 +124,9 @@ class JackettProvider(BaseSearchProvider):
         """
         base_url = self.jackett_url.rstrip("/")
         endpoint = f"{base_url}/api/v2.0/indexers/all/results"
-        params = {"apikey": self.api_key, "Query": ""}
+        # Use non-existent category to prevent Jackett from actual search
+        # and return empty search list and all indexers
+        params = {"apikey": self.api_key, "cat": 123456}
         return f"{endpoint}?{urllib.parse.urlencode(params)}"
 
     def _fetch_indexers(self, url: str) -> dict:
