@@ -278,19 +278,19 @@ class MainApp(App):
             )
 
             self.call_from_thread(
-                self.set_tdata, torrents, session, filter_state
+                self.set_tdata_list, torrents, session, filter_state
             )
         elif current_pane == "torrent-info":
             info_panel = self.query_one(TorrentInfoPanel)
             torrent = self.client.torrent(info_panel.r_torrent.id)
-            self.call_from_thread(self.set_tdata2, torrent)
+            self.call_from_thread(self.set_tdata_info, torrent)
 
     @log_time
-    def set_tdata2(self, torrent: TorrentDTO) -> None:
+    def set_tdata_info(self, torrent: TorrentDTO) -> None:
         self.query_one(TorrentInfoPanel).r_torrent = torrent
 
     @log_time
-    def set_tdata(
+    def set_tdata_list(
         self, torrents: list[TorrentDTO], session, filter_state: FilterState
     ) -> None:
         self.r_torrents = torrents
