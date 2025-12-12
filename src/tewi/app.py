@@ -17,11 +17,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import argparse
-import logging
 import sys
-from pathlib import Path
 
-from platformdirs import user_log_dir
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -93,10 +90,10 @@ from .ui.panel.info import InfoPanel
 from .ui.panel.listview import TorrentListViewPanel
 from .ui.panel.state import StatePanel
 from .ui.panel.websearch import TorrentWebSearch
-from .util.decorator import log_time
+from .util.log import get_logger, init_logger, log_time
 from .version import __version__
 
-logger = logging.getLogger("tewi")
+logger = get_logger()
 
 
 # Core UI panels
@@ -264,7 +261,7 @@ class MainApp(App):
     async def load_tdata(self) -> None:
         current_pane = self.query_one(ContentSwitcher).current
         if current_pane == "torrent-list":
-            logging.info("Start loading data from torrent client...")
+            logger.info("Start loading data from torrent client...")
 
             if self.test_mode:
                 torrents = self.client.torrents_test(self.test_mode)
@@ -1006,18 +1003,8 @@ def create_app():
     config = load_config(profile)
     merge_config_with_args(config, args)
 
-    if args.logs:
-        log_dir = Path(user_log_dir("tewi", appauthor=False))
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_file = log_dir / "tewi.log"
-        logging.basicConfig(
-            filename=str(log_file),
-            encoding="utf-8",
-            format="%(asctime)s.%(msecs)03d %(module)-15s "
-            "%(levelname)-8s %(message)s",
-            level=logging.DEBUG,
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
+    # Initialize logging
+    init_logger(args.logs)
 
     logger.info(f"Start Tewi {tewi_version}...")
     logger.info(f"Loaded CLI options: {args}")

@@ -11,7 +11,7 @@ from textual.widgets.selection_list import Selection
 
 from ...search.models import StandardCategories
 from ...ui.widget.common import VimSelectionList
-from ...util.decorator import log_time
+from ...util.log import log_time
 from ..messages import Notification, WebSearchQuerySubmitted
 from ..util import subtitle_keys
 

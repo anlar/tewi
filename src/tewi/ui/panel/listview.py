@@ -7,7 +7,7 @@ from textual.reactive import reactive
 from textual.widgets import ListItem, ListView
 
 from ...torrent.models import Torrent
-from ...util.decorator import log_time
+from ...util.log import log_time
 from ..messages import (
     ChangeTorrentPriorityCommand,
     Notification,

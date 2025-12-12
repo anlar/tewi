@@ -19,11 +19,43 @@
 import logging
 import time
 from functools import wraps
+from pathlib import Path
 
-logger = logging.getLogger("tewi")
+from platformdirs import user_log_dir
+
+
+def get_logger() -> logging.Logger:
+    """Get the Tewi logger instance.
+
+    Returns:
+        Logger instance for Tewi application
+    """
+    return logging.getLogger("tewi")
+
+
+def init_logger(enable_logs: bool) -> None:
+    """Initialize logging configuration.
+
+    Args:
+        enable_logs: Whether to enable verbose logging to file
+    """
+    if enable_logs:
+        log_dir = Path(user_log_dir("tewi", appauthor=False))
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / "tewi.log"
+        logging.basicConfig(
+            filename=str(log_file),
+            encoding="utf-8",
+            format="%(asctime)s.%(msecs)03d %(module)-15s "
+            "%(levelname)-8s %(message)s",
+            level=logging.DEBUG,
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
 
 
 def log_time(func):
+    """Decorator to log function execution time if it exceeds 1ms."""
+
     @wraps(func)
     def log_time_wrapper(*args, **kwargs):
         start_time = time.perf_counter()
@@ -35,6 +67,7 @@ def log_time(func):
         total_time_ms = (end_time - start_time) * 1000
 
         if total_time_ms > 1:
+            logger = get_logger()
             logger.info(
                 f'Function "{func.__qualname__}": {total_time_ms:.4f} ms'
             )

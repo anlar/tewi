@@ -1,9 +1,9 @@
 """Unified search client for multiple torrent search providers."""
 
-import logging
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
+from ..util.log import get_logger
 from .base import BaseSearchProvider
 from .models import Category, IndexerDTO, SearchResultDTO
 from .providers import (
@@ -15,7 +15,7 @@ from .providers import (
     YTSProvider,
 )
 
-logger = logging.getLogger("tewi")
+logger = get_logger()
 
 # Available provider IDs
 AVAILABLE_PROVIDERS = {

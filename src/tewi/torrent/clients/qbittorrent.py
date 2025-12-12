@@ -8,7 +8,7 @@ from qbittorrentapi import Client as QBittorrentAPIClient
 from qbittorrentapi.definitions import Dictionary
 from qbittorrentapi.torrents import TorrentDictionary, Tracker
 
-from ...util.decorator import log_time
+from ...util.log import log_time
 from ...util.misc import is_torrent_link
 from ..base import BaseClient, ClientCapability
 from ..models import (

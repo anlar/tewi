@@ -1,17 +1,16 @@
 """Prowlarr torrent search provider implementation."""
 
 import json
-import logging
 import urllib.error
 import urllib.parse
 from datetime import datetime, timedelta
 from typing import Any
 
-from ...util.decorator import log_time
+from ...util.log import get_logger, log_time
 from ..base import BaseSearchProvider
 from ..models import Category, IndexerDTO, SearchResultDTO, StandardCategories
 
-logger = logging.getLogger("tewi")
+logger = get_logger()
 
 
 class ProwlarrProvider(BaseSearchProvider):

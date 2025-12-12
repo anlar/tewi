@@ -1,4 +1,4 @@
-from .decorator import log_time
+from .log import log_time
 
 
 @log_time

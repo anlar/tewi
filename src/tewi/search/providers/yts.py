@@ -6,7 +6,7 @@ import urllib.parse
 from datetime import datetime
 from typing import Any
 
-from ...util.decorator import log_time
+from ...util.log import log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResultDTO, StandardCategories
 

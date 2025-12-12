@@ -5,7 +5,7 @@ from textual.binding import Binding
 from textual.reactive import reactive
 from textual.widgets import DataTable, Label, SelectionList, Static
 
-from ...util.decorator import log_time
+from ...util.log import log_time
 from ..util import print_speed
 
 

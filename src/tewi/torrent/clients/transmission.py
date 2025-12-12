@@ -10,7 +10,7 @@ from transmission_rpc import File as TransmissionFile
 from transmission_rpc import Torrent as TransmissionTorrent
 from transmission_rpc.torrent import Tracker as TransmissionTracker
 
-from ...util.decorator import log_time
+from ...util.log import log_time
 from ...util.misc import is_torrent_link
 from ..base import BaseClient, ClientCapability
 from ..models import (

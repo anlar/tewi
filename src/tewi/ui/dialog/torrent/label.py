@@ -3,7 +3,7 @@ from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.widgets import Static, TextArea
 
-from ....util.decorator import log_time
+from ....util.log import log_time
 from ...messages import TorrentLabelsUpdatedEvent
 from ...util import subtitle_keys
 

@@ -1,10 +1,8 @@
 """Clipboard utilities for getting content from system clipboard."""
 
-import logging
+from .log import get_logger, log_time
 
-from .decorator import log_time
-
-logger = logging.getLogger("tewi")
+logger = get_logger()
 
 # Try to import pyperclip, set flag if not available
 try:

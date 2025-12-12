@@ -14,8 +14,8 @@ from textual.widgets import Static, TabbedContent, TabPane
 from textual.widgets.data_table import RowKey
 
 from ...torrent.models import TorrentFilePriority
-from ...util.decorator import log_time
 from ...util.geoip import get_country
+from ...util.log import log_time
 from ..messages import OpenTorrentListCommand, ToggleFileDownloadCommand
 from ..util import (
     get_file_list,

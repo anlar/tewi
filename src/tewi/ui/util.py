@@ -6,7 +6,7 @@ from functools import cache
 from typing import Any
 
 from ..torrent.models import TorrentFile, TorrentFilePriority
-from ..util.decorator import log_time
+from ..util.log import log_time
 
 
 def subtitle_keys(*key_desc_pairs: tuple[str, str]) -> str:

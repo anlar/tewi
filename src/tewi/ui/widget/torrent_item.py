@@ -22,7 +22,7 @@ from textual.reactive import reactive
 from textual.widgets import ProgressBar, Static
 
 from ...torrent.models import Torrent
-from ...util.decorator import log_time
+from ...util.log import log_time
 from ..util import esc_trunk, print_size, print_time
 from .common import ReactiveLabel, SpeedIndicator
 

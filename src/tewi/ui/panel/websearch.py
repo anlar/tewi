@@ -18,7 +18,7 @@ from ...search.providers import (
     TPBProvider,
     YTSProvider,
 )
-from ...util.decorator import log_time
+from ...util.log import log_time
 from ..dialog.torrent_details import TorrentDetailsDialog
 from ..messages import (
     AddTorrentFromWebSearchCommand,

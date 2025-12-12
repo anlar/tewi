@@ -5,7 +5,7 @@ from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.widgets import Label, Static
 
-from ...util.decorator import log_time
+from ...util.log import log_time
 from ..util import subtitle_keys
 
 

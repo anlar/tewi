@@ -9,7 +9,7 @@ from typing import Any
 
 import requests
 
-from ...util.decorator import log_time
+from ...util.log import log_time
 from ..base import BaseClient, ClientCapability
 from ..models import (
     ClientError,

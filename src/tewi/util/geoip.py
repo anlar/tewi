@@ -1,9 +1,8 @@
-import logging
 from functools import cache
 
-from .decorator import log_time
+from .log import get_logger, log_time
 
-logger = logging.getLogger("tewi")
+logger = get_logger()
 
 # Try to import geoip module, set flag if not available
 try:

@@ -2,7 +2,7 @@ from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.widgets import Static
 
-from ...util.decorator import log_time
+from ...util.log import log_time
 from ..util import subtitle_keys
 
 

@@ -4,7 +4,7 @@ from textual.screen import ModalScreen
 from textual.widgets import DataTable, Static
 
 from ....torrent.models import TorrentCategory
-from ....util.decorator import log_time
+from ....util.log import log_time
 from ...messages import UpdateTorrentCategoryCommand
 from ...util import subtitle_keys
 
