@@ -4,8 +4,8 @@ from textual.reactive import reactive
 from textual.widgets import Static
 
 from ...util.decorator import log_time
-from ...util.print import print_size, print_speed
 from ..models import FilterState, SortOrder
+from ..util import print_size, print_speed
 from ..widget.common import PageIndicator, ReactiveLabel, SpeedIndicator
 
 

@@ -5,8 +5,7 @@ from textual.widgets import Label, Static
 
 from ...torrent.models import ClientStats
 from ...util.decorator import log_time
-from ...util.print import print_ratio, print_size, print_time
-from ..util import subtitle_keys
+from ..util import print_ratio, print_size, print_time, subtitle_keys
 
 
 class StatisticsDialog(ModalScreen[None]):

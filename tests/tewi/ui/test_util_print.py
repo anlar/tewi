@@ -17,7 +17,7 @@
 import math
 from datetime import datetime, timedelta
 
-from src.tewi.util.print import (
+from src.tewi.ui.util import (
     escape_markup,
     print_ratio,
     print_size,

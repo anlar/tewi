@@ -6,7 +6,7 @@ from textual.reactive import reactive
 from textual.widgets import DataTable, Label, SelectionList, Static
 
 from ...util.decorator import log_time
-from ...util.print import print_speed
+from ..util import print_speed
 
 
 class VimDataTable(DataTable):

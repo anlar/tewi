@@ -19,14 +19,13 @@ from ...search.providers import (
     YTSProvider,
 )
 from ...util.decorator import log_time
-from ...util.print import escape_markup, print_size
 from ..dialog.torrent_details import TorrentDetailsDialog
 from ..messages import (
     AddTorrentFromWebSearchCommand,
     Notification,
     OpenTorrentListCommand,
 )
-from ..util import subtitle_keys
+from ..util import escape_markup, print_size, subtitle_keys
 from ..widget.common import ReactiveLabel
 
 

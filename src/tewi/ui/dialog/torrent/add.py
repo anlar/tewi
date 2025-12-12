@@ -7,9 +7,8 @@ from textual.widgets import Static, TextArea
 from ....util import clipboard
 from ....util.decorator import log_time
 from ....util.misc import is_torrent_link
-from ....util.print import print_size
 from ...messages import AddTorrentCommand
-from ...util import subtitle_keys
+from ...util import print_size, subtitle_keys
 from ...widget.common import ReactiveLabel
 
 

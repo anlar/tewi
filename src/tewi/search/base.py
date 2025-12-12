@@ -4,7 +4,7 @@ import urllib.parse
 import urllib.request
 from abc import ABC, abstractmethod
 
-from ..util.print import print_size
+from ..ui.util import print_size
 from .models import Category, IndexerDTO, SearchResultDTO, StandardCategories
 
 
