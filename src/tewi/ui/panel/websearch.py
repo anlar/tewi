@@ -71,6 +71,11 @@ class TorrentWebSearch(Static):
             ProwlarrProvider(prowlarr_url, prowlarr_api_key),
         ]
 
+        # Workaround to get color from theme, because DataTable doesn't
+        # support CSS variables lik $success.
+        # See: https://github.com/Textualize/textual/issues/6273
+        self.color_success = self.app.current_theme.success
+
     @log_time
     def compose(self) -> ComposeResult:
         with Vertical():
@@ -146,7 +151,7 @@ class TorrentWebSearch(Static):
 
             title = escape_markup(r.title)
             if r.freeleech:
-                title = f"[bold green]\\[F][/] {title}"
+                title = f"[bold {self.color_success}]\\[F][/] {title}"
 
             table.add_row(
                 r.provider,
