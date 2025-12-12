@@ -54,30 +54,6 @@ class ProwlarrProvider(BaseSearchProvider):
     def name(self) -> str:
         return "Prowlarr"
 
-    def _validate_config(
-        self, prowlarr_url: str | None, api_key: str | None
-    ) -> str | None:
-        """Validate configuration and return error message if invalid.
-
-        Args:
-            prowlarr_url: Base URL of Prowlarr instance
-            api_key: API key for Prowlarr authentication
-
-        Returns:
-            Error message string if invalid, None if valid
-        """
-        if not prowlarr_url or not prowlarr_url.strip():
-            return (
-                "Prowlarr URL not configured. "
-                "Set prowlarr_url in [search] section."
-            )
-        if not api_key or not api_key.strip():
-            return (
-                "Prowlarr API key not configured. "
-                "Set prowlarr_api_key in [search] section."
-            )
-        return None
-
     def indexers(self) -> list[IndexerDTO]:
         """Return list of configured indexers from Prowlarr instance.
 
@@ -111,6 +87,95 @@ class ProwlarrProvider(BaseSearchProvider):
             # Return empty list if indexers cannot be fetched
             logger.warning(f"Failed to load Prowlarr indexers: {e}")
             return []
+
+    @log_time
+    def search(
+        self, query: str, categories: list[Category] | None = None
+    ) -> list[SearchResultDTO]:
+        """Search Prowlarr for torrents across indexers.
+
+        Args:
+            query: Search term
+            categories: Category objects to filter by (optional)
+
+        Returns:
+            List of SearchResultDTO objects
+
+        Raises:
+            Exception: If API request fails or not configured
+        """
+        if self._config_error:
+            raise Exception(self._config_error)
+
+        if not query or not query.strip():
+            return []
+
+        # Store categories for use in URL building
+        self._selected_categories = categories
+
+        # Build URL with optional indexer filtering
+        url = self._build_search_url(query)
+        data = self._fetch_results(url)
+        return self._process_results(data)
+
+    def details_extended(self, result: SearchResultDTO) -> str:
+        """Generate Prowlarr-specific details for right column.
+
+        Prints all provider-specific fields from the search result.
+
+        Args:
+            result: Search result to format
+
+        Returns:
+            Markdown-formatted string with Prowlarr details
+        """
+        if not result.fields:
+            return ""
+
+        md = "## Indexer Info\n"
+
+        # Print all fields in sorted order for consistent display
+        for key in sorted(result.fields.keys()):
+            value = result.fields[key]
+            # Transform field for display
+            display_name, display_value = self._transform_field(key, value)
+            if display_name:
+                md += f"- **{display_name}:** {display_value}\n"
+
+        return md
+
+    def set_selected_indexers(self, indexer_ids: list[str] | None) -> None:
+        """Set which indexers to search.
+
+        Args:
+            indexer_ids: List of indexer IDs (without 'prowlarr:' prefix),
+                        or None to search all indexers
+        """
+        self._selected_indexers = indexer_ids
+
+    def _validate_config(
+        self, prowlarr_url: str | None, api_key: str | None
+    ) -> str | None:
+        """Validate configuration and return error message if invalid.
+
+        Args:
+            prowlarr_url: Base URL of Prowlarr instance
+            api_key: API key for Prowlarr authentication
+
+        Returns:
+            Error message string if invalid, None if valid
+        """
+        if not prowlarr_url or not prowlarr_url.strip():
+            return (
+                "Prowlarr URL not configured. "
+                "Set prowlarr_url in [search] section."
+            )
+        if not api_key or not api_key.strip():
+            return (
+                "Prowlarr API key not configured. "
+                "Set prowlarr_api_key in [search] section."
+            )
+        return None
 
     def _is_cache_valid(self) -> bool:
         """Check if cached indexers are still valid.
@@ -187,45 +252,6 @@ class ProwlarrProvider(BaseSearchProvider):
                     IndexerDTO(full_id, f"{indexer_name} [dim](Prowlarr)[/]")
                 )
         return indexers
-
-    @log_time
-    def search(
-        self, query: str, categories: list[Category] | None = None
-    ) -> list[SearchResultDTO]:
-        """Search Prowlarr for torrents across indexers.
-
-        Args:
-            query: Search term
-            categories: Category objects to filter by (optional)
-
-        Returns:
-            List of SearchResultDTO objects
-
-        Raises:
-            Exception: If API request fails or not configured
-        """
-        if self._config_error:
-            raise Exception(self._config_error)
-
-        if not query or not query.strip():
-            return []
-
-        # Store categories for use in URL building
-        self._selected_categories = categories
-
-        # Build URL with optional indexer filtering
-        url = self._build_search_url(query)
-        data = self._fetch_results(url)
-        return self._process_results(data)
-
-    def set_selected_indexers(self, indexer_ids: list[str] | None) -> None:
-        """Set which indexers to search.
-
-        Args:
-            indexer_ids: List of indexer IDs (without 'prowlarr:' prefix),
-                        or None to search all indexers
-        """
-        self._selected_indexers = indexer_ids
 
     def _build_search_url(self, query: str) -> str:
         """Build Prowlarr API search URL.
@@ -583,7 +609,7 @@ class ProwlarrProvider(BaseSearchProvider):
         This is a universal mechanism for enhancing field display.
 
         Args:
-            key: Field name from Jackett response
+            key: Field name from Prowlarr response
             value: Field value
 
         Returns:
@@ -605,29 +631,3 @@ class ProwlarrProvider(BaseSearchProvider):
             return "Poster", value
 
         return key, value
-
-    def details_extended(self, result: SearchResultDTO) -> str:
-        """Generate Prowlarr-specific details for right column.
-
-        Prints all provider-specific fields from the search result.
-
-        Args:
-            result: Search result to format
-
-        Returns:
-            Markdown-formatted string with Prowlarr details
-        """
-        if not result.fields:
-            return ""
-
-        md = "## Indexer Info\n"
-
-        # Print all fields in sorted order for consistent display
-        for key in sorted(result.fields.keys()):
-            value = result.fields[key]
-            # Transform field for display
-            display_name, display_value = self._transform_field(key, value)
-            if display_name:
-                md += f"- **{display_name}:** {display_value}\n"
-
-        return md

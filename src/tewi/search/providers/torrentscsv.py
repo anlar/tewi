@@ -81,6 +81,29 @@ class TorrentsCsvProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
 
+    def details_extended(self, result: SearchResultDTO) -> str:
+        """Generate TorrentsCSV-specific details for right column.
+
+        Args:
+            result: Search result to format
+
+        Returns:
+            Markdown-formatted string with statistics
+        """
+        if not result.fields:
+            return ""
+
+        md = "## Information\n"
+
+        if "completed" in result.fields:
+            completed = result.fields["completed"]
+            md += f"- **Completed Downloads:** {completed}\n"
+
+        if "scraped_date" in result.fields:
+            md += f"- **Last Scraped:** {result.fields['scraped_date']}\n"
+
+        return md
+
     def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResultDTO | None:
         """Parse a single torrent from TorrentsCSV API response."""
         try:
@@ -130,26 +153,3 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
         except (KeyError, ValueError, TypeError):
             return None
-
-    def details_extended(self, result: SearchResultDTO) -> str:
-        """Generate TorrentsCSV-specific details for right column.
-
-        Args:
-            result: Search result to format
-
-        Returns:
-            Markdown-formatted string with statistics
-        """
-        if not result.fields:
-            return ""
-
-        md = "## Information\n"
-
-        if "completed" in result.fields:
-            completed = result.fields["completed"]
-            md += f"- **Completed Downloads:** {completed}\n"
-
-        if "scraped_date" in result.fields:
-            md += f"- **Last Scraped:** {result.fields['scraped_date']}\n"
-
-        return md

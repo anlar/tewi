@@ -51,30 +51,6 @@ class JackettProvider(BaseSearchProvider):
     def name(self) -> str:
         return "Jackett"
 
-    def _validate_config(
-        self, jackett_url: str | None, api_key: str | None
-    ) -> str | None:
-        """Validate configuration and return error message if invalid.
-
-        Args:
-            jackett_url: Base URL of Jackett instance
-            api_key: API key for Jackett authentication
-
-        Returns:
-            Error message string if invalid, None if valid
-        """
-        if not jackett_url or not jackett_url.strip():
-            return (
-                "Jackett URL not configured. "
-                "Set jackett_url in [search] section."
-            )
-        if not api_key or not api_key.strip():
-            return (
-                "Jackett API key not configured. "
-                "Set jackett_api_key in [search] section."
-            )
-        return None
-
     def indexers(self) -> list[IndexerDTO]:
         """Return list of configured indexers from Jackett instance.
 
@@ -108,6 +84,106 @@ class JackettProvider(BaseSearchProvider):
             # Return empty list if indexers cannot be fetched
             logger.warning(f"Failed to load Jackett indexers: {e}")
             return []
+
+    @log_time
+    def search(
+        self, query: str, categories: list[Category] | None = None
+    ) -> list[SearchResultDTO]:
+        """Search Jackett for torrents across all indexers.
+
+        Args:
+            query: Search term
+            categories: Category IDs to filter by (optional)
+
+        Returns:
+            List of SearchResultDTO objects
+
+        Raises:
+            Exception: If API request fails or not configured
+        """
+        if self._config_error:
+            raise Exception(self._config_error)
+
+        if not query or not query.strip():
+            return []
+
+        # If specific indexers selected that differ from all indexers,
+        # search each individually
+        # (Jackett can search only on 1 or all indexers)
+        if self._should_search_multiple_indexers():
+            return self._search_multiple_indexers(query, categories)
+        else:
+            # Search all indexers
+            url = self._build_search_url(query, "all", categories)
+            data = self._fetch_results(url)
+            return self._process_results(data)
+
+    def details_extended(self, result: SearchResultDTO) -> str:
+        """Generate Jackett-specific details for right column.
+
+        Prints all provider-specific fields from the search result.
+        Applies transformations to enhance certain fields (e.g., IMDB).
+
+        Args:
+            result: Search result to format
+
+        Returns:
+            Markdown-formatted string with Jackett details
+        """
+        if not result.fields:
+            return ""
+
+        md = "## Indexer Info\n"
+
+        # Print all fields in sorted order for consistent display
+        for key in sorted(result.fields.keys()):
+            value = result.fields[key]
+            # Transform field for display
+            display_name, display_value = self._transform_field(key, value)
+            md += f"- **{display_name}:** {display_value}\n"
+
+        return md
+
+    def set_selected_indexers(self, indexer_ids: list[str] | None) -> None:
+        """Set which indexers to search.
+
+        Args:
+            indexer_ids: List of indexer IDs (without 'jackett:' prefix),
+                        or None to search all indexers
+        """
+        self._selected_indexers = indexer_ids
+
+    def fetch_from_indexer(
+        self, query, indexer_id, categories: list[Category] | None
+    ):
+        """Helper for parallel execution."""
+        url = self._build_search_url(query, indexer_id)
+        data = self._fetch_results(url)
+        return self._process_results(data)
+
+    def _validate_config(
+        self, jackett_url: str | None, api_key: str | None
+    ) -> str | None:
+        """Validate configuration and return error message if invalid.
+
+        Args:
+            jackett_url: Base URL of Jackett instance
+            api_key: API key for Jackett authentication
+
+        Returns:
+            Error message string if invalid, None if valid
+        """
+        if not jackett_url or not jackett_url.strip():
+            return (
+                "Jackett URL not configured. "
+                "Set jackett_url in [search] section."
+            )
+        if not api_key or not api_key.strip():
+            return (
+                "Jackett API key not configured. "
+                "Set jackett_api_key in [search] section."
+            )
+        return None
 
     def _is_cache_valid(self) -> bool:
         """Check if cached indexers are still valid.
@@ -191,39 +267,6 @@ class JackettProvider(BaseSearchProvider):
                 )
         return indexers
 
-    @log_time
-    def search(
-        self, query: str, categories: list[Category] | None = None
-    ) -> list[SearchResultDTO]:
-        """Search Jackett for torrents across all indexers.
-
-        Args:
-            query: Search term
-            categories: Category IDs to filter by (optional)
-
-        Returns:
-            List of SearchResultDTO objects
-
-        Raises:
-            Exception: If API request fails or not configured
-        """
-        if self._config_error:
-            raise Exception(self._config_error)
-
-        if not query or not query.strip():
-            return []
-
-        # If specific indexers selected that differ from all indexers,
-        # search each individually
-        # (Jackett can search only on 1 or all indexers)
-        if self._should_search_multiple_indexers():
-            return self._search_multiple_indexers(query, categories)
-        else:
-            # Search all indexers
-            url = self._build_search_url(query, "all", categories)
-            data = self._fetch_results(url)
-            return self._process_results(data)
-
     def _should_search_multiple_indexers(self) -> bool:
         """Check if selected indexers differ from all available indexers.
 
@@ -284,23 +327,6 @@ class JackettProvider(BaseSearchProvider):
                     )
 
         return all_results
-
-    def fetch_from_indexer(
-        self, query, indexer_id, categories: list[Category] | None
-    ):
-        """Helper for parallel execution."""
-        url = self._build_search_url(query, indexer_id)
-        data = self._fetch_results(url)
-        return self._process_results(data)
-
-    def set_selected_indexers(self, indexer_ids: list[str] | None) -> None:
-        """Set which indexers to search.
-
-        Args:
-            indexer_ids: List of indexer IDs (without 'jackett:' prefix),
-                        or None to search all indexers
-        """
-        self._selected_indexers = indexer_ids
 
     def _build_search_url(
         self, query: str, indexers: str, categories: list[Category] | None
@@ -659,29 +685,3 @@ class JackettProvider(BaseSearchProvider):
             return "IMDB", f"https://www.imdb.com/title/tt{value}/"
 
         return key, value
-
-    def details_extended(self, result: SearchResultDTO) -> str:
-        """Generate Jackett-specific details for right column.
-
-        Prints all provider-specific fields from the search result.
-        Applies transformations to enhance certain fields (e.g., IMDB).
-
-        Args:
-            result: Search result to format
-
-        Returns:
-            Markdown-formatted string with Jackett details
-        """
-        if not result.fields:
-            return ""
-
-        md = "## Indexer Info\n"
-
-        # Print all fields in sorted order for consistent display
-        for key in sorted(result.fields.keys()):
-            value = result.fields[key]
-            # Transform field for display
-            display_name, display_value = self._transform_field(key, value)
-            md += f"- **{display_name}:** {display_value}\n"
-
-        return md

@@ -47,6 +47,59 @@ class YTSProvider(BaseSearchProvider):
     def name(self) -> str:
         return "YTS"
 
+    @log_time
+    def search(
+        self, query: str, categories: list[Category] | None = None
+    ) -> list[SearchResultDTO]:
+        """Search YTS for movie torrents.
+
+        Args:
+            query: Movie name to search for
+            categories: Category IDs to filter by - if provided and
+                       doesn't contain Movies category, returns empty list
+
+        Returns:
+            List of SearchResultDTO objects
+
+        Raises:
+            Exception: If API request fails
+        """
+        if not query or not query.strip():
+            return []
+
+        # YTS only returns movies - if categories specified and don't
+        # include Movies, return empty
+        if not self._has_movies_category(categories):
+            return []
+
+        data = self._fetch_api_data(query)
+
+        if data.get("status") != "ok":
+            raise Exception(f"API error: {data.get('status_message')}")
+
+        movies = data.get("data", {}).get("movies", [])
+        if not movies:
+            return []
+
+        return self._process_movies(movies)
+
+    def details_extended(self, result: SearchResultDTO) -> str:
+        """Generate YTS-specific details for right column.
+
+        Args:
+            result: Search result to format
+
+        Returns:
+            Markdown-formatted string with movie details
+        """
+        if not result.fields:
+            return ""
+
+        md = ""
+        md = self._add_movie_info(md, result.fields)
+        md = self._add_quality_info(md, result.fields)
+        return md
+
     def _has_movies_category(self, categories: list[Category] | None) -> bool:
         """Check if categories list includes Movies category.
 
@@ -116,41 +169,103 @@ class YTSProvider(BaseSearchProvider):
                     results.append(result)
         return results
 
-    @log_time
-    def search(
-        self, query: str, categories: list[Category] | None = None
-    ) -> list[SearchResultDTO]:
-        """Search YTS for movie torrents.
+    def _parse_torrent(
+        self, movie: dict[str, Any], torrent: dict[str, Any]
+    ) -> SearchResultDTO | None:
+        """Parse a single torrent from YTS API response."""
+        try:
+            info_hash = torrent.get("hash", "")
+            if not info_hash:
+                return None
+
+            # Build title with quality, year and language
+            title = movie.get("title", "")
+            year = movie.get("year", "")
+            language = movie.get("language", "").upper()
+            quality = torrent.get("quality", "")
+
+            full_title = f"{title} ({year})"
+            if quality:
+                full_title += f" [{quality}]"
+            if language:
+                full_title += f" [{language}]"
+
+            size = torrent.get("size_bytes", 0)
+
+            magnet_link = build_magnet_link(
+                info_hash=info_hash, name=full_title, trackers=self.TRACKERS
+            )
+
+            # Parse upload date from unix timestamp
+            upload_date = None
+            date_uploaded_unix = torrent.get("date_uploaded_unix")
+            if date_uploaded_unix:
+                upload_date = datetime.fromtimestamp(date_uploaded_unix)
+
+            # Build provider-specific fields
+            fields = self._build_movie_fields(
+                movie, torrent, year, language, quality
+            )
+            fields.update(
+                self._build_quality_fields(
+                    movie, torrent, year, language, quality
+                )
+            )
+
+            # Construct page URL from movie URL or ID
+            page_url = movie.get("url")
+            if not page_url and movie.get("id"):
+                page_url = f"https://{self.DOMAIN}/movies/{movie['id']}"
+
+            return SearchResultDTO(
+                title=full_title,
+                categories=self._get_category_from_quality(quality),
+                seeders=torrent.get("seeds", 0),
+                leechers=torrent.get("peers", 0),
+                size=size,
+                files_count=None,
+                magnet_link=magnet_link,
+                info_hash=info_hash,
+                upload_date=upload_date,
+                provider=self.name,
+                provider_id=self.id,
+                downloads=None,
+                page_url=page_url,
+                torrent_link=None,
+                freeleech=True,  # Public tracker
+                fields=fields,
+            )
+
+        except (KeyError, ValueError, TypeError):
+            return None
+
+    def _get_category_from_quality(self, quality: str) -> list[Category]:
+        """Map YTS quality to Standard category.
+
+        Based on Jackett YTS category mappings:
+        - 720p → Movies/HD
+        - 1080p → Movies/HD
+        - 2160p → Movies/UHD
+        - 3D → Movies/3D
+        - default → Movies
 
         Args:
-            query: Movie name to search for
-            categories: Category IDs to filter by - if provided and
-                       doesn't contain Movies category, returns empty list
+            quality: Quality string from YTS API (e.g., "720p", "1080p")
 
         Returns:
-            List of SearchResultDTO objects
-
-        Raises:
-            Exception: If API request fails
+            List containing the appropriate Standard category
         """
-        if not query or not query.strip():
-            return []
+        quality_lower = quality.lower() if quality else ""
 
-        # YTS only returns movies - if categories specified and don't
-        # include Movies, return empty
-        if not self._has_movies_category(categories):
-            return []
-
-        data = self._fetch_api_data(query)
-
-        if data.get("status") != "ok":
-            raise Exception(f"API error: {data.get('status_message')}")
-
-        movies = data.get("data", {}).get("movies", [])
-        if not movies:
-            return []
-
-        return self._process_movies(movies)
+        if "2160p" in quality_lower or "4k" in quality_lower:
+            return [StandardCategories.MOVIES_UHD]
+        elif "3d" in quality_lower:
+            return [StandardCategories.MOVIES_3D]
+        elif "720p" in quality_lower or "1080p" in quality_lower:
+            return [StandardCategories.MOVIES_HD]
+        else:
+            # Default to general Movies category
+            return [StandardCategories.MOVIES]
 
     def _build_movie_fields(
         self,
@@ -229,104 +344,6 @@ class YTSProvider(BaseSearchProvider):
 
         return fields
 
-    def _get_category_from_quality(self, quality: str) -> list[Category]:
-        """Map YTS quality to Jackett category.
-
-        Based on Jackett YTS category mappings:
-        - 720p → Movies/HD
-        - 1080p → Movies/HD
-        - 2160p → Movies/UHD
-        - 3D → Movies/3D
-        - default → Movies
-
-        Args:
-            quality: Quality string from YTS API (e.g., "720p", "1080p")
-
-        Returns:
-            List containing the appropriate Jackett category
-        """
-        quality_lower = quality.lower() if quality else ""
-
-        if "2160p" in quality_lower or "4k" in quality_lower:
-            return [StandardCategories.MOVIES_UHD]
-        elif "3d" in quality_lower:
-            return [StandardCategories.MOVIES_3D]
-        elif "720p" in quality_lower or "1080p" in quality_lower:
-            return [StandardCategories.MOVIES_HD]
-        else:
-            # Default to general Movies category
-            return [StandardCategories.MOVIES]
-
-    def _parse_torrent(
-        self, movie: dict[str, Any], torrent: dict[str, Any]
-    ) -> SearchResultDTO | None:
-        """Parse a single torrent from YTS API response."""
-        try:
-            info_hash = torrent.get("hash", "")
-            if not info_hash:
-                return None
-
-            # Build title with quality, year and language
-            title = movie.get("title", "")
-            year = movie.get("year", "")
-            language = movie.get("language", "").upper()
-            quality = torrent.get("quality", "")
-
-            full_title = f"{title} ({year})"
-            if quality:
-                full_title += f" [{quality}]"
-            if language:
-                full_title += f" [{language}]"
-
-            size = torrent.get("size_bytes", 0)
-
-            magnet_link = build_magnet_link(
-                info_hash=info_hash, name=full_title, trackers=self.TRACKERS
-            )
-
-            # Parse upload date from unix timestamp
-            upload_date = None
-            date_uploaded_unix = torrent.get("date_uploaded_unix")
-            if date_uploaded_unix:
-                upload_date = datetime.fromtimestamp(date_uploaded_unix)
-
-            # Build provider-specific fields
-            fields = self._build_movie_fields(
-                movie, torrent, year, language, quality
-            )
-            fields.update(
-                self._build_quality_fields(
-                    movie, torrent, year, language, quality
-                )
-            )
-
-            # Construct page URL from movie URL or ID
-            page_url = movie.get("url")
-            if not page_url and movie.get("id"):
-                page_url = f"https://{self.DOMAIN}/movies/{movie['id']}"
-
-            return SearchResultDTO(
-                title=full_title,
-                categories=self._get_category_from_quality(quality),
-                seeders=torrent.get("seeds", 0),
-                leechers=torrent.get("peers", 0),
-                size=size,
-                files_count=None,
-                magnet_link=magnet_link,
-                info_hash=info_hash,
-                upload_date=upload_date,
-                provider=self.name,
-                provider_id=self.id,
-                downloads=None,
-                page_url=page_url,
-                torrent_link=None,
-                freeleech=True,  # Public tracker
-                fields=fields,
-            )
-
-        except (KeyError, ValueError, TypeError):
-            return None
-
     def _add_movie_info(self, md: str, fields: dict[str, str]) -> str:
         """Add movie information section to markdown."""
         md += "## Movie\n"
@@ -365,21 +382,4 @@ class YTSProvider(BaseSearchProvider):
             if key in fields:
                 md += f"- **{label}:** {fields[key]}\n"
 
-        return md
-
-    def details_extended(self, result: SearchResultDTO) -> str:
-        """Generate YTS-specific details for right column.
-
-        Args:
-            result: Search result to format
-
-        Returns:
-            Markdown-formatted string with movie details
-        """
-        if not result.fields:
-            return ""
-
-        md = ""
-        md = self._add_movie_info(md, result.fields)
-        md = self._add_quality_info(md, result.fields)
         return md

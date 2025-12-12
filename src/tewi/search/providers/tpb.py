@@ -20,170 +20,7 @@ class TPBProvider(BaseSearchProvider):
 
     API_URL = "https://apibay.org/q.php"
 
-    @property
-    def id(self) -> str:
-        return "tpb"
-
-    @property
-    def name(self) -> str:
-        return "The Pirate Bay"
-
-    @log_time
-    def search(
-        self, query: str, categories: list[Category] | None = None
-    ) -> list[SearchResultDTO]:
-        """Search The Pirate Bay for torrents.
-
-        Args:
-            query: Search term
-            categories: Category IDs to filter by (optional)
-
-        Returns:
-            List of SearchResultDTO objects
-
-        Raises:
-            Exception: If API request fails
-        """
-        if not query or not query.strip():
-            return []
-
-        # Convert Jackett category IDs to TPB category codes
-        tpb_category = self._convert_categories_to_tpb(categories)
-
-        params = {
-            "q": query.strip(),
-            "cat": tpb_category,
-        }
-
-        url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
-
-        try:
-            with urlopen(url) as response:
-                data = json.loads(response.read().decode("utf-8"))
-
-            # API returns [{"name": "No results returned"}] when no results
-            if not data or (
-                len(data) == 1 and data[0].get("name") == "No results returned"
-            ):
-                return []
-
-            results = []
-            for torrent in data:
-                result = self._parse_torrent(torrent)
-                if result:
-                    results.append(result)
-
-            return results
-
-        except urllib.error.URLError as e:
-            raise Exception(f"Network error: {e}")
-        except json.JSONDecodeError as e:
-            raise Exception(f"Failed to parse API response: {e}")
-
-    def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResultDTO | None:
-        """Parse a single torrent from TPB API response."""
-        try:
-            info_hash = torrent.get("info_hash", "")
-            if not info_hash:
-                return None
-
-            name = torrent.get("name", "Unknown")
-
-            size = int(torrent.get("size", 0))
-            category_code = int(torrent.get("category", 0))
-
-            magnet_link = build_magnet_link(info_hash=info_hash, name=name)
-
-            # Parse upload date from unix timestamp
-            upload_date = None
-            added = torrent.get("added")
-            if added:
-                upload_date = datetime.fromtimestamp(int(added))
-
-            # Build provider-specific fields
-            fields = {}
-            username = torrent.get("username")
-            if username:
-                fields["username"] = username
-
-            status = torrent.get("status")
-            if status:
-                fields["status"] = status
-
-            imdb = torrent.get("imdb")
-            if imdb:
-                fields["imdb"] = imdb
-
-            # Construct page URL from torrent ID
-            page_url = None
-            torrent_id = torrent.get("id")
-            if torrent_id:
-                page_url = (
-                    f"https://thepiratebay.org/description.php?id={torrent_id}"
-                )
-
-            return SearchResultDTO(
-                title=name,
-                categories=self._get_category(category_code),
-                seeders=int(torrent.get("seeders", 0)),
-                leechers=int(torrent.get("leechers", 0)),
-                size=size,
-                files_count=int(torrent.get("num_files", None)),
-                magnet_link=magnet_link,
-                info_hash=info_hash,
-                upload_date=upload_date,
-                provider=self.name,
-                provider_id=self.id,
-                downloads=None,
-                page_url=page_url,
-                torrent_link=None,
-                freeleech=True,  # Public tracker
-                fields=fields,
-            )
-
-        except (KeyError, ValueError, TypeError):
-            return None
-
-    def _convert_categories_to_tpb(
-        self, categories: list[Category] | None
-    ) -> int:
-        """Convert Jackett categories to TPB category code.
-
-        TPB uses category codes: 100 (Audio), 200 (Video), 300 (Apps),
-        400 (Games), 500 (Porn), 600 (Other)
-
-        Args:
-            categories: List of Category objects
-
-        Returns:
-            TPB category code (0 for all categories)
-        """
-        if not categories:
-            return 0
-
-        # Map Jackett parent category IDs to TPB codes
-        jackett_to_tpb = {
-            1000: 400,  # Console -> Games
-            2000: 200,  # Movies -> Video
-            3000: 100,  # Audio -> Audio
-            4000: 300,  # PC -> Applications
-            5000: 200,  # TV -> Video
-            6000: 500,  # XXX -> Porn
-            7000: 600,  # Books -> Other
-            8000: 600,  # Other -> Other
-        }
-
-        # Try to find a matching parent category
-        for category in categories:
-            # Get parent category ID (first digit * 1000)
-            parent_id = (category.id // 1000) * 1000
-            if parent_id in jackett_to_tpb:
-                return jackett_to_tpb[parent_id]
-
-        # Default to all categories
-        return 0
-
-    # TPB category code to Jackett category mapping
+    # TPB category code to Standard category mapping
     # Based on Jackett's thepiratebay.yml category mappings
     TPB_CATEGORY_MAP = {
         # Audio categories (100-199)
@@ -258,29 +95,77 @@ class TPBProvider(BaseSearchProvider):
         600: StandardCategories.OTHER,
     }
 
-    def _get_category(self, code: int) -> list[Category]:
-        """Map TPB category code to Jackett Category list.
+    # Map Standard parent category IDs to TPB codes
+    STD_TO_TPB_MAP = {
+        1000: 400,  # Console -> Games
+        2000: 200,  # Movies -> Video
+        3000: 100,  # Audio -> Audio
+        4000: 300,  # PC -> Applications
+        5000: 200,  # TV -> Video
+        6000: 500,  # XXX -> Porn
+        7000: 600,  # Books -> Other
+        8000: 600,  # Other -> Other
+    }
 
-        Based on Jackett's thepiratebay.yml category mappings:
-        https://github.com/Jackett/Jackett/blob/master/src/Jackett.Common/Definitions/thepiratebay.yml
+    @property
+    def id(self) -> str:
+        return "tpb"
+
+    @property
+    def name(self) -> str:
+        return "The Pirate Bay"
+
+    @log_time
+    def search(
+        self, query: str, categories: list[Category] | None = None
+    ) -> list[SearchResultDTO]:
+        """Search The Pirate Bay for torrents.
 
         Args:
-            code: TPB category code (e.g., 101, 207, etc.)
+            query: Search term
+            categories: Category IDs to filter by (optional)
 
         Returns:
-            List of matching Jackett Category objects
+            List of SearchResultDTO objects
+
+        Raises:
+            Exception: If API request fails
         """
-        # Try exact match first
-        if code in self.TPB_CATEGORY_MAP:
-            return self.TPB_CATEGORY_MAP[code]
+        if not query or not query.strip():
+            return []
 
-        # Fallback to parent category by range
-        parent_code = (code // 100) * 100
-        if parent_code in self.TPB_PARENT_MAP:
-            return [self.TPB_PARENT_MAP[parent_code]]
+        # Convert Standard category IDs to TPB category codes
+        tpb_category = self._convert_categories_to_tpb(categories)
 
-        # No match found
-        return []
+        params = {
+            "q": query.strip(),
+            "cat": tpb_category,
+        }
+
+        url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
+
+        try:
+            with urlopen(url) as response:
+                data = json.loads(response.read().decode("utf-8"))
+
+            # API returns [{"name": "No results returned"}] when no results
+            if not data or (
+                len(data) == 1 and data[0].get("name") == "No results returned"
+            ):
+                return []
+
+            results = []
+            for torrent in data:
+                result = self._parse_torrent(torrent)
+                if result:
+                    results.append(result)
+
+            return results
+
+        except urllib.error.URLError as e:
+            raise Exception(f"Network error: {e}")
+        except json.JSONDecodeError as e:
+            raise Exception(f"Failed to parse API response: {e}")
 
     def details_extended(self, result: SearchResultDTO) -> str:
         """Generate TPB-specific details for right column.
@@ -321,3 +206,118 @@ class TPBProvider(BaseSearchProvider):
             md += f"- **IMDB:** {imdb_url}\n"
 
         return md
+
+    def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResultDTO | None:
+        """Parse a single torrent from TPB API response."""
+        try:
+            info_hash = torrent.get("info_hash", "")
+            if not info_hash:
+                return None
+
+            name = torrent.get("name", "Unknown")
+
+            size = int(torrent.get("size", 0))
+            category_code = int(torrent.get("category", 0))
+
+            magnet_link = build_magnet_link(info_hash=info_hash, name=name)
+
+            # Parse upload date from unix timestamp
+            upload_date = None
+            added = torrent.get("added")
+            if added:
+                upload_date = datetime.fromtimestamp(int(added))
+
+            # Build provider-specific fields
+            fields = {}
+            username = torrent.get("username")
+            if username:
+                fields["username"] = username
+
+            status = torrent.get("status")
+            if status:
+                fields["status"] = status
+
+            imdb = torrent.get("imdb")
+            if imdb:
+                fields["imdb"] = imdb
+
+            # Construct page URL from torrent ID
+            page_url = None
+            torrent_id = torrent.get("id")
+            if torrent_id:
+                page_url = (
+                    f"https://thepiratebay.org/description.php?id={torrent_id}"
+                )
+
+            return SearchResultDTO(
+                title=name,
+                categories=self._get_category(category_code),
+                seeders=int(torrent.get("seeders", 0)),
+                leechers=int(torrent.get("leechers", 0)),
+                size=size,
+                files_count=int(torrent.get("num_files", None)),
+                magnet_link=magnet_link,
+                info_hash=info_hash,
+                upload_date=upload_date,
+                provider=self.name,
+                provider_id=self.id,
+                downloads=None,
+                page_url=page_url,
+                torrent_link=None,
+                freeleech=True,  # Public tracker
+                fields=fields,
+            )
+
+        except (KeyError, ValueError, TypeError):
+            return None
+
+    def _convert_categories_to_tpb(
+        self, categories: list[Category] | None
+    ) -> int:
+        """Convert Standard categories to TPB category code.
+
+        TPB uses category codes: 100 (Audio), 200 (Video), 300 (Apps),
+        400 (Games), 500 (Porn), 600 (Other)
+
+        Args:
+            categories: List of Category objects
+
+        Returns:
+            TPB category code (0 for all categories)
+        """
+        if not categories:
+            return 0
+
+        # Try to find a matching parent category
+        for category in categories:
+            # Get parent category ID (first digit * 1000)
+            parent_id = (category.id // 1000) * 1000
+            if parent_id in self.STD_TO_TPB_MAP:
+                return self.STD_TO_TPB_MAP[parent_id]
+
+        # Default to all categories
+        return 0
+
+    def _get_category(self, code: int) -> list[Category]:
+        """Map TPB category code to Standard Category list.
+
+        Based on Jackett's thepiratebay.yml category mappings:
+        https://github.com/Jackett/Jackett/blob/master/src/Jackett.Common/Definitions/thepiratebay.yml
+
+        Args:
+            code: TPB category code (e.g., 101, 207, etc.)
+
+        Returns:
+            List of matching Standard Category objects
+        """
+        # Try exact match first
+        if code in self.TPB_CATEGORY_MAP:
+            return self.TPB_CATEGORY_MAP[code]
+
+        # Fallback to parent category by range
+        parent_code = (code // 100) * 100
+        if parent_code in self.TPB_PARENT_MAP:
+            return [self.TPB_PARENT_MAP[parent_code]]
+
+        # No match found
+        return []
