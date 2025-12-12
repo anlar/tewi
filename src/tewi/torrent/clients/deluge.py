@@ -25,6 +25,7 @@ from ..models import (
     TorrentPeerState,
     TorrentTracker,
 )
+from ..util import count_torrents_by_status
 
 
 class DelugeClient(BaseClient):
@@ -150,7 +151,7 @@ class DelugeClient(BaseClient):
         download_dir = config.get("download_location", "")
         free_space = self._call("core.get_free_space", [download_dir])
 
-        counts = self._count_torrents_by_status(torrents)
+        counts = count_torrents_by_status(torrents)
 
         # Deluge doesn't have built-in alt speed mode like Transmission
         # We'll report it as disabled

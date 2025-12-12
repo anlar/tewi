@@ -27,6 +27,7 @@ from ..models import (
     TorrentPeerState,
     TorrentTracker,
 )
+from ..util import count_torrents_by_status
 
 
 class TransmissionClient(BaseClient):
@@ -92,7 +93,7 @@ class TransmissionClient(BaseClient):
         s = self.client.get_session()
         stats = self.client.session_stats()
 
-        counts = self._count_torrents_by_status(torrents)
+        counts = count_torrents_by_status(torrents)
 
         return {
             "download_dir": s.download_dir,

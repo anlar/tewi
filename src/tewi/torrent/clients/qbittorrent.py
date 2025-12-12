@@ -25,6 +25,7 @@ from ..models import (
     TorrentPeerState,
     TorrentTracker,
 )
+from ..util import count_torrents_by_status
 
 
 class QBittorrentClient(BaseClient):
@@ -120,7 +121,7 @@ class QBittorrentClient(BaseClient):
         transfer_info = self.client.transfer.info
         prefs = self.client.app.preferences
 
-        counts = self._count_torrents_by_status(torrents)
+        counts = count_torrents_by_status(torrents)
 
         # Get free space for download directory
         try:

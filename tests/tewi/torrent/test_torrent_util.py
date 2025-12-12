@@ -18,86 +18,8 @@
 
 from datetime import datetime, timedelta
 
-from src.tewi.torrent.base import BaseClient
 from src.tewi.torrent.models import Torrent
-
-
-class MockClient(BaseClient):
-    """Mock implementation of BaseClient for testing helper methods."""
-
-    def __init__(self, host, port, username=None, password=None):
-        """Initialize mock client."""
-        self._test_torrents = []
-
-    def set_test_torrents(self, torrents):
-        """Set torrents to return from torrents() method."""
-        self._test_torrents = torrents
-
-    def capable(self, capability_code: str) -> bool:
-        return False
-
-    def meta(self):
-        return {"name": "Mock", "version": "1.0"}
-
-    def session(self, torrents):
-        return {}
-
-    def stats(self):
-        return {}
-
-    def preferences(self):
-        return {}
-
-    def toggle_alt_speed(self):
-        return False
-
-    def torrents(self):
-        return self._test_torrents
-
-    def torrent(self, id):
-        return None
-
-    def add_torrent(self, value):
-        pass
-
-    def start_torrent(self, torrent_ids):
-        pass
-
-    def start_all_torrents(self):
-        pass
-
-    def stop_torrent(self, torrent_ids):
-        pass
-
-    def stop_all_torrents(self):
-        pass
-
-    def remove_torrent(self, torrent_ids, delete_data=False):
-        pass
-
-    def verify_torrent(self, torrent_ids):
-        pass
-
-    def reannounce_torrent(self, torrent_ids):
-        pass
-
-    def edit_torrent(self, torrent_id, name, location):
-        pass
-
-    def get_categories(self):
-        return []
-
-    def set_category(self, torrent_ids, category):
-        pass
-
-    def update_labels(self, torrent_ids, labels):
-        pass
-
-    def set_priority(self, torrent_ids, priority):
-        pass
-
-    def set_file_priority(self, torrent_id, file_ids, priority):
-        pass
+from src.tewi.torrent.util import count_torrents_by_status, torrents_test
 
 
 def create_torrent(
@@ -137,12 +59,11 @@ def create_torrent(
 
 
 class TestCountTorrentsByStatus:
-    """Test cases for _count_torrents_by_status helper method."""
+    """Test cases for count_torrents_by_status function."""
 
     def test_empty_list(self):
         """Test counting with empty torrent list."""
-        client = MockClient("localhost", "9092")
-        result = client._count_torrents_by_status([])
+        result = count_torrents_by_status([])
 
         assert result["count"] == 0
         assert result["down"] == 0
@@ -154,7 +75,6 @@ class TestCountTorrentsByStatus:
 
     def test_single_downloading_torrent(self):
         """Test counting with single downloading torrent."""
-        client = MockClient("localhost", "9092")
         torrents = [
             create_torrent(
                 id=1,
@@ -164,7 +84,7 @@ class TestCountTorrentsByStatus:
             )
         ]
 
-        result = client._count_torrents_by_status(torrents)
+        result = count_torrents_by_status(torrents)
 
         assert result["count"] == 1
         assert result["down"] == 1
@@ -176,7 +96,6 @@ class TestCountTorrentsByStatus:
 
     def test_single_seeding_torrent(self):
         """Test counting with single seeding torrent."""
-        client = MockClient("localhost", "9092")
         torrents = [
             create_torrent(
                 id=1,
@@ -186,7 +105,7 @@ class TestCountTorrentsByStatus:
             )
         ]
 
-        result = client._count_torrents_by_status(torrents)
+        result = count_torrents_by_status(torrents)
 
         assert result["count"] == 1
         assert result["down"] == 0
@@ -198,14 +117,13 @@ class TestCountTorrentsByStatus:
 
     def test_single_checking_torrent(self):
         """Test counting with single checking torrent."""
-        client = MockClient("localhost", "9092")
         torrents = [
             create_torrent(
                 id=1, status="checking", size_when_done=1500, left_until_done=0
             )
         ]
 
-        result = client._count_torrents_by_status(torrents)
+        result = count_torrents_by_status(torrents)
 
         assert result["count"] == 1
         assert result["down"] == 0
@@ -217,7 +135,6 @@ class TestCountTorrentsByStatus:
 
     def test_single_stopped_torrent(self):
         """Test counting with single stopped torrent."""
-        client = MockClient("localhost", "9092")
         torrents = [
             create_torrent(
                 id=1,
@@ -227,7 +144,7 @@ class TestCountTorrentsByStatus:
             )
         ]
 
-        result = client._count_torrents_by_status(torrents)
+        result = count_torrents_by_status(torrents)
 
         assert result["count"] == 1
         assert result["down"] == 0
@@ -239,7 +156,6 @@ class TestCountTorrentsByStatus:
 
     def test_mixed_statuses(self):
         """Test counting with torrents in various states."""
-        client = MockClient("localhost", "9092")
         torrents = [
             create_torrent(
                 id=1,
@@ -270,7 +186,7 @@ class TestCountTorrentsByStatus:
             ),
         ]
 
-        result = client._count_torrents_by_status(torrents)
+        result = count_torrents_by_status(torrents)
 
         assert result["count"] == 6
         assert result["down"] == 2
@@ -286,7 +202,6 @@ class TestCountTorrentsByStatus:
 
     def test_size_calculation(self):
         """Test size calculations are correct."""
-        client = MockClient("localhost", "9092")
         torrents = [
             create_torrent(
                 id=1,
@@ -308,9 +223,89 @@ class TestCountTorrentsByStatus:
             ),
         ]
 
-        result = client._count_torrents_by_status(torrents)
+        result = count_torrents_by_status(torrents)
 
         # complete_size = (10000-3000) + (20000-0) + (5000-5000)
         assert result["complete_size"] == 27000
         # total_size = 10000 + 20000 + 5000
         assert result["total_size"] == 35000
+
+
+class TestTorrentsTest:
+    """Test cases for torrents_test function."""
+
+    def test_empty_list_returns_empty(self):
+        """Test that empty list returns empty result."""
+        result = torrents_test([], 100)
+        assert result == []
+
+    def test_multiplies_torrents_to_target_count(self):
+        """Test that torrents are multiplied to approximate target count."""
+        torrents = [
+            create_torrent(id=1, name="torrent1"),
+            create_torrent(id=2, name="torrent2"),
+        ]
+
+        result = torrents_test(torrents, 5)
+
+        # With 2 torrents and target 5, should create 6 torrents (3x multiplier)
+        assert len(result) == 6
+
+    def test_assigns_unique_ids(self):
+        """Test that each duplicated torrent gets a unique ID."""
+        torrents = [
+            create_torrent(id=1, name="torrent1"),
+            create_torrent(id=2, name="torrent2"),
+        ]
+
+        result = torrents_test(torrents, 5)
+
+        # Check all IDs are unique and sequential
+        ids = [t.id for t in result]
+        assert ids == [1, 2, 3, 4, 5, 6]
+
+    def test_appends_id_to_name(self):
+        """Test that ID is appended to torrent name."""
+        torrents = [create_torrent(id=1, name="test")]
+
+        result = torrents_test(torrents, 3)
+
+        # Check names have ID suffix
+        assert result[0].name == "test-1"
+        assert result[1].name == "test-2"
+        assert result[2].name == "test-3"
+
+    def test_preserves_other_fields(self):
+        """Test that other torrent fields are preserved."""
+        torrents = [
+            create_torrent(
+                id=1,
+                name="original",
+                hash="abc123",
+                status="seeding",
+                size_when_done=5000,
+            )
+        ]
+
+        result = torrents_test(torrents, 2)
+
+        # Check that fields other than id and name are preserved
+        assert result[0].hash == "abc123"
+        assert result[0].status == "seeding"
+        assert result[0].size_when_done == 5000
+
+        assert result[1].hash == "abc123"
+        assert result[1].status == "seeding"
+        assert result[1].size_when_done == 5000
+
+    def test_single_torrent_multiplied(self):
+        """Test multiplying a single torrent."""
+        torrents = [create_torrent(id=1, name="single")]
+
+        result = torrents_test(torrents, 10)
+
+        # Should create 10 copies
+        assert len(result) == 10
+        # All should have different names
+        names = [t.name for t in result]
+        assert len(set(names)) == 10

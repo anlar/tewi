@@ -1,8 +1,6 @@
 """Abstract base class for torrent client implementations."""
 
-import math
 from abc import ABC, abstractmethod
-from dataclasses import replace
 from enum import Enum
 
 from .models import (
@@ -14,6 +12,7 @@ from .models import (
     TorrentDetail,
     TorrentFilePriority,
 )
+from .util import torrents_test as util_torrents_test
 
 
 class ClientCapability(str, Enum):
@@ -156,23 +155,7 @@ class BaseClient(ABC):
             List of duplicated Torrent objects (~target_count items)
         """
         torrents = self.torrents()
-
-        if not torrents:
-            return []
-
-        # Calculate multiplier to achieve approximately target_count torrents
-        multiplier = max(1, math.ceil(target_count / len(torrents)))
-
-        result = []
-        idx = 1
-
-        for i in range(multiplier):
-            for t in torrents:
-                t_copy = replace(t, id=idx, name=t.name + "-" + str(idx))
-                result.append(t_copy)
-                idx = idx + 1
-
-        return result
+        return util_torrents_test(torrents, target_count)
 
     @abstractmethod
     def torrent(self, hash: str) -> TorrentDetail:
@@ -334,58 +317,3 @@ class BaseClient(ABC):
             priority: TorrentFilePriority enum value
         """
         pass
-
-    # ========================================================================
-    # Internal Helpers
-    # ========================================================================
-
-    def _count_torrents_by_status(
-        self, torrents: list[Torrent]
-    ) -> dict[str, int]:
-        """Count torrents by status and calculate sizes.
-
-        This is a helper method used internally by session() implementations
-        to compute torrent statistics.
-
-        Args:
-            torrents: List of torrents to count
-
-        Returns:
-            Dictionary with keys:
-                - count: Total number of torrents
-                - down: Number of downloading torrents
-                - seed: Number of seeding torrents
-                - check: Number of checking torrents
-                - stop: Number of stopped torrents
-                - complete_size: Total completed bytes
-                - total_size: Total size when done in bytes
-        """
-        count = len(torrents)
-        down = 0
-        seed = 0
-        check = 0
-        complete_size = 0
-        total_size = 0
-
-        for t in torrents:
-            total_size += t.size_when_done
-            complete_size += t.size_when_done - t.left_until_done
-
-            if t.status == "downloading":
-                down += 1
-            elif t.status == "seeding":
-                seed += 1
-            elif t.status == "checking":
-                check += 1
-
-        stop = count - down - seed - check
-
-        return {
-            "count": count,
-            "down": down,
-            "seed": seed,
-            "check": check,
-            "stop": stop,
-            "complete_size": complete_size,
-            "total_size": total_size,
-        }
