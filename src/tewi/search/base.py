@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 
 from ..ui.util import print_size
-from .models import Category, IndexerDTO, SearchResultDTO
+from .models import Category, Indexer, SearchResult
 
 
 class BaseSearchProvider(ABC):
@@ -32,7 +32,7 @@ class BaseSearchProvider(ABC):
     @abstractmethod
     def search(
         self, query: str, categories: list[Category] | None = None
-    ) -> list[SearchResultDTO]:
+    ) -> list[SearchResult]:
         """Provider-specific search implementation.
 
         Args:
@@ -40,14 +40,14 @@ class BaseSearchProvider(ABC):
             categories: Category objects to filter by (optional)
 
         Returns:
-            List of SearchResultDTO objects
+            List of SearchResult objects
 
         Raises:
             Exception: If search fails
         """
         pass
 
-    def indexers(self) -> list[IndexerDTO]:
+    def indexers(self) -> list[Indexer]:
         """Return list of available indexers for this provider.
 
         For most providers, this returns a single indexer (the provider
@@ -57,9 +57,9 @@ class BaseSearchProvider(ABC):
         Returns:
             List of (indexer_id, indexer_name) tuples
         """
-        return [IndexerDTO(self.id, self.name)]
+        return [Indexer(self.id, self.name)]
 
-    def details_common(self, result: SearchResultDTO) -> str:
+    def details_common(self, result: SearchResult) -> str:
         """Generate common torrent details for left column.
 
         Args:
@@ -105,7 +105,7 @@ class BaseSearchProvider(ABC):
 
         return md
 
-    def details_extended(self, result: SearchResultDTO) -> str:
+    def details_extended(self, result: SearchResult) -> str:
         """Generate provider-specific details for right column.
 
         Base implementation returns empty string.

@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from textual.message import Message
 
-from ..search.models import Category, SearchResultDTO
+from ..search.models import Category, SearchResult
 from ..torrent.models import Torrent, TorrentFilePriority
 from .models import FilterOption, PageState
 
@@ -192,7 +192,7 @@ class SearchStateChangedEvent(Message):
 
 @dataclass
 class WebSearchCompletedEvent(Message):
-    results: list[SearchResultDTO]
+    results: list[SearchResult]
 
 
 # Common

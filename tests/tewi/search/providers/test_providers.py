@@ -11,7 +11,7 @@ from datetime import datetime
 
 import pytest
 
-from src.tewi.search.models import SearchResultDTO, StandardCategories
+from src.tewi.search.models import SearchResult, StandardCategories
 from src.tewi.search.providers.jackett import JackettProvider
 from src.tewi.search.providers.nyaa import NyaaProvider
 from src.tewi.search.providers.torrentscsv import TorrentsCsvProvider
@@ -79,10 +79,10 @@ class BaseProviderIntegrationTest(ABC):
         """Validate that result has all required fields.
 
         Args:
-            result: SearchResultDTO instance
+            result: SearchResult instance
         """
-        assert isinstance(result, SearchResultDTO), (
-            f"Result should be SearchResultDTO, got {type(result)}"
+        assert isinstance(result, SearchResult), (
+            f"Result should be SearchResult, got {type(result)}"
         )
         assert result.title is not None, "Title should not be None"
         assert len(result.title) > 0, "Title should not be empty"
@@ -134,11 +134,11 @@ class BaseProviderIntegrationTest(ABC):
                     "TorrentsCSV magnet links should not have trackers"
                 )
 
-    def validate_metadata(self, result: SearchResultDTO):
+    def validate_metadata(self, result: SearchResult):
         """Validate metadata fields have reasonable values.
 
         Args:
-            result: SearchResultDTO instance
+            result: SearchResult instance
         """
         # Size should be positive and reasonable
         assert result.size >= 0, "Size should be non-negative"

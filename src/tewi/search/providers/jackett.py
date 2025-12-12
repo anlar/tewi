@@ -9,7 +9,7 @@ from typing import Any
 
 from ...util.log import get_logger, log_time
 from ..base import BaseSearchProvider
-from ..models import Category, IndexerDTO, SearchResultDTO, StandardCategories
+from ..models import Category, Indexer, SearchResult, StandardCategories
 from ..util import (
     build_magnet_link,
     urlopen,
@@ -41,7 +41,7 @@ class JackettProvider(BaseSearchProvider):
             jackett_url, api_key
         )
         self._selected_indexers: list[str] | None = None
-        self._cached_indexers: list[IndexerDTO] | None = None
+        self._cached_indexers: list[Indexer] | None = None
         self._cache_time: datetime | None = None
         self._cache_duration: timedelta = timedelta(minutes=10)
 
@@ -53,7 +53,7 @@ class JackettProvider(BaseSearchProvider):
     def name(self) -> str:
         return "Jackett"
 
-    def indexers(self) -> list[IndexerDTO]:
+    def indexers(self) -> list[Indexer]:
         """Return list of configured indexers from Jackett instance.
 
         Uses a 10-minute cache to avoid repeated API calls.
@@ -90,7 +90,7 @@ class JackettProvider(BaseSearchProvider):
     @log_time
     def search(
         self, query: str, categories: list[Category] | None = None
-    ) -> list[SearchResultDTO]:
+    ) -> list[SearchResult]:
         """Search Jackett for torrents across all indexers.
 
         Args:
@@ -98,7 +98,7 @@ class JackettProvider(BaseSearchProvider):
             categories: Category IDs to filter by (optional)
 
         Returns:
-            List of SearchResultDTO objects
+            List of SearchResult objects
 
         Raises:
             Exception: If API request fails or not configured
@@ -120,7 +120,7 @@ class JackettProvider(BaseSearchProvider):
             data = self._fetch_results(url)
             return self._process_results(data)
 
-    def details_extended(self, result: SearchResultDTO) -> str:
+    def details_extended(self, result: SearchResult) -> str:
         """Generate Jackett-specific details for right column.
 
         Prints all provider-specific fields from the search result.
@@ -157,7 +157,7 @@ class JackettProvider(BaseSearchProvider):
 
     def fetch_from_indexer(
         self, query: str, indexer_id: str, categories: list[Category] | None
-    ) -> list[SearchResultDTO]:
+    ) -> list[SearchResult]:
         """Helper for parallel execution."""
         url = self._build_search_url(query, indexer_id, categories)
         data = self._fetch_results(url)
@@ -241,14 +241,14 @@ class JackettProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse Jackett JSON response: {e}")
 
-    def _process_indexers(self, data: dict) -> list[IndexerDTO]:
+    def _process_indexers(self, data: dict) -> list[Indexer]:
         """Process indexers JSON response.
 
         Args:
             data: Parsed JSON data from search endpoint
 
         Returns:
-            List of IndexerDTO objects
+            List of Indexer objects
         """
         indexers = []
 
@@ -265,7 +265,7 @@ class JackettProvider(BaseSearchProvider):
                 # Prefix with jackett: to distinguish from other providers
                 full_id = f"jackett:{indexer_id}"
                 indexers.append(
-                    IndexerDTO(full_id, f"{indexer_name} [dim](Jackett)[/]")
+                    Indexer(full_id, f"{indexer_name} [dim](Jackett)[/]")
                 )
         return indexers
 
@@ -298,14 +298,14 @@ class JackettProvider(BaseSearchProvider):
 
     def _search_multiple_indexers(
         self, query: str, categories: list[Category] | None
-    ) -> list[SearchResultDTO]:
+    ) -> list[SearchResult]:
         """Search multiple indexers individually and combine results.
 
         Args:
             query: Search term
 
         Returns:
-            Combined list of SearchResultDTO objects from all indexers
+            Combined list of SearchResult objects from all indexers
         """
         all_results = []
 
@@ -393,14 +393,14 @@ class JackettProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse Jackett response: {e}")
 
-    def _process_results(self, data: dict) -> list[SearchResultDTO]:
-        """Process API response and convert to SearchResultDTO list.
+    def _process_results(self, data: dict) -> list[SearchResult]:
+        """Process API response and convert to SearchResult list.
 
         Args:
             data: Parsed JSON response
 
         Returns:
-            List of SearchResultDTO objects
+            List of SearchResult objects
         """
         results_data = data.get("Results", [])
         if not results_data:
@@ -413,14 +413,14 @@ class JackettProvider(BaseSearchProvider):
                 results.append(result)
         return results
 
-    def _parse_result(self, result: dict[str, Any]) -> SearchResultDTO | None:
+    def _parse_result(self, result: dict[str, Any]) -> SearchResult | None:
         """Parse a single result from Jackett API response.
 
         Args:
             result: Single result dict from Jackett API
 
         Returns:
-            SearchResultDTO or None if parsing fails
+            SearchResult or None if parsing fails
         """
         try:
             # Allow None for info_hash
@@ -445,7 +445,7 @@ class JackettProvider(BaseSearchProvider):
             if grabs is not None:
                 downloads = int(grabs)
 
-            return SearchResultDTO(
+            return SearchResult(
                 title=result.get("Title", "Unknown"),
                 categories=self._map_jackett_category(result),
                 seeders=int(result.get("Seeders")),
@@ -569,7 +569,7 @@ class JackettProvider(BaseSearchProvider):
 
         Includes all fields from Jackett response except:
         - null/empty fields
-        - fields already mapped to SearchResultDTO main attributes
+        - fields already mapped to SearchResult main attributes
 
         Args:
             result: Result dict from Jackett API
@@ -577,7 +577,7 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             Dictionary of provider-specific fields
         """
-        # Fields already mapped to SearchResultDTO attributes
+        # Fields already mapped to SearchResult attributes
         excluded_fields = {
             "Title",  # -> title
             "Category",  # -> category (via _map_jackett_category)

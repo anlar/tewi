@@ -8,7 +8,7 @@ from typing import Any
 
 from ...util.log import log_time
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResultDTO
+from ..models import Category, SearchResult
 from ..util import (
     build_magnet_link,
     detect_category_from_name,
@@ -36,7 +36,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
     @log_time
     def search(
         self, query: str, categories: list[Category] | None = None
-    ) -> list[SearchResultDTO]:
+    ) -> list[SearchResult]:
         """Search torrents-csv.com for torrents.
 
         Args:
@@ -45,7 +45,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
                        doesn't support category filtering)
 
         Returns:
-            List of SearchResultDTO objects
+            List of SearchResult objects
 
         Raises:
             Exception: If API request fails
@@ -81,7 +81,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
 
-    def details_extended(self, result: SearchResultDTO) -> str:
+    def details_extended(self, result: SearchResult) -> str:
         """Generate TorrentsCSV-specific details for right column.
 
         Args:
@@ -104,7 +104,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
         return md
 
-    def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResultDTO | None:
+    def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResult | None:
         """Parse a single torrent from TorrentsCSV API response."""
         try:
             info_hash = torrent.get("infohash", "")
@@ -132,7 +132,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
             category = detect_category_from_name(name)
 
-            return SearchResultDTO(
+            return SearchResult(
                 title=name,
                 categories=[category] if category else [],
                 seeders=torrent.get("seeders", 0),

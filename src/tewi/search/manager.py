@@ -5,7 +5,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from ..util.log import get_logger
 from .base import BaseSearchProvider
-from .models import Category, IndexerDTO, SearchResultDTO
+from .models import Category, Indexer, SearchResult
 from .providers import (
     JackettProvider,
     NyaaProvider,
@@ -176,11 +176,11 @@ class SearchClient:
 
         return self._providers
 
-    def get_indexers(self) -> list[IndexerDTO]:
+    def get_indexers(self) -> list[Indexer]:
         """Get list of all available indexers from all providers.
 
         Returns:
-            List of IndexerDTO objects representing all available indexers
+            List of Indexer objects representing all available indexers
         """
         return [idx for p in self.get_providers() for idx in p.indexers()]
 
@@ -189,7 +189,7 @@ class SearchClient:
         query: str,
         selected_indexers: list[str] | None,
         selected_categories: list[Category] | None,
-    ) -> tuple[list[SearchResultDTO], list[str]]:
+    ) -> tuple[list[SearchResult], list[str]]:
         """Search for torrents across multiple providers in parallel.
 
         Executes searches across all selected providers concurrently,
@@ -204,7 +204,7 @@ class SearchClient:
 
         Returns:
             Tuple of (results, errors) where:
-            - results: List of SearchResultDTO objects, deduplicated,
+            - results: List of SearchResult objects, deduplicated,
                       filtered by category, and sorted by seeders
                       (highest first)
             - errors: List of error messages from failed providers
@@ -331,9 +331,9 @@ class SearchClient:
 
     def _filter_by_categories(
         self,
-        results: list[SearchResultDTO],
+        results: list[SearchResult],
         selected_categories: list[Category],
-    ) -> list[SearchResultDTO]:
+    ) -> list[SearchResult]:
         """Filter search results by categories.
 
         Keeps results that have at least one category matching the

@@ -2,11 +2,11 @@
 
 from .base import BaseSearchProvider
 from .manager import SearchClient, print_available_providers
-from .models import Category, IndexerDTO, SearchResultDTO, StandardCategories
+from .models import Category, Indexer, SearchResult, StandardCategories
 
 __all__ = [
-    "SearchResultDTO",
-    "IndexerDTO",
+    "SearchResult",
+    "Indexer",
     "Category",
     "StandardCategories",
     "BaseSearchProvider",

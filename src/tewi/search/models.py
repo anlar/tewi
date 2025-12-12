@@ -165,13 +165,13 @@ class StandardCategories:
 
 
 @dataclass(frozen=True)
-class IndexerDTO:
+class Indexer:
     id: str
     name: str
 
 
 @dataclass(frozen=True)
-class SearchResultDTO:
+class SearchResult:
     """Data Transfer Object for web search results.
 
     Note: All size fields are in bytes.

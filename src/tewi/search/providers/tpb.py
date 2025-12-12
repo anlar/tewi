@@ -8,7 +8,7 @@ from typing import Any
 
 from ...util.log import log_time
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResultDTO, StandardCategories
+from ..models import Category, SearchResult, StandardCategories
 from ..util import (
     build_magnet_link,
     urlopen,
@@ -118,7 +118,7 @@ class TPBProvider(BaseSearchProvider):
     @log_time
     def search(
         self, query: str, categories: list[Category] | None = None
-    ) -> list[SearchResultDTO]:
+    ) -> list[SearchResult]:
         """Search The Pirate Bay for torrents.
 
         Args:
@@ -126,7 +126,7 @@ class TPBProvider(BaseSearchProvider):
             categories: Category IDs to filter by (optional)
 
         Returns:
-            List of SearchResultDTO objects
+            List of SearchResult objects
 
         Raises:
             Exception: If API request fails
@@ -167,7 +167,7 @@ class TPBProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
 
-    def details_extended(self, result: SearchResultDTO) -> str:
+    def details_extended(self, result: SearchResult) -> str:
         """Generate TPB-specific details for right column.
 
         Args:
@@ -207,7 +207,7 @@ class TPBProvider(BaseSearchProvider):
 
         return md
 
-    def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResultDTO | None:
+    def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResult | None:
         """Parse a single torrent from TPB API response."""
         try:
             info_hash = torrent.get("info_hash", "")
@@ -249,7 +249,7 @@ class TPBProvider(BaseSearchProvider):
                     f"https://thepiratebay.org/description.php?id={torrent_id}"
                 )
 
-            return SearchResultDTO(
+            return SearchResult(
                 title=name,
                 categories=self._get_category(category_code),
                 seeders=int(torrent.get("seeders", 0)),

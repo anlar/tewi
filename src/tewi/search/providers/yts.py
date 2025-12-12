@@ -8,7 +8,7 @@ from typing import Any
 
 from ...util.log import log_time
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResultDTO, StandardCategories
+from ..models import Category, SearchResult, StandardCategories
 from ..util import (
     build_magnet_link,
     urlopen,
@@ -50,7 +50,7 @@ class YTSProvider(BaseSearchProvider):
     @log_time
     def search(
         self, query: str, categories: list[Category] | None = None
-    ) -> list[SearchResultDTO]:
+    ) -> list[SearchResult]:
         """Search YTS for movie torrents.
 
         Args:
@@ -59,7 +59,7 @@ class YTSProvider(BaseSearchProvider):
                        doesn't contain Movies category, returns empty list
 
         Returns:
-            List of SearchResultDTO objects
+            List of SearchResult objects
 
         Raises:
             Exception: If API request fails
@@ -83,7 +83,7 @@ class YTSProvider(BaseSearchProvider):
 
         return self._process_movies(movies)
 
-    def details_extended(self, result: SearchResultDTO) -> str:
+    def details_extended(self, result: SearchResult) -> str:
         """Generate YTS-specific details for right column.
 
         Args:
@@ -150,14 +150,14 @@ class YTSProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
 
-    def _process_movies(self, movies: list) -> list[SearchResultDTO]:
-        """Process movies list into SearchResultDTO objects.
+    def _process_movies(self, movies: list) -> list[SearchResult]:
+        """Process movies list into SearchResult objects.
 
         Args:
             movies: List of movie dicts from API
 
         Returns:
-            List of SearchResultDTO objects
+            List of SearchResult objects
         """
         results = []
         for movie in movies:
@@ -171,7 +171,7 @@ class YTSProvider(BaseSearchProvider):
 
     def _parse_torrent(
         self, movie: dict[str, Any], torrent: dict[str, Any]
-    ) -> SearchResultDTO | None:
+    ) -> SearchResult | None:
         """Parse a single torrent from YTS API response."""
         try:
             info_hash = torrent.get("hash", "")
@@ -217,7 +217,7 @@ class YTSProvider(BaseSearchProvider):
             if not page_url and movie.get("id"):
                 page_url = f"https://{self.DOMAIN}/movies/{movie['id']}"
 
-            return SearchResultDTO(
+            return SearchResult(
                 title=full_title,
                 categories=self._get_category_from_quality(quality),
                 seeders=torrent.get("seeds", 0),

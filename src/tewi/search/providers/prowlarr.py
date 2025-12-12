@@ -8,7 +8,7 @@ from typing import Any
 
 from ...util.log import get_logger, log_time
 from ..base import BaseSearchProvider
-from ..models import Category, IndexerDTO, SearchResultDTO, StandardCategories
+from ..models import Category, Indexer, SearchResult, StandardCategories
 from ..util import (
     build_magnet_link,
     urlopen,
@@ -44,7 +44,7 @@ class ProwlarrProvider(BaseSearchProvider):
         self._selected_indexers: list[str] | None = None
         self._selected_categories: list[Category] | None = None
 
-        self._cached_indexers: list[IndexerDTO] | None = None
+        self._cached_indexers: list[Indexer] | None = None
         self._cache_time: datetime | None = None
         self._cache_duration: timedelta = timedelta(minutes=10)
 
@@ -56,13 +56,13 @@ class ProwlarrProvider(BaseSearchProvider):
     def name(self) -> str:
         return "Prowlarr"
 
-    def indexers(self) -> list[IndexerDTO]:
+    def indexers(self) -> list[Indexer]:
         """Return list of configured indexers from Prowlarr instance.
 
         Uses a 10-minute cache to avoid repeated API calls.
 
         Returns:
-            List of IndexerDTO objects from Prowlarr,
+            List of Indexer objects from Prowlarr,
             or empty list if not configured or error occurs
         """
         if self._config_error:
@@ -93,7 +93,7 @@ class ProwlarrProvider(BaseSearchProvider):
     @log_time
     def search(
         self, query: str, categories: list[Category] | None = None
-    ) -> list[SearchResultDTO]:
+    ) -> list[SearchResult]:
         """Search Prowlarr for torrents across indexers.
 
         Args:
@@ -101,7 +101,7 @@ class ProwlarrProvider(BaseSearchProvider):
             categories: Category objects to filter by (optional)
 
         Returns:
-            List of SearchResultDTO objects
+            List of SearchResult objects
 
         Raises:
             Exception: If API request fails or not configured
@@ -120,7 +120,7 @@ class ProwlarrProvider(BaseSearchProvider):
         data = self._fetch_results(url)
         return self._process_results(data)
 
-    def details_extended(self, result: SearchResultDTO) -> str:
+    def details_extended(self, result: SearchResult) -> str:
         """Generate Prowlarr-specific details for right column.
 
         Prints all provider-specific fields from the search result.
@@ -228,14 +228,14 @@ class ProwlarrProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse Prowlarr JSON response: {e}")
 
-    def _process_indexers(self, data: list) -> list[IndexerDTO]:
+    def _process_indexers(self, data: list) -> list[Indexer]:
         """Process indexers JSON response.
 
         Args:
             data: Parsed JSON data from indexers endpoint
 
         Returns:
-            List of IndexerDTO objects
+            List of Indexer objects
         """
         indexers = []
 
@@ -251,7 +251,7 @@ class ProwlarrProvider(BaseSearchProvider):
                 # Prefix with prowlarr: to distinguish from other providers
                 full_id = f"prowlarr:{indexer_id}"
                 indexers.append(
-                    IndexerDTO(full_id, f"{indexer_name} [dim](Prowlarr)[/]")
+                    Indexer(full_id, f"{indexer_name} [dim](Prowlarr)[/]")
                 )
         return indexers
 
@@ -324,14 +324,14 @@ class ProwlarrProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse Prowlarr response: {e}")
 
-    def _process_results(self, data: list) -> list[SearchResultDTO]:
-        """Process API response and convert to SearchResultDTO list.
+    def _process_results(self, data: list) -> list[SearchResult]:
+        """Process API response and convert to SearchResult list.
 
         Args:
             data: Parsed JSON response as list
 
         Returns:
-            List of SearchResultDTO objects
+            List of SearchResult objects
         """
         if not data:
             return []
@@ -343,14 +343,14 @@ class ProwlarrProvider(BaseSearchProvider):
                 results.append(result)
         return results
 
-    def _parse_result(self, result: dict[str, Any]) -> SearchResultDTO | None:
+    def _parse_result(self, result: dict[str, Any]) -> SearchResult | None:
         """Parse a single result from Prowlarr API response.
 
         Args:
             result: Single result dict from Prowlarr API
 
         Returns:
-            SearchResultDTO or None if parsing fails
+            SearchResult or None if parsing fails
         """
         try:
             # Allow None for info_hash
@@ -376,7 +376,7 @@ class ProwlarrProvider(BaseSearchProvider):
             if grabs is not None:
                 downloads = int(grabs)
 
-            return SearchResultDTO(
+            return SearchResult(
                 title=result.get("title", "Unknown"),
                 categories=self._map_prowlarr_category(result),
                 seeders=int(result.get("seeders", 0)),
@@ -513,7 +513,7 @@ class ProwlarrProvider(BaseSearchProvider):
 
         Includes all fields from Prowlarr response except:
         - null/empty fields
-        - fields already mapped to SearchResultDTO main attributes
+        - fields already mapped to SearchResult main attributes
 
         Args:
             result: Result dict from Prowlarr API
@@ -521,7 +521,7 @@ class ProwlarrProvider(BaseSearchProvider):
         Returns:
             Dictionary of provider-specific fields
         """
-        # Fields already mapped to SearchResultDTO attributes
+        # Fields already mapped to SearchResult attributes
         excluded_fields = {
             "title",  # -> title
             "fileName",  # -> title

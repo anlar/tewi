@@ -8,7 +8,7 @@ from datetime import datetime
 
 from ...util.log import log_time
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResultDTO, StandardCategories
+from ..models import Category, SearchResult, StandardCategories
 from ..util import (
     build_magnet_link,
     urlopen,
@@ -94,7 +94,7 @@ class NyaaProvider(BaseSearchProvider):
     @log_time
     def search(
         self, query: str, categories: list[Category] | None = None
-    ) -> list[SearchResultDTO]:
+    ) -> list[SearchResult]:
         """Search Nyaa.si for torrents via RSS feed.
 
         Args:
@@ -102,7 +102,7 @@ class NyaaProvider(BaseSearchProvider):
             categories: Category IDs to filter by (optional)
 
         Returns:
-            List of SearchResultDTO objects, sorted by seeders descending
+            List of SearchResult objects, sorted by seeders descending
 
         Raises:
             Exception: If RSS request fails
@@ -148,7 +148,7 @@ class NyaaProvider(BaseSearchProvider):
         except ET.ParseError as e:
             raise Exception(f"Failed to parse RSS feed: {e}")
 
-    def details_extended(self, result: SearchResultDTO) -> str:
+    def details_extended(self, result: SearchResult) -> str:
         """Generate Nyaa-specific details for right column.
 
         Args:
@@ -180,7 +180,7 @@ class NyaaProvider(BaseSearchProvider):
 
     def _parse_item(
         self, item: ET.Element, ns: dict[str, str]
-    ) -> SearchResultDTO | None:
+    ) -> SearchResult | None:
         """Parse a single RSS item from Nyaa feed.
 
         Args:
@@ -188,7 +188,7 @@ class NyaaProvider(BaseSearchProvider):
             ns: XML namespace dict
 
         Returns:
-            SearchResultDTO or None if parsing fails
+            SearchResult or None if parsing fails
         """
         try:
             title_elem = item.find("title")
@@ -254,7 +254,7 @@ class NyaaProvider(BaseSearchProvider):
             # Build provider-specific fields
             fields = self._build_fields(item, ns)
 
-            return SearchResultDTO(
+            return SearchResult(
                 title=title,
                 categories=category,
                 seeders=seeders,

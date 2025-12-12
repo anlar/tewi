@@ -9,7 +9,7 @@ from textual.containers import Vertical
 from textual.reactive import reactive
 from textual.widgets import DataTable, Static
 
-from ...search.models import SearchResultDTO
+from ...search.models import SearchResult
 from ...search.providers import (
     JackettProvider,
     NyaaProvider,
@@ -51,7 +51,7 @@ class TorrentWebSearch(Static):
     r_search_status: str = reactive(False)
     # always update to trigger focus setup and label updates
     # to cover case when search executes on the same query twice
-    r_results: list[SearchResultDTO] = reactive(list, always_update=True)
+    r_results: list[SearchResult] = reactive(list, always_update=True)
 
     def __init__(
         self,
@@ -124,7 +124,7 @@ class TorrentWebSearch(Static):
         self.perform_search(query, selected_indexers, selected_categories)
 
     @log_time
-    def watch_r_results(self, results: list[SearchResultDTO]) -> None:
+    def watch_r_results(self, results: list[SearchResult]) -> None:
         """Update the table when results change."""
         table = self.query_one("#websearch-results", DataTable)
 
@@ -356,7 +356,7 @@ class TorrentWebSearch(Static):
 
     @log_time
     def update_results(
-        self, results: list[SearchResultDTO], errors: list[str] | None
+        self, results: list[SearchResult], errors: list[str] | None
     ) -> None:
         """Update results in main thread.
 
