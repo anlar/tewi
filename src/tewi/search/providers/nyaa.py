@@ -93,13 +93,17 @@ class NyaaProvider(BaseSearchProvider):
 
     @log_time
     def search(
-        self, query: str, categories: list[Category] | None = None
+        self,
+        query: str,
+        categories: list[Category] | None = None,
+        indexers: list[str] | None = None,
     ) -> list[SearchResult]:
         """Search Nyaa.si for torrents via RSS feed.
 
         Args:
             query: Search term
             categories: Category IDs to filter by (optional)
+            indexers: Indexer IDs (ignored - not a meta-provider)
 
         Returns:
             List of SearchResult objects, sorted by seeders descending

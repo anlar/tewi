@@ -219,12 +219,12 @@ class SearchClient:
         with ThreadPoolExecutor(
             max_workers=len(providers_to_search)
         ) as executor:
-            # Submit all search tasks with category filter (as Category objects)
+            # Submit all search tasks with category filter and indexers
             future_to_provider = {
                 executor.submit(
-                    provider.search, query, selected_categories
+                    provider.search, query, selected_categories, indexers
                 ): provider
-                for provider in providers_to_search
+                for provider, indexers in providers_to_search
             }
 
             # Collect results as they complete
@@ -296,22 +296,22 @@ class SearchClient:
 
     def _filter_providers(
         self, selected_indexers: list[str] | None
-    ) -> list[BaseSearchProvider]:
+    ) -> list[tuple[BaseSearchProvider, list[str] | None]]:
         """Filter providers based on selected indexers.
 
         Processes the selected indexer IDs and returns the appropriate
-        providers to search. Handles special cases like Jackett/Prowlarr
-        where individual indexers need to be configured.
+        providers to search with their specific indexers.
 
         Args:
             selected_indexers: List of indexer IDs to search,
                               or None to search all providers
 
         Returns:
-            List of BaseSearchProvider instances to search
+            List of tuples (provider, indexers) where indexers is
+            a list of indexer IDs for that provider or None for all
         """
         if selected_indexers is None:
-            return self.get_providers()
+            return [(p, None) for p in self.get_providers()]
 
         regular, jackett, prowlarr = self._group_indexers(selected_indexers)
         providers_to_search = []
@@ -319,13 +319,11 @@ class SearchClient:
         for provider in self.get_providers():
             provider_id = provider.id
             if provider_id == "jackett" and jackett:
-                provider.set_selected_indexers(jackett)
-                providers_to_search.append(provider)
+                providers_to_search.append((provider, jackett))
             elif provider_id == "prowlarr" and prowlarr:
-                provider.set_selected_indexers(prowlarr)
-                providers_to_search.append(provider)
+                providers_to_search.append((provider, prowlarr))
             elif provider_id in regular:
-                providers_to_search.append(provider)
+                providers_to_search.append((provider, None))
 
         return providers_to_search
 

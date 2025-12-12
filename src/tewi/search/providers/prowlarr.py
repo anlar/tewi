@@ -41,9 +41,6 @@ class ProwlarrProvider(BaseSearchProvider):
             prowlarr_url, api_key
         )
 
-        self._selected_indexers: list[str] | None = None
-        self._selected_categories: list[Category] | None = None
-
         self._cached_indexers: list[Indexer] | None = None
         self._cache_time: datetime | None = None
         self._cache_duration: timedelta = timedelta(minutes=10)
@@ -92,13 +89,17 @@ class ProwlarrProvider(BaseSearchProvider):
 
     @log_time
     def search(
-        self, query: str, categories: list[Category] | None = None
+        self,
+        query: str,
+        categories: list[Category] | None = None,
+        indexers: list[str] | None = None,
     ) -> list[SearchResult]:
         """Search Prowlarr for torrents across indexers.
 
         Args:
             query: Search term
             categories: Category objects to filter by (optional)
+            indexers: Indexer IDs to search (optional - if None, search all)
 
         Returns:
             List of SearchResult objects
@@ -112,11 +113,8 @@ class ProwlarrProvider(BaseSearchProvider):
         if not query or not query.strip():
             return []
 
-        # Store categories for use in URL building
-        self._selected_categories = categories
-
-        # Build URL with optional indexer filtering
-        url = self._build_search_url(query)
+        # Build URL with optional indexer and category filtering
+        url = self._build_search_url(query, categories, indexers)
         data = self._fetch_results(url)
         return self._process_results(data)
 
@@ -145,15 +143,6 @@ class ProwlarrProvider(BaseSearchProvider):
                 md += f"- **{display_name}:** {display_value}\n"
 
         return md
-
-    def set_selected_indexers(self, indexer_ids: list[str] | None) -> None:
-        """Set which indexers to search.
-
-        Args:
-            indexer_ids: List of indexer IDs (without 'prowlarr:' prefix),
-                        or None to search all indexers
-        """
-        self._selected_indexers = indexer_ids
 
     def _validate_config(
         self, prowlarr_url: str | None, api_key: str | None
@@ -255,11 +244,18 @@ class ProwlarrProvider(BaseSearchProvider):
                 )
         return indexers
 
-    def _build_search_url(self, query: str) -> str:
+    def _build_search_url(
+        self,
+        query: str,
+        categories: list[Category] | None,
+        indexers: list[str] | None,
+    ) -> str:
         """Build Prowlarr API search URL.
 
         Args:
             query: Search term
+            categories: Category objects to filter by (optional)
+            indexers: Indexer IDs to search (optional)
 
         Returns:
             Complete URL with parameters
@@ -275,14 +271,14 @@ class ProwlarrProvider(BaseSearchProvider):
 
         # Add indexer filter if specific indexers selected
         # Prowlarr expects multiple 'indexerIds' params, not comma-separated
-        if self._selected_indexers:
-            for indexer_id in self._selected_indexers:
+        if indexers:
+            for indexer_id in indexers:
                 params_list.append(("indexerIds", indexer_id))
 
         # Add category filter if specified
         # Prowlarr expects multiple 'categories' params
-        if self._selected_categories:
-            for cat in self._selected_categories:
+        if categories:
+            for cat in categories:
                 params_list.append(("categories", str(cat.id)))
 
         return f"{endpoint}?{urllib.parse.urlencode(params_list)}"

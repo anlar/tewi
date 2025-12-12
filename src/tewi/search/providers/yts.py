@@ -49,7 +49,10 @@ class YTSProvider(BaseSearchProvider):
 
     @log_time
     def search(
-        self, query: str, categories: list[Category] | None = None
+        self,
+        query: str,
+        categories: list[Category] | None = None,
+        indexers: list[str] | None = None,
     ) -> list[SearchResult]:
         """Search YTS for movie torrents.
 
@@ -57,6 +60,7 @@ class YTSProvider(BaseSearchProvider):
             query: Movie name to search for
             categories: Category IDs to filter by - if provided and
                        doesn't contain Movies category, returns empty list
+            indexers: Indexer IDs (ignored - not a meta-provider)
 
         Returns:
             List of SearchResult objects

@@ -35,7 +35,10 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
     @log_time
     def search(
-        self, query: str, categories: list[Category] | None = None
+        self,
+        query: str,
+        categories: list[Category] | None = None,
+        indexers: list[str] | None = None,
     ) -> list[SearchResult]:
         """Search torrents-csv.com for torrents.
 
@@ -43,6 +46,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
             query: Search term
             categories: Category IDs to filter by (ignored - TorrentsCSV
                        doesn't support category filtering)
+            indexers: Indexer IDs (ignored - not a meta-provider)
 
         Returns:
             List of SearchResult objects

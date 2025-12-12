@@ -31,13 +31,18 @@ class BaseSearchProvider(ABC):
 
     @abstractmethod
     def search(
-        self, query: str, categories: list[Category] | None = None
+        self,
+        query: str,
+        categories: list[Category] | None = None,
+        indexers: list[str] | None = None,
     ) -> list[SearchResult]:
         """Provider-specific search implementation.
 
         Args:
             query: Search term
             categories: Category objects to filter by (optional)
+            indexers: List of indexer IDs to search
+                     (optional, for meta-providers)
 
         Returns:
             List of SearchResult objects

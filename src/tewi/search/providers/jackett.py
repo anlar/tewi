@@ -40,7 +40,6 @@ class JackettProvider(BaseSearchProvider):
         self._config_error: str | None = self._validate_config(
             jackett_url, api_key
         )
-        self._selected_indexers: list[str] | None = None
         self._cached_indexers: list[Indexer] | None = None
         self._cache_time: datetime | None = None
         self._cache_duration: timedelta = timedelta(minutes=10)
@@ -89,13 +88,17 @@ class JackettProvider(BaseSearchProvider):
 
     @log_time
     def search(
-        self, query: str, categories: list[Category] | None = None
+        self,
+        query: str,
+        categories: list[Category] | None = None,
+        indexers: list[str] | None = None,
     ) -> list[SearchResult]:
         """Search Jackett for torrents across all indexers.
 
         Args:
             query: Search term
             categories: Category IDs to filter by (optional)
+            indexers: Indexer IDs to search (optional - if None, search all)
 
         Returns:
             List of SearchResult objects
@@ -112,8 +115,8 @@ class JackettProvider(BaseSearchProvider):
         # If specific indexers selected that differ from all indexers,
         # search each individually
         # (Jackett can search only on 1 or all indexers)
-        if self._should_search_multiple_indexers():
-            return self._search_multiple_indexers(query, categories)
+        if self._should_search_multiple_indexers(indexers):
+            return self._search_multiple_indexers(query, categories, indexers)
         else:
             # Search all indexers
             url = self._build_search_url(query, "all", categories)
@@ -145,15 +148,6 @@ class JackettProvider(BaseSearchProvider):
             md += f"- **{display_name}:** {display_value}\n"
 
         return md
-
-    def set_selected_indexers(self, indexer_ids: list[str] | None) -> None:
-        """Set which indexers to search.
-
-        Args:
-            indexer_ids: List of indexer IDs (without 'jackett:' prefix),
-                        or None to search all indexers
-        """
-        self._selected_indexers = indexer_ids
 
     def fetch_from_indexer(
         self, query: str, indexer_id: str, categories: list[Category] | None
@@ -269,15 +263,21 @@ class JackettProvider(BaseSearchProvider):
                 )
         return indexers
 
-    def _should_search_multiple_indexers(self) -> bool:
+    def _should_search_multiple_indexers(
+        self, indexers: list[str] | None
+    ) -> bool:
         """Check if selected indexers differ from all available indexers.
+
+        Args:
+            indexers: List of indexer IDs (without 'jackett:' prefix),
+                     or None to search all indexers
 
         Returns:
             True if specific indexers are selected and they differ from all
             available indexers, False otherwise
         """
         # No indexers selected means search all
-        if not self._selected_indexers or len(self._selected_indexers) == 0:
+        if not indexers or len(indexers) == 0:
             return False
 
         # Get all available indexers
@@ -293,30 +293,33 @@ class JackettProvider(BaseSearchProvider):
             all_indexer_ids.add(indexer_id)
 
         # Compare selected indexers with all indexers
-        selected_set = set(self._selected_indexers)
+        selected_set = set(indexers)
         return selected_set != all_indexer_ids
 
     def _search_multiple_indexers(
-        self, query: str, categories: list[Category] | None
+        self,
+        query: str,
+        categories: list[Category] | None,
+        indexers: list[str],
     ) -> list[SearchResult]:
         """Search multiple indexers individually and combine results.
 
         Args:
             query: Search term
+            categories: Category IDs to filter by (optional)
+            indexers: List of indexer IDs to search
 
         Returns:
             Combined list of SearchResult objects from all indexers
         """
         all_results = []
 
-        with ThreadPoolExecutor(
-            max_workers=len(self._selected_indexers)
-        ) as executor:
+        with ThreadPoolExecutor(max_workers=len(indexers)) as executor:
             futures = {
                 executor.submit(
                     self.fetch_from_indexer, query, indexer_id, categories
                 ): indexer_id
-                for indexer_id in self._selected_indexers
+                for indexer_id in indexers
             }
 
             for future in as_completed(futures):
