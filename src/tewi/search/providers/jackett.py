@@ -35,13 +35,15 @@ class JackettProvider(BaseSearchProvider):
             jackett_url: Base URL of Jackett instance
             api_key: API key for Jackett authentication
         """
-        self.jackett_url = jackett_url
-        self.api_key = api_key
-        self._config_error = self._validate_config(jackett_url, api_key)
+        self.jackett_url: str | None = jackett_url
+        self.api_key: str | None = api_key
+        self._config_error: str | None = self._validate_config(
+            jackett_url, api_key
+        )
         self._selected_indexers: list[str] | None = None
         self._cached_indexers: list[IndexerDTO] | None = None
         self._cache_time: datetime | None = None
-        self._cache_duration = timedelta(minutes=10)
+        self._cache_duration: timedelta = timedelta(minutes=10)
 
     @property
     def id(self) -> str:
@@ -154,10 +156,10 @@ class JackettProvider(BaseSearchProvider):
         self._selected_indexers = indexer_ids
 
     def fetch_from_indexer(
-        self, query, indexer_id, categories: list[Category] | None
-    ):
+        self, query: str, indexer_id: str, categories: list[Category] | None
+    ) -> list[SearchResultDTO]:
         """Helper for parallel execution."""
-        url = self._build_search_url(query, indexer_id)
+        url = self._build_search_url(query, indexer_id, categories)
         data = self._fetch_results(url)
         return self._process_results(data)
 

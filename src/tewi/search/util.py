@@ -2,6 +2,7 @@
 
 import urllib.parse
 import urllib.request
+from typing import Any
 
 from .models import Category, StandardCategories
 
@@ -13,7 +14,7 @@ USER_AGENT = (
 )
 
 
-def urlopen(url: str, timeout: int = 30):
+def urlopen(url: str, timeout: int = 30) -> Any:
     """Open URL with User-Agent header.
 
     Creates a Request object with User-Agent header set to imitate
@@ -35,7 +36,7 @@ def urlopen(url: str, timeout: int = 30):
 
 
 def build_magnet_link(
-    info_hash: str, name: str, trackers: list[str] = None
+    info_hash: str, name: str, trackers: list[str] | None = None
 ) -> str:
     """Build a magnet link from info hash, name, and optional trackers.
 

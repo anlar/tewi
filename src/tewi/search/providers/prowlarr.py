@@ -34,17 +34,19 @@ class ProwlarrProvider(BaseSearchProvider):
             prowlarr_url: Base URL of Prowlarr instance
             api_key: API key for Prowlarr authentication
         """
-        self.prowlarr_url = prowlarr_url
-        self.api_key = api_key
+        self.prowlarr_url: str | None = prowlarr_url
+        self.api_key: str | None = api_key
 
-        self._config_error = self._validate_config(prowlarr_url, api_key)
+        self._config_error: str | None = self._validate_config(
+            prowlarr_url, api_key
+        )
 
         self._selected_indexers: list[str] | None = None
         self._selected_categories: list[Category] | None = None
 
         self._cached_indexers: list[IndexerDTO] | None = None
         self._cache_time: datetime | None = None
-        self._cache_duration = timedelta(minutes=10)
+        self._cache_duration: timedelta = timedelta(minutes=10)
 
     @property
     def id(self) -> str:

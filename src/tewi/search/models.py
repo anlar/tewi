@@ -28,7 +28,7 @@ class Category:
         """Returns True if this is a parent category (ID ends in 000)."""
         return self.id % 1000 == 0
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Category(id={self.id}, name='{self.name}')"
 
 
