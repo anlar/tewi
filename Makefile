@@ -4,6 +4,9 @@ check:
 test:
 	python -m pytest -v
 
+test-all:
+	python -m pytest -v --runxfail
+
 fix:
 	ruff format
 	ruff check --fix
@@ -47,7 +50,7 @@ run-qbittorrent:
 run-deluge:
 	PYTHONPATH=src textual run --dev tewi.app:create_app -- --client-type deluge --port 8112 --password deluge
 
-auto-test: docker-up docker-init check test
+auto-test: docker-up docker-init check test-all
 	@timeout 5 $(MAKE) run-transmission; status=$$?; [ $$status -eq 124 ] || exit $$status
 	@timeout 5 $(MAKE) run-qbittorrent; status=$$?; [ $$status -eq 124 ] || exit $$status
 	@timeout 5 $(MAKE) run-deluge; status=$$?; [ $$status -eq 124 ] || exit $$status

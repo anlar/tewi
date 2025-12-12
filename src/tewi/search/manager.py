@@ -317,7 +317,7 @@ class SearchClient:
         providers_to_search = []
 
         for provider in self.get_providers():
-            provider_id = provider.id()
+            provider_id = provider.id
             if provider_id == "jackett" and jackett:
                 provider.set_selected_indexers(jackett)
                 providers_to_search.append(provider)

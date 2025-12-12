@@ -9,6 +9,10 @@ from typing import Any
 from ...util.log import log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResultDTO, StandardCategories
+from ..util import (
+    build_magnet_link,
+    urlopen,
+)
 
 
 class TPBProvider(BaseSearchProvider):
@@ -16,6 +20,7 @@ class TPBProvider(BaseSearchProvider):
 
     API_URL = "https://apibay.org/q.php"
 
+    @property
     def id(self) -> str:
         return "tpb"
 
@@ -24,7 +29,7 @@ class TPBProvider(BaseSearchProvider):
         return "The Pirate Bay"
 
     @log_time
-    def _search_impl(
+    def search(
         self, query: str, categories: list[Category] | None = None
     ) -> list[SearchResultDTO]:
         """Search The Pirate Bay for torrents.
@@ -53,7 +58,7 @@ class TPBProvider(BaseSearchProvider):
         url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
 
         try:
-            with self._urlopen(url) as response:
+            with urlopen(url) as response:
                 data = json.loads(response.read().decode("utf-8"))
 
             # API returns [{"name": "No results returned"}] when no results
@@ -87,9 +92,7 @@ class TPBProvider(BaseSearchProvider):
             size = int(torrent.get("size", 0))
             category_code = int(torrent.get("category", 0))
 
-            magnet_link = self._build_magnet_link(
-                info_hash=info_hash, name=name
-            )
+            magnet_link = build_magnet_link(info_hash=info_hash, name=name)
 
             # Parse upload date from unix timestamp
             upload_date = None
@@ -130,7 +133,7 @@ class TPBProvider(BaseSearchProvider):
                 info_hash=info_hash,
                 upload_date=upload_date,
                 provider=self.name,
-                provider_id=self.id(),
+                provider_id=self.id,
                 downloads=None,
                 page_url=page_url,
                 torrent_link=None,

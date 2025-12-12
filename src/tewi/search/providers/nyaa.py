@@ -9,6 +9,10 @@ from datetime import datetime
 from ...util.log import log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResultDTO, StandardCategories
+from ..util import (
+    build_magnet_link,
+    urlopen,
+)
 
 
 class NyaaProvider(BaseSearchProvider):
@@ -29,6 +33,7 @@ class NyaaProvider(BaseSearchProvider):
         "http://nyaa.tracker.wf:7777/announce",
     ]
 
+    @property
     def id(self) -> str:
         return "nyaa"
 
@@ -37,7 +42,7 @@ class NyaaProvider(BaseSearchProvider):
         return "Nyaa Torrents"
 
     @log_time
-    def _search_impl(
+    def search(
         self, query: str, categories: list[Category] | None = None
     ) -> list[SearchResultDTO]:
         """Search Nyaa.si for torrents via RSS feed.
@@ -67,7 +72,7 @@ class NyaaProvider(BaseSearchProvider):
         url = f"{self.RSS_URL}&{urllib.parse.urlencode(params)}"
 
         try:
-            with self._urlopen(url) as response:
+            with urlopen(url) as response:
                 data = response.read().decode("utf-8")
 
             # Parse RSS XML
@@ -187,7 +192,7 @@ class NyaaProvider(BaseSearchProvider):
                     pass
 
             # Build magnet link
-            magnet_link = self._build_magnet_link(
+            magnet_link = build_magnet_link(
                 info_hash=info_hash, name=title, trackers=self.TRACKERS
             )
 
@@ -212,7 +217,7 @@ class NyaaProvider(BaseSearchProvider):
                 info_hash=info_hash,
                 upload_date=upload_date,
                 provider=self.name,
-                provider_id=self.id(),
+                provider_id=self.id,
                 page_url=page_url,
                 torrent_link=None,
                 freeleech=True,  # Public tracker

@@ -9,6 +9,11 @@ from typing import Any
 from ...util.log import log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResultDTO
+from ..util import (
+    build_magnet_link,
+    detect_category_from_name,
+    urlopen,
+)
 
 
 class TorrentsCsvProvider(BaseSearchProvider):
@@ -20,6 +25,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
     API_URL = "https://torrents-csv.com/service/search"
 
+    @property
     def id(self) -> str:
         return "torrentscsv"
 
@@ -28,7 +34,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
         return "Torrents-CSV"
 
     @log_time
-    def _search_impl(
+    def search(
         self, query: str, categories: list[Category] | None = None
     ) -> list[SearchResultDTO]:
         """Search torrents-csv.com for torrents.
@@ -55,7 +61,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
         url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
 
         try:
-            with self._urlopen(url) as response:
+            with urlopen(url) as response:
                 data = json.loads(response.read().decode("utf-8"))
 
             torrents = data.get("torrents", [])
@@ -86,9 +92,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
             size = torrent.get("size_bytes", 0)
 
-            magnet_link = self._build_magnet_link(
-                info_hash=info_hash, name=name
-            )
+            magnet_link = build_magnet_link(info_hash=info_hash, name=name)
 
             # Parse upload date from unix timestamp
             upload_date = None
@@ -103,9 +107,11 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 scraped_dt = datetime.fromtimestamp(scraped_date)
                 fields["scraped_date"] = scraped_dt.strftime("%Y-%m-%d %H:%M")
 
+            category = detect_category_from_name(name)
+
             return SearchResultDTO(
                 title=name,
-                categories=[],
+                categories=[category] if category else [],
                 seeders=torrent.get("seeders", 0),
                 leechers=torrent.get("leechers", 0),
                 downloads=torrent.get("completed", 0),
@@ -115,7 +121,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 info_hash=info_hash,
                 upload_date=upload_date,
                 provider=self.name,
-                provider_id=self.id(),
+                provider_id=self.id,
                 page_url=None,
                 torrent_link=None,
                 freeleech=True,  # Public tracker

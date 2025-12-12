@@ -10,6 +10,10 @@ from typing import Any
 from ...util.log import get_logger, log_time
 from ..base import BaseSearchProvider
 from ..models import Category, IndexerDTO, SearchResultDTO, StandardCategories
+from ..util import (
+    build_magnet_link,
+    urlopen,
+)
 
 logger = get_logger()
 
@@ -39,6 +43,14 @@ class JackettProvider(BaseSearchProvider):
         self._cache_time: datetime | None = None
         self._cache_duration = timedelta(minutes=10)
 
+    @property
+    def id(self) -> str:
+        return "jackett"
+
+    @property
+    def name(self) -> str:
+        return "Jackett"
+
     def _validate_config(
         self, jackett_url: str | None, api_key: str | None
     ) -> str | None:
@@ -62,9 +74,6 @@ class JackettProvider(BaseSearchProvider):
                 "Set jackett_api_key in [search] section."
             )
         return None
-
-    def id(self) -> str:
-        return "jackett"
 
     def indexers(self) -> list[IndexerDTO]:
         """Return list of configured indexers from Jackett instance.
@@ -141,7 +150,7 @@ class JackettProvider(BaseSearchProvider):
             Exception: If request fails or response invalid
         """
         try:
-            with self._urlopen(url, timeout=10) as response:
+            with urlopen(url, timeout=10) as response:
                 return json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
@@ -182,12 +191,8 @@ class JackettProvider(BaseSearchProvider):
                 )
         return indexers
 
-    @property
-    def name(self) -> str:
-        return "Jackett"
-
     @log_time
-    def _search_impl(
+    def search(
         self, query: str, categories: list[Category] | None = None
     ) -> list[SearchResultDTO]:
         """Search Jackett for torrents across all indexers.
@@ -337,7 +342,7 @@ class JackettProvider(BaseSearchProvider):
         """
         try:
             logger.debug(f"Jackett: requesting URL: {url}")
-            with self._urlopen(url) as response:
+            with urlopen(url) as response:
                 return json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             # Read error response body for more details
@@ -423,7 +428,7 @@ class JackettProvider(BaseSearchProvider):
                 info_hash=info_hash,
                 upload_date=self._parse_upload_date(result),
                 provider=self._build_provider_name(result),
-                provider_id=self.id(),
+                provider_id=self.id,
                 downloads=downloads,
                 page_url=self._get_page_url(result),
                 torrent_link=torrent_link,
@@ -454,7 +459,7 @@ class JackettProvider(BaseSearchProvider):
 
         # Generate magnet from info hash if available
         if info_hash:
-            return self._build_magnet_link(
+            return build_magnet_link(
                 info_hash=info_hash, name=result.get("Title", "Unknown")
             )
 

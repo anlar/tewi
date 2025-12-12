@@ -9,6 +9,10 @@ from typing import Any
 from ...util.log import log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResultDTO, StandardCategories
+from ..util import (
+    build_magnet_link,
+    urlopen,
+)
 
 
 class YTSProvider(BaseSearchProvider):
@@ -35,6 +39,7 @@ class YTSProvider(BaseSearchProvider):
         "udp://tracker.leechers-paradise.org:6969",
     ]
 
+    @property
     def id(self) -> str:
         return "yts"
 
@@ -85,7 +90,7 @@ class YTSProvider(BaseSearchProvider):
         url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
 
         try:
-            with self._urlopen(url) as response:
+            with urlopen(url) as response:
                 return json.loads(response.read().decode("utf-8"))
         except urllib.error.URLError as e:
             raise Exception(f"Network error: {e}")
@@ -112,7 +117,7 @@ class YTSProvider(BaseSearchProvider):
         return results
 
     @log_time
-    def _search_impl(
+    def search(
         self, query: str, categories: list[Category] | None = None
     ) -> list[SearchResultDTO]:
         """Search YTS for movie torrents.
@@ -275,7 +280,7 @@ class YTSProvider(BaseSearchProvider):
 
             size = torrent.get("size_bytes", 0)
 
-            magnet_link = self._build_magnet_link(
+            magnet_link = build_magnet_link(
                 info_hash=info_hash, name=full_title, trackers=self.TRACKERS
             )
 
@@ -311,7 +316,7 @@ class YTSProvider(BaseSearchProvider):
                 info_hash=info_hash,
                 upload_date=upload_date,
                 provider=self.name,
-                provider_id=self.id(),
+                provider_id=self.id,
                 downloads=None,
                 page_url=page_url,
                 torrent_link=None,

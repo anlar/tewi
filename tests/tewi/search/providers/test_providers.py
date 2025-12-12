@@ -250,7 +250,12 @@ class TestYTSProviderIntegration(BaseProviderIntegrationTest):
         return "matrix"
 
     def get_valid_categories(self) -> set:
-        return {StandardCategories.MOVIES}
+        return {
+            StandardCategories.MOVIES,
+            StandardCategories.MOVIES_HD,
+            StandardCategories.MOVIES_UHD,
+            StandardCategories.MOVIES_3D,
+        }
 
     def requires_trackers(self) -> bool:
         return True
@@ -266,15 +271,7 @@ class TestTPBProviderIntegration(BaseProviderIntegrationTest):
         return "ubuntu"
 
     def get_valid_categories(self) -> set:
-        return {
-            StandardCategories.AUDIO,
-            StandardCategories.MOVIES,
-            StandardCategories.PC,
-            StandardCategories.CONSOLE,
-            StandardCategories.XXX,
-            StandardCategories.OTHER,
-            StandardCategories.BOOKS,
-        }
+        return set(StandardCategories.all_categories())
 
     def requires_trackers(self) -> bool:
         return False
@@ -354,7 +351,7 @@ class TestJackettProviderIntegration(BaseProviderIntegrationTest):
             "TEST_JACKETT_URL", "http://localhost:9117"
         )
         api_key = os.environ.get(
-            "TEST_JACKETT_API_KEY", "66uf0ahso78pjke00t09bzlf93ufq3we"
+            "TEST_JACKETT_API_KEY", "f1xu4r8lcgagvewavd7533gxndhag842"
         )
         return JackettProvider(jackett_url, api_key)
 
