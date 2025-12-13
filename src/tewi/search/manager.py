@@ -179,10 +179,34 @@ class SearchClient:
     def get_indexers(self) -> list[Indexer]:
         """Get list of all available indexers from all providers.
 
+        Fetches indexers from all providers in parallel for better performance.
+
         Returns:
             List of Indexer objects representing all available indexers
         """
-        return [idx for p in self.get_providers() for idx in p.indexers()]
+        providers = self.get_providers()
+        if not providers:
+            return []
+
+        all_indexers = []
+        with ThreadPoolExecutor(max_workers=len(providers)) as executor:
+            future_to_provider = {
+                executor.submit(provider.indexers): provider
+                for provider in providers
+            }
+
+            for future in as_completed(future_to_provider):
+                provider = future_to_provider[future]
+                try:
+                    indexers = future.result()
+                    all_indexers.extend(indexers)
+                except Exception as e:
+                    # Log error but continue with other providers
+                    logger.warning(
+                        f"Failed to fetch indexers from {provider.name}: {e}"
+                    )
+
+        return all_indexers
 
     def search(
         self,
