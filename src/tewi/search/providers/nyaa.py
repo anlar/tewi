@@ -195,6 +195,7 @@ class NyaaProvider(BaseSearchProvider):
             SearchResult or None if parsing fails
         """
         try:
+            # Extract title
             title_elem = item.find("title")
             if title_elem is None or not title_elem.text:
                 return None
@@ -207,16 +208,24 @@ class NyaaProvider(BaseSearchProvider):
                 return None
             info_hash = hash_elem.text
 
+            # Extract torrent link
+            link_elem = item.find("link")
+            if link_elem is None or not link_elem.text:
+                return None
+            link = link_elem.text
+
             # Extract seeders, leechers, downloads
             seeders_elem = item.find("nyaa:seeders", ns)
             leechers_elem = item.find("nyaa:leechers", ns)
             downloads_elem = item.find("nyaa:downloads", ns)
-            seeders = int(seeders_elem.text) if seeders_elem is not None else 0
+            seeders = (
+                int(seeders_elem.text) if seeders_elem is not None else None
+            )
             leechers = (
-                int(leechers_elem.text) if leechers_elem is not None else 0
+                int(leechers_elem.text) if leechers_elem is not None else None
             )
             downloads = (
-                int(downloads_elem.text) if downloads_elem is not None else 0
+                int(downloads_elem.text) if downloads_elem is not None else None
             )
 
             # Extract category ID
@@ -229,7 +238,9 @@ class NyaaProvider(BaseSearchProvider):
             # Extract and parse size
             size_elem = item.find("nyaa:size", ns)
             size = (
-                self._parse_size(size_elem.text) if size_elem is not None else 0
+                self._parse_size(size_elem.text)
+                if size_elem is not None
+                else None
             )
 
             # Extract and parse upload date
@@ -260,19 +271,19 @@ class NyaaProvider(BaseSearchProvider):
 
             return SearchResult(
                 title=title,
+                info_hash=info_hash,
+                magnet_link=magnet_link,
+                torrent_link=link,
+                provider=self.name,
+                provider_id=self.id,
                 categories=category,
                 seeders=seeders,
                 leechers=leechers,
                 downloads=downloads,
                 size=size,
                 files_count=None,
-                magnet_link=magnet_link,
-                info_hash=info_hash,
                 upload_date=upload_date,
-                provider=self.name,
-                provider_id=self.id,
                 page_url=page_url,
-                torrent_link=None,
                 freeleech=True,  # Public tracker
                 fields=fields,
             )
@@ -336,7 +347,9 @@ class NyaaProvider(BaseSearchProvider):
         # Default to all categories
         return None
 
-    def _map_category_by_id(self, category_id: str | None) -> list[Category]:
+    def _map_category_by_id(
+        self, category_id: str | None
+    ) -> list[Category] | None:
         """Map Nyaa categoryId to Standard Category list.
 
         Based on Jackett's nyaasi.yml category mappings:
@@ -349,9 +362,9 @@ class NyaaProvider(BaseSearchProvider):
             List of matching Standard Category objects
         """
         if not category_id:
-            return []
+            return None
 
-        return self.NYAA_CATEGORY_MAP.get(category_id, [])
+        return self.NYAA_CATEGORY_MAP.get(category_id, None)
 
     def _build_fields(
         self, item: ET.Element, ns: dict[str, str]

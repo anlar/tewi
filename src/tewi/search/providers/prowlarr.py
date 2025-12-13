@@ -349,52 +349,43 @@ class ProwlarrProvider(BaseSearchProvider):
             SearchResult or None if parsing fails
         """
         try:
-            # Allow None for info_hash
-            info_hash_raw = result.get("infoHash", "")
-            info_hash = info_hash_raw.strip() if info_hash_raw else None
-            if info_hash == "":
-                info_hash = None
+            title = result.get("title")
+            if not title:
+                return None
+
+            info_hash = result.get("infoHash")
 
             # Extract both link types
-            magnet_link = self._extract_magnet_link(result, info_hash)
-            torrent_link = self._extract_torrent_link(result)
+            magnet_link = self._extract_magnet_link(title, info_hash, result)
+            torrent_link = (result.get("magnetUrl"),)
 
             # Skip result only if we have NEITHER link type
             if not magnet_link and not torrent_link:
                 return None
 
-            # Detect freeleech
-            freeleech = "freeleech" in result.get("indexerFlags")
-
-            # Extract downloads from grabs field
-            downloads = None
-            grabs = result.get("grabs")
-            if grabs is not None:
-                downloads = int(grabs)
-
             return SearchResult(
-                title=result.get("title", "Unknown"),
-                categories=self._map_prowlarr_category(result),
-                seeders=int(result.get("seeders", 0)),
-                leechers=int(result.get("leechers", 0)),
-                downloads=downloads,
-                size=int(result.get("size", 0)),
-                files_count=self._get_files_count(result),
-                magnet_link=magnet_link,
+                title=title,
                 info_hash=info_hash,
-                upload_date=self._parse_publish_date(result),
+                magnet_link=magnet_link,
+                torrent_link=torrent_link,
                 provider=self._build_provider_name(result),
                 provider_id=self.id,
-                page_url=self._get_page_url(result),
-                torrent_link=torrent_link,
-                freeleech=freeleech,
+                categories=self._map_prowlarr_category(result),
+                seeders=result.get("seeders"),
+                leechers=result.get("leechers"),
+                downloads=result.get("grabs"),
+                size=result.get("size"),
+                files_count=result.get("files"),
+                upload_date=self._parse_publish_date(result),
+                page_url=result.get("infoUrl"),
+                freeleech="freeleech" in result.get("indexerFlags"),
                 fields=self._build_fields(result),
             )
         except (KeyError, ValueError, TypeError):
             return None
 
     def _extract_magnet_link(
-        self, result: dict[str, Any], info_hash: str | None
+        self, title: str, info_hash: str | None, result: dict[str, Any]
     ) -> str | None:
         """Extract or generate magnet link from result.
 
@@ -408,44 +399,13 @@ class ProwlarrProvider(BaseSearchProvider):
             Magnet URI string or None if unavailable
         """
         # Prowlarr puts the actual magnet link in 'guid' field
-        guid_raw = result.get("guid", "")
-        guid = guid_raw.strip() if guid_raw else ""
+        guid = result.get("guid")
         if guid and guid.startswith("magnet:"):
             return guid
 
         # Generate magnet from info hash if available
         if info_hash:
-            return build_magnet_link(
-                info_hash=info_hash, name=result.get("title", "Unknown")
-            )
-
-        return None
-
-    def _extract_torrent_link(self, result: dict[str, Any]) -> str | None:
-        """Extract HTTP/HTTPS torrent file URL from result.
-
-        Prowlarr provides magnetUrl as a download proxy link.
-
-        Args:
-            result: Result dict from Prowlarr API
-
-        Returns:
-            HTTP/HTTPS URL or None if unavailable
-        """
-        # Try downloadUrl first (if exists)
-        link_raw = result.get("downloadUrl", "")
-        link = link_raw.strip() if link_raw else ""
-        if link and (link.startswith("http://") or link.startswith("https://")):
-            return link
-
-        # Fall back to magnetUrl (Prowlarr's download proxy)
-        magnet_url_raw = result.get("magnetUrl", "")
-        magnet_url = magnet_url_raw.strip() if magnet_url_raw else ""
-        if magnet_url and (
-            magnet_url.startswith("http://")
-            or magnet_url.startswith("https://")
-        ):
-            return magnet_url
+            return build_magnet_link(info_hash=info_hash, name=title)
 
         return None
 
@@ -478,31 +438,6 @@ class ProwlarrProvider(BaseSearchProvider):
         """
         indexer = result.get("indexer", "Unknown")
         return f"{indexer} [dim](P)[/]"
-
-    def _get_page_url(self, result: dict[str, Any]) -> str | None:
-        """Get page URL from result.
-
-        Args:
-            result: Result dict from Prowlarr API
-
-        Returns:
-            Page URL or None
-        """
-        return result.get("infoUrl")
-
-    def _get_files_count(self, result: dict[str, Any]) -> int | None:
-        """Get file count from result.
-
-        Args:
-            result: Result dict from Prowlarr API
-
-        Returns:
-            File count as integer or None
-        """
-        files_count = result.get("files")
-        if files_count is not None:
-            return int(files_count)
-        return None
 
     def _build_fields(self, result: dict[str, Any]) -> dict[str, str]:
         """Build provider-specific fields dict.

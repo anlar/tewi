@@ -111,15 +111,15 @@ class TorrentsCsvProvider(BaseSearchProvider):
     def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResult | None:
         """Parse a single torrent from TorrentsCSV API response."""
         try:
-            info_hash = torrent.get("infohash", "")
+            title = torrent.get("name")
+            if not title:
+                return None
+
+            info_hash = torrent.get("infohash")
             if not info_hash:
                 return None
 
-            name = torrent.get("name", "Unknown")
-
-            size = torrent.get("size_bytes", 0)
-
-            magnet_link = build_magnet_link(info_hash=info_hash, name=name)
+            category = detect_category_from_name(title)
 
             # Parse upload date from unix timestamp
             upload_date = None
@@ -134,23 +134,21 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 scraped_dt = datetime.fromtimestamp(scraped_date)
                 fields["scraped_date"] = scraped_dt.strftime("%Y-%m-%d %H:%M")
 
-            category = detect_category_from_name(name)
-
             return SearchResult(
-                title=name,
-                categories=[category] if category else [],
-                seeders=torrent.get("seeders", 0),
-                leechers=torrent.get("leechers", 0),
-                downloads=torrent.get("completed", 0),
-                size=size,
-                files_count=None,
-                magnet_link=magnet_link,
+                title=title,
                 info_hash=info_hash,
-                upload_date=upload_date,
+                magnet_link=build_magnet_link(info_hash=info_hash, name=title),
+                torrent_link=None,
                 provider=self.name,
                 provider_id=self.id,
+                categories=[category] if category else None,
+                seeders=torrent.get("seeders"),
+                leechers=torrent.get("leechers"),
+                downloads=torrent.get("completed"),
+                size=torrent.get("size_bytes"),
+                files_count=None,
+                upload_date=upload_date,
                 page_url=None,
-                torrent_link=None,
                 freeleech=True,  # Public tracker
                 fields=fields,
             )

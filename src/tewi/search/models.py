@@ -174,23 +174,32 @@ class Indexer:
 class SearchResult:
     """Data Transfer Object for web search results.
 
+    Title is required.
+
+    At least magnet_link or torrent_link required.
+
     Note: All size fields are in bytes.
     The fields dict contains provider-specific additional metadata.
     """
 
+    # Required fields (torrent)
     title: str
-    categories: list[Category]
-    seeders: int
-    leechers: int
-    size: int  # bytes
-    files_count: int | None
+    info_hash: str
     magnet_link: str
-    info_hash: str | None  # Optional: can be None for results without hash
-    upload_date: datetime | None  # Unix timestamp from API
-    provider: str  # Display name of search provider
-    provider_id: str  # Unique provider identifier
+    torrent_link: str
+
+    # Required fields (provider)
+    provider: str
+    provider_id: str
+
+    # Optional fields - can be None if not available
+    categories: list[Category] | None = None
+    seeders: int | None = None
+    leechers: int | None = None
     downloads: int | None = None  # Download/grabs count
+    size: int | None = None  # bytes
+    files_count: int | None = None
+    upload_date: datetime | None = None
     page_url: str | None = None  # Link to torrent page on provider site
-    torrent_link: str | None = None  # HTTP/HTTPS torrent file URL
-    freeleech: bool = False  # Is freeleech (always True for public trackers)
+    freeleech: bool = False
     fields: dict[str, str] | None = None  # Provider-specific metadata

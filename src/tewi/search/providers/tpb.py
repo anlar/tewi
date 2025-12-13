@@ -214,22 +214,30 @@ class TPBProvider(BaseSearchProvider):
     def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResult | None:
         """Parse a single torrent from TPB API response."""
         try:
-            info_hash = torrent.get("info_hash", "")
+            title = torrent.get("name")
+            if not title:
+                return None
+
+            info_hash = torrent.get("info_hash")
             if not info_hash:
                 return None
 
-            name = torrent.get("name", "Unknown")
-
-            size = int(torrent.get("size", 0))
             category_code = int(torrent.get("category", 0))
-
-            magnet_link = build_magnet_link(info_hash=info_hash, name=name)
+            categories = self._get_category(category_code)
 
             # Parse upload date from unix timestamp
             upload_date = None
             added = torrent.get("added")
             if added:
                 upload_date = datetime.fromtimestamp(int(added))
+
+            # Construct page URL from torrent ID
+            page_url = None
+            torrent_id = torrent.get("id")
+            if torrent_id:
+                page_url = (
+                    f"https://thepiratebay.org/description.php?id={torrent_id}"
+                )
 
             # Build provider-specific fields
             fields = {}
@@ -245,29 +253,21 @@ class TPBProvider(BaseSearchProvider):
             if imdb:
                 fields["imdb"] = imdb
 
-            # Construct page URL from torrent ID
-            page_url = None
-            torrent_id = torrent.get("id")
-            if torrent_id:
-                page_url = (
-                    f"https://thepiratebay.org/description.php?id={torrent_id}"
-                )
-
             return SearchResult(
-                title=name,
-                categories=self._get_category(category_code),
-                seeders=int(torrent.get("seeders", 0)),
-                leechers=int(torrent.get("leechers", 0)),
-                size=size,
-                files_count=int(torrent.get("num_files", None)),
-                magnet_link=magnet_link,
+                title=title,
                 info_hash=info_hash,
-                upload_date=upload_date,
+                magnet_link=build_magnet_link(info_hash=info_hash, name=title),
+                torrent_link=None,
                 provider=self.name,
                 provider_id=self.id,
+                categories=categories,
+                seeders=int(torrent.get("seeders")),
+                leechers=int(torrent.get("leechers")),
                 downloads=None,
+                size=int(torrent.get("size")),
+                files_count=int(torrent.get("num_files")),
+                upload_date=upload_date,
                 page_url=page_url,
-                torrent_link=None,
                 freeleech=True,  # Public tracker
                 fields=fields,
             )
@@ -302,7 +302,7 @@ class TPBProvider(BaseSearchProvider):
         # Default to all categories
         return 0
 
-    def _get_category(self, code: int) -> list[Category]:
+    def _get_category(self, code: int) -> list[Category] | None:
         """Map TPB category code to Standard Category list.
 
         Based on Jackett's thepiratebay.yml category mappings:
@@ -324,4 +324,4 @@ class TPBProvider(BaseSearchProvider):
             return [self.TPB_PARENT_MAP[parent_code]]
 
         # No match found
-        return []
+        return None
