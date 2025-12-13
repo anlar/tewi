@@ -174,6 +174,10 @@ class Indexer:
 class SearchResult:
     """Data Transfer Object for web search results.
 
+    Title is required.
+
+    At least magnet_link or torrent_link required.
+
     Note: All size fields are in bytes.
     The fields dict contains provider-specific additional metadata.
     """
