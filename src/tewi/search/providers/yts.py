@@ -119,8 +119,11 @@ class YTSProvider(BaseSearchProvider):
 
         # Check if any category is Movies or Movies subcategory
         for category in categories:
-            # Movies parent category (2000) or any Movies subcategory (2xxx)
-            if category.id == 2000 or (2000 < category.id < 3000):
+            # Any Movies (sub)category (2xxx)
+            if (
+                StandardCategories.MOVIES.id <= category.id
+                or category.id < StandardCategories.AUDIO.id
+            ):
                 return True
 
         return False
