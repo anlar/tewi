@@ -159,9 +159,9 @@ class TestLogTimeDecorator:
         result = slow_function()
 
         assert result == "done"
-        # Verify logger.info was called
-        mock_logger.info.assert_called_once()
-        call_args = mock_logger.info.call_args[0][0]
+        # Verify logger.debug was called
+        mock_logger.debug.assert_called_once()
+        call_args = mock_logger.debug.call_args[0][0]
         assert "slow_function" in call_args
         assert "ms" in call_args
 
@@ -178,8 +178,8 @@ class TestLogTimeDecorator:
         result = fast_function()
 
         assert result == "done"
-        # Verify logger.info was not called (execution < 1ms)
-        mock_logger.info.assert_not_called()
+        # Verify logger.debug was not called (execution < 1ms)
+        mock_logger.debug.assert_not_called()
 
     def test_preserves_function_name(self):
         """Test that decorator preserves function name."""
@@ -214,7 +214,7 @@ class TestLogTimeDecorator:
             failing_function()
 
         # Logger should not be called when exception occurs
-        mock_logger.info.assert_not_called()
+        mock_logger.debug.assert_not_called()
 
     @patch("src.tewi.util.log.get_logger")
     def test_logs_qualified_name(self, mock_get_logger):
@@ -232,6 +232,6 @@ class TestLogTimeDecorator:
         obj.method()
 
         # Verify qualified name is used
-        mock_logger.info.assert_called_once()
-        call_args = mock_logger.info.call_args[0][0]
+        mock_logger.debug.assert_called_once()
+        call_args = mock_logger.debug.call_args[0][0]
         assert "MyClass.method" in call_args or "method" in call_args

@@ -68,7 +68,7 @@ def log_time(func):
 
         if total_time_ms > 1:
             logger = get_logger()
-            logger.info(
+            logger.debug(
                 f'Function "{func.__qualname__}": {total_time_ms:.4f} ms'
             )
 
