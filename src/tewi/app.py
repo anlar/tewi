@@ -108,6 +108,7 @@ class MainApp(App):
         Binding("t", "toggle_alt_speed", "[Speed] Toggle limits"),
         Binding("S", "show_statistics", "[Info] Statistics"),
         Binding("P", "show_preferences", "[App] Preferences"),
+        Binding("w", "open_websearch_clean", "[Search] Web search (clean)"),
         Binding("W", "open_websearch", "[Search] Web search"),
         Binding('"', "screenshot", "[App] Screenshot", priority=True),
         Binding("d", "toggle_dark", "[UI] Toggle theme"),
@@ -125,6 +126,8 @@ class MainApp(App):
     r_filter_state = reactive(None)
 
     last_search_query = None
+    last_search_indexers = None
+    last_search_categories = None
 
     @log_time
     def __init__(
@@ -324,8 +327,20 @@ class MainApp(App):
         self.push_screen(HelpDialog(self.screen.active_bindings.values()))
 
     @log_time
+    def action_open_websearch_clean(self) -> None:
+        """Open web search dialog with clean state (no pre-filled data)."""
+        self.push_screen(WebSearchQueryDialog())
+
+    @log_time
     def action_open_websearch(self) -> None:
-        self.push_screen(WebSearchQueryDialog(self.last_search_query))
+        """Open web search dialog with last search query and selections."""
+        self.push_screen(
+            WebSearchQueryDialog(
+                self.last_search_query,
+                self.last_search_indexers,
+                self.last_search_categories,
+            )
+        )
 
     @log_time
     @on(Notification)
@@ -672,8 +687,10 @@ class MainApp(App):
     def handle_websearch_query_submitted(
         self, event: WebSearchQuerySubmitted
     ) -> None:
-        # Save executed search query to use it as default value on next search
+        # Save executed search parameters to use on next search
         self.last_search_query = event.query
+        self.last_search_indexers = event.selected_indexers
+        self.last_search_categories = event.selected_categories
         # Switch to results panel
         self.query_one(ContentSwitcher).current = "torrent-websearch"
         # Execute search with query and selected indexers

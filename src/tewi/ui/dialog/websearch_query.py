@@ -20,13 +20,24 @@ class WebSearchQueryDialog(ModalScreen[None]):
     """Modal dialog for entering web search query."""
 
     @log_time
-    def __init__(self, initial_query: str = None):
+    def __init__(
+        self,
+        initial_query: str = None,
+        initial_indexers: list[str] | None = None,
+        initial_categories: list | None = None,
+    ):
         super().__init__()
         self.initial_query = initial_query
+        self.initial_indexers = initial_indexers
+        self.initial_categories = initial_categories
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield WebSearchQueryWidget(self.initial_query)
+        yield WebSearchQueryWidget(
+            self.initial_query,
+            self.initial_indexers,
+            self.initial_categories,
+        )
 
 
 class WebSearchQueryWidget(Static):
@@ -39,9 +50,16 @@ class WebSearchQueryWidget(Static):
     ]
 
     @log_time
-    def __init__(self, initial_query: str = None):
+    def __init__(
+        self,
+        initial_query: str = None,
+        initial_indexers: list[str] | None = None,
+        initial_categories: list | None = None,
+    ):
         super().__init__()
         self.initial_query = initial_query
+        self.initial_indexers = initial_indexers
+        self.initial_categories = initial_categories
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -64,15 +82,44 @@ class WebSearchQueryWidget(Static):
             List of Selection objects with all indexers
         """
         selections = []
-        for indexer in self.app.search.get_indexers():
-            selections.append(Selection(indexer.name, indexer.id, True))
+        available_indexers = self.app.search.get_indexers()
+        available_indexer_ids = {idx.id for idx in available_indexers}
+
+        # Determine which indexers should be selected
+        if self.initial_indexers is not None:
+            # Filter to only include indexers that still exist
+            selected_ids = set(
+                idx
+                for idx in self.initial_indexers
+                if idx in available_indexer_ids
+            )
+        else:
+            # Default: all indexers selected
+            selected_ids = available_indexer_ids
+
+        for indexer in available_indexers:
+            is_selected = indexer.id in selected_ids
+            selections.append(Selection(indexer.name, indexer.id, is_selected))
         return selections
 
     def _build_category_selections(self) -> list[Selection]:
         selections = []
-        for category in StandardCategories.parent_categories():
+        all_categories = StandardCategories.parent_categories()
+
+        # Determine which categories should be selected
+        if self.initial_categories is not None:
+            # Create set of category full_paths from initial categories
+            selected_paths = {cat.full_path for cat in self.initial_categories}
+        else:
+            # Default: all categories selected
+            selected_paths = {cat.full_path for cat in all_categories}
+
+        for category in all_categories:
+            is_selected = category.full_path in selected_paths
             # Use category object as value instead of ID
-            selections.append(Selection(category.full_path, category, True))
+            selections.append(
+                Selection(category.full_path, category, is_selected)
+            )
         return selections
 
     @log_time
