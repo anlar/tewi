@@ -426,51 +426,43 @@ class JackettProvider(BaseSearchProvider):
             SearchResult or None if parsing fails
         """
         try:
-            # Allow None for info_hash
-            info_hash_raw = result.get("InfoHash", "")
-            info_hash = info_hash_raw.strip() if info_hash_raw else None
-            if info_hash == "":
-                info_hash = None
+            title = result.get("Title")
+            if not title:
+                return None
+
+            info_hash = result.get("InfoHash")
 
             # Extract both link types
-            magnet_link = self._extract_magnet_link(result, info_hash)
-            torrent_link = self._extract_torrent_link(result)
+            magnet_link = self._extract_magnet_link(title, info_hash, result)
+            torrent_link = result.get("Link")
 
             # Skip result only if we have NEITHER link type
             if not magnet_link and not torrent_link:
                 return None
 
-            freeleech = result.get("DownloadVolumeFactor") == 0
-
-            # Extract downloads from Grabs field
-            downloads = None
-            grabs = result.get("Grabs")
-            if grabs is not None:
-                downloads = int(grabs)
-
             return SearchResult(
-                title=result.get("Title", "Unknown"),
-                categories=self._map_jackett_category(result),
-                seeders=int(result.get("Seeders")),
-                leechers=int(result.get("Peers")),
-                size=int(result.get("Size")),
-                files_count=self._get_files_count(result),
-                magnet_link=magnet_link,
+                title=title,
                 info_hash=info_hash,
-                upload_date=self._parse_upload_date(result),
+                magnet_link=magnet_link,
+                torrent_link=torrent_link,
                 provider=self._build_provider_name(result),
                 provider_id=self.id,
-                downloads=downloads,
-                page_url=self._get_page_url(result),
-                torrent_link=torrent_link,
-                freeleech=freeleech,
+                categories=self._map_jackett_category(result),
+                seeders=result.get("Seeders"),
+                leechers=result.get("Peers"),
+                downloads=result.get("Grabs"),
+                size=result.get("Size"),
+                files_count=result.get("Files"),
+                upload_date=self._parse_upload_date(result),
+                page_url=result.get("Details"),
+                freeleech=result.get("DownloadVolumeFactor") == 0,
                 fields=self._build_fields(result),
             )
         except (KeyError, ValueError, TypeError):
             return None
 
     def _extract_magnet_link(
-        self, result: dict[str, Any], info_hash: str | None
+        self, title: str, info_hash: str | None, result: dict[str, Any]
     ) -> str | None:
         """Extract or generate magnet link from result.
 
@@ -483,32 +475,14 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             Magnet URI string or None if unavailable
         """
-        magnet_uri_raw = result.get("MagnetUri", "")
-        magnet_uri = magnet_uri_raw.strip() if magnet_uri_raw else ""
+        magnet_uri = result.get("MagnetUri")
         if magnet_uri:
             return magnet_uri
 
         # Generate magnet from info hash if available
         if info_hash:
-            return build_magnet_link(
-                info_hash=info_hash, name=result.get("Title", "Unknown")
-            )
+            return build_magnet_link(info_hash=info_hash, name=title)
 
-        return None
-
-    def _extract_torrent_link(self, result: dict[str, Any]) -> str | None:
-        """Extract HTTP/HTTPS torrent file URL from result.
-
-        Args:
-            result: Result dict from Jackett API
-
-        Returns:
-            HTTP/HTTPS URL or None if unavailable
-        """
-        link_raw = result.get("Link", "")
-        link = link_raw.strip() if link_raw else ""
-        if link and (link.startswith("http://") or link.startswith("https://")):
-            return link
         return None
 
     def _parse_upload_date(self, result: dict[str, Any]) -> datetime | None:
@@ -541,31 +515,6 @@ class JackettProvider(BaseSearchProvider):
         tracker_id = result.get("TrackerId", "Unknown")
         tracker = result.get("Tracker", tracker_id)
         return f"{tracker} [dim](J)[/]"
-
-    def _get_page_url(self, result: dict[str, Any]) -> str | None:
-        """Get page URL from result.
-
-        Args:
-            result: Result dict from Jackett API
-
-        Returns:
-            Page URL or None
-        """
-        return result.get("Details") or result.get("Comments")
-
-    def _get_files_count(self, result: dict[str, Any]) -> int | None:
-        """Get file count from result.
-
-        Args:
-            result: Result dict from Jackett API
-
-        Returns:
-            File count as integer or None
-        """
-        files_count = result.get("Files")
-        if files_count is not None:
-            return int(files_count)
-        return None
 
     def _build_fields(self, result: dict[str, Any]) -> dict[str, str]:
         """Build provider-specific fields dict.
@@ -620,7 +569,9 @@ class JackettProvider(BaseSearchProvider):
 
         return fields if fields else None
 
-    def _map_jackett_category(self, result: dict[str, Any]) -> list[Category]:
+    def _map_jackett_category(
+        self, result: dict[str, Any]
+    ) -> list[Category] | None:
         """Map Jackett category codes to Category objects.
 
         Jackett uses Torznab category IDs with hierarchy:
@@ -633,14 +584,14 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             List of Category objects (may contain parent and subcategory)
         """
-        category_codes = result.get("Category", [])
+        category_codes = result.get("Category")
         if not category_codes:
-            return []
+            return None
 
         # Get all category codes from the result
         codes = self._extract_category_codes(category_codes)
         if not codes:
-            return []
+            return None
 
         # Map codes to Category objects
         categories = []
@@ -649,7 +600,7 @@ class JackettProvider(BaseSearchProvider):
             if category:
                 categories.append(category)
 
-        return categories if categories else []
+        return categories
 
     def _extract_category_codes(self, category_codes: Any) -> list[int]:
         """Extract all category codes from Jackett response.
