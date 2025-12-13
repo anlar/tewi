@@ -14,6 +14,7 @@ import pytest
 from src.tewi.search.models import SearchResult, StandardCategories
 from src.tewi.search.providers.jackett import JackettProvider
 from src.tewi.search.providers.nyaa import NyaaProvider
+from src.tewi.search.providers.prowlarr import ProwlarrProvider
 from src.tewi.search.providers.torrentscsv import TorrentsCsvProvider
 from src.tewi.search.providers.tpb import TPBProvider
 from src.tewi.search.providers.yts import YTSProvider
@@ -376,6 +377,50 @@ class TestJackettProviderIntegration(BaseProviderIntegrationTest):
 
         # Test with no API key
         provider = JackettProvider("http://localhost:9117", None)
+        with pytest.raises(Exception) as exc_info:
+            provider.search("test")
+        assert "API key not configured" in str(exc_info.value)
+
+
+class TestProwlarrProviderIntegration(BaseProviderIntegrationTest):
+    """Integration tests for Prowlarr provider.
+
+    Note: Requires local Prowlarr instance running at configured URL
+    with valid API key. Uses environment variables for configuration.
+    """
+
+    def get_provider(self):
+        import os
+
+        prowlarr_url = os.environ.get(
+            "TEST_PROWLARR_URL", "http://localhost:9696"
+        )
+        api_key = os.environ.get(
+            "TEST_PROWLARR_API_KEY", "c81e8a868440446cac29e4b2f6b5bd5f"
+        )
+        return ProwlarrProvider(prowlarr_url, api_key)
+
+    def get_search_query(self) -> str:
+        return "ubuntu"
+
+    def get_valid_categories(self) -> set:
+        # Prowlarr can return any category
+        return set(StandardCategories.all_categories())
+
+    def requires_trackers(self) -> bool:
+        # Prowlarr may or may not have trackers depending on indexer
+        return False
+
+    def test_missing_config(self):
+        """Test behavior when configuration is missing."""
+        # Test with no URL
+        provider = ProwlarrProvider(None, "test_key")
+        with pytest.raises(Exception) as exc_info:
+            provider.search("test")
+        assert "URL not configured" in str(exc_info.value)
+
+        # Test with no API key
+        provider = ProwlarrProvider("http://localhost:9696", None)
         with pytest.raises(Exception) as exc_info:
             provider.search("test")
         assert "API key not configured" in str(exc_info.value)
