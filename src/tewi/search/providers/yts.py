@@ -181,23 +181,21 @@ class YTSProvider(BaseSearchProvider):
     ) -> SearchResult | None:
         """Parse a single torrent from YTS API response."""
         try:
-            info_hash = torrent.get("hash", "")
-            if not info_hash:
-                return None
-
             # Build title with quality, year and language
-            title = movie.get("title", "")
-            year = movie.get("year", "")
-            language = movie.get("language", "").upper()
-            quality = torrent.get("quality", "")
+            title = movie.get("title")
+            year = movie.get("year")
+            language = movie.get("language")
+            quality = torrent.get("quality")
 
             full_title = f"{title} ({year})"
             if quality:
                 full_title += f" [{quality}]"
             if language:
-                full_title += f" [{language}]"
+                full_title += f" [{language.upper()}]"
 
-            size = torrent.get("size_bytes", 0)
+            info_hash = torrent.get("hash")
+            if not info_hash:
+                return None
 
             magnet_link = build_magnet_link(
                 info_hash=info_hash, name=full_title, trackers=self.TRACKERS
@@ -209,6 +207,11 @@ class YTSProvider(BaseSearchProvider):
             if date_uploaded_unix:
                 upload_date = datetime.fromtimestamp(date_uploaded_unix)
 
+            # Construct page URL from movie URL or ID
+            page_url = movie.get("url")
+            if not page_url and movie.get("id"):
+                page_url = f"https://{self.DOMAIN}/movies/{movie['id']}"
+
             # Build provider-specific fields
             fields = self._build_movie_fields(
                 movie, torrent, year, language, quality
@@ -219,26 +222,21 @@ class YTSProvider(BaseSearchProvider):
                 )
             )
 
-            # Construct page URL from movie URL or ID
-            page_url = movie.get("url")
-            if not page_url and movie.get("id"):
-                page_url = f"https://{self.DOMAIN}/movies/{movie['id']}"
-
             return SearchResult(
                 title=full_title,
-                categories=self._get_category_from_quality(quality),
-                seeders=torrent.get("seeds", 0),
-                leechers=torrent.get("peers", 0),
-                size=size,
-                files_count=None,
-                magnet_link=magnet_link,
                 info_hash=info_hash,
-                upload_date=upload_date,
+                magnet_link=magnet_link,
+                torrent_link=torrent.get("url"),
                 provider=self.name,
                 provider_id=self.id,
+                categories=self._get_category_from_quality(quality),
+                seeders=torrent.get("seeds"),
+                leechers=torrent.get("peers"),
                 downloads=None,
+                size=torrent.get("size_bytes"),
+                files_count=None,
+                upload_date=upload_date,
                 page_url=page_url,
-                torrent_link=None,
                 freeleech=True,  # Public tracker
                 fields=fields,
             )
