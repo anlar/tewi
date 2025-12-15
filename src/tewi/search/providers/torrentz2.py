@@ -68,6 +68,61 @@ class Torrentz2Provider(BaseSearchProvider):
         },
     }
 
+    # Category ID to name mapping from Torrentz2 API
+    CATEGORY_NAMES = {
+        1: "Other",
+        2: "Movies",
+        3: "TV",
+        4: "Anime",
+        5: "Softwares",
+        6: "Games",
+        7: "Music",
+        8: "AudioBook",
+        9: "Ebook/Course",
+        10: "XXX",
+    }
+
+    # Subcategory ID to name mapping from Torrentz2 API
+    SUBCATEGORY_NAMES = {
+        1: {  # Other
+            1: "Audio",
+            2: "Video",
+            3: "Image",
+            4: "Document",
+            5: "Program",
+            6: "Android",
+            7: "DiskImage",
+            8: "Source Code",
+            9: "Database",
+            11: "Archive",
+        },
+        2: {  # Movies
+            1: "Dub/Dual Audio",
+        },
+        4: {  # Anime
+            1: "Dub/Dual Audio",
+            2: "Subbed",
+            3: "Raw",
+        },
+        5: {  # Softwares
+            1: "Windows",
+            2: "Mac",
+            3: "Android",
+        },
+        6: {  # Games
+            1: "PC",
+            2: "Mac",
+            3: "Linux",
+            4: "Android",
+        },
+        7: {  # Music
+            1: "MP3",
+            2: "Lossless",
+            3: "Album",
+            4: "Video",
+        },
+    }
+
     @property
     def id(self) -> str:
         return "torrentz2"
@@ -125,6 +180,12 @@ class Torrentz2Provider(BaseSearchProvider):
 
         md = "## Information\n"
 
+        if "t_category" in result.fields:
+            md += f"- **Category:** {result.fields['t_category']}\n"
+
+        if "t_sub_category" in result.fields:
+            md += f"- **Subcategory:** {result.fields['t_sub_category']}\n"
+
         if "verified" in result.fields:
             verified = "Yes" if result.fields["verified"] else "No"
             md += f"- **Verified:** {verified}\n"
@@ -144,7 +205,6 @@ class Torrentz2Provider(BaseSearchProvider):
             cat = torrent.get("category")
             sub_cat = torrent.get("subCategory")
 
-            # TODO: map categories from site
             category = self.get_category(cat, sub_cat)
 
             # Build provider-specific fields
@@ -154,6 +214,13 @@ class Torrentz2Provider(BaseSearchProvider):
 
             fields["torrent_id"] = tid
             fields["verified"] = torrent.get("verified")
+
+            if cat:
+                fields["t_category"] = self.get_tz2_category(cat)
+            if sub_cat:
+                fields["t_sub_category"] = self.get_tz2_subcategory(
+                    cat, sub_cat
+                )
 
             return SearchResult(
                 title=title,
@@ -191,9 +258,19 @@ class Torrentz2Provider(BaseSearchProvider):
             if category:
                 return category
 
-            # For category 1 (Other), fallback to OTHER if subcategory not found
-            if cat == 1:
-                return StandardCategories.OTHER
+        # For category 1 (Other), fallback to OTHER if subcategory not found
+        if cat == 1:
+            return StandardCategories.OTHER
 
         # Use main category mapping
         return self.CATEGORY_MAP.get(cat)
+
+    def get_tz2_category(self, cat: int) -> str | None:
+        """Get Torrentz2 category name by category ID."""
+        return self.CATEGORY_NAMES.get(cat)
+
+    def get_tz2_subcategory(self, cat: int, sub_cat: int) -> str | None:
+        """Get Torrentz2 subcategory name by category and subcategory ID."""
+        if cat in self.SUBCATEGORY_NAMES:
+            return self.SUBCATEGORY_NAMES[cat].get(sub_cat)
+        return None
