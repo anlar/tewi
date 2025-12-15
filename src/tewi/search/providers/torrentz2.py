@@ -123,6 +123,39 @@ class Torrentz2Provider(BaseSearchProvider):
         },
     }
 
+    # Reverse mapping from StandardCategories to Torrentz2 category IDs
+    STANDARD_TO_TZ2_CATEGORY = {
+        StandardCategories.MOVIES: 2,
+        StandardCategories.TV: 3,
+        StandardCategories.TV_ANIME: 4,
+        StandardCategories.PC: 5,
+        StandardCategories.PC_GAMES: 6,
+        StandardCategories.AUDIO: 7,
+        StandardCategories.AUDIO_AUDIOBOOK: 8,
+        StandardCategories.BOOKS: 9,
+        StandardCategories.XXX: 10,
+    }
+
+    # Reverse mapping from StandardCategories to Torrentz2 subcategory IDs
+    # Format: {StandardCategory: (category_id, subcategory_id)}
+    STANDARD_TO_TZ2_SUBCATEGORY = {
+        # Category 1 (Other) subcategories
+        StandardCategories.AUDIO: (1, 1),
+        StandardCategories.MOVIES: (1, 2),  # Also maps to category 2
+        StandardCategories.OTHER: (1, 3),  # Image - prefer this for OTHER
+        StandardCategories.BOOKS: (1, 4),  # Also maps to category 9
+        StandardCategories.PC: (1, 5),  # Also maps to category 5
+        StandardCategories.PC_MOBILE_ANDROID: (1, 6),
+        StandardCategories.PC_ISO: (1, 7),
+        # Category 5 (Software) subcategories
+        StandardCategories.PC_MAC: (5, 2),  # Mac software
+        # Category 6 (Games) subcategories - PC_GAMES maps to (6, 1)
+        # Category 7 (Music) subcategories
+        StandardCategories.AUDIO_MP3: (7, 1),
+        StandardCategories.AUDIO_LOSSLESS: (7, 2),
+        StandardCategories.AUDIO_VIDEO: (7, 4),
+    }
+
     @property
     def id(self) -> str:
         return "torrentz2"
@@ -141,11 +174,20 @@ class Torrentz2Provider(BaseSearchProvider):
         if not query or not query.strip():
             return []
 
+        # Convert Standard category IDs to Tz2 category codes
+        tz2_category, tz2_sub_category = self._convert_categories_to_tz2(
+            categories
+        )
+
         params = {
             "q": query.strip(),
             "limit": 100,  # Max limit (default to 20)
             "sort": "seeders",
         }
+        if tz2_category:
+            params["category"] = tz2_category
+        if tz2_sub_category:
+            params["subCategory"] = tz2_sub_category
 
         url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
 
@@ -274,3 +316,31 @@ class Torrentz2Provider(BaseSearchProvider):
         if cat in self.SUBCATEGORY_NAMES:
             return self.SUBCATEGORY_NAMES[cat].get(sub_cat)
         return None
+
+    def _convert_categories_to_tz2(
+        self, categories: list[Category] | None
+    ) -> tuple[int | None, int | None]:
+        """Convert StandardCategories to Torrentz2 category and subcategory IDs.
+
+        Returns:
+            tuple[int | None, int | None]: (category_id, subcategory_id)
+            Returns (None, None) if no mapping found.
+        """
+        if not categories:
+            return None, None
+
+        # Try to find the most specific mapping first (subcategory)
+        for category in categories:
+            if category in self.STANDARD_TO_TZ2_SUBCATEGORY:
+                cat_id, sub_cat_id = self.STANDARD_TO_TZ2_SUBCATEGORY[category]
+                if sub_cat_id:
+                    return cat_id, sub_cat_id
+
+        # Fall back to main category mapping
+        for category in categories:
+            if category in self.STANDARD_TO_TZ2_CATEGORY:
+                cat_id = self.STANDARD_TO_TZ2_CATEGORY[category]
+                return cat_id, None
+
+        # No mapping found
+        return None, None
