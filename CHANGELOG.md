@@ -9,25 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add Prowlarr torrent search provider [#133](https://github.com/anlar/tewi/issues/133)
-- Display download count in search results [#137](https://github.com/anlar/tewi/issues/137)
-- Display freeleech flag in torrent search results [#136](https://github.com/anlar/tewi/issues/136)
-- Add `--path` CLI and config option to customize RPC path for Transmission and base JSON path for Deluge [#148](https://github.com/anlar/tewi/issues/148)
-- Web search now remembers last selected indexers and categories ('w' hotkey for clean search, 'W' - for using last state)
+### Changed
+
+### Removed
+
+## [2.1.0] - 2025-12-15 - Rabbit Tiger
+
+### Added
+
+- Add Prowlarr torrent search provider
+  [#133](https://github.com/anlar/tewi/issues/133)
+- Display download count in search results
+  [#137](https://github.com/anlar/tewi/issues/137)
+- Display freeleech flag in torrent search results
+  [#136](https://github.com/anlar/tewi/issues/136)
+- Add `--path` CLI and config option to customize RPC path for Transmission and
+  base JSON path for Deluge [#148](https://github.com/anlar/tewi/issues/148)
+- Web search now remembers last selected indexers and categories ('w' hotkey
+  for clean search, 'W' - for using last state)
 
 ### Changed
 
-- Use `platformdirs` library to get location for config and logs directories [#140](https://github.com/anlar/tewi/issues/140)
-- Log file moved to platform-specific directory [#140](https://github.com/anlar/tewi/issues/140)
+- Use `platformdirs` library to get location for config and logs directories
+  [#140](https://github.com/anlar/tewi/issues/140)
+- Log file moved to platform-specific directory
+  [#140](https://github.com/anlar/tewi/issues/140)
 - Optimize Jackett search (use 'all' endpoint or run indexers in parallel)
-- Use ruff as linter (reformatted whole code base) [#135](https://github.com/anlar/tewi/issues/135)
+- Use ruff as linter (reformatted whole code base)
+  [#135](https://github.com/anlar/tewi/issues/135)
 - GeoIP module gracefully handles missing geoip2fast dependency
 - clipboard module gracefully handles missing pyperclip dependency
 - Refactor torrents clients: use torrent hash as ID in Transmission
-- Use non-existent category during indexers loading from Jackett (speed up loading)
+- Use non-existent category during indexers loading from Jackett (speed up
+  loading)
 - Refactored code to split into torrent, search, ui modules
-
-### Removed
 
 ## [2.0.0] - 2025-12-07 - White Rabbit of Good Fortune
 
