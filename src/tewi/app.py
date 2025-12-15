@@ -156,6 +156,9 @@ class MainApp(App):
     ):
         super().__init__()
 
+        logger.info(f"Initializing Tewi application v{version}")
+        logger.info(f"Client configuration: {client_type} at {host}:{port}")
+
         self.title = "Tewi"
 
         self.view_mode = view_mode
@@ -197,8 +200,11 @@ class MainApp(App):
         self.filter_option = get_filter_by_id(filter)
         self.r_filter_state = FilterState(self.filter_option, 0)
 
+        logger.info("Application initialization completed")
+
     @log_time
     def compose(self) -> ComposeResult:
+        logger.info("Composing UI components")
         yield InfoPanel(
             self.tewi_version,
             self.client.meta()["name"],
@@ -248,24 +254,36 @@ class MainApp(App):
 
     @log_time
     def on_mount(self) -> None:
+        logger.info("Application mounted, starting initial data load")
         self.load_tdata()
+        logger.info(f"Setting up refresh interval: {self.refresh_interval}s")
         self.set_interval(self.refresh_interval, self.load_tdata)
 
         # Auto-start web search if query provided via CLI
         if self.initial_search_query:
+            logger.info(
+                f"Auto-starting web search with query: "
+                f"{self.initial_search_query}"
+            )
             self.post_message(
                 WebSearchQuerySubmitted(self.initial_search_query)
             )
 
         self.query_one(TorrentListViewPanel).focus()
+        logger.info("Application startup completed")
+
+    @log_time
+    def on_unmount(self) -> None:
+        logger.info("Tewi application shutdown")
 
     @log_time
     @work(exclusive=True, thread=True)
     async def load_tdata(self) -> None:
-        current_pane = self.query_one(ContentSwitcher).current
-        if current_pane == "torrent-list":
-            logger.info("Start loading data from torrent client...")
+        logger.debug("Start loading data from torrent client...")
 
+        current_pane = self.query_one(ContentSwitcher).current
+
+        if current_pane == "torrent-list":
             if self.test_mode:
                 torrents = self.client.torrents_test(self.test_mode)
             else:
@@ -285,12 +303,17 @@ class MainApp(App):
                 reverse=not self.r_sort_order_asc,
             )
 
+            logger.info(f"Loaded {len(torrents)} torrents from client")
+
             self.call_from_thread(
                 self.set_tdata_list, torrents, session, filter_state
             )
         elif current_pane == "torrent-info":
             info_panel = self.query_one(TorrentInfoPanel)
             torrent = self.client.torrent(info_panel.r_torrent.hash)
+
+            logger.info(f"Loaded torrent ID = {torrent.id} from client")
+
             self.call_from_thread(self.set_tdata_info, torrent)
 
     @log_time
@@ -571,6 +594,9 @@ class MainApp(App):
     def handle_open_torrent_info_command(
         self, event: OpenTorrentInfoCommand
     ) -> None:
+        logger.info(
+            f"Switching to torrent info view for hash: {event.torrent_hash}"
+        )
         torrent = self.client.torrent(event.torrent_hash)
 
         self.query_one(ContentSwitcher).current = "torrent-info"
@@ -584,6 +610,7 @@ class MainApp(App):
     def handle_open_torrent_list_command(
         self, event: OpenTorrentListCommand
     ) -> None:
+        logger.info("Switching to torrent list view")
         self.query_one(ContentSwitcher).current = "torrent-list"
         # Focus on the torrent list when returning from other panels
         self.query_one(TorrentListViewPanel).focus()
@@ -687,11 +714,13 @@ class MainApp(App):
     def handle_websearch_query_submitted(
         self, event: WebSearchQuerySubmitted
     ) -> None:
+        logger.info(f"Starting web search with query: '{event.query}'")
         # Save executed search parameters to use on next search
         self.last_search_query = event.query
         self.last_search_indexers = event.selected_indexers
         self.last_search_categories = event.selected_categories
         # Switch to results panel
+        logger.info("Switching to web search results view")
         self.query_one(ContentSwitcher).current = "torrent-websearch"
         # Execute search with query and selected indexers
         self.query_one(TorrentWebSearch).execute_search(
@@ -996,14 +1025,17 @@ def _handle_create_config_command(profile: str | None):
 def _handle_commands(args) -> None:
     # Handle --list-search-providers (list providers and exit)
     if args.list_search_providers:
+        logger.info("Listing available search providers")
         _handle_list_search_providers_command()
 
     # Handle --profiles (list available profiles and exit)
     if args.profiles:
+        logger.info("Listing available configuration profiles")
         _handle_profiles_command()
 
     # Handle --create-config (must happen before other processing)
     if args.create_config:
+        logger.info("Creating default configuration file")
         _handle_create_config_command(getattr(args, "profile", None))
 
 
@@ -1026,6 +1058,8 @@ def create_app():
     init_logger(args.log_level)
 
     logger.info(f"Start Tewi {tewi_version}...")
+    if profile:
+        logger.info(f"Using configuration profile: {profile}")
     logger.info(f"Loaded CLI options: {args}")
 
     # Validate search query if provided
@@ -1038,6 +1072,7 @@ def create_app():
 
     # Handle add-torrent mode (non-interactive)
     if args.add_torrent:
+        logger.info(f"Running in add-torrent mode: {args.add_torrent}")
         _handle_add_torrent_mode(args)
 
     # Create and return the app instance
@@ -1086,10 +1121,12 @@ def cli():
     print("\33]0;Tewi\a", end="", flush=True)
 
     app = create_app()
-    app.run()
-
-    # clean terminal title
-    print("\33]0;\a", end="", flush=True)
+    logger.info("Starting Tewi application")
+    try:
+        app.run()
+    finally:
+        # clean terminal title
+        print("\33]0;\a", end="", flush=True)
 
 
 if __name__ == "__main__":
