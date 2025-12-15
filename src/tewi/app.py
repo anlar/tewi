@@ -907,10 +907,12 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
 
     # Other
     p.add_argument(
-        "--logs",
-        default=False,
-        action=argparse.BooleanOptionalAction,
-        help="Enable verbose logs",
+        "--log-level",
+        type=str,
+        default="info",
+        choices=["debug", "info", "warning", "error", "critical"],
+        action=TrackSetAction,
+        help="Set logging level",
     )
     p.add_argument(
         "--version",
@@ -1021,7 +1023,7 @@ def create_app():
     merge_config_with_args(config, args)
 
     # Initialize logging
-    init_logger(args.logs)
+    init_logger(args.log_level)
 
     logger.info(f"Start Tewi {tewi_version}...")
     logger.info(f"Loaded CLI options: {args}")

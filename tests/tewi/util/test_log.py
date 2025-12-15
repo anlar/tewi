@@ -55,29 +55,20 @@ class TestInitLogger:
         root_logger.handlers = original_handlers
         root_logger.level = original_level
 
-    def test_init_logger_disabled(self):
-        """Test that init_logger does nothing when enable_logs is False."""
-        # Get handler count before
-        root_logger = logging.getLogger()
-        handler_count_before = len(root_logger.handlers)
-
-        init_logger(False)
-
-        # Handler count should not change
-        handler_count_after = len(root_logger.handlers)
-        assert handler_count_after == handler_count_before
-
     @patch("src.tewi.util.log.user_log_dir")
     @patch("src.tewi.util.log.Path.mkdir")
     @patch("src.tewi.util.log.logging.basicConfig")
-    def test_init_logger_enabled(
-        self, mock_basic_config, mock_mkdir, mock_user_log_dir
+    @patch("src.tewi.util.log.get_logger")
+    def test_init_logger_warning_level(
+        self, mock_get_logger, mock_basic_config, mock_mkdir, mock_user_log_dir
     ):
-        """Test that init_logger configures logging when enable_logs is True."""
+        """Test that init_logger configures logging with warning level."""
         # Setup mocks
         mock_user_log_dir.return_value = "/tmp/test_logs"
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
 
-        init_logger(True)
+        init_logger("warning")
 
         # Verify user_log_dir was called
         mock_user_log_dir.assert_called_once_with("tewi", appauthor=False)
@@ -92,24 +83,86 @@ class TestInitLogger:
         # Check that basicConfig was called with correct parameters
         assert "filename" in call_kwargs
         assert call_kwargs["encoding"] == "utf-8"
-        assert call_kwargs["level"] == logging.DEBUG
+        assert call_kwargs["level"] == logging.WARNING
         assert "format" in call_kwargs
         assert "datefmt" in call_kwargs
+
+        # Verify logger.info was called
+        mock_logger.info.assert_called_once()
 
     @patch("src.tewi.util.log.user_log_dir")
     @patch("src.tewi.util.log.Path.mkdir")
     @patch("src.tewi.util.log.logging.basicConfig")
+    @patch("src.tewi.util.log.get_logger")
+    def test_init_logger_debug_level(
+        self, mock_get_logger, mock_basic_config, mock_mkdir, mock_user_log_dir
+    ):
+        """Test that init_logger configures logging with debug level."""
+        # Setup mocks
+        mock_user_log_dir.return_value = "/tmp/test_logs"
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+
+        init_logger("debug")
+
+        # Verify logging.basicConfig was called with DEBUG level
+        mock_basic_config.assert_called_once()
+        call_kwargs = mock_basic_config.call_args[1]
+        assert call_kwargs["level"] == logging.DEBUG
+
+    @patch("src.tewi.util.log.user_log_dir")
+    @patch("src.tewi.util.log.Path.mkdir")
+    @patch("src.tewi.util.log.logging.basicConfig")
+    @patch("src.tewi.util.log.get_logger")
     def test_init_logger_creates_log_file_path(
-        self, mock_basic_config, mock_mkdir, mock_user_log_dir
+        self, mock_get_logger, mock_basic_config, mock_mkdir, mock_user_log_dir
     ):
         """Test that init_logger creates correct log file path."""
         mock_user_log_dir.return_value = "/tmp/test_logs"
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
 
-        init_logger(True)
+        init_logger("info")
 
         # Verify the filename ends with tewi.log
         call_kwargs = mock_basic_config.call_args[1]
         assert call_kwargs["filename"].endswith("tewi.log")
+
+    @patch("src.tewi.util.log.user_log_dir")
+    @patch("src.tewi.util.log.Path.mkdir")
+    @patch("src.tewi.util.log.logging.basicConfig")
+    @patch("src.tewi.util.log.get_logger")
+    def test_init_logger_invalid_level(
+        self, mock_get_logger, mock_basic_config, mock_mkdir, mock_user_log_dir
+    ):
+        """Test that init_logger defaults to WARNING for invalid levels."""
+        mock_user_log_dir.return_value = "/tmp/test_logs"
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+
+        init_logger("invalid_level")
+
+        # Should default to WARNING level
+        call_kwargs = mock_basic_config.call_args[1]
+        assert call_kwargs["level"] == logging.WARNING
+
+    @patch("src.tewi.util.log.user_log_dir")
+    @patch("src.tewi.util.log.Path.mkdir")
+    @patch("src.tewi.util.log.logging.basicConfig")
+    @patch("src.tewi.util.log.get_logger")
+    def test_init_logger_case_insensitive(
+        self, mock_get_logger, mock_basic_config, mock_mkdir, mock_user_log_dir
+    ):
+        """Test that init_logger handles case-insensitive log levels."""
+        mock_user_log_dir.return_value = "/tmp/test_logs"
+        mock_logger = MagicMock()
+        mock_get_logger.return_value = mock_logger
+
+        init_logger("ERROR")
+
+        # Should handle uppercase
+        call_kwargs = mock_basic_config.call_args[1]
+        assert call_kwargs["level"] == logging.ERROR
 
 
 class TestLogTimeDecorator:

@@ -33,24 +33,41 @@ def get_logger() -> logging.Logger:
     return logging.getLogger("tewi")
 
 
-def init_logger(enable_logs: bool) -> None:
+def init_logger(log_level: str) -> None:
     """Initialize logging configuration.
 
     Args:
-        enable_logs: Whether to enable verbose logging to file
+        log_level: Log level (debug, info, warning, error, critical)
     """
-    if enable_logs:
-        log_dir = Path(user_log_dir("tewi", appauthor=False))
-        log_dir.mkdir(parents=True, exist_ok=True)
-        log_file = log_dir / "tewi.log"
-        logging.basicConfig(
-            filename=str(log_file),
-            encoding="utf-8",
-            format="%(asctime)s.%(msecs)03d %(module)-15s "
-            "%(levelname)-8s %(message)s",
-            level=logging.DEBUG,
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
+    # Map string levels to logging constants
+    level_map = {
+        "debug": logging.DEBUG,
+        "info": logging.INFO,
+        "warning": logging.WARNING,
+        "error": logging.ERROR,
+        "critical": logging.CRITICAL,
+    }
+
+    level = level_map.get(log_level.lower(), logging.WARNING)
+
+    # Always set up file logging
+    log_dir = Path(user_log_dir("tewi", appauthor=False))
+    log_dir.mkdir(parents=True, exist_ok=True)
+    log_file = log_dir / "tewi.log"
+    logging.basicConfig(
+        filename=str(log_file),
+        encoding="utf-8",
+        format="%(asctime)s.%(msecs)03d %(module)-15s "
+        "%(levelname)-8s %(message)s",
+        level=level,
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+    # Log initialization info
+    logger = get_logger()
+    logger.info(
+        f"Logging initialized: level={log_level.upper()}, file={log_file}"
+    )
 
 
 def log_time(func):

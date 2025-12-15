@@ -180,9 +180,9 @@ def _load_debug_section(
     if not parser.has_section("debug"):
         return
 
-    val = _get_bool_option(parser, "debug", "logs")
-    if val is not None:
-        config["logs"] = val
+    val = _get_string_option(parser, "debug", "log_level")
+    if val:
+        config["log_level"] = val
     val = _get_int_option(parser, "debug", "test_mode")
     if val is not None:
         config["test_mode"] = val
@@ -345,8 +345,8 @@ prowlarr_api_key =
 providers =
 
 [debug]
-# Enable verbose logs: boolean
-logs =
+# Log level: debug, info, warning, error, critical
+log_level =
 
 """
 

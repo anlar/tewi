@@ -503,7 +503,7 @@ class TestLoadDebugSection:
         """Test handling of [debug] section with all empty values."""
         config_text = """
 [debug]
-logs =
+log_level =
 test_mode =
 """
         parser = configparser.ConfigParser()
@@ -514,11 +514,11 @@ test_mode =
 
         assert config == {}
 
-    def test_filled_values_true(self):
-        """Test handling of [debug] section with logs=true."""
+    def test_filled_values_debug(self):
+        """Test handling of [debug] section with log_level=debug."""
         config_text = """
 [debug]
-logs = true
+log_level = debug
 test_mode = 1
 """
         parser = configparser.ConfigParser()
@@ -527,13 +527,13 @@ test_mode = 1
 
         _load_debug_section(parser, config)
 
-        assert config == {"logs": True, "test_mode": 1}
+        assert config == {"log_level": "debug", "test_mode": 1}
 
-    def test_filled_values_false(self):
-        """Test handling of [debug] section with logs=false."""
+    def test_filled_values_warning(self):
+        """Test handling of [debug] section with log_level=warning."""
         config_text = """
 [debug]
-logs = false
+log_level = warning
 test_mode = 0
 """
         parser = configparser.ConfigParser()
@@ -542,13 +542,13 @@ test_mode = 0
 
         _load_debug_section(parser, config)
 
-        assert config == {"logs": False, "test_mode": 0}
+        assert config == {"log_level": "warning", "test_mode": 0}
 
-    def test_partial_values_logs_only(self):
-        """Test with only logs filled."""
+    def test_partial_values_log_level_only(self):
+        """Test with only log_level filled."""
         config_text = """
 [debug]
-logs = yes
+log_level = info
 test_mode =
 """
         parser = configparser.ConfigParser()
@@ -557,13 +557,13 @@ test_mode =
 
         _load_debug_section(parser, config)
 
-        assert config == {"logs": True}
+        assert config == {"log_level": "info"}
 
     def test_partial_values_test_mode_only(self):
         """Test with only test_mode filled."""
         config_text = """
 [debug]
-logs =
+log_level =
 test_mode = 2
 """
         parser = configparser.ConfigParser()
@@ -574,57 +574,57 @@ test_mode = 2
 
         assert config == {"test_mode": 2}
 
-    def test_bool_variations(self):
-        """Test various boolean value formats."""
-        # Test 'on'
+    def test_log_level_variations(self):
+        """Test various log level value formats."""
+        # Test 'error'
         config_text = """
 [debug]
-logs = on
+log_level = error
 """
         parser = configparser.ConfigParser()
         parser.read_string(config_text)
         config = {}
         _load_debug_section(parser, config)
-        assert config == {"logs": True}
+        assert config == {"log_level": "error"}
 
-        # Test 'off'
+        # Test 'critical'
         config_text = """
 [debug]
-logs = off
+log_level = critical
 """
         parser = configparser.ConfigParser()
         parser.read_string(config_text)
         config = {}
         _load_debug_section(parser, config)
-        assert config == {"logs": False}
+        assert config == {"log_level": "critical"}
 
-        # Test '1'
+        # Test 'info'
         config_text = """
 [debug]
-logs = 1
+log_level = info
 """
         parser = configparser.ConfigParser()
         parser.read_string(config_text)
         config = {}
         _load_debug_section(parser, config)
-        assert config == {"logs": True}
+        assert config == {"log_level": "info"}
 
-        # Test '0'
+        # Test 'debug'
         config_text = """
 [debug]
-logs = 0
+log_level = debug
 """
         parser = configparser.ConfigParser()
         parser.read_string(config_text)
         config = {}
         _load_debug_section(parser, config)
-        assert config == {"logs": False}
+        assert config == {"log_level": "debug"}
 
-    def test_invalid_logs_value(self, capsys):
-        """Test handling of invalid logs value."""
+    def test_invalid_log_level_value(self):
+        """Test handling of invalid log_level value."""
         config_text = """
 [debug]
-logs = maybe
+log_level = invalid_level
 test_mode = 1
 """
         parser = configparser.ConfigParser()
@@ -633,17 +633,14 @@ test_mode = 1
 
         _load_debug_section(parser, config)
 
-        # Should only include test_mode
-        assert config == {"test_mode": 1}
-        # Check that warning was printed
-        captured = capsys.readouterr()
-        assert "Warning: Invalid logs value in config" in captured.err
+        # Should include both values (no validation in config loading)
+        assert config == {"log_level": "invalid_level", "test_mode": 1}
 
     def test_invalid_test_mode_value(self, capsys):
         """Test handling of invalid test_mode value."""
         config_text = """
 [debug]
-logs = true
+log_level = info
 test_mode = invalid
 """
         parser = configparser.ConfigParser()
@@ -652,8 +649,8 @@ test_mode = invalid
 
         _load_debug_section(parser, config)
 
-        # Should only include logs
-        assert config == {"logs": True}
+        # Should only include log_level
+        assert config == {"log_level": "info"}
         # Check that warning was printed
         captured = capsys.readouterr()
         assert "Warning: Invalid test_mode value in config" in captured.err
@@ -662,7 +659,7 @@ test_mode = invalid
         """Test handling of whitespace-only values."""
         config_text = """
 [debug]
-logs =
+log_level =
 test_mode =
 """
         parser = configparser.ConfigParser()
@@ -678,7 +675,7 @@ test_mode =
         """Test that values are trimmed from left/right whitespace."""
         config_text = """
 [debug]
-logs =  true
+log_level =  warning
 test_mode =   2
 """
         parser = configparser.ConfigParser()
@@ -688,4 +685,4 @@ test_mode =   2
         _load_debug_section(parser, config)
 
         # All values should be trimmed
-        assert config == {"logs": True, "test_mode": 2}
+        assert config == {"log_level": "warning", "test_mode": 2}

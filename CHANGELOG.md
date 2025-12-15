@@ -12,9 +12,13 @@ handle multi-line list body as single line.
 
 ### Added
 
+- Add `--log-level` CLI and config option with 5 log levels (debug, info, warning, error, critical) [#152](https://github.com/anlar/tewi/issues/152)
+
 ### Changed
 
 ### Removed
+
+- Remove `--logs` CLI and config option (replaced by `--log-level`) [#152](https://github.com/anlar/tewi/issues/152)
 
 ## [2.1.0] - 2025-12-15 - Rabbit Tiger
 
