@@ -11,6 +11,7 @@ from .providers import (
     NyaaProvider,
     ProwlarrProvider,
     TorrentsCsvProvider,
+    Torrentz2Provider,
     TPBProvider,
     YTSProvider,
 )
@@ -21,6 +22,7 @@ logger = get_logger()
 AVAILABLE_PROVIDERS = {
     "tpb": TPBProvider,
     "torrentscsv": TorrentsCsvProvider,
+    "torrentz2": Torrentz2Provider,
     "yts": YTSProvider,
     "nyaa": NyaaProvider,
     "jackett": JackettProvider,

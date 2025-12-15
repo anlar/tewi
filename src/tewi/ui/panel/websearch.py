@@ -15,6 +15,7 @@ from ...search.providers import (
     NyaaProvider,
     ProwlarrProvider,
     TorrentsCsvProvider,
+    Torrentz2Provider,
     TPBProvider,
     YTSProvider,
 )
@@ -65,6 +66,7 @@ class TorrentWebSearch(Static):
         self.providers = [
             YTSProvider(),
             TorrentsCsvProvider(),
+            Torrentz2Provider(),
             TPBProvider(),
             NyaaProvider(),
             JackettProvider(jackett_url, jackett_api_key),

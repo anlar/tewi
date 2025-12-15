@@ -16,6 +16,7 @@ from src.tewi.search.providers.jackett import JackettProvider
 from src.tewi.search.providers.nyaa import NyaaProvider
 from src.tewi.search.providers.prowlarr import ProwlarrProvider
 from src.tewi.search.providers.torrentscsv import TorrentsCsvProvider
+from src.tewi.search.providers.torrentz2 import Torrentz2Provider
 from src.tewi.search.providers.tpb import TPBProvider
 from src.tewi.search.providers.yts import YTSProvider
 
@@ -289,6 +290,32 @@ class TestTorrentsCsvProviderIntegration(BaseProviderIntegrationTest):
 
     def get_valid_categories(self) -> set:
         # TorrentsCSV returns empty categories, but refinement may detect
+        # categories from torrent names
+        return {
+            StandardCategories.AUDIO,
+            StandardCategories.MOVIES,
+            StandardCategories.PC,
+            StandardCategories.CONSOLE,
+            StandardCategories.XXX,
+            StandardCategories.BOOKS,
+            StandardCategories.OTHER,
+        }
+
+    def requires_trackers(self) -> bool:
+        return False
+
+
+class TestTorrentz2ProviderIntegration(BaseProviderIntegrationTest):
+    """Integration tests for Torrentz2 provider."""
+
+    def get_provider(self):
+        return Torrentz2Provider()
+
+    def get_search_query(self) -> str:
+        return "debian"
+
+    def get_valid_categories(self) -> set:
+        # Torrentz2 returns empty categories, but refinement may detect
         # categories from torrent names
         return {
             StandardCategories.AUDIO,
