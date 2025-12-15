@@ -16,6 +16,7 @@ from src.tewi.search.providers.jackett import JackettProvider
 from src.tewi.search.providers.nyaa import NyaaProvider
 from src.tewi.search.providers.prowlarr import ProwlarrProvider
 from src.tewi.search.providers.torrentscsv import TorrentsCsvProvider
+from src.tewi.search.providers.torrentz2 import Torrentz2Provider
 from src.tewi.search.providers.tpb import TPBProvider
 from src.tewi.search.providers.yts import YTSProvider
 
@@ -298,6 +299,57 @@ class TestTorrentsCsvProviderIntegration(BaseProviderIntegrationTest):
             StandardCategories.XXX,
             StandardCategories.BOOKS,
             StandardCategories.OTHER,
+        }
+
+    def requires_trackers(self) -> bool:
+        return False
+
+
+class TestTorrentz2ProviderIntegration(BaseProviderIntegrationTest):
+    """Integration tests for Torrentz2 provider."""
+
+    def get_provider(self):
+        return Torrentz2Provider()
+
+    def get_search_query(self) -> str:
+        return "debian"
+
+    def get_valid_categories(self) -> set:
+        # All categories that Torrentz2Provider.get_category() can return
+        return {
+            # Category 1 (Other) subcategories
+            StandardCategories.AUDIO,  # Audio
+            StandardCategories.MOVIES,  # Video
+            StandardCategories.OTHER,  # Image, Archive, unknown subcategory
+            StandardCategories.BOOKS,  # Document
+            StandardCategories.PC,  # Program, Source Code, Database, Windows
+            StandardCategories.PC_MOBILE_ANDROID,  # Android
+            StandardCategories.PC_ISO,  # DiskImage
+            # Category 2: Movies
+            StandardCategories.MOVIES,
+            # Category 3: TV
+            StandardCategories.TV,
+            # Category 4: Anime
+            StandardCategories.TV_ANIME,
+            # Category 5: Software
+            StandardCategories.PC,  # Windows, unknown subcategory
+            StandardCategories.PC_MAC,  # Mac
+            StandardCategories.PC_MOBILE_ANDROID,  # Android
+            # Category 6: Games
+            StandardCategories.PC_GAMES,  # PC, Linux, unknown subcategory
+            StandardCategories.PC_MAC,  # Mac
+            StandardCategories.PC_MOBILE_ANDROID,  # Android
+            # Category 7: Music
+            StandardCategories.AUDIO,  # Album, unknown subcategory
+            StandardCategories.AUDIO_MP3,  # MP3
+            StandardCategories.AUDIO_LOSSLESS,  # Lossless
+            StandardCategories.AUDIO_VIDEO,  # Video
+            # Category 8: AudioBook
+            StandardCategories.AUDIO_AUDIOBOOK,
+            # Category 9: Ebook/Course
+            StandardCategories.BOOKS,
+            # Category 10: XXX
+            StandardCategories.XXX,
         }
 
     def requires_trackers(self) -> bool:
