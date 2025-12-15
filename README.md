@@ -32,12 +32,15 @@ Features:
 - Display torrent details: overview, files, trackers, peers
 - View and edit torrent categories and labels
 - Add new torrents
-- Torrent actions: start/pause, remove/trash, verify, reannounce, change priority
+- Torrent actions: start/pause, remove/trash, verify, reannounce, change
+  priority
 - View and toggle alternative speed limits
 - View session statistics
 - View torrent client preferences
 - Dark and light color themes
-- Search torrents on popular trackers (built-in search providers and [Jackett](https://github.com/Jackett/Jackett) integration)
+- Search torrents on popular trackers (built-in search providers,
+  [Jackett](https://github.com/Jackett/Jackett) and
+  [Prowlarr](https://github.com/Prowlarr/Prowlarr) integration)
 - Support for configuration files and different configuration profiles
 
 ### Built With
