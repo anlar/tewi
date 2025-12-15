@@ -315,16 +315,41 @@ class TestTorrentz2ProviderIntegration(BaseProviderIntegrationTest):
         return "debian"
 
     def get_valid_categories(self) -> set:
-        # Torrentz2 returns empty categories, but refinement may detect
-        # categories from torrent names
+        # All categories that Torrentz2Provider.get_category() can return
         return {
-            StandardCategories.AUDIO,
+            # Category 1 (Other) subcategories
+            StandardCategories.AUDIO,  # Audio
+            StandardCategories.MOVIES,  # Video
+            StandardCategories.OTHER,  # Image, Archive, unknown subcategory
+            StandardCategories.BOOKS,  # Document
+            StandardCategories.PC,  # Program, Source Code, Database, Windows
+            StandardCategories.PC_MOBILE_ANDROID,  # Android
+            StandardCategories.PC_ISO,  # DiskImage
+            # Category 2: Movies
             StandardCategories.MOVIES,
-            StandardCategories.PC,
-            StandardCategories.CONSOLE,
-            StandardCategories.XXX,
+            # Category 3: TV
+            StandardCategories.TV,
+            # Category 4: Anime
+            StandardCategories.TV_ANIME,
+            # Category 5: Software
+            StandardCategories.PC,  # Windows, unknown subcategory
+            StandardCategories.PC_MAC,  # Mac
+            StandardCategories.PC_MOBILE_ANDROID,  # Android
+            # Category 6: Games
+            StandardCategories.PC_GAMES,  # PC, Linux, unknown subcategory
+            StandardCategories.PC_MAC,  # Mac
+            StandardCategories.PC_MOBILE_ANDROID,  # Android
+            # Category 7: Music
+            StandardCategories.AUDIO,  # Album, unknown subcategory
+            StandardCategories.AUDIO_MP3,  # MP3
+            StandardCategories.AUDIO_LOSSLESS,  # Lossless
+            StandardCategories.AUDIO_VIDEO,  # Video
+            # Category 8: AudioBook
+            StandardCategories.AUDIO_AUDIOBOOK,
+            # Category 9: Ebook/Course
             StandardCategories.BOOKS,
-            StandardCategories.OTHER,
+            # Category 10: XXX
+            StandardCategories.XXX,
         }
 
     def requires_trackers(self) -> bool:

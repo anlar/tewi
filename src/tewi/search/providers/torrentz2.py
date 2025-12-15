@@ -7,10 +7,9 @@ from typing import Any
 
 from ...util.log import log_time
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResult
+from ..models import Category, SearchResult, StandardCategories
 from ..util import (
     build_magnet_link,
-    detect_category_from_name,
     urlopen,
 )
 
@@ -22,6 +21,52 @@ class Torrentz2Provider(BaseSearchProvider):
     """
 
     API_URL = "https://torrentz2.nz/api/v1/search"
+
+    # Category mapping from Torrentz2 API to StandardCategories
+    CATEGORY_MAP = {
+        2: StandardCategories.MOVIES,  # Movies
+        3: StandardCategories.TV,  # TV
+        4: StandardCategories.TV_ANIME,  # Anime
+        5: StandardCategories.PC,  # Software (default)
+        6: StandardCategories.PC_GAMES,  # Games (default)
+        7: StandardCategories.AUDIO,  # Music (default)
+        8: StandardCategories.AUDIO_AUDIOBOOK,  # AudioBook
+        9: StandardCategories.BOOKS,  # Ebook/Course
+        10: StandardCategories.XXX,  # XXX
+    }
+
+    # Subcategory mapping for categories that have subcategories
+    SUBCATEGORY_MAP = {
+        1: {  # Other
+            1: StandardCategories.AUDIO,  # Audio
+            2: StandardCategories.MOVIES,  # Video
+            3: StandardCategories.OTHER,  # Image
+            4: StandardCategories.BOOKS,  # Document
+            5: StandardCategories.PC,  # Program
+            6: StandardCategories.PC_MOBILE_ANDROID,  # Android
+            7: StandardCategories.PC_ISO,  # DiskImage
+            8: StandardCategories.PC,  # Source Code
+            9: StandardCategories.PC,  # Database
+            11: StandardCategories.OTHER,  # Archive
+        },
+        5: {  # Software
+            1: StandardCategories.PC,  # Windows
+            2: StandardCategories.PC_MAC,  # Mac
+            3: StandardCategories.PC_MOBILE_ANDROID,  # Android
+        },
+        6: {  # Games
+            1: StandardCategories.PC_GAMES,  # PC
+            2: StandardCategories.PC_MAC,  # Mac
+            3: StandardCategories.PC_GAMES,  # Linux
+            4: StandardCategories.PC_MOBILE_ANDROID,  # Android
+        },
+        7: {  # Music
+            1: StandardCategories.AUDIO_MP3,  # MP3
+            2: StandardCategories.AUDIO_LOSSLESS,  # Lossless
+            3: StandardCategories.AUDIO,  # Album
+            4: StandardCategories.AUDIO_VIDEO,  # Video
+        },
+    }
 
     @property
     def id(self) -> str:
@@ -96,11 +141,11 @@ class Torrentz2Provider(BaseSearchProvider):
             if not info_hash:
                 return None
 
-            # cat = torrent.get("category")
-            # sub_cat = torrent.get("subCategory")
+            cat = torrent.get("category")
+            sub_cat = torrent.get("subCategory")
 
             # TODO: map categories from site
-            category = detect_category_from_name(title)
+            category = self.get_category(cat, sub_cat)
 
             # Build provider-specific fields
             fields = {}
@@ -131,3 +176,24 @@ class Torrentz2Provider(BaseSearchProvider):
 
         except (KeyError, ValueError, TypeError):
             return None
+
+    def get_category(
+        self, cat: int | None, sub_cat: int | None
+    ) -> Category | None:
+        """Map Torrentz2 category and subcategory IDs to StandardCategories."""
+
+        if cat is None:
+            return None
+
+        # Check if category has subcategories and subcategory is provided
+        if cat in self.SUBCATEGORY_MAP and sub_cat is not None:
+            category = self.SUBCATEGORY_MAP[cat].get(sub_cat)
+            if category:
+                return category
+
+            # For category 1 (Other), fallback to OTHER if subcategory not found
+            if cat == 1:
+                return StandardCategories.OTHER
+
+        # Use main category mapping
+        return self.CATEGORY_MAP.get(cat)
