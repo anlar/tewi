@@ -100,5 +100,51 @@ services:
       retries: 5
       start_period: 10s
 
+  bitmagnet:
+    image: ghcr.io/bitmagnet-io/bitmagnet:latest
+    container_name: tewi-bitmagnet-dev
+    ports:
+      # API and WebUI port:
+      - "3333:3333"
+      # BitTorrent ports:
+      - "3334:3334/tcp"
+      - "3334:3334/udp"
+    restart: no
+    environment:
+      - POSTGRES_HOST=tewi-postgres-dev
+      - POSTGRES_PASSWORD=postgres
+    #      - TMDB_API_KEY=your_api_key
+    command:
+      - worker
+      - run
+      - --keys=http_server
+      - --keys=queue_server
+      # disable the next line to run without DHT crawler
+      - --keys=dht_crawler
+    depends_on:
+      tewi-postgres-dev:
+        condition: service_healthy
+
+  tewi-postgres-dev:
+    image: postgres:16-alpine
+    container_name: tewi-postgres-dev
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    #    ports:
+    #      - "5432:5432" Expose this port if you'd like to dig around in the database
+    restart: unless-stopped
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=bitmagnet
+      - PGUSER=postgres
+    shm_size: 1g
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready
+      start_period: 20s
+      interval: 10s
+
 volumes:
   downloads:
+  postgres:

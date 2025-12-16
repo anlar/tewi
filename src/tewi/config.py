@@ -207,6 +207,9 @@ def _load_search_section(
     val = _get_string_option(parser, "search", "prowlarr_api_key")
     if val:
         config["prowlarr_api_key"] = val
+    val = _get_string_option(parser, "search", "bitmagnet_url")
+    if val:
+        config["bitmagnet_url"] = val
     val = _get_string_option(parser, "search", "providers")
     if val:
         config["search_providers"] = val
@@ -338,6 +341,10 @@ prowlarr_url =
 
 # API key for Prowlarr authentication
 prowlarr_api_key =
+
+# Bitmagnet server configuration for torrent search
+# URL of your Bitmagnet instance (default: http://localhost:3333)
+bitmagnet_url =
 
 # Comma-separated list of enabled search providers
 # Available (default order): tpb, torrentz2, yts, nyaa, torrentscsv,
