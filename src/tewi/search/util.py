@@ -35,6 +35,30 @@ def urlopen(url: str, timeout: int = 30) -> Any:
     return urllib.request.urlopen(request, timeout=timeout)
 
 
+def urlopen_post(url: str, data: bytes, timeout: int = 30) -> Any:
+    """Open URL with POST request and User-Agent header.
+
+    Creates a Request object with User-Agent header set to imitate
+    a popular browser, preventing blocking by search providers.
+    Sends data as POST request body.
+
+    Args:
+        url: URL to fetch
+        data: POST data as bytes
+        timeout: Request timeout in seconds (default: 30)
+
+    Returns:
+        HTTP response context manager
+
+    Raises:
+        urllib.error.URLError: If network request fails
+    """
+    request = urllib.request.Request(url, data=data)
+    request.add_header("User-Agent", USER_AGENT)
+    request.add_header("Content-Type", "application/json")
+    return urllib.request.urlopen(request, timeout=timeout)
+
+
 def build_magnet_link(
     info_hash: str, name: str, trackers: list[str] | None = None
 ) -> str:

@@ -12,6 +12,7 @@ from datetime import datetime
 import pytest
 
 from src.tewi.search.models import SearchResult, StandardCategories
+from src.tewi.search.providers.bitmagnet import BitmagnetProvider
 from src.tewi.search.providers.jackett import JackettProvider
 from src.tewi.search.providers.nyaa import NyaaProvider
 from src.tewi.search.providers.prowlarr import ProwlarrProvider
@@ -476,3 +477,38 @@ class TestProwlarrProviderIntegration(BaseProviderIntegrationTest):
         with pytest.raises(Exception) as exc_info:
             provider.search("test")
         assert "API key not configured" in str(exc_info.value)
+
+
+class TestBitmagnetProviderIntegration(BaseProviderIntegrationTest):
+    """Integration tests for Bitmagnet provider.
+
+    Note: Requires local Bitmagnet instance running at configured URL.
+    Uses environment variable for configuration.
+    """
+
+    def get_provider(self):
+        import os
+
+        bitmagnet_url = os.environ.get(
+            "TEST_BITMAGNET_URL", "http://localhost:3333"
+        )
+        return BitmagnetProvider(bitmagnet_url)
+
+    def get_search_query(self) -> str:
+        return "ubuntu"
+
+    def get_valid_categories(self) -> set:
+        # Bitmagnet doesn't provide categories directly,
+        # relies on base class refinement from torrent names
+        return set(StandardCategories.all_categories())
+
+    def requires_trackers(self) -> bool:
+        return False
+
+    def test_missing_config(self):
+        """Test behavior when configuration is missing."""
+        # Test with no URL
+        provider = BitmagnetProvider(None)
+        with pytest.raises(Exception) as exc_info:
+            provider.search("test")
+        assert "URL not configured" in str(exc_info.value)

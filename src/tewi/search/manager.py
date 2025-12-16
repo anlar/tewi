@@ -7,6 +7,7 @@ from ..util.log import get_logger
 from .base import BaseSearchProvider
 from .models import Category, Indexer, SearchResult
 from .providers import (
+    BitmagnetProvider,
     JackettProvider,
     NyaaProvider,
     ProwlarrProvider,
@@ -27,6 +28,7 @@ AVAILABLE_PROVIDERS = {
     "nyaa": NyaaProvider,
     "jackett": JackettProvider,
     "prowlarr": ProwlarrProvider,
+    "bitmagnet": BitmagnetProvider,
 }
 
 # Default provider order (used when no providers are configured)
@@ -38,6 +40,7 @@ DEFAULT_PROVIDER_ORDER = [
     "torrentscsv",
     "jackett",
     "prowlarr",
+    "bitmagnet",
 ]
 
 
@@ -53,6 +56,9 @@ def print_available_providers() -> None:
         if provider_id in ("jackett", "prowlarr"):
             # Jackett and Prowlarr need dummy args to instantiate
             instance = provider_class(None, None)
+        elif provider_id == "bitmagnet":
+            # Bitmagnet needs URL arg
+            instance = provider_class(None)
         else:
             instance = provider_class()
         print(f"  - {provider_id}: {instance.name}")
@@ -77,6 +83,7 @@ class SearchClient:
         jackett_api_key: str | None,
         prowlarr_url: str | None,
         prowlarr_api_key: str | None,
+        bitmagnet_url: str | None,
         enabled_providers: str | None = None,
     ):
         """Initialize search client with available providers.
@@ -86,6 +93,7 @@ class SearchClient:
             jackett_api_key: API key for Jackett authentication (optional)
             prowlarr_url: Base URL of Prowlarr instance (optional)
             prowlarr_api_key: API key for Prowlarr authentication (optional)
+            bitmagnet_url: Base URL of Bitmagnet instance (optional)
             enabled_providers: Comma-separated list of provider IDs to enable,
                              or None to enable all providers
         """
@@ -94,6 +102,7 @@ class SearchClient:
         self._jackett_api_key = jackett_api_key
         self._prowlarr_url = prowlarr_url
         self._prowlarr_api_key = prowlarr_api_key
+        self._bitmagnet_url = bitmagnet_url
         self._enabled_providers = self._parse_enabled_providers(
             enabled_providers
         )
@@ -191,6 +200,13 @@ class SearchClient:
                             provider_class(
                                 self._prowlarr_url, self._prowlarr_api_key
                             )
+                        )
+                elif provider_id == "bitmagnet":
+                    # Bitmagnet requires URL configuration
+                    if self._bitmagnet_url:
+                        provider_class = AVAILABLE_PROVIDERS[provider_id]
+                        self._providers.append(
+                            provider_class(self._bitmagnet_url)
                         )
                 else:
                     # Regular providers
@@ -327,7 +343,7 @@ class SearchClient:
             )
 
         # Sort by seeders for relevance
-        all_results.sort(key=lambda r: r.seeders, reverse=True)
+        all_results.sort(key=lambda r: r.seeders or 0, reverse=True)
 
         return all_results, errors
 

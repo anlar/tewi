@@ -13,6 +13,7 @@ handle multi-line list body as single line.
 ### Added
 
 - Add `--log-level` CLI and config option with 5 log levels (debug, info, warning, error, critical) [#152](https://github.com/anlar/tewi/issues/152)
+- Add Bitmagnet torrent search provider with GraphQL API integration [#153](https://github.com/anlar/tewi/issues/153)
 
 ### Changed
 

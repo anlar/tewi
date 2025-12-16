@@ -148,6 +148,7 @@ class MainApp(App):
         jackett_api_key: str,
         prowlarr_url: str,
         prowlarr_api_key: str,
+        bitmagnet_url: str,
         search_query: str,
         filter: str,
         badge_max_count: int,
@@ -194,6 +195,7 @@ class MainApp(App):
             jackett_api_key,
             prowlarr_url,
             prowlarr_api_key,
+            bitmagnet_url,
             search_providers,
         )
 
@@ -898,8 +900,15 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     p.add_argument(
         "--prowlarr-api-key",
         type=str,
+        default="http://localhost:3333",
         action=TrackSetAction,
         help="API key for Prowlarr authentication",
+    )
+    p.add_argument(
+        "--bitmagnet-url",
+        type=str,
+        action=TrackSetAction,
+        help="URL of your Bitmagnet instance",
     )
     p.add_argument(
         "--search-providers",
@@ -1089,6 +1098,7 @@ def create_app():
             jackett_api_key=args.jackett_api_key,
             prowlarr_url=args.prowlarr_url,
             prowlarr_api_key=args.prowlarr_api_key,
+            bitmagnet_url=args.bitmagnet_url,
             search_query=args.search,
             filter=args.filter,
             badge_max_count=args.badge_max_count,
