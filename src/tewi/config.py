@@ -347,8 +347,8 @@ prowlarr_api_key =
 bitmagnet_url =
 
 # Comma-separated list of enabled search providers
-# Available (default order): tpb, torrentz2, yts, nyaa, torrentscsv,
-#                            jackett, prowlarr
+# Available (default order): tpb, yts, nyaa, torrentscsv, jackett,
+#                            prowlarr, bitmagnet, torrentz2
 # Leave empty to enable all providers in default order
 # Order matters: providers listed first take priority when deduplicating
 # results and appear first in the search dialog

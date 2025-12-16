@@ -34,13 +34,13 @@ AVAILABLE_PROVIDERS = {
 # Default provider order (used when no providers are configured)
 DEFAULT_PROVIDER_ORDER = [
     "tpb",
-    "torrentz2",
     "yts",
     "nyaa",
     "torrentscsv",
     "jackett",
     "prowlarr",
     "bitmagnet",
+    "torrentz2",
 ]
 
 
