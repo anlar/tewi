@@ -20,6 +20,7 @@ class BitmagnetProvider(BaseSearchProvider):
 
     Bitmagnet provides access to DHT-crawled torrents via GraphQL API.
     Documentation: https://bitmagnet.io
+    Available endpoints: https://bitmagnet.io/guides/endpoints.html
     """
 
     # GraphQL query template with $QUERY placeholder
@@ -34,9 +35,12 @@ class BitmagnetProvider(BaseSearchProvider):
       }
     ) {
       items {
-        releaseGroup
         id
         infoHash
+        contentType
+        contentSource
+        contentId
+        title
         languages {
           id
           name
@@ -49,8 +53,16 @@ class BitmagnetProvider(BaseSearchProvider):
           }
         }
         videoResolution
+        videoSource
         videoCodec
+        video3d
+        videoModifier
+        releaseGroup
+        seeders
+        leechers
         publishedAt
+        createdAt
+        updatedAt
         torrent {
           infoHash
           name
@@ -71,6 +83,9 @@ class BitmagnetProvider(BaseSearchProvider):
           sources {
             key
             name
+            importId
+            seeders
+            leechers
           }
         }
       }
@@ -145,57 +160,97 @@ class BitmagnetProvider(BaseSearchProvider):
         if not result.fields:
             return ""
 
-        md = ""
+        sections = [
+            self._format_content_section(result.fields),
+            self._format_video_section(result.fields),
+            self._format_release_section(result.fields),
+            self._format_sources_section(result.fields),
+            self._format_tags_section(result.fields),
+            self._format_timestamps_section(result.fields),
+        ]
 
-        # Metadata section
-        metadata_fields = [
+        return "".join(s for s in sections if s)
+
+    def _format_content_section(self, fields: dict) -> str:
+        """Format content metadata section."""
+        field_defs = [
+            ("content_type", "Content Type"),
+            ("content_source", "Content Source"),
+            ("content_id", "Content ID"),
+        ]
+        return self._format_field_section("Content", fields, field_defs)
+
+    def _format_video_section(self, fields: dict) -> str:
+        """Format video metadata section."""
+        field_defs = [
+            ("video_resolution", "Resolution"),
+            ("video_source", "Source"),
+            ("video_codec", "Codec"),
+            ("video_3d", "3D"),
+            ("video_modifier", "Modifier"),
+        ]
+        return self._format_field_section("Video", fields, field_defs)
+
+    def _format_release_section(self, fields: dict) -> str:
+        """Format release metadata section."""
+        field_defs = [
             ("release_group", "Release Group"),
-            ("video_resolution", "Video Resolution"),
-            ("video_codec", "Video Codec"),
             ("languages", "Languages"),
             ("episodes", "Episodes"),
         ]
+        return self._format_field_section("Release", fields, field_defs)
 
-        metadata_lines = []
-        for field_key, field_label in metadata_fields:
-            value = result.fields.get(field_key)
-            if value:
-                metadata_lines.append(f"- **{field_label}:** {value}\n")
-
-        if metadata_lines:
-            md += "## Metadata\n"
-            md += "".join(metadata_lines)
-
-        # Sources section
-        sources = result.fields.get("sources")
+    def _format_sources_section(self, fields: dict) -> str:
+        """Format sources section."""
+        sources = fields.get("sources")
         if sources:
-            md += "\n## Sources\n"
-            md += f"- {sources}\n"
+            return f"\n## Sources\n- {sources}\n"
+        return ""
 
-        # Tags section
-        tags = result.fields.get("tag_names")
+    def _format_tags_section(self, fields: dict) -> str:
+        """Format tags section."""
+        tags = fields.get("tag_names")
         if tags:
-            md += "\n## Tags\n"
-            md += f"- {tags}\n"
+            return f"\n## Tags\n- {tags}\n"
+        return ""
 
-        # File info section
-        file_info_fields = [
+    def _format_timestamps_section(self, fields: dict) -> str:
+        """Format timestamps section."""
+        field_defs = [
             ("file_types", "File Types"),
-            ("created_at", "Created"),
-            ("updated_at", "Updated"),
+            ("item_created_at", "Item Created"),
+            ("item_updated_at", "Item Updated"),
+            ("torrent_created_at", "Torrent Created"),
+            ("torrent_updated_at", "Torrent Updated"),
         ]
+        return self._format_field_section("Timestamps", fields, field_defs)
 
-        file_info_lines = []
-        for field_key, field_label in file_info_fields:
-            value = result.fields.get(field_key)
+    def _format_field_section(
+        self,
+        title: str,
+        fields: dict,
+        field_defs: list[tuple[str, str]],
+    ) -> str:
+        """Format a section with field definitions.
+
+        Args:
+            title: Section title
+            fields: Field values dict
+            field_defs: List of (field_key, field_label) tuples
+
+        Returns:
+            Formatted section or empty string
+        """
+        lines = []
+        for field_key, field_label in field_defs:
+            value = fields.get(field_key)
             if value:
-                file_info_lines.append(f"- **{field_label}:** {value}\n")
+                lines.append(f"- **{field_label}:** {value}\n")
 
-        if file_info_lines:
-            md += "\n## File Info\n"
-            md += "".join(file_info_lines)
-
-        return md
+        if lines:
+            prefix = "\n" if title != "Content" else ""
+            return f"{prefix}## {title}\n" + "".join(lines)
+        return ""
 
     def _validate_config(self, bitmagnet_url: str | None) -> str | None:
         """Validate configuration and return error message if invalid.
@@ -350,8 +405,9 @@ class BitmagnetProvider(BaseSearchProvider):
                 return None
 
             # Extract optional numeric fields
-            seeders = torrent.get("seeders")
-            leechers = torrent.get("leechers")
+            # Prefer item-level seeders/leechers over torrent-level
+            seeders = item.get("seeders") or torrent.get("seeders")
+            leechers = item.get("leechers") or torrent.get("leechers")
             size = torrent.get("size")
             files_count = torrent.get("filesCount")
 
@@ -413,43 +469,94 @@ class BitmagnetProvider(BaseSearchProvider):
             Dictionary of provider-specific fields or None if empty
         """
         torrent = item.get("torrent", {})
-        fields = {}
+        fields: dict[str, str] = {}
 
-        # Simple string fields from item
-        simple_item_fields = [
+        # Extract all field types
+        self._extract_content_fields(item, fields)
+        self._extract_video_fields(item, fields)
+        self._extract_timestamp_fields(item, torrent, fields)
+        self._extract_list_fields(torrent, fields)
+        self._extract_complex_fields(item, torrent, fields)
+
+        return fields if fields else None
+
+    def _extract_content_fields(
+        self, item: dict[str, Any], fields: dict[str, str]
+    ) -> None:
+        """Extract content metadata fields."""
+        field_map = [
+            ("contentType", "content_type"),
+            ("contentSource", "content_source"),
+            ("contentId", "content_id"),
+        ]
+        self._extract_simple_fields(item, fields, field_map)
+
+    def _extract_video_fields(
+        self, item: dict[str, Any], fields: dict[str, str]
+    ) -> None:
+        """Extract video metadata fields."""
+        field_map = [
             ("releaseGroup", "release_group"),
             ("videoResolution", "video_resolution"),
+            ("videoSource", "video_source"),
             ("videoCodec", "video_codec"),
+            ("video3d", "video_3d"),
+            ("videoModifier", "video_modifier"),
+        ]
+        self._extract_simple_fields(item, fields, field_map)
+
+    def _extract_timestamp_fields(
+        self,
+        item: dict[str, Any],
+        torrent: dict[str, Any],
+        fields: dict[str, str],
+    ) -> None:
+        """Extract and format timestamp fields from item and torrent."""
+        item_field_map = [
+            ("createdAt", "item_created_at"),
+            ("updatedAt", "item_updated_at"),
+        ]
+        torrent_field_map = [
+            ("createdAt", "torrent_created_at"),
+            ("updatedAt", "torrent_updated_at"),
         ]
 
-        for source_key, target_key in simple_item_fields:
+        # Extract and format item timestamps
+        for source_key, target_key in item_field_map:
             value = item.get(source_key)
             if value:
-                fields[target_key] = value
+                formatted = self._format_timestamp(value)
+                if formatted:
+                    fields[target_key] = formatted
 
-        # Simple string fields from torrent
-        simple_torrent_fields = [
-            ("createdAt", "created_at"),
-            ("updatedAt", "updated_at"),
-        ]
-
-        for source_key, target_key in simple_torrent_fields:
+        # Extract and format torrent timestamps
+        for source_key, target_key in torrent_field_map:
             value = torrent.get(source_key)
             if value:
-                fields[target_key] = value
+                formatted = self._format_timestamp(value)
+                if formatted:
+                    fields[target_key] = formatted
 
-        # List fields that need joining
-        list_fields = [
+    def _extract_list_fields(
+        self, torrent: dict[str, Any], fields: dict[str, str]
+    ) -> None:
+        """Extract list fields that need joining."""
+        list_field_map = [
             ("fileTypes", "file_types"),
             ("tagNames", "tag_names"),
         ]
-
-        for source_key, target_key in list_fields:
+        for source_key, target_key in list_field_map:
             value = torrent.get(source_key, [])
             if value:
                 fields[target_key] = ", ".join(value)
 
-        # Complex fields with custom formatting
+    def _extract_complex_fields(
+        self,
+        item: dict[str, Any],
+        torrent: dict[str, Any],
+        fields: dict[str, str],
+    ) -> None:
+        """Extract complex fields with custom formatting."""
         languages = self._format_languages(item.get("languages", []))
         if languages:
             fields["languages"] = languages
@@ -462,7 +569,17 @@ class BitmagnetProvider(BaseSearchProvider):
         if sources:
             fields["sources"] = sources
 
-        return fields if fields else None
+    def _extract_simple_fields(
+        self,
+        source: dict[str, Any],
+        fields: dict[str, str],
+        field_map: list[tuple[str, str]],
+    ) -> None:
+        """Extract simple string fields from source to fields dict."""
+        for source_key, target_key in field_map:
+            value = source.get(source_key)
+            if value:
+                fields[target_key] = value
 
     def _format_languages(self, languages: list[dict]) -> str:
         """Format languages list to comma-separated string.
@@ -529,20 +646,65 @@ class BitmagnetProvider(BaseSearchProvider):
         return " ".join(parts) if parts else ""
 
     def _format_sources(self, sources: list[dict]) -> str:
-        """Format sources list to comma-separated string.
+        """Format sources list to detailed string.
 
         Args:
-            sources: List of source dicts with 'name' field
+            sources: List of source dicts with 'name', 'key', etc.
 
         Returns:
-            Comma-separated source names or empty string
+            Formatted source information or empty string
         """
         if not sources:
             return ""
 
-        names = []
+        source_parts = []
         for source in sources:
-            if isinstance(source, dict) and "name" in source:
-                names.append(source["name"])
+            if not isinstance(source, dict):
+                continue
 
-        return ", ".join(names) if names else ""
+            name = source.get("name", "")
+            key = source.get("key", "")
+            seeders = source.get("seeders")
+            leechers = source.get("leechers")
+
+            # Build source entry with available data
+            parts = []
+            if name:
+                parts.append(name)
+            elif key:
+                parts.append(key)
+
+            # Add peer counts if available
+            peer_info = []
+            if seeders is not None:
+                peer_info.append(f"S:{seeders}")
+            if leechers is not None:
+                peer_info.append(f"L:{leechers}")
+
+            if peer_info:
+                parts.append(f"({'/'.join(peer_info)})")
+
+            if parts:
+                source_parts.append(" ".join(parts))
+
+        return ", ".join(source_parts) if source_parts else ""
+
+    def _format_timestamp(self, timestamp: str) -> str:
+        """Format ISO 8601 timestamp to human-readable format.
+
+        Args:
+            timestamp: ISO 8601 timestamp string
+
+        Returns:
+            Formatted timestamp string or empty string if parsing fails
+        """
+        if not timestamp:
+            return ""
+
+        try:
+            # Parse ISO 8601 format with Z timezone
+            dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+            # Format as: 2025-12-16 14:30
+            return dt.strftime("%Y-%m-%d %H:%M")
+        except (ValueError, AttributeError):
+            return timestamp  # Return original if parsing fails
