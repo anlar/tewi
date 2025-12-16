@@ -9,7 +9,7 @@ from typing import Any
 
 from ...util.log import get_logger, log_time
 from ..base import BaseSearchProvider
-from ..models import SearchResult
+from ..models import Category, SearchResult, StandardCategories
 from ..util import urlopen_post
 
 logger = get_logger()
@@ -92,6 +92,21 @@ class BitmagnetProvider(BaseSearchProvider):
     }
   }
 }"""
+
+    # Mapping of Bitmagnet ContentType enum to StandardCategories
+    # Source: https://github.com/bitmagnet-io/bitmagnet/blob/main/internal/protobuf/bitmagnet.proto
+    CONTENT_TYPE_CATEGORY_MAP = {
+        "movie": StandardCategories.MOVIES,  # 1
+        "tv_show": StandardCategories.TV,  # 2
+        "music": StandardCategories.AUDIO,  # 3
+        "ebook": StandardCategories.BOOKS,  # 4
+        "comic": StandardCategories.BOOKS_COMICS,  # 5
+        "audiobook": StandardCategories.AUDIO_AUDIOBOOK,  # 6
+        "game": StandardCategories.PC,  # 7
+        "software": StandardCategories.PC,  # 8
+        "xxx": StandardCategories.XXX,  # 9
+        # "unknown" (0) -> not in map, returns empty list
+    }
 
     def __init__(self, bitmagnet_url: str | None = None) -> None:
         """Initialize Bitmagnet provider with configuration.
@@ -403,6 +418,9 @@ class BitmagnetProvider(BaseSearchProvider):
             # Build extended metadata fields
             fields = self._build_fields(item)
 
+            # Detect category from contentType
+            categories = self._detect_category(item)
+
             return SearchResult(
                 title=title,
                 info_hash=info_hash,
@@ -410,7 +428,7 @@ class BitmagnetProvider(BaseSearchProvider):
                 torrent_link=None,
                 provider=self.name,
                 provider_id=self.id,
-                categories=[],  # TODO: detect category
+                categories=categories,
                 seeders=seeders,
                 leechers=leechers,
                 downloads=None,
@@ -444,6 +462,28 @@ class BitmagnetProvider(BaseSearchProvider):
             return datetime.fromisoformat(publish_date.replace("Z", "+00:00"))
         except (ValueError, AttributeError):
             return None
+
+    def _detect_category(self, item: dict[str, Any]) -> list[Category]:
+        """Detect category from Bitmagnet contentType field.
+
+        Maps Bitmagnet ContentType enum to StandardCategories using
+        CONTENT_TYPE_CATEGORY_MAP. Unknown or missing types return
+        empty list.
+
+        Args:
+            item: Item dict from Bitmagnet GraphQL response
+
+        Returns:
+            List containing detected category, or empty list if unknown
+        """
+        content_type = item.get("contentType")
+        if not content_type:
+            return []
+
+        content_type_lower = content_type.lower()
+        category = self.CONTENT_TYPE_CATEGORY_MAP.get(content_type_lower)
+
+        return [category] if category else []
 
     def _build_fields(self, item: dict[str, Any]) -> dict[str, str] | None:
         """Build provider-specific fields dict from extended metadata.
