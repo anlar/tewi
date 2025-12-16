@@ -343,7 +343,7 @@ class SearchClient:
             )
 
         # Sort by seeders for relevance
-        all_results.sort(key=lambda r: r.seeders, reverse=True)
+        all_results.sort(key=lambda r: r.seeders or 0, reverse=True)
 
         return all_results, errors
 
