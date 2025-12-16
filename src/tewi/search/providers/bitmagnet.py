@@ -421,6 +421,11 @@ class BitmagnetProvider(BaseSearchProvider):
             # Detect category from contentType
             categories = self._detect_category(item)
 
+            page_url = (
+                f"{self.bitmagnet_url.rstrip('/')}/webui/torrents/"
+                f"permalink/{info_hash}"
+            )
+
             return SearchResult(
                 title=title,
                 info_hash=info_hash,
@@ -435,7 +440,7 @@ class BitmagnetProvider(BaseSearchProvider):
                 size=size,
                 files_count=files_count,
                 upload_date=upload_date,
-                page_url=None,  # TODO: page url
+                page_url=page_url,
                 freeleech=True,  # Public
                 fields=fields,
             )
