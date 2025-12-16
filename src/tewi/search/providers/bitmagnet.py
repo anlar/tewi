@@ -164,19 +164,20 @@ class BitmagnetProvider(BaseSearchProvider):
             self._format_content_section(result.fields),
             self._format_video_section(result.fields),
             self._format_release_section(result.fields),
-            self._format_sources_section(result.fields),
-            self._format_tags_section(result.fields),
             self._format_timestamps_section(result.fields),
         ]
 
         return "".join(s for s in sections if s)
 
     def _format_content_section(self, fields: dict) -> str:
-        """Format content metadata section."""
+        """Format content metadata section including sources and tags."""
         field_defs = [
             ("content_type", "Content Type"),
             ("content_source", "Content Source"),
             ("content_id", "Content ID"),
+            ("file_types", "File Types"),
+            ("tag_names", "Tags"),
+            ("sources", "Sources"),
         ]
         return self._format_field_section("Content", fields, field_defs)
 
@@ -200,24 +201,9 @@ class BitmagnetProvider(BaseSearchProvider):
         ]
         return self._format_field_section("Release", fields, field_defs)
 
-    def _format_sources_section(self, fields: dict) -> str:
-        """Format sources section."""
-        sources = fields.get("sources")
-        if sources:
-            return f"\n## Sources\n- {sources}\n"
-        return ""
-
-    def _format_tags_section(self, fields: dict) -> str:
-        """Format tags section."""
-        tags = fields.get("tag_names")
-        if tags:
-            return f"\n## Tags\n- {tags}\n"
-        return ""
-
     def _format_timestamps_section(self, fields: dict) -> str:
         """Format timestamps section."""
         field_defs = [
-            ("file_types", "File Types"),
             ("item_created_at", "Item Created"),
             ("item_updated_at", "Item Updated"),
             ("torrent_created_at", "Torrent Created"),
