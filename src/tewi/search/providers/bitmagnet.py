@@ -23,7 +23,7 @@ class BitmagnetProvider(BaseSearchProvider):
     Available endpoints: https://bitmagnet.io/guides/endpoints.html
     """
 
-    # GraphQL query template with $QUERY placeholder
+    # GraphQL query template for search with $QUERY placeholder
     GRAPHQL_QUERY = """{
   torrentContent {
     search(
@@ -86,6 +86,47 @@ class BitmagnetProvider(BaseSearchProvider):
             importId
             seeders
             leechers
+          }
+        }
+      }
+    }
+  }
+}"""
+
+    # GraphQL query template for fetching torrent details by info hash
+    GRAPHQL_DETAILS_QUERY = """{
+  torrentContent {
+    search(
+      input: {
+        queryString: "$INFOHASH"
+      }
+    ) {
+      items {
+        infoHash
+        content {
+          type
+          source
+          id
+          title
+          releaseDate
+          releaseYear
+          adult
+          originalLanguage {
+            id
+            name
+          }
+          originalTitle
+          overview
+          runtime
+          popularity
+          voteAverage
+          voteCount
+          externalLinks {
+            metadataSource {
+              key
+              name
+            }
+            url
           }
         }
       }
@@ -164,7 +205,8 @@ class BitmagnetProvider(BaseSearchProvider):
     def details_extended(self, result: SearchResult) -> str:
         """Generate Bitmagnet-specific details for right column.
 
-        Prints extended metadata from the search result.
+        Prints extended metadata from the search result. Attempts to fetch
+        additional content details from GraphQL API with 5-second timeout.
 
         Args:
             result: Search result to format
@@ -175,11 +217,22 @@ class BitmagnetProvider(BaseSearchProvider):
         if not result.fields:
             return ""
 
+        # Try to fetch additional torrent details
+        fields = dict(result.fields) if result.fields else {}
+        try:
+            content_details = self._fetch_content_details(result.info_hash)
+            if content_details:
+                # Merge additional fields from content details
+                fields.update(content_details)
+        except Exception as e:
+            logger.debug(f"Bitmagnet: failed to fetch content details: {e}")
+
         sections = [
-            self._format_content_section(result.fields),
-            self._format_video_section(result.fields),
-            self._format_release_section(result.fields),
-            self._format_timestamps_section(result.fields),
+            self._format_content_section(fields),
+            self._format_video_section(fields),
+            self._format_release_section(fields),
+            self._format_links_section(fields),
+            self._format_timestamps_section(fields),
         ]
 
         return "".join(s for s in sections if s)
@@ -190,6 +243,16 @@ class BitmagnetProvider(BaseSearchProvider):
             ("content_type", "Content Type"),
             ("content_source", "Content Source"),
             ("content_id", "Content ID"),
+            ("content_title", "Title"),
+            ("original_title", "Original Title"),
+            ("release_year", "Release Year"),
+            ("release_date", "Release Date"),
+            ("original_language", "Original Language"),
+            ("runtime", "Runtime"),
+            ("rating", "Rating"),
+            ("popularity", "Popularity"),
+            ("adult", "Adult"),
+            ("overview", "Overview"),
             ("file_types", "File Types"),
             ("tag_names", "Tags"),
             ("sources", "Sources"),
@@ -215,6 +278,24 @@ class BitmagnetProvider(BaseSearchProvider):
             ("episodes", "Episodes"),
         ]
         return self._format_field_section("Release", fields, field_defs)
+
+    def _format_links_section(self, fields: dict) -> str:
+        """Format external links section."""
+        links_data = fields.get("external_links")
+        if not links_data:
+            return ""
+
+        # links_data is a list of tuples: [(name, url), ...]
+        if not isinstance(links_data, list):
+            return ""
+
+        lines = []
+        for name, url in links_data:
+            lines.append(f"- **{name}:** {url}\n")
+
+        if lines:
+            return "\n## Links\n" + "".join(lines)
+        return ""
 
     def _format_timestamps_section(self, fields: dict) -> str:
         """Format timestamps section."""
@@ -344,6 +425,140 @@ class BitmagnetProvider(BaseSearchProvider):
             )
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse Bitmagnet response: {e}")
+
+    def _fetch_content_details(self, info_hash: str) -> dict[str, Any] | None:
+        """Fetch detailed content metadata for a torrent by info hash.
+
+        Args:
+            info_hash: Torrent info hash
+
+        Returns:
+            Dictionary of additional fields or None if fetch fails
+        """
+        if self._config_error:
+            return None
+
+        try:
+            # Build GraphQL query for details
+            escaped_hash = json.dumps(info_hash)[1:-1]
+            query_str = self.GRAPHQL_DETAILS_QUERY.replace(
+                "$INFOHASH", escaped_hash
+            )
+            query_body = {"query": query_str}
+
+            # Fetch with 5-second timeout
+            url = f"{self.bitmagnet_url.rstrip('/')}/graphql"
+            post_data = json.dumps(query_body).encode("utf-8")
+
+            logger.debug(f"Bitmagnet: fetching content details for {info_hash}")
+            with urlopen_post(url, data=post_data, timeout=5) as response:
+                response_data = json.loads(response.read().decode("utf-8"))
+
+            # Navigate to content object
+            items = (
+                response_data.get("data", {})
+                .get("torrentContent", {})
+                .get("search", {})
+                .get("items", [])
+            )
+
+            if not items or not items[0].get("content"):
+                return None
+
+            content = items[0]["content"]
+            return self._parse_content_details(content)
+
+        except Exception as e:
+            logger.debug(f"Bitmagnet: error fetching content details: {e}")
+            return None
+
+    def _parse_content_details(self, content: dict[str, Any]) -> dict[str, Any]:
+        """Parse content details into displayable fields.
+
+        Args:
+            content: Content object from GraphQL response
+
+        Returns:
+            Dictionary of formatted fields (mostly strings, but may include
+            lists for complex fields like external_links)
+        """
+        fields: dict[str, Any] = {}
+
+        # Extract various field types
+        self._parse_simple_content_fields(content, fields)
+        self._parse_numeric_content_fields(content, fields)
+        self._parse_additional_content_fields(content, fields)
+
+        return fields
+
+    def _parse_simple_content_fields(
+        self, content: dict[str, Any], fields: dict[str, Any]
+    ) -> None:
+        """Parse simple string fields from content."""
+        simple_fields = [
+            ("title", "content_title"),
+            ("originalTitle", "original_title"),
+            ("overview", "overview"),
+        ]
+
+        for source_key, target_key in simple_fields:
+            value = content.get(source_key)
+            if value:
+                fields[target_key] = value
+
+    def _parse_numeric_content_fields(
+        self, content: dict[str, Any], fields: dict[str, Any]
+    ) -> None:
+        """Parse numeric fields from content."""
+        if content.get("releaseYear"):
+            fields["release_year"] = str(content["releaseYear"])
+
+        if content.get("runtime"):
+            fields["runtime"] = f"{content['runtime']} min"
+
+        if content.get("voteAverage"):
+            avg = content["voteAverage"]
+            count = content.get("voteCount", 0)
+            fields["rating"] = f"{avg:.1f}/10 ({count} votes)"
+
+        if content.get("popularity"):
+            fields["popularity"] = f"{content['popularity']:.1f}"
+
+    def _parse_additional_content_fields(
+        self, content: dict[str, Any], fields: dict[str, Any]
+    ) -> None:
+        """Parse additional fields from content."""
+        # Boolean fields
+        if content.get("adult"):
+            fields["adult"] = "Yes"
+
+        # Release date
+        if content.get("releaseDate"):
+            fields["release_date"] = content["releaseDate"]
+
+        # Original language
+        orig_lang = content.get("originalLanguage")
+        if orig_lang and isinstance(orig_lang, dict):
+            lang_name = orig_lang.get("name")
+            if lang_name:
+                fields["original_language"] = lang_name
+
+        # External links - store as list of tuples for separate section
+        ext_links = content.get("externalLinks", [])
+        if ext_links:
+            link_tuples = []
+            for link in ext_links:
+                if not isinstance(link, dict):
+                    continue
+                url = link.get("url")
+                meta_source = link.get("metadataSource", {})
+                source_name = meta_source.get("name", "Link")
+                if url:
+                    link_tuples.append((source_name, url))
+
+            if link_tuples:
+                # Store as list for _format_links_section to process
+                fields["external_links"] = link_tuples
 
     def _process_results(self, data: dict) -> list[SearchResult]:
         """Process API response and convert to SearchResult list.
