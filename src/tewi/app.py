@@ -235,13 +235,7 @@ class MainApp(App):
                     ),
                     id="torrent-info",
                 )
-                yield TorrentWebSearch(
-                    jackett_url=self.jackett_url,
-                    jackett_api_key=self.jackett_api_key,
-                    prowlarr_url=self.prowlarr_url,
-                    prowlarr_api_key=self.prowlarr_api_key,
-                    id="torrent-websearch",
-                )
+                yield TorrentWebSearch(id="torrent-websearch")
 
         yield StatePanel().data_bind(
             r_session=MainApp.r_session,

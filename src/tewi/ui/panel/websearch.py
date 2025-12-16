@@ -10,15 +10,6 @@ from textual.reactive import reactive
 from textual.widgets import DataTable, Static
 
 from ...search.models import SearchResult
-from ...search.providers import (
-    JackettProvider,
-    NyaaProvider,
-    ProwlarrProvider,
-    TorrentsCsvProvider,
-    Torrentz2Provider,
-    TPBProvider,
-    YTSProvider,
-)
 from ...util.log import log_time
 from ..dialog.torrent_details import TorrentDetailsDialog
 from ..messages import (
@@ -54,24 +45,10 @@ class TorrentWebSearch(Static):
     # to cover case when search executes on the same query twice
     r_results: list[SearchResult] = reactive(list, always_update=True)
 
-    def __init__(
-        self,
-        jackett_url: str | None = None,
-        jackett_api_key: str | None = None,
-        prowlarr_url: str | None = None,
-        prowlarr_api_key: str | None = None,
-        **kwargs,
-    ) -> None:
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        self.providers = [
-            YTSProvider(),
-            TorrentsCsvProvider(),
-            Torrentz2Provider(),
-            TPBProvider(),
-            NyaaProvider(),
-            JackettProvider(jackett_url, jackett_api_key),
-            ProwlarrProvider(prowlarr_url, prowlarr_api_key),
-        ]
+
+        self.providers = self.app.search.get_providers()
 
         # Workaround to get color from theme, because DataTable doesn't
         # support CSS variables lik $success.
