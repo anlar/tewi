@@ -1,3 +1,6 @@
+import os
+import platform
+import subprocess
 from datetime import datetime
 
 from textual import on
@@ -36,6 +39,12 @@ class TorrentInfoPanel(ScrollableContainer):
         Binding("p,3", "open_tab('tab-peers')", "[Navigation] Open Peers"),
         Binding(
             "t,4", "open_tab('tab-trackers')", "[Navigation] Open Trackers"
+        ),
+        Binding(
+            "enter",
+            "open_file",
+            "[Files] Open file",
+            priority=True,
         ),
         Binding(
             "space",
@@ -640,6 +649,69 @@ class TorrentInfoPanel(ScrollableContainer):
                 priority=target_priority,
             )
         )
+
+    @log_time
+    def _open_file_with_system_app(self, file_path: str):
+        """Open file using platform-specific default application."""
+        system = platform.system()
+        if system == "Linux":
+            subprocess.Popen(["xdg-open", file_path])
+        elif system == "Darwin":  # macOS
+            subprocess.Popen(["open", file_path])
+        elif system == "Windows":
+            os.startfile(file_path)
+
+    @log_time
+    def action_open_file(self):
+        """Open selected file with platform-specific default application."""
+        # Only handle if we're on the files tab
+        if (
+            self.active_tab_id() != "tab-files"
+            or not self.r_torrent
+            or not self.file_list
+        ):
+            return
+
+        table = self.query_one("#files")
+        cursor_row = table.cursor_row
+
+        # Check if cursor is at a valid position
+        if (
+            cursor_row is None
+            or cursor_row < 0
+            or cursor_row >= len(self.file_list)
+        ):
+            return
+
+        selected_item = self.file_list[cursor_row]
+
+        # Only open if it's a file (not a directory)
+        if not selected_item["is_file"]:
+            return
+
+        # Get file ID and find corresponding file in torrent
+        file_id = selected_item.get("id")
+        if file_id is None:
+            return
+
+        # Find the file with this ID
+        torrent_file = next(
+            (f for f in self.r_torrent.files if f.id == file_id), None
+        )
+        if not torrent_file:
+            return
+
+        # Construct full file path
+        location = self.r_torrent.download_dir
+        file_path = os.path.join(location, torrent_file.name)
+
+        # Check if file exists and open it
+        if os.path.exists(file_path):
+            try:
+                self._open_file_with_system_app(file_path)
+            except Exception:
+                # Silently fail if opening doesn't work
+                pass
 
     @log_time
     @on(TabbedContent.TabActivated)
