@@ -340,8 +340,11 @@ prowlarr_url =
 prowlarr_api_key =
 
 # Comma-separated list of enabled search providers
-# Available: tpb, torrentscsv, yts, nyaa, jackett, prowlarr
-# Leave empty to enable all providers
+# Available (default order): tpb, torrentz2, yts, nyaa, torrentscsv,
+#                            jackett, prowlarr
+# Leave empty to enable all providers in default order
+# Order matters: providers listed first take priority when deduplicating
+# results and appear first in the search dialog
 providers =
 
 [debug]

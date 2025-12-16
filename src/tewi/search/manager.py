@@ -29,11 +29,25 @@ AVAILABLE_PROVIDERS = {
     "prowlarr": ProwlarrProvider,
 }
 
+# Default provider order (used when no providers are configured)
+DEFAULT_PROVIDER_ORDER = [
+    "tpb",
+    "torrentz2",
+    "yts",
+    "nyaa",
+    "torrentscsv",
+    "jackett",
+    "prowlarr",
+]
+
 
 def print_available_providers() -> None:
-    """Print list of all available search providers to stdout."""
-    print("Available search providers:")
-    for provider_id in sorted(AVAILABLE_PROVIDERS.keys()):
+    """Print list of all available search providers to stdout.
+
+    Providers are listed in default order.
+    """
+    print("Available search providers (default order):")
+    for provider_id in DEFAULT_PROVIDER_ORDER:
         provider_class = AVAILABLE_PROVIDERS[provider_id]
         # Create temporary instance to get name
         if provider_id in ("jackett", "prowlarr"):
@@ -86,7 +100,7 @@ class SearchClient:
 
     def _parse_enabled_providers(
         self, enabled_providers: str | None
-    ) -> set[str] | None:
+    ) -> list[str] | None:
         """Parse and validate enabled providers list.
 
         Args:
@@ -94,7 +108,8 @@ class SearchClient:
                              or None to enable all
 
         Returns:
-            Set of validated provider IDs, or None for all providers
+            List of validated provider IDs (preserving order),
+            or None for all providers
 
         Raises:
             SystemExit: If unknown provider ID is specified
@@ -129,30 +144,36 @@ class SearchClient:
             )
             sys.exit(1)
 
-        return set(provider_ids)
+        return provider_ids
 
     def get_providers(self) -> list[BaseSearchProvider]:
         """Get list of all search providers, initializing them if needed.
 
         Providers are created lazily on first access for better performance.
         Only enabled providers are initialized based on configuration.
+        Provider order is preserved from configuration or uses default order.
 
         Returns:
-            List of BaseSearchProvider instances
+            List of BaseSearchProvider instances in configured order
         """
         if self._providers is None:
             self._providers = []
 
-            # Determine which providers to enable
+            # Determine which providers to enable and their order
             if self._enabled_providers is None:
-                # All providers enabled
-                enabled_ids = set(AVAILABLE_PROVIDERS.keys())
+                # All providers enabled - use default order
+                # Only include providers that exist
+                enabled_ids = [
+                    p
+                    for p in DEFAULT_PROVIDER_ORDER
+                    if p in AVAILABLE_PROVIDERS
+                ]
             else:
-                # Only specified providers enabled
+                # Use configured order
                 enabled_ids = self._enabled_providers
 
-            # Initialize enabled providers (sorted for consistent order)
-            for provider_id in sorted(enabled_ids):
+            # Initialize enabled providers in order
+            for provider_id in enabled_ids:
                 if provider_id == "jackett":
                     # Jackett requires configuration
                     if self._jackett_url and self._jackett_api_key:
@@ -182,9 +203,11 @@ class SearchClient:
         """Get list of all available indexers from all providers.
 
         Fetches indexers from all providers in parallel for better performance.
+        Returns indexers in provider order (as configured or default).
+        Indexers within each provider are sorted alphabetically by name.
 
         Returns:
-            List of Indexer objects representing all available indexers
+            List of Indexer objects in provider order
         """
         providers = self.get_providers()
         if not providers:
@@ -192,15 +215,22 @@ class SearchClient:
 
         all_indexers = []
         with ThreadPoolExecutor(max_workers=len(providers)) as executor:
+            # Submit all tasks and maintain provider order
             future_to_provider = {
                 executor.submit(provider.indexers): provider
                 for provider in providers
             }
 
-            for future in as_completed(future_to_provider):
-                provider = future_to_provider[future]
+            # Collect results in provider order, not completion order
+            for provider in providers:
+                # Find the future for this provider
+                future = next(
+                    f for f, p in future_to_provider.items() if p is provider
+                )
                 try:
                     indexers = future.result()
+                    # Sort indexers alphabetically within this provider
+                    indexers.sort(key=lambda idx: idx.name.lower())
                     all_indexers.extend(indexers)
                 except Exception as e:
                     # Log error but continue with other providers
@@ -220,7 +250,8 @@ class SearchClient:
 
         Executes searches across all selected providers concurrently,
         deduplicates results by info_hash, filters by category, and
-        sorts by seeders.
+        sorts by seeders. When deduplicating, results from providers
+        earlier in the configuration take priority.
 
         Args:
             query: Search term to query providers with
@@ -241,7 +272,7 @@ class SearchClient:
         # Filter providers based on selected indexers
         providers_to_search = self._filter_providers(selected_indexers)
 
-        # Execute all provider searches in parallel
+        # Execute all provider searches in parallel, maintaining order
         with ThreadPoolExecutor(
             max_workers=len(providers_to_search)
         ) as executor:
@@ -249,22 +280,29 @@ class SearchClient:
             future_to_provider = {
                 executor.submit(
                     provider.search, query, selected_categories, indexers
-                ): provider
-                for provider, indexers in providers_to_search
+                ): (provider, idx)
+                for idx, (provider, indexers) in enumerate(providers_to_search)
             }
 
-            # Collect results as they complete
+            # Collect results in provider order for proper deduplication
+            results_by_provider = {}
             for future in as_completed(future_to_provider):
-                provider = future_to_provider[future]
+                provider, idx = future_to_provider[future]
                 try:
                     provider_results = future.result()
-                    all_results.extend(provider_results)
+                    results_by_provider[idx] = provider_results
                 except Exception as e:
                     # Log error but continue with other providers
                     errors.append(f"{provider.name}: {str(e)}")
                     logger.exception(f"Failed to search {provider.name}")
+                    results_by_provider[idx] = []
 
-        # Deduplicate by info_hash, keeping result with highest seeders
+            # Process results in provider order
+            for idx in sorted(results_by_provider.keys()):
+                all_results.extend(results_by_provider[idx])
+
+        # Deduplicate by info_hash, keeping first occurrence (by provider
+        # order)
         best_results = {}
         for result in all_results:
             # Use info_hash as key; fall back to title:size for results without
@@ -275,11 +313,9 @@ class SearchClient:
                 hash_key = f"__no_hash__{result.title}:{result.size}"
 
             if hash_key not in best_results:
+                # First occurrence - keep it
                 best_results[hash_key] = result
-            else:
-                # Keep the result with more seeders
-                if result.seeders > best_results[hash_key].seeders:
-                    best_results[hash_key] = result
+            # Else: duplicate - skip it (first provider takes priority)
 
         # Convert back to list
         all_results = list(best_results.values())

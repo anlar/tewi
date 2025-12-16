@@ -912,8 +912,9 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         type=str,
         action=TrackSetAction,
         help="Comma-separated list of enabled search providers "
-        "(tpb, torrentscsv, yts, nyaa, jackett, prowlarr). "
-        "Leave empty to enable all",
+        "(default order: tpb, torrentz2, yts, nyaa, torrentscsv, "
+        "jackett, prowlarr). Leave empty to enable all in default order. "
+        "Order matters: first providers take priority when deduplicating",
     )
     p.add_argument(
         "--list-search-providers",
