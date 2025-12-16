@@ -39,8 +39,10 @@ Features:
 - View torrent client preferences
 - Dark and light color themes
 - Search torrents on popular trackers (built-in search providers,
-  [Jackett](https://github.com/Jackett/Jackett) and
-  [Prowlarr](https://github.com/Prowlarr/Prowlarr) integration)
+  [Jackett](https://github.com/Jackett/Jackett),
+  [Prowlarr](https://github.com/Prowlarr/Prowlarr) and
+  [bitmagnet](https://github.com/bitmagnet-io/bitmagnet)
+  integrations)
 - Support for configuration files and different configuration profiles
 
 ### Built With
