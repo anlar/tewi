@@ -415,54 +415,52 @@ class BitmagnetProvider(BaseSearchProvider):
         torrent = item.get("torrent", {})
         fields = {}
 
-        # Release group
-        release_group = item.get("releaseGroup")
-        if release_group:
-            fields["release_group"] = release_group
+        # Simple string fields from item
+        simple_item_fields = [
+            ("releaseGroup", "release_group"),
+            ("videoResolution", "video_resolution"),
+            ("videoCodec", "video_codec"),
+        ]
 
-        # Video resolution
-        video_resolution = item.get("videoResolution")
-        if video_resolution:
-            fields["video_resolution"] = video_resolution
+        for source_key, target_key in simple_item_fields:
+            value = item.get(source_key)
+            if value:
+                fields[target_key] = value
 
-        # Video codec
-        video_codec = item.get("videoCodec")
-        if video_codec:
-            fields["video_codec"] = video_codec
+        # Simple string fields from torrent
+        simple_torrent_fields = [
+            ("createdAt", "created_at"),
+            ("updatedAt", "updated_at"),
+        ]
 
-        # Languages
+        for source_key, target_key in simple_torrent_fields:
+            value = torrent.get(source_key)
+            if value:
+                fields[target_key] = value
+
+        # List fields that need joining
+        list_fields = [
+            ("fileTypes", "file_types"),
+            ("tagNames", "tag_names"),
+        ]
+
+        for source_key, target_key in list_fields:
+            value = torrent.get(source_key, [])
+            if value:
+                fields[target_key] = ", ".join(value)
+
+        # Complex fields with custom formatting
         languages = self._format_languages(item.get("languages", []))
         if languages:
             fields["languages"] = languages
 
-        # Episodes
         episodes = self._format_episodes(item.get("episodes"))
         if episodes:
             fields["episodes"] = episodes
 
-        # Sources
         sources = self._format_sources(torrent.get("sources", []))
         if sources:
             fields["sources"] = sources
-
-        # File types
-        file_types = torrent.get("fileTypes", [])
-        if file_types:
-            fields["file_types"] = ", ".join(file_types)
-
-        # Tag names
-        tag_names = torrent.get("tagNames", [])
-        if tag_names:
-            fields["tag_names"] = ", ".join(tag_names)
-
-        # Created/Updated timestamps
-        created_at = torrent.get("createdAt")
-        if created_at:
-            fields["created_at"] = created_at
-
-        updated_at = torrent.get("updatedAt")
-        if updated_at:
-            fields["updated_at"] = updated_at
 
         return fields if fields else None
 
