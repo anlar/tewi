@@ -24,6 +24,10 @@ handle multi-line list body as single line.
 - By default enable only built-in search providers
 - YTS provider: Strip query parameters from page URLs for cleaner links
 
+### Fixed
+
+- TPB provider: Fix parsing error when num_files field is missing from API response
+
 ### Removed
 
 - Remove `--logs` CLI and config option (replaced by `--log-level`) [#152](https://github.com/anlar/tewi/issues/152)

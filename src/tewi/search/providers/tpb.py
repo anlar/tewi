@@ -239,6 +239,11 @@ class TPBProvider(BaseSearchProvider):
                     f"https://thepiratebay.org/description.php?id={torrent_id}"
                 )
 
+            # Get files_count if available
+            files_count = torrent.get("num_files")
+            if files_count is not None:
+                files_count = int(files_count)
+
             # Build provider-specific fields
             fields = {}
             username = torrent.get("username")
@@ -265,7 +270,7 @@ class TPBProvider(BaseSearchProvider):
                 leechers=int(torrent.get("leechers")),
                 downloads=None,
                 size=int(torrent.get("size")),
-                files_count=int(torrent.get("num_files")),
+                files_count=files_count,
                 upload_date=upload_date,
                 page_url=page_url,
                 freeleech=True,  # Public tracker
