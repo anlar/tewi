@@ -90,6 +90,27 @@ def _get_string_option(
     return None
 
 
+def _get_list_option(
+    parser: configparser.ConfigParser, section: str, option: str
+) -> list[str] | None:
+    """Get list option from comma-separated string, returning None if empty.
+
+    Args:
+        parser: ConfigParser instance
+        section: Section name
+        option: Option name
+
+    Returns:
+        List of stripped string values, or None if empty or missing
+    """
+    val = _get_string_option(parser, section, option)
+    if val is None:
+        return None
+    # Split by comma and strip whitespace from each item
+    items = [item.strip() for item in val.split(",") if item.strip()]
+    return items if items else None
+
+
 def _get_int_option(
     parser: configparser.ConfigParser, section: str, option: str
 ) -> int | None:
@@ -210,7 +231,7 @@ def _load_search_section(
     val = _get_string_option(parser, "search", "bitmagnet_url")
     if val:
         config["bitmagnet_url"] = val
-    val = _get_string_option(parser, "search", "providers")
+    val = _get_list_option(parser, "search", "providers")
     if val:
         config["search_providers"] = val
 
@@ -347,9 +368,7 @@ prowlarr_api_key =
 bitmagnet_url =
 
 # Comma-separated list of enabled search providers
-# Available (default order): tpb, yts, nyaa, torrentscsv, jackett,
-#                            prowlarr, bitmagnet, torrentz2
-# Leave empty to enable all providers in default order
+# Leave empty to enable default providers
 # Order matters: providers listed first take priority when deduplicating
 # results and appear first in the search dialog
 providers =

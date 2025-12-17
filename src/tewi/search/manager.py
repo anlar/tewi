@@ -84,7 +84,7 @@ class SearchClient:
         prowlarr_url: str | None,
         prowlarr_api_key: str | None,
         bitmagnet_url: str | None,
-        enabled_providers: str | None = None,
+        enabled_providers: list[str] | None = None,
     ):
         """Initialize search client with available providers.
 
@@ -94,7 +94,7 @@ class SearchClient:
             prowlarr_url: Base URL of Prowlarr instance (optional)
             prowlarr_api_key: API key for Prowlarr authentication (optional)
             bitmagnet_url: Base URL of Bitmagnet instance (optional)
-            enabled_providers: Comma-separated list of provider IDs to enable,
+            enabled_providers: List of provider IDs to enable,
                              or None to enable all providers
         """
         self._providers: list[BaseSearchProvider] | None = None
@@ -108,12 +108,12 @@ class SearchClient:
         )
 
     def _parse_enabled_providers(
-        self, enabled_providers: str | None
+        self, enabled_providers: list[str] | None
     ) -> list[str] | None:
         """Parse and validate enabled providers list.
 
         Args:
-            enabled_providers: Comma-separated list of provider IDs,
+            enabled_providers: List of provider IDs,
                              or None to enable all
 
         Returns:
@@ -123,20 +123,12 @@ class SearchClient:
         Raises:
             SystemExit: If unknown provider ID is specified
         """
-        if not enabled_providers or not enabled_providers.strip():
-            return None
-
-        # Parse CSV list
-        provider_ids = [
-            p.strip() for p in enabled_providers.split(",") if p.strip()
-        ]
-
-        if not provider_ids:
+        if not enabled_providers:
             return None
 
         # Validate provider IDs
         unknown_providers = []
-        for provider_id in provider_ids:
+        for provider_id in enabled_providers:
             if provider_id not in AVAILABLE_PROVIDERS:
                 unknown_providers.append(provider_id)
 
@@ -153,7 +145,7 @@ class SearchClient:
             )
             sys.exit(1)
 
-        return provider_ids
+        return enabled_providers
 
     def get_providers(self) -> list[BaseSearchProvider]:
         """Get list of all search providers, initializing them if needed.

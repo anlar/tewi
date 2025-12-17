@@ -153,7 +153,7 @@ class MainApp(App):
         filter: str,
         badge_max_count: int,
         badge_max_length: int,
-        search_providers: str | None = None,
+        search_providers: list[str] | None = None,
     ):
         super().__init__()
 
@@ -913,10 +913,20 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     p.add_argument(
         "--search-providers",
         type=str,
+        nargs="*",
+        choices=[
+            "tpb",
+            "yts",
+            "nyaa",
+            "torrentscsv",
+            "jackett",
+            "prowlarr",
+            "bitmagnet",
+            "torrentz2",
+        ],
+        default=["tpb", "yts", "nyaa", "torrentscsv", "torrentz2"],
         action=TrackSetAction,
-        help="Comma-separated list of enabled search providers "
-        "(default order: tpb, torrentz2, yts, nyaa, torrentscsv, "
-        "jackett, prowlarr). Leave empty to enable all in default order. "
+        help="Space-separated list of enabled search providers. "
         "Order matters: first providers take priority when deduplicating",
     )
     p.add_argument(
