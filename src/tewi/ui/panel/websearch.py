@@ -211,6 +211,7 @@ class TorrentWebSearch(Static):
         self.app.push_screen(
             TorrentDetailsDialog(
                 result.title,
+                result.page_url,
                 common_content,
                 extended_content,
                 result.page_url,

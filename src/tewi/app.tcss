@@ -583,8 +583,8 @@ TorrentDetailsDialog {
 }
 
 TorrentDetailsWidget {
-    width: 80%;
-    height: 80%;
+    width: 90%;
+    height: 90%;
     border-title-align: center;
     border: round $warning;
     padding: 1;
@@ -603,6 +603,21 @@ TorrentDetailsWidget .details-block {
 
 TorrentDetailsWidget .details-column {
     width: 1fr;
+}
+
+TorrentDetailsWidget .details-link {
+    border: round $primary 75%;
+    height: auto;
+}
+
+TorrentDetailsWidget .details-link-left {
+    width: auto;
+    margin: 0 1;
+}
+
+TorrentDetailsWidget .details-link-right {
+    width: 1fr;
+    margin: 0 1;
 }
 
 /* TORRENT WEB SEARCH PANEL */

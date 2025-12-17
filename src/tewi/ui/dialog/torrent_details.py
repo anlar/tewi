@@ -6,7 +6,7 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, ScrollableContainer
 from textual.screen import ModalScreen
-from textual.widgets import Markdown, Static
+from textual.widgets import Link, Markdown, Static
 
 from ...util.log import log_time
 from ..messages import AddTorrentFromWebSearchCommand, Notification
@@ -30,6 +30,7 @@ class TorrentDetailsDialog(ModalScreen[None]):
     def __init__(
         self,
         title: str,
+        page_url: str,
         common_content: str,
         extended_content: str,
         site_link: str | None = None,
@@ -47,6 +48,7 @@ class TorrentDetailsDialog(ModalScreen[None]):
         """
         super().__init__()
         self.title = title
+        self.page_url = page_url
         self.common_content = common_content
         self.extended_content = extended_content
         self.site_link = site_link
@@ -57,7 +59,10 @@ class TorrentDetailsDialog(ModalScreen[None]):
     def compose(self) -> ComposeResult:
         """Compose the dialog layout."""
         yield TorrentDetailsWidget(
-            self.title, self.common_content, self.extended_content
+            self.title,
+            self.page_url,
+            self.common_content,
+            self.extended_content,
         )
 
     @log_time
@@ -109,7 +114,11 @@ class TorrentDetailsWidget(Static):
 
     @log_time
     def __init__(
-        self, title: str, common_content: str, extended_content: str
+        self,
+        title: str,
+        page_url: str,
+        common_content: str,
+        extended_content: str,
     ) -> None:
         """Initialize the widget with torrent details.
 
@@ -120,17 +129,25 @@ class TorrentDetailsWidget(Static):
         """
         super().__init__()
         self.title = title
+        self.page_url = page_url
         self.common_content = common_content
         self.extended_content = extended_content
 
     @log_time
     def compose(self) -> ComposeResult:
-        """Compose the two-column layout with title."""
+        """Compose the two-column layout with title (top) and link (bottom)."""
         yield Static(self.title, classes="details-title")
         with ScrollableContainer():
             with Horizontal(classes="details-block"):
                 yield Markdown(self.common_content, classes="details-column")
                 yield Markdown(self.extended_content, classes="details-column")
+        with Horizontal(classes="details-link"):
+            yield Static("[bold]Link:[/]", classes="details-link-left")
+            yield Link(
+                self.page_url,
+                url=self.page_url,
+                classes="details-link-right",
+            )
 
     @log_time
     def on_mount(self) -> None:

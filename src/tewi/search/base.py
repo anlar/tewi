@@ -87,9 +87,6 @@ class BaseSearchProvider(ABC):
 
         md += f"- **Info Hash:** `{result.info_hash}`\n"
 
-        if result.page_url:
-            md += f"- **Link:** {result.page_url}\n"
-
         md += "## Statistics\n"
         md += f"- **Size:** {print_size(result.size)}\n"
         md += f"- **Seeders:** {result.seeders}\n"
