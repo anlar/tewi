@@ -15,6 +15,7 @@ handle multi-line list body as single line.
 - Add `--log-level` CLI and config option with 5 log levels (debug, info, warning, error, critical) [#152](https://github.com/anlar/tewi/issues/152)
 - Add Bitmagnet torrent search provider with GraphQL API integration [#153](https://github.com/anlar/tewi/issues/153)
 - Open files from torrent details with hotkey `Enter` [#156](https://github.com/anlar/tewi/issues/156)
+- Add `--jackett-multi` and `--prowlarr-multi` CLI and config options to control indexer loading mode: when disabled (default), shows single provider entry in search dialog and searches all indexers; when enabled, loads all indexers individually for granular selection
 
 ### Changed
 

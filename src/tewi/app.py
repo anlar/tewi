@@ -146,8 +146,10 @@ class MainApp(App):
         version: str,
         jackett_url: str,
         jackett_api_key: str,
+        jackett_multi: bool,
         prowlarr_url: str,
         prowlarr_api_key: str,
+        prowlarr_multi: bool,
         bitmagnet_url: str,
         search_query: str,
         filter: str,
@@ -193,8 +195,10 @@ class MainApp(App):
         self.search = SearchClient(
             jackett_url,
             jackett_api_key,
+            jackett_multi,
             prowlarr_url,
             prowlarr_api_key,
+            prowlarr_multi,
             bitmagnet_url,
             search_providers,
         )
@@ -891,6 +895,13 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         help="API key for Jackett authentication",
     )
     p.add_argument(
+        "--jackett-multi",
+        action="store_true",
+        default=False,
+        help="Enable multi-indexer mode: load all Jackett indexers "
+        "individually in search dialog (default: use single 'all' endpoint)",
+    )
+    p.add_argument(
         "--prowlarr-url",
         type=str,
         default="http://localhost:9696",
@@ -903,6 +914,13 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         default="http://localhost:3333",
         action=TrackSetAction,
         help="API key for Prowlarr authentication",
+    )
+    p.add_argument(
+        "--prowlarr-multi",
+        action="store_true",
+        default=False,
+        help="Enable multi-indexer mode: load all Prowlarr indexers "
+        "individually in search dialog (default: use single 'all' endpoint)",
     )
     p.add_argument(
         "--bitmagnet-url",
@@ -1106,8 +1124,10 @@ def create_app():
             version=tewi_version,
             jackett_url=args.jackett_url,
             jackett_api_key=args.jackett_api_key,
+            jackett_multi=args.jackett_multi,
             prowlarr_url=args.prowlarr_url,
             prowlarr_api_key=args.prowlarr_api_key,
+            prowlarr_multi=args.prowlarr_multi,
             bitmagnet_url=args.bitmagnet_url,
             search_query=args.search,
             filter=args.filter,

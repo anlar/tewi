@@ -81,8 +81,10 @@ class SearchClient:
         self,
         jackett_url: str | None,
         jackett_api_key: str | None,
+        jackett_multi: bool,
         prowlarr_url: str | None,
         prowlarr_api_key: str | None,
+        prowlarr_multi: bool,
         bitmagnet_url: str | None,
         enabled_providers: list[str] | None = None,
     ):
@@ -91,8 +93,10 @@ class SearchClient:
         Args:
             jackett_url: Base URL of Jackett instance (optional)
             jackett_api_key: API key for Jackett authentication (optional)
+            jackett_multi: Load all Jackett indexers individually (optional)
             prowlarr_url: Base URL of Prowlarr instance (optional)
             prowlarr_api_key: API key for Prowlarr authentication (optional)
+            prowlarr_multi: Load all Prowlarr indexers individually (optional)
             bitmagnet_url: Base URL of Bitmagnet instance (optional)
             enabled_providers: List of provider IDs to enable,
                              or None to enable all providers
@@ -100,8 +104,10 @@ class SearchClient:
         self._providers: list[BaseSearchProvider] | None = None
         self._jackett_url = jackett_url
         self._jackett_api_key = jackett_api_key
+        self._jackett_multi = jackett_multi
         self._prowlarr_url = prowlarr_url
         self._prowlarr_api_key = prowlarr_api_key
+        self._prowlarr_multi = prowlarr_multi
         self._bitmagnet_url = bitmagnet_url
         self._enabled_providers = self._parse_enabled_providers(
             enabled_providers
@@ -181,7 +187,9 @@ class SearchClient:
                         provider_class = AVAILABLE_PROVIDERS[provider_id]
                         self._providers.append(
                             provider_class(
-                                self._jackett_url, self._jackett_api_key
+                                self._jackett_url,
+                                self._jackett_api_key,
+                                self._jackett_multi,
                             )
                         )
                 elif provider_id == "prowlarr":
@@ -190,7 +198,9 @@ class SearchClient:
                         provider_class = AVAILABLE_PROVIDERS[provider_id]
                         self._providers.append(
                             provider_class(
-                                self._prowlarr_url, self._prowlarr_api_key
+                                self._prowlarr_url,
+                                self._prowlarr_api_key,
+                                self._prowlarr_multi,
                             )
                         )
                 elif provider_id == "bitmagnet":
