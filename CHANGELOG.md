@@ -22,6 +22,7 @@ handle multi-line list body as single line.
 - Search providers now respect configuration order: providers listed first in config take priority when deduplicating results and appear first in search dialog [#154](https://github.com/anlar/tewi/issues/154)
 - Default search provider order set to: tpb, yts, nyaa, torrentscsv, jackett, prowlarr, bitmagnet, torrentz2 [#154](https://github.com/anlar/tewi/issues/154)
 - By default enable only built-in search providers
+- YTS provider: Strip query parameters from page URLs for cleaner links
 
 ### Removed
 

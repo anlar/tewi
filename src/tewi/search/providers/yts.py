@@ -209,7 +209,10 @@ class YTSProvider(BaseSearchProvider):
 
             # Construct page URL from movie URL or ID
             page_url = movie.get("url")
-            if not page_url and movie.get("id"):
+            if page_url:
+                # Strip query parameters if present
+                page_url = page_url.split("?")[0]
+            elif movie.get("id"):
                 page_url = f"https://{self.DOMAIN}/movies/{movie['id']}"
 
             # Build provider-specific fields
