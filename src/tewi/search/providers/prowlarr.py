@@ -26,16 +26,22 @@ class ProwlarrProvider(BaseSearchProvider):
     """
 
     def __init__(
-        self, prowlarr_url: str | None = None, api_key: str | None = None
+        self,
+        prowlarr_url: str | None = None,
+        api_key: str | None = None,
+        multi_indexer: bool = False,
     ):
         """Initialize Prowlarr provider with configuration.
 
         Args:
             prowlarr_url: Base URL of Prowlarr instance
             api_key: API key for Prowlarr authentication
+            multi_indexer: If True, load all indexers individually.
+                          If False, use single "all" endpoint (default)
         """
         self.prowlarr_url: str | None = prowlarr_url
         self.api_key: str | None = api_key
+        self.multi_indexer: bool = multi_indexer
 
         self._config_error: str | None = self._validate_config(
             prowlarr_url, api_key
@@ -56,7 +62,11 @@ class ProwlarrProvider(BaseSearchProvider):
     def indexers(self) -> list[Indexer]:
         """Return list of configured indexers from Prowlarr instance.
 
-        Uses a 10-minute cache to avoid repeated API calls.
+        When multi_indexer is False, returns a single "Prowlarr" indexer
+        that searches all indexers.
+
+        When multi_indexer is True, fetches and returns all individual
+        indexers. Uses a 10-minute cache to avoid repeated API calls.
 
         Returns:
             List of Indexer objects from Prowlarr,
@@ -65,6 +75,11 @@ class ProwlarrProvider(BaseSearchProvider):
         if self._config_error:
             logger.debug(f"Prowlarr not configured: {self._config_error}")
             return []
+
+        # If multi_indexer is disabled, return single "Prowlarr" indexer
+        if not self.multi_indexer:
+            logger.debug("Prowlarr: multi_indexer disabled, returning single")
+            return [Indexer(id="prowlarr:all", name="Prowlarr")]
 
         # Check if cache is valid
         if self._is_cache_valid():
@@ -112,6 +127,10 @@ class ProwlarrProvider(BaseSearchProvider):
 
         if not query or not query.strip():
             return []
+
+        # If multi_indexer is disabled, ignore indexers parameter and search all
+        if not self.multi_indexer:
+            indexers = None
 
         # Build URL with optional indexer and category filtering
         url = self._build_search_url(query, categories, indexers)
