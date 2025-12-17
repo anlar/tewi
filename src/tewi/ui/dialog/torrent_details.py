@@ -129,7 +129,7 @@ class TorrentDetailsWidget(Static):
         """
         super().__init__()
         self.title = title
-        self.page_url = page_url
+        self.page_url = page_url or ""
         self.common_content = common_content
         self.extended_content = extended_content
 
