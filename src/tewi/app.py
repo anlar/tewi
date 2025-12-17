@@ -146,6 +146,7 @@ class MainApp(App):
         version: str,
         jackett_url: str,
         jackett_api_key: str,
+        jackett_multi: bool,
         prowlarr_url: str,
         prowlarr_api_key: str,
         bitmagnet_url: str,
@@ -193,6 +194,7 @@ class MainApp(App):
         self.search = SearchClient(
             jackett_url,
             jackett_api_key,
+            jackett_multi,
             prowlarr_url,
             prowlarr_api_key,
             bitmagnet_url,
@@ -891,6 +893,13 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         help="API key for Jackett authentication",
     )
     p.add_argument(
+        "--jackett-multi",
+        action="store_true",
+        default=False,
+        help="Enable multi-indexer mode: load all Jackett indexers "
+        "individually in search dialog (default: use single 'all' endpoint)",
+    )
+    p.add_argument(
         "--prowlarr-url",
         type=str,
         default="http://localhost:9696",
@@ -1106,6 +1115,7 @@ def create_app():
             version=tewi_version,
             jackett_url=args.jackett_url,
             jackett_api_key=args.jackett_api_key,
+            jackett_multi=args.jackett_multi,
             prowlarr_url=args.prowlarr_url,
             prowlarr_api_key=args.prowlarr_api_key,
             bitmagnet_url=args.bitmagnet_url,

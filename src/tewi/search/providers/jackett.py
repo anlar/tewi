@@ -27,16 +27,22 @@ class JackettProvider(BaseSearchProvider):
     """
 
     def __init__(
-        self, jackett_url: str | None = None, api_key: str | None = None
+        self,
+        jackett_url: str | None = None,
+        api_key: str | None = None,
+        multi_indexer: bool = False,
     ):
         """Initialize Jackett provider with configuration.
 
         Args:
             jackett_url: Base URL of Jackett instance
             api_key: API key for Jackett authentication
+            multi_indexer: If True, load all indexers individually.
+                          If False, use single "all" endpoint (default)
         """
         self.jackett_url: str | None = jackett_url
         self.api_key: str | None = api_key
+        self.multi_indexer: bool = multi_indexer
         self._config_error: str | None = self._validate_config(
             jackett_url, api_key
         )
@@ -55,7 +61,11 @@ class JackettProvider(BaseSearchProvider):
     def indexers(self) -> list[Indexer]:
         """Return list of configured indexers from Jackett instance.
 
-        Uses a 10-minute cache to avoid repeated API calls.
+        When multi_indexer is False, returns a single "Jackett" indexer
+        that searches all indexers via the /all endpoint.
+
+        When multi_indexer is True, fetches and returns all individual
+        indexers. Uses a 10-minute cache to avoid repeated API calls.
 
         Returns:
             List of (indexer_id, indexer_name) tuples from Jackett,
@@ -64,6 +74,11 @@ class JackettProvider(BaseSearchProvider):
         if self._config_error:
             logger.debug(f"Jackett not configured: {self._config_error}")
             return []
+
+        # If multi_indexer is disabled, return single "Jackett" indexer
+        if not self.multi_indexer:
+            logger.debug("Jackett: multi_indexer disabled, returning single")
+            return [Indexer(id="jackett:all", name="Jackett")]
 
         # Check if cache is valid
         if self._is_cache_valid():
@@ -111,6 +126,12 @@ class JackettProvider(BaseSearchProvider):
 
         if not query or not query.strip():
             return []
+
+        # If multi_indexer is disabled, always use "all" endpoint
+        if not self.multi_indexer:
+            url = self._build_search_url(query, "all", categories)
+            data = self._fetch_results(url)
+            return self._process_results(data)
 
         # If specific indexers selected that differ from all indexers,
         # search each individually

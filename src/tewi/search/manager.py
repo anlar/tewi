@@ -81,6 +81,7 @@ class SearchClient:
         self,
         jackett_url: str | None,
         jackett_api_key: str | None,
+        jackett_multi: bool,
         prowlarr_url: str | None,
         prowlarr_api_key: str | None,
         bitmagnet_url: str | None,
@@ -91,6 +92,7 @@ class SearchClient:
         Args:
             jackett_url: Base URL of Jackett instance (optional)
             jackett_api_key: API key for Jackett authentication (optional)
+            jackett_multi: Load all Jackett indexers individually (optional)
             prowlarr_url: Base URL of Prowlarr instance (optional)
             prowlarr_api_key: API key for Prowlarr authentication (optional)
             bitmagnet_url: Base URL of Bitmagnet instance (optional)
@@ -100,6 +102,7 @@ class SearchClient:
         self._providers: list[BaseSearchProvider] | None = None
         self._jackett_url = jackett_url
         self._jackett_api_key = jackett_api_key
+        self._jackett_multi = jackett_multi
         self._prowlarr_url = prowlarr_url
         self._prowlarr_api_key = prowlarr_api_key
         self._bitmagnet_url = bitmagnet_url
@@ -181,7 +184,9 @@ class SearchClient:
                         provider_class = AVAILABLE_PROVIDERS[provider_id]
                         self._providers.append(
                             provider_class(
-                                self._jackett_url, self._jackett_api_key
+                                self._jackett_url,
+                                self._jackett_api_key,
+                                self._jackett_multi,
                             )
                         )
                 elif provider_id == "prowlarr":

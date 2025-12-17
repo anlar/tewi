@@ -222,6 +222,9 @@ def _load_search_section(
     val = _get_string_option(parser, "search", "jackett_api_key")
     if val:
         config["jackett_api_key"] = val
+    val = _get_bool_option(parser, "search", "jackett_multi")
+    if val is not None:
+        config["jackett_multi"] = val
     val = _get_string_option(parser, "search", "prowlarr_url")
     if val:
         config["prowlarr_url"] = val
@@ -355,6 +358,12 @@ jackett_url =
 
 # API key for Jackett authentication
 jackett_api_key =
+
+# Multi-indexer mode for Jackett (default: false)
+# When false: Shows single "Jackett" entry in search dialog, searches all
+#             indexers via /all endpoint. Sub-indexers still appear in results.
+# When true: Loads all Jackett indexers individually in search dialog
+jackett_multi =
 
 # Prowlarr server configuration for torrent search
 # URL of your Prowlarr instance (default: http://localhost:9696)
