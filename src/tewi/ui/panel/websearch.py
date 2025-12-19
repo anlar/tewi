@@ -11,7 +11,7 @@ from textual.widgets import DataTable, Static
 
 from ...search.models import SearchResult
 from ...util.log import log_time
-from ..dialog.torrent_details import TorrentDetailsDialog
+from ..dialog.search.details import TorrentDetailsDialog
 from ..messages import (
     AddTorrentFromWebSearchCommand,
     Notification,

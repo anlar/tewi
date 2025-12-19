@@ -40,6 +40,7 @@ from .torrent.models import ClientError, Torrent
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
 from .ui.dialog.preferences import PreferencesDialog
+from .ui.dialog.search.query import WebSearchQueryDialog
 from .ui.dialog.statistics import StatisticsDialog
 from .ui.dialog.torrent.add import AddTorrentDialog
 from .ui.dialog.torrent.category import UpdateTorrentCategoryDialog
@@ -48,7 +49,6 @@ from .ui.dialog.torrent.filter import FilterDialog
 from .ui.dialog.torrent.label import UpdateTorrentLabelsDialog
 from .ui.dialog.torrent.search import SearchDialog
 from .ui.dialog.torrent.sort import SortOrderDialog
-from .ui.dialog.websearch_query import WebSearchQueryDialog
 from .ui.messages import (
     AddTorrentCommand,
     AddTorrentFromWebSearchCommand,

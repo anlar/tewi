@@ -8,9 +8,9 @@ from textual.containers import Horizontal, ScrollableContainer
 from textual.screen import ModalScreen
 from textual.widgets import Link, Markdown, Static
 
-from ...util.log import log_time
-from ..messages import AddTorrentFromWebSearchCommand, Notification
-from ..util import subtitle_keys
+from ....util.log import log_time
+from ...messages import AddTorrentFromWebSearchCommand, Notification
+from ...util import subtitle_keys
 
 
 class TorrentDetailsDialog(ModalScreen[None]):

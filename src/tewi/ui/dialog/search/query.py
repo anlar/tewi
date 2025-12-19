@@ -9,11 +9,11 @@ from textual.screen import ModalScreen
 from textual.widgets import Input, SelectionList, Static
 from textual.widgets.selection_list import Selection
 
-from ...search.models import StandardCategories
-from ...ui.widget.common import VimSelectionList
-from ...util.log import log_time
-from ..messages import Notification, WebSearchQuerySubmitted
-from ..util import subtitle_keys
+from ....search.models import StandardCategories
+from ....util.log import log_time
+from ...messages import Notification, WebSearchQuerySubmitted
+from ...util import subtitle_keys
+from ...widget.common import VimSelectionList
 
 
 class WebSearchQueryDialog(ModalScreen[None]):
