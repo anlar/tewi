@@ -497,8 +497,8 @@ WebSearchQueryDialog {
 }
 
 WebSearchQueryWidget {
-    width: 50%;
-    height: 50%;
+    width: 60%;
+    height: 60%;
 
     border-title-align: center;
     border: round $warning;
