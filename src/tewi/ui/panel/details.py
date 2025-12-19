@@ -75,6 +75,9 @@ class TorrentInfoPanel(ScrollableContainer):
         self.file_count = 0
         self.file_list = []
 
+        self.color_priority_low = self.app.current_theme.accent
+        self.color_priority_high = self.app.current_theme.error
+
     r_torrent = reactive(None)
 
     t_name = reactive(None)
@@ -845,8 +848,8 @@ class TorrentInfoPanel(ScrollableContainer):
             case TorrentFilePriority.NOT_DOWNLOADING:
                 return "[dim]-[/]"
             case TorrentFilePriority.LOW:
-                return "[dim yellow]↓[/]"
+                return f"[dim {self.color_priority_low}]↓[/]"
             case TorrentFilePriority.MEDIUM:
                 return "→"
             case TorrentFilePriority.HIGH:
-                return "[bold red]↑[/]"
+                return f"[bold {self.color_priority_high}]↑[/]"

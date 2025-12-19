@@ -23,6 +23,7 @@ handle multi-line list body as single line.
 - Default search provider order set to: tpb, yts, nyaa, torrentscsv, jackett, prowlarr, bitmagnet, torrentz2 [#154](https://github.com/anlar/tewi/issues/154)
 - By default enable only built-in search providers
 - YTS provider: Strip query parameters from page URLs for cleaner links
+- Use theme colors for file priority icons in torrent files tab
 
 ### Fixed
 
