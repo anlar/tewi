@@ -2,7 +2,6 @@ import os
 import platform
 import subprocess
 from datetime import datetime
-from functools import cache
 from typing import Any
 
 from textual import on
@@ -77,6 +76,14 @@ class TorrentInfoPanel(ScrollableContainer):
 
         self.color_priority_low = self.app.current_theme.accent
         self.color_priority_high = self.app.current_theme.error
+
+        # Build priority display mapping
+        self.priority_display = {
+            TorrentFilePriority.NOT_DOWNLOADING: "[dim]-[/]",
+            TorrentFilePriority.LOW: f"[dim {self.color_priority_low}]↓[/]",
+            TorrentFilePriority.MEDIUM: "→",
+            TorrentFilePriority.HIGH: f"[bold {self.color_priority_high}]↑[/]",
+        }
 
     r_torrent = reactive(None)
 
@@ -362,7 +369,9 @@ class TorrentInfoPanel(ScrollableContainer):
             table = self.query_one("#files")
 
             # Store for toggle action
-            self.file_list = self.get_file_list(self.r_torrent.files)
+            self.file_list = self.get_file_list(
+                self.r_torrent.files, self.priority_display
+            )
 
             if self.file_count != len(self.file_list):
                 table.clear()
@@ -737,10 +746,14 @@ class TorrentInfoPanel(ScrollableContainer):
     def open_default_tab(self) -> None:
         self.action_open_tab("tab-overview")
 
+    @staticmethod
     @log_time
-    def get_file_list(self, files: list[TorrentFile]) -> list[dict[str, Any]]:
+    def get_file_list(
+        files: list[TorrentFile],
+        priority_display: dict[TorrentFilePriority, str],
+    ) -> list[dict[str, Any]]:
         """Convert file list to flattened tree with display formatting."""
-        node = self.create_file_tree(files)
+        node = TorrentInfoPanel.create_file_tree(files)
 
         items_list: list[dict[str, Any]] = []
 
@@ -782,7 +795,7 @@ class TorrentInfoPanel(ScrollableContainer):
                             "id": f.id,
                             "size": print_size(f.size),
                             "done": f"{completion:.0f}%",
-                            "priority": self.print_priority(f.priority),
+                            "priority": priority_display[f.priority],
                             # Store raw priority for styling
                             "file_priority": f.priority,
                             "depth": depth,  # Track tree depth
@@ -817,8 +830,9 @@ class TorrentInfoPanel(ScrollableContainer):
 
         return items_list
 
+    @staticmethod
     @log_time
-    def create_file_tree(self, files: list[TorrentFile]) -> dict[str, Any]:
+    def create_file_tree(files: list[TorrentFile]) -> dict[str, Any]:
         """Build hierarchical tree structure from flat list of files."""
         tree: dict[str, Any] = {}
 
@@ -839,17 +853,3 @@ class TorrentInfoPanel(ScrollableContainer):
                 current = current[part]
 
         return tree
-
-    @log_time
-    @cache
-    def print_priority(self, priority: TorrentFilePriority) -> str:
-        """Convert file priority to Rich markup string with visual indicator."""
-        match priority:
-            case TorrentFilePriority.NOT_DOWNLOADING:
-                return "[dim]-[/]"
-            case TorrentFilePriority.LOW:
-                return f"[dim {self.color_priority_low}]↓[/]"
-            case TorrentFilePriority.MEDIUM:
-                return "→"
-            case TorrentFilePriority.HIGH:
-                return f"[bold {self.color_priority_high}]↑[/]"

@@ -15,48 +15,23 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import pytest
-from rich.text import Text
 
 from src.tewi.torrent.models import TorrentFile, TorrentFilePriority
 from src.tewi.ui.panel.details import TorrentInfoPanel
-
-
-class TestPrintPriority:
-    """Test cases for print_priority function."""
-
-    @pytest.fixture
-    def panel(self):
-        """Create a TorrentInfoPanel instance for testing."""
-        return TorrentInfoPanel(capability_torrent_id=True)
-
-    @pytest.mark.parametrize("priority", list(TorrentFilePriority))
-    def test_returns_non_empty_string(self, panel, priority):
-        """Test that all priorities return non-empty string values."""
-        result = panel.print_priority(priority)
-        assert isinstance(result, str)
-        assert len(result) > 0
-
-    def test_unique_outputs(self, panel):
-        """Test that each priority level has a unique output."""
-        results = [panel.print_priority(p) for p in list(TorrentFilePriority)]
-        assert len(results) == len(set(results))
-
-    @pytest.mark.parametrize("priority", list(TorrentFilePriority))
-    def test_rich_text_parseable(self, panel, priority):
-        """Test that outputs can be parsed by Rich Text."""
-        result = panel.print_priority(priority)
-        # Should not raise an exception
-        text = Text.from_markup(result)
-        assert text is not None
 
 
 class TestGetFileList:
     """Test cases for get_file_list function."""
 
     @pytest.fixture
-    def panel(self):
-        """Create a TorrentInfoPanel instance for testing."""
-        return TorrentInfoPanel(capability_torrent_id=True)
+    def priority_display(self):
+        """Create priority display mapping for testing."""
+        return {
+            TorrentFilePriority.NOT_DOWNLOADING: "[dim]-[/]",
+            TorrentFilePriority.LOW: "[dim yellow]↓[/]",
+            TorrentFilePriority.MEDIUM: "→",
+            TorrentFilePriority.HIGH: "[bold red]↑[/]",
+        }
 
     @pytest.mark.parametrize(
         "files,expected_file_count,expected_dir_count",
@@ -220,10 +195,10 @@ class TestGetFileList:
         ],
     )
     def test_file_list_generation(
-        self, panel, files, expected_file_count, expected_dir_count
+        self, priority_display, files, expected_file_count, expected_dir_count
     ):
         """Test file list generation with various file structures."""
-        result = panel.get_file_list(files)
+        result = TorrentInfoPanel.get_file_list(files, priority_display)
 
         # Verify the result is a list
         assert isinstance(result, list)
