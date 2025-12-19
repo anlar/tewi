@@ -18,28 +18,33 @@ import pytest
 from rich.text import Text
 
 from src.tewi.torrent.models import TorrentFile, TorrentFilePriority
-from src.tewi.ui.util import get_file_list, print_priority
+from src.tewi.ui.panel.details import TorrentInfoPanel
 
 
 class TestPrintPriority:
     """Test cases for print_priority function."""
 
+    @pytest.fixture
+    def panel(self):
+        """Create a TorrentInfoPanel instance for testing."""
+        return TorrentInfoPanel(capability_torrent_id=True)
+
     @pytest.mark.parametrize("priority", list(TorrentFilePriority))
-    def test_returns_non_empty_string(self, priority):
+    def test_returns_non_empty_string(self, panel, priority):
         """Test that all priorities return non-empty string values."""
-        result = print_priority(priority)
+        result = panel.print_priority(priority)
         assert isinstance(result, str)
         assert len(result) > 0
 
-    def test_unique_outputs(self):
+    def test_unique_outputs(self, panel):
         """Test that each priority level has a unique output."""
-        results = [print_priority(p) for p in list(TorrentFilePriority)]
+        results = [panel.print_priority(p) for p in list(TorrentFilePriority)]
         assert len(results) == len(set(results))
 
     @pytest.mark.parametrize("priority", list(TorrentFilePriority))
-    def test_rich_text_parseable(self, priority):
+    def test_rich_text_parseable(self, panel, priority):
         """Test that outputs can be parsed by Rich Text."""
-        result = print_priority(priority)
+        result = panel.print_priority(priority)
         # Should not raise an exception
         text = Text.from_markup(result)
         assert text is not None
@@ -47,6 +52,11 @@ class TestPrintPriority:
 
 class TestGetFileList:
     """Test cases for get_file_list function."""
+
+    @pytest.fixture
+    def panel(self):
+        """Create a TorrentInfoPanel instance for testing."""
+        return TorrentInfoPanel(capability_torrent_id=True)
 
     @pytest.mark.parametrize(
         "files,expected_file_count,expected_dir_count",
@@ -210,10 +220,10 @@ class TestGetFileList:
         ],
     )
     def test_file_list_generation(
-        self, files, expected_file_count, expected_dir_count
+        self, panel, files, expected_file_count, expected_dir_count
     ):
         """Test file list generation with various file structures."""
-        result = get_file_list(files)
+        result = panel.get_file_list(files)
 
         # Verify the result is a list
         assert isinstance(result, list)
