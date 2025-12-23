@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="console-application">
+  <id>io.github.anlar.tewi</id>
+
+  <name>Tewi</name>
+  <summary> Text-based interface for BitTorrent clients (Transmission, qBittorrent, Deluge) </summary>
+
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>GPL-3.0-or-later</project_license>
+  <content_rating type="oars-1.1" />
+
+  <description>
+    <p>
+      Tewi is a TUI (text user interface) for BitTorrent clients, supporting Transmission, qBittorrent and Deluge daemons.
+    </p>
+    <p>Features:</p>
+    <ul>
+      <li>Connect to Transmission/qBittorrent/Deluge daemon by credentials</li>
+      <li>Browse torrents list</li>
+      <li>Different view modes: card, compact, oneline</li>
+      <li>Display torrent details: overview, files, trackers, peers</li>
+      <li>View and edit torrent categories and labels</li>
+      <li>Add new torrents</li>
+      <li>Torrent actions: start/pause, remove/trash, verify, reannounce, change priority</li>
+      <li>View and toggle alternative speed limits</li>
+      <li>View session statistics</li>
+      <li>View torrent client preferences</li>
+      <li>Dark and light color themes</li>
+      <li>Search torrents on popular trackers (built-in search providers, Jackett, Prowlarr and bitmagnet integrations)</li>
+      <li>Support for configuration files and different configuration profiles</li>
+    </ul>
+  </description>
+
+  <developer id="io.github.anlar">
+    <name>Anton Larionov</name>
+  </developer>
+
+  <icon type="stock">io.github.anlar.tewi</icon>
+
+  <categories>
+    <category>Network</category>
+    <category>FileTransfer</category>
+  </categories>
+
+  <provides>
+    <binary>tewi</binary>
+  </provides>
+
+  <url type="bugtracker">https://github.com/anlar/tewi/issues</url>
+  <url type="homepage">https://github.com/anlar/tewi</url>
+  <url type="vcs-browser">https://github.com/anlar/tewi</url>
+
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-1.png</image>
+      <caption>Tewi screenshot</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-2.png</image>
+      <caption>Tewi screenshot</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-3.png</image>
+      <caption>Tewi screenshot</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-4.png</image>
+      <caption>Tewi screenshot</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-5.png</image>
+      <caption>Tewi screenshot</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-6.png</image>
+      <caption>Tewi screenshot</caption>
+    </screenshot>
+    <screenshot>
+      <image>https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-7.png</image>
+      <caption>Tewi screenshot</caption>
+    </screenshot>
+  </screenshots>
+
+  <releases>
+    <release version="2.1.0" date="2025-12-15">
+      <url type="details">https://github.com/anlar/tewi/releases/tag/v2.1.0</url>
+      <description>
+        <p><em>Rabbit Tiger</em></p>
+        <p>Added:</p>
+        <ul>
+          <li>Add Prowlarr torrent search provider</li>
+          <li>Display download count in search results</li>
+          <li>Display freeleech flag in torrent search results</li>
+          <li>Add --path CLI and config option to customize RPC path for Transmission and base JSON path for Deluge</li>
+          <li>Web search now remembers last selected indexers and categories ('w' hotkey for clean search, 'W' - for using last state)</li>
+        </ul>
+        <p>Changed:</p>
+        <ul>
+          <li>Use platformdirs library to get location for config and logs directories</li>
+          <li>Log file moved to platform-specific directory</li>
+          <li>Optimize Jackett search (use 'all' endpoint or run indexers in parallel)</li>
+          <li>Use ruff as linter (reformatted whole code base)</li>
+          <li>GeoIP module gracefully handles missing geoip2fast dependency</li>
+          <li>clipboard module gracefully handles missing pyperclip dependency</li>
+          <li>Refactor torrents clients: use torrent hash as ID in Transmission</li>
+          <li>Use non-existent category during indexers loading from Jackett (speed up loading)</li>
+          <li>Refactored code to split into torrent, search, ui modules</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+</component>

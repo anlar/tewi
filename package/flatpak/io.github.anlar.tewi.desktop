@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Tewi
+GenericName=BitTorrent Client Interface
+Comment=Text-based interface for BitTorrent clients (Transmission, qBittorrent, Deluge)
+Exec=tewi %U
+Icon=io.github.anlar.tewi
+Terminal=true
+Categories=Network;FileTransfer;P2P;
+Keywords=torrent;bittorrent;transmission;qbittorrent;deluge;tui;
+StartupNotify=false

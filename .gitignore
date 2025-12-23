@@ -8,3 +8,4 @@ __pycache__
 *.svg
 .aider*
 release-notes.md
+.flatpak-builder
