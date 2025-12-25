@@ -82,6 +82,32 @@
   </screenshots>
 
   <releases>
+    <release version="2.2.0" date="2025-12-25">
+      <url type="details">https://github.com/anlar/tewi/releases/tag/v2.2.0</url>
+      <description>
+        <p><em>Inaba Trace</em></p>
+        <p>Added:</p>
+        <ul>
+          <li>Add --log-level CLI and config option with 5 log levels (debug, info, warning, error, critical)</li>
+          <li>Add Bitmagnet torrent search provider with GraphQL API integration</li>
+          <li>Open files from torrent details with hotkey Enter</li>
+          <li>Add --jackett-multi and --prowlarr-multi CLI and config options to control indexer loading mode: when disabled (default), shows single provider entry in search dialog and searches all indexers; when enabled, loads all indexers individually for granular selection</li>
+        </ul>
+        <p>Changed:</p>
+        <ul>
+          <li>Search providers now respect configuration order: providers listed first in config take priority when deduplicating results and appear first in search dialog</li>
+          <li>Default search provider order set to: tpb, yts, nyaa, torrentscsv, jackett, prowlarr, bitmagnet, torrentz2</li>
+          <li>By default enable only built-in search providers</li>
+          <li>Use theme colors for file priority icons in torrent files tab</li>
+          <li>YTS provider: Strip query parameters from page URLs for cleaner links</li>
+          <li>TPB provider: fix parsing error when num_files field is missing from API response</li>
+        </ul>
+        <p>Removed:</p>
+        <ul>
+          <li>Remove --logs CLI and config option (replaced by --log-level)</li>
+        </ul>
+      </description>
+    </release>
     <release version="2.1.0" date="2025-12-15">
       <url type="details">https://github.com/anlar/tewi/releases/tag/v2.1.0</url>
       <description>
