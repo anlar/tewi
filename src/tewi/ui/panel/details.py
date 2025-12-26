@@ -279,6 +279,12 @@ class TorrentInfoPanel(ScrollableContainer):
 
     @log_time
     def on_mount(self):
+        self.create_table_files_columns()
+        self.create_table_peers_columns()
+        self.create_table_trackers_columns()
+
+    @log_time
+    def create_table_files_columns(self) -> None:
         table = self.query_one("#files")
         table.add_columns(
             ("ID", "ID"),
@@ -288,6 +294,8 @@ class TorrentInfoPanel(ScrollableContainer):
             ("Name", "Name"),
         )
 
+    @log_time
+    def create_table_peers_columns(self) -> None:
         table = self.query_one("#peers")
         table.add_columns(
             "Encrypted",
@@ -305,6 +313,8 @@ class TorrentInfoPanel(ScrollableContainer):
             "Client",
         )
 
+    @log_time
+    def create_table_trackers_columns(self) -> None:
         table = self.query_one("#trackers")
         table.add_columns(
             "Tier",
@@ -374,7 +384,8 @@ class TorrentInfoPanel(ScrollableContainer):
             )
 
             if self.file_count != len(self.file_list):
-                table.clear()
+                table.clear(columns=True)
+                self.create_table_files_columns()
                 self.draw_file_table(table, self.file_list)
             else:
                 self.update_file_table(table, self.file_list)
@@ -383,7 +394,8 @@ class TorrentInfoPanel(ScrollableContainer):
 
             table = self.query_one("#peers")
             selected_row = self.selected_row(table)
-            table.clear()
+            table.clear(columns=True)
+            self.create_table_peers_columns()
 
             for p in self.r_torrent.peers:
                 progress = p.progress * 100
@@ -414,7 +426,8 @@ class TorrentInfoPanel(ScrollableContainer):
 
             table = self.query_one("#trackers")
             selected_row = self.selected_row(table)
-            table.clear()
+            table.clear(columns=True)
+            self.create_table_trackers_columns()
 
             for t in self.r_torrent.trackers:
                 table.add_row(

@@ -14,6 +14,8 @@ handle multi-line list body as single line.
 
 ### Changed
 
+- Resize table columns in torrent details panels for each torrent [#160](https://github.com/anlar/tewi/issues/160)
+
 ### Removed
 
 ## [2.2.0] - 2025-12-25 - Inaba Trace
