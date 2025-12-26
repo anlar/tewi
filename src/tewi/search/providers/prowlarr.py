@@ -375,8 +375,8 @@ class ProwlarrProvider(BaseSearchProvider):
             info_hash = result.get("infoHash")
 
             # Extract both link types
+            torrent_link = self._extract_torrent_link(result)
             magnet_link = self._extract_magnet_link(title, info_hash, result)
-            torrent_link = (result.get("magnetUrl"),)
 
             # Skip result only if we have NEITHER link type
             if not magnet_link and not torrent_link:
@@ -403,16 +403,41 @@ class ProwlarrProvider(BaseSearchProvider):
         except (KeyError, ValueError, TypeError):
             return None
 
+    def _extract_torrent_link(self, result: dict[str, Any]) -> str | None:
+        """Extract torrent link from result.
+
+        Priority:
+          1. guid field (if .torrent)
+          2. downloadUrl
+          3. None
+
+        Args:
+            result: Result dict from Prowlarr API
+
+        Returns:
+            Torrent link string or None if unavailable
+        """
+        guid = result.get("guid")
+        if guid and guid.endswith(".torrent"):
+            return guid
+        else:
+            return result.get("downloadUrl")
+
     def _extract_magnet_link(
         self, title: str, info_hash: str | None, result: dict[str, Any]
     ) -> str | None:
         """Extract or generate magnet link from result.
 
-        Priority: guid field (if magnet) → Generated from infoHash → None
+        Priority:
+          1. guid field (if magnet)
+          2. magnetUrl
+          3. Generated from infoHash
+          4. None
 
         Args:
-            result: Result dict from Prowlarr API
+            title: Torrent title (to add to generated magnet link)
             info_hash: Torrent info hash (may be None)
+            result: Result dict from Prowlarr API
 
         Returns:
             Magnet URI string or None if unavailable
@@ -421,6 +446,10 @@ class ProwlarrProvider(BaseSearchProvider):
         guid = result.get("guid")
         if guid and guid.startswith("magnet:"):
             return guid
+
+        magnet_link = result.get("magnetUrl")
+        if magnet_link:
+            return magnet_link
 
         # Generate magnet from info hash if available
         if info_hash:

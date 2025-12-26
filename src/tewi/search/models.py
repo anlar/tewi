@@ -185,8 +185,8 @@ class SearchResult:
     # Required fields (torrent)
     title: str
     info_hash: str
-    magnet_link: str
-    torrent_link: str
+    magnet_link: str | None
+    torrent_link: str | None
 
     # Required fields (provider)
     provider: str

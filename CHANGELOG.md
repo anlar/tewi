@@ -15,6 +15,7 @@ handle multi-line list body as single line.
 ### Changed
 
 - Resize table columns in torrent details panels for each torrent [#160](https://github.com/anlar/tewi/issues/160)
+- Improve torrent/magnet link detection in Prowlarr search results
 
 ### Removed
 
