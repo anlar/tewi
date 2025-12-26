@@ -282,8 +282,12 @@ class TorrentItemCard(TorrentItem):
             yield ReactiveLabel().data_bind(
                 name=TorrentItemCard.t_stats_uploaded
             )
-            yield ReactiveLabel().data_bind(name=TorrentItemCard.t_stats_peer)
-            yield ReactiveLabel().data_bind(name=TorrentItemCard.t_size_stats)
+            yield ReactiveLabel(markup=True).data_bind(
+                name=TorrentItemCard.t_stats_peer
+            )
+            yield ReactiveLabel(markup=True).data_bind(
+                name=TorrentItemCard.t_size_stats
+            )
 
     @log_time
     def update_torrent(self, torrent: Torrent) -> None:
@@ -307,11 +311,12 @@ class TorrentItemCard(TorrentItem):
                 print_size(torrent.uploaded_ever) + " uploaded"
             )
 
-            # implying that there won't be more than 9999 peers
+            peer_label = "peer" if self.t_peers_connected == 1 else "peers"
+
             self.t_stats_peer = (
-                f"{self.t_peers_connected: >4} peers "
-                f"{self.t_seeders: >4} seeders "
-                f"{self.t_leechers: >4} leechers"
+                f"{self.t_peers_connected} {peer_label} [dim]•[/] "
+                f"{self.t_seeders} seed [dim]•[/] "
+                f"{self.t_leechers} leech"
             )
 
     @log_time
@@ -323,14 +328,15 @@ class TorrentItemCard(TorrentItem):
         if self.t_size_left > 0:
             size_current = print_size(self.t_size_total - self.t_size_left)
             progress = self.t_progress * 100
-            result = f"{size_current} / {size_total} | {progress:.1f}%"
+            result = f"{size_current} / {size_total} [dim]|[/] {progress:.1f}%"
 
             if self.t_eta:
                 result = (
-                    f"{result} | {print_time(self.t_eta.total_seconds(), 2)}"
+                    f"{result} [dim]|[/] "
+                    "{print_time(self.t_eta.total_seconds(), 2)}"
                 )
         else:
-            result = f"{size_total} | Ratio: {self.t_ratio:.2f}"
+            result = f"{size_total} [dim]|[/] Ratio: {self.t_ratio:.2f}"
 
         return result
 
