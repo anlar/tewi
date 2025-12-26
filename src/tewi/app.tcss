@@ -218,6 +218,10 @@ ListItem.-highlight > TorrentItemCompact {
     background: $primary-darken-1 !important;
 }
 
+ListItem.-highlight > TorrentItemCompact > #stats {
+    background: $primary-darken-1;
+}
+
 TorrentItemCompact > #name-container > #name {
     text-style: bold;
 }
@@ -236,6 +240,7 @@ TorrentItemCompact > #stats {
     grid-size: 4;
     grid-columns: 25 25 40 auto;
     height: auto;
+    background: $primary-background-darken-1;
 }
 
 TorrentItemCompact > #stats > .column {
