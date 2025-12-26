@@ -12,6 +12,8 @@ handle multi-line list body as single line.
 
 ### Added
 
+- New torrent filters: Checking and Icomplete
+
 ### Changed
 
 - Resize table columns in torrent details panels for each torrent [#160](https://github.com/anlar/tewi/issues/160)

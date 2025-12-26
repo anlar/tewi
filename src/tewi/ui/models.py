@@ -59,8 +59,8 @@ filter_options = [
     FilterOption(
         "active",
         "Active",
-        "c",
-        "A[u]c[/]tive",
+        "t",
+        "Ac[u]t[/]ive",
         lambda t: t.rate_download > 0 or t.rate_upload > 0,
     ),
     FilterOption(
@@ -78,7 +78,21 @@ filter_options = [
         lambda t: t.status == "seeding",
     ),
     FilterOption(
+        "checking",
+        "Checking",
+        "c",
+        "[u]C[/]hecking",
+        lambda t: t.status in ("checking", "check pending"),
+    ),
+    FilterOption(
         "paused", "Paused", "p", "[u]P[/]aused", lambda t: t.status == "stopped"
+    ),
+    FilterOption(
+        "incomplete",
+        "Incomplete",
+        "i",
+        "[u]I[/]ncomplete",
+        lambda t: t.percent_done < 1.0,
     ),
     FilterOption(
         "finished",
