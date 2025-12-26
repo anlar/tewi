@@ -2,6 +2,7 @@
 
 import os
 import pathlib
+import tempfile
 from dataclasses import asdict
 from datetime import datetime
 
@@ -11,7 +12,6 @@ from transmission_rpc import Torrent as TransmissionTorrent
 from transmission_rpc.torrent import Tracker as TransmissionTracker
 
 from ...util.log import log_time
-from ...util.misc import is_torrent_link
 from ..base import BaseClient, ClientCapability
 from ..models import (
     ClientError,
@@ -27,7 +27,7 @@ from ..models import (
     TorrentPeerState,
     TorrentTracker,
 )
-from ..util import count_torrents_by_status
+from ..util import count_torrents_by_status, download_torrent_from_url
 
 
 class TransmissionClient(BaseClient):
@@ -210,8 +210,25 @@ class TransmissionClient(BaseClient):
 
     @log_time
     def add_torrent(self, value: str) -> None:
-        if is_torrent_link(value):
-            self.client.add_torrent(value)
+        if value.startswith(("magnet:", "http://", "https://")):
+            magnet_link, torrent_data = download_torrent_from_url(value)
+            if magnet_link:
+                self.client.add_torrent(magnet_link)
+            else:
+                # Got torrent file data - write to temp file
+                # transmission-rpc doesn't accept raw bytes/base64,
+                # so we write to a temp file
+                with tempfile.NamedTemporaryFile(
+                    suffix=".torrent", delete=False
+                ) as tmp_file:
+                    tmp_file.write(torrent_data)
+                    tmp_path = tmp_file.name
+
+                try:
+                    self.client.add_torrent(pathlib.Path(tmp_path))
+                finally:
+                    # Clean up temp file
+                    os.unlink(tmp_path)
         else:
             file = os.path.expanduser(value)
             if not os.path.exists(file):

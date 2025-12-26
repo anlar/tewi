@@ -1,9 +1,11 @@
 """Utility functions for torrent operations."""
 
 import math
+import urllib.error
+import urllib.request
 from dataclasses import replace
 
-from .models import Torrent
+from .models import ClientError, Torrent
 
 
 def torrents_test(torrents: list[Torrent], target_count: int) -> list[Torrent]:
@@ -81,3 +83,101 @@ def count_torrents_by_status(torrents: list[Torrent]) -> dict[str, int]:
         "complete_size": complete_size,
         "total_size": total_size,
     }
+
+
+def _handle_redirect(
+    error: urllib.error.HTTPError,
+) -> tuple[str | None, bytes | None]:
+    """Handle HTTP redirect responses, checking for magnet links.
+
+    Args:
+        error: HTTPError containing redirect information
+
+    Returns:
+        Tuple of (magnet_link, torrent_data) from following redirect
+
+    Raises:
+        ClientError: If redirect location is missing or download fails
+    """
+    location = error.headers.get("Location")
+    if not location:
+        raise ClientError(f"Redirect {error.code} missing Location header")
+
+    # Check if redirect is to a magnet link
+    if location.startswith("magnet:"):
+        return (location, None)
+
+    # Otherwise, follow the redirect by calling recursively
+    return download_torrent_from_url(location)
+
+
+def download_torrent_from_url(url: str) -> tuple[str | None, bytes | None]:
+    """Download torrent from URL, handling both magnet links and files.
+
+    This utility function handles:
+    1. Direct magnet links - returns the magnet link as-is
+    2. HTTP/HTTPS URLs that may redirect to either:
+       - Magnet links (returns the magnet link)
+       - Torrent files (downloads and returns the file data)
+
+    Args:
+        url: Magnet link, or HTTP/HTTPS URL to .torrent file
+
+    Returns:
+        Tuple of (magnet_link, torrent_data) where:
+        - (magnet_link, None) if input is magnet or redirects to magnet
+        - (None, torrent_data) if download returns a valid torrent file
+        Exactly one of the two values will be non-None.
+
+    Raises:
+        ClientError: If download fails, URL is invalid, or downloaded
+                    content is neither a valid magnet link nor torrent file
+    """
+    # Handle direct magnet links
+    if url.startswith("magnet:"):
+        return (url, None)
+
+    # Create custom opener that doesn't automatically follow redirects
+    # This allows us to check if redirect target is a magnet link
+    class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+        def redirect_request(self, req, fp, code, msg, headers, newurl):
+            # Don't follow redirects automatically
+            return None
+
+    opener = urllib.request.build_opener(NoRedirectHandler())
+
+    try:
+        # Make request without following redirects
+        response = opener.open(url, timeout=30)
+
+        # If we got here, no redirect occurred - download the content
+        if response.status != 200:
+            raise ClientError(
+                f"Failed to download torrent: HTTP {response.status}"
+            )
+
+        torrent_data = response.read()
+        response.close()
+
+        # Validate it's actually a torrent file
+        # (bencoded format starts with 'd')
+        if not torrent_data or torrent_data[0:1] != b"d":
+            raise ClientError("Downloaded content is not a valid torrent file")
+
+        return (None, torrent_data)
+
+    except urllib.error.HTTPError as e:
+        # Check if this is a redirect (3xx status codes)
+        if e.code in (301, 302, 303, 307, 308):
+            return _handle_redirect(e)
+
+        raise ClientError(
+            f"HTTP error downloading torrent: {e.code} {e.reason}"
+        )
+    except urllib.error.URLError as e:
+        raise ClientError(f"Failed to download torrent from {url}: {e.reason}")
+    except ClientError:
+        # Re-raise ClientError as-is
+        raise
+    except Exception as e:
+        raise ClientError(f"Error downloading torrent from URL: {str(e)}")

@@ -2,7 +2,6 @@
 
 import base64
 import os
-import urllib.request
 from dataclasses import asdict
 from datetime import datetime, timedelta
 from typing import Any
@@ -25,7 +24,7 @@ from ..models import (
     TorrentPeerState,
     TorrentTracker,
 )
-from ..util import count_torrents_by_status
+from ..util import count_torrents_by_status, download_torrent_from_url
 
 
 class DelugeClient(BaseClient):
@@ -359,15 +358,14 @@ class DelugeClient(BaseClient):
 
     @log_time
     def add_torrent(self, value: str) -> None:
-        """Add a torrent from magnet link, HTTP URL, or file path."""
-        if value.startswith("magnet:"):
-            # Magnet link - use existing method
-            self._call("core.add_torrent_magnet", [value, {}])
-        elif value.startswith(("http://", "https://")):
-            # HTTP/HTTPS URL - download and add as file
-            self._add_torrent_from_url(value)
+        if value.startswith(("magnet:", "http://", "https://")):
+            magnet_link, torrent_data = download_torrent_from_url(value)
+            if magnet_link:
+                self._call("core.add_torrent_magnet", [magnet_link, {}])
+            else:
+                file_data = base64.b64encode(torrent_data).decode("utf-8")
+                self._call("core.add_torrent_file", ["", file_data, {}])
         else:
-            # Local file path
             file = os.path.expanduser(value)
             with open(file, "rb") as f:
                 file_data = base64.b64encode(f.read()).decode("utf-8")
@@ -804,45 +802,3 @@ class DelugeClient(BaseClient):
             last_scrape=None,
             next_scrape=None,
         )
-
-    def _add_torrent_from_url(self, url: str) -> None:
-        """Download torrent file from URL and add to client.
-
-        Args:
-            url: HTTP/HTTPS URL to .torrent file
-
-        Raises:
-            ClientError: If download or add operation fails
-        """
-
-        try:
-            # Download torrent file with 30-second timeout
-            with urllib.request.urlopen(url, timeout=30) as response:
-                if response.status != 200:
-                    raise ClientError(
-                        f"Failed to download torrent: HTTP {response.status}"
-                    )
-
-                torrent_data = response.read()
-
-                # Validate it's actually a torrent file
-                # (bencoded, starts with 'd')
-                if not torrent_data or torrent_data[0:1] != b"d":
-                    raise ClientError(
-                        "Downloaded file is not a valid torrent file"
-                    )
-
-                # Encode and add to Deluge
-                file_data = base64.b64encode(torrent_data).decode("utf-8")
-                self._call("core.add_torrent_file", ["", file_data, {}])
-
-        except urllib.error.HTTPError as e:
-            raise ClientError(
-                f"HTTP error downloading torrent: {e.code} {e.reason}"
-            )
-        except urllib.error.URLError as e:
-            raise ClientError(
-                f"Failed to download torrent from {url}: {e.reason}"
-            )
-        except Exception as e:
-            raise ClientError(f"Error adding torrent from URL: {e}")
