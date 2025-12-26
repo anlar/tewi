@@ -29,11 +29,14 @@ release-pypi-main: build
 docker-up:
 	docker compose -f docker/docker-compose.yml up -d
 
+docker-up-full:
+	docker compose -f docker/docker-compose.yml --profile search up -d
+
 docker-down:
-	docker compose -f docker/docker-compose.yml down
+	docker compose -f docker/docker-compose.yml --profile search down
 
 docker-remove:
-	docker compose -f docker/docker-compose.yml down -v
+	docker compose -f docker/docker-compose.yml --profile search down -v
 
 docker-init:
 	./docker/init-torrents.sh

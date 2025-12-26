@@ -69,6 +69,8 @@ services:
   jackett:
     image: lscr.io/linuxserver/jackett:latest
     container_name: tewi-jackett-dev
+    profiles:
+      - search
     environment:
       - PUID=1000
       - PGID=1000
@@ -86,6 +88,8 @@ services:
   prowlarr:
     image: lscr.io/linuxserver/prowlarr:latest
     container_name: tewi-prowlarr-dev
+    profiles:
+      - search
     environment:
       - PUID=1000
       - PGID=1000
@@ -103,6 +107,8 @@ services:
   bitmagnet:
     image: ghcr.io/bitmagnet-io/bitmagnet:latest
     container_name: tewi-bitmagnet-dev
+    profiles:
+      - search
     environment:
       - POSTGRES_HOST=tewi-postgres-dev
       - POSTGRES_PASSWORD=postgres
@@ -133,6 +139,8 @@ services:
   tewi-postgres-dev:
     image: postgres:16-alpine
     container_name: tewi-postgres-dev
+    profiles:
+      - search
     environment:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=bitmagnet
