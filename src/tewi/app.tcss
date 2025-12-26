@@ -212,11 +212,14 @@ TorrentItemOneline > #speed > #stats {
 TorrentItemCompact {
     padding: 0 1;
     layout: vertical;
-    border-top: round $primary 75%;
 }
 
 ListItem.-highlight > TorrentItemCompact {
     background: $primary-darken-1 !important;
+}
+
+ListItem.-highlight > TorrentItemCompact > #stats {
+    background: $primary-darken-1;
 }
 
 TorrentItemCompact > #name-container > #name {
@@ -233,9 +236,15 @@ TorrentItemCompact > #speed {
     padding-left: 1;
 }
 
-TorrentItemCompact > #speed > #stats {
+TorrentItemCompact > #stats {
+    grid-size: 4;
+    grid-columns: 25 25 40 auto;
+    height: auto;
+    background: $primary-background-darken-1;
+}
+
+TorrentItemCompact > #stats > .column {
     text-opacity: 75%;
-    padding-right: 1;
 }
 
 TorrentItemCompact > ProgressBar > Bar {
@@ -269,7 +278,7 @@ TorrentItemCard > #name-container > #name {
 
 TorrentItemCard > #stats {
     grid-size: 4;
-    grid-columns: 22 22 50 auto;
+    grid-columns: 25 25 40 auto;
     height: auto;
 }
 
