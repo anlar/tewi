@@ -360,7 +360,6 @@ class TorrentItemCompact(TorrentItem):
 
 
 class TorrentItemCard(TorrentItemCompact):
-
     @log_time
     def compose(self) -> ComposeResult:
         with Horizontal(id="name-container"):
