@@ -9,6 +9,7 @@ from qbittorrentapi.definitions import Dictionary
 from qbittorrentapi.torrents import TorrentDictionary, Tracker
 
 from ...util.log import log_time
+from ...util.misc import is_torrent_link
 from ..base import BaseClient, ClientCapability
 from ..models import (
     ClientError,
@@ -273,7 +274,7 @@ class QBittorrentClient(BaseClient):
 
     @log_time
     def add_torrent(self, value: str) -> None:
-        if value.startswith(("magnet:", "http://", "https://")):
+        if is_torrent_link(value):
             magnet_link, torrent_data = download_torrent_from_url(value)
             if magnet_link:
                 self.client.torrents.add(urls=magnet_link)

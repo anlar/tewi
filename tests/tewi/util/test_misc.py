@@ -76,17 +76,19 @@ class TestIsTorrentLink:
         assert is_torrent_link("https://") is True
 
     def test_case_sensitivity(self):
-        """Test that the function handles different cases correctly."""
-        # These should work (lowercase)
+        """Test that the function is case-insensitive."""
+        # Lowercase should work
         assert is_torrent_link("magnet:?xt=urn:btih:123") is True
         assert is_torrent_link("http://example.com") is True
         assert is_torrent_link("https://example.com") is True
 
-        # These should not work (uppercase/mixed case)
-        assert is_torrent_link("MAGNET:?xt=urn:btih:123") is False
-        assert is_torrent_link("HTTP://example.com") is False
-        assert is_torrent_link("HTTPS://example.com") is False
-        assert is_torrent_link("Magnet:?xt=urn:btih:123") is False
+        # Uppercase should also work (case-insensitive)
+        assert is_torrent_link("MAGNET:?xt=urn:btih:123") is True
+        assert is_torrent_link("HTTP://example.com") is True
+        assert is_torrent_link("HTTPS://example.com") is True
+        assert is_torrent_link("Magnet:?xt=urn:btih:123") is True
+        assert is_torrent_link("HtTp://example.com") is True
+        assert is_torrent_link("HtTpS://example.com") is True
 
     def test_real_world_examples(self):
         """Test with realistic torrent links."""
