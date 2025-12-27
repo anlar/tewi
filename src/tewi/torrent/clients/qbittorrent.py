@@ -9,7 +9,6 @@ from qbittorrentapi.definitions import Dictionary
 from qbittorrentapi.torrents import TorrentDictionary, Tracker
 
 from ...util.log import log_time
-from ...util.misc import is_torrent_link
 from ..base import BaseClient, ClientCapability
 from ..models import (
     ClientError,
@@ -25,7 +24,7 @@ from ..models import (
     TorrentPeerState,
     TorrentTracker,
 )
-from ..util import count_torrents_by_status
+from ..util import count_torrents_by_status, download_torrent_from_url
 
 
 class QBittorrentClient(BaseClient):
@@ -274,9 +273,12 @@ class QBittorrentClient(BaseClient):
 
     @log_time
     def add_torrent(self, value: str) -> None:
-        """Add a torrent from magnet link or file path."""
-        if is_torrent_link(value):
-            self.client.torrents.add(urls=value)
+        if value.startswith(("magnet:", "http://", "https://")):
+            magnet_link, torrent_data = download_torrent_from_url(value)
+            if magnet_link:
+                self.client.torrents.add(urls=magnet_link)
+            else:
+                self.client.torrents.add(torrent_files=torrent_data)
         else:
             file = os.path.expanduser(value)
             with open(file, "rb") as f:
