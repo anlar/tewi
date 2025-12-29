@@ -397,7 +397,7 @@ class TorrentInfoPanel(ScrollableContainer):
             table.clear(columns=True)
             self.create_table_peers_columns()
 
-            for p in self.r_torrent.peers:
+            for idx, p in enumerate(self.r_torrent.peers):
                 progress = p.progress * 100
                 table.add_row(
                     "-"
@@ -419,7 +419,7 @@ class TorrentInfoPanel(ScrollableContainer):
                     p.address,
                     self.print_count(p.port),
                     p.client_name,
-                    key=p.address + str(p.port),
+                    key=f"peer_{idx}",
                 )
 
             self.select_row(table, selected_row)
@@ -429,7 +429,7 @@ class TorrentInfoPanel(ScrollableContainer):
             table.clear(columns=True)
             self.create_table_trackers_columns()
 
-            for t in self.r_torrent.trackers:
+            for idx, t in enumerate(self.r_torrent.trackers):
                 table.add_row(
                     self.print_count(t.tier),
                     t.host,
@@ -443,7 +443,7 @@ class TorrentInfoPanel(ScrollableContainer):
                     self.print_tracker_datetime(t.last_scrape),
                     self.print_tracker_next_time(t.next_scrape),
                     t.message or "-",
-                    key=t.host,
+                    key=f"tracker_{idx}",
                 )
 
             self.select_row(table, selected_row)

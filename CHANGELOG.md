@@ -22,6 +22,10 @@ handle multi-line list body as single line.
 - Denser torrent card stats display with better formatting, compact labels, and visual separators
 - Display torrent stats in compact view mode
 
+### Fixed
+
+- Fix DuplicateKey error when torrent has multiple peers/trackers with the same host in details tables
+
 ### Removed
 
 ## [2.2.0] - 2025-12-25 - Inaba Trace
