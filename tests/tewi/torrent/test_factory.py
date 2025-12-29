@@ -56,7 +56,7 @@ class TestCreateClient:
             create_client(
                 client_type="unknown",
                 host="localhost",
-                port="9092",
+                port="9070",
             )
 
         # Verify error message

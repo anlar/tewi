@@ -9,8 +9,8 @@ services:
       - USER=  # No authentication
       - PASS=  # No authentication
     ports:
-      - "9092:9091"     # Web UI / RPC
-      - "51414:51413"   # Peer connections
+      - "9070:9091"     # Web UI / RPC
+      - "9080:51413"   # Peer connections
     restart: "no"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9091/transmission/web/"]
@@ -28,11 +28,11 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=UTC
-      - WEBUI_PORT=9093
+      - WEBUI_PORT=9071
     ports:
-      - "9093:9093"     # Web UI (no authentication required)
-      - "6881:6881"     # Peer connections (TCP)
-      - "6881:6881/udp" # Peer connections (UDP)
+      - "9071:9071"     # Web UI (no authentication required)
+      - "9081:6881"     # Peer connections (TCP)
+      - "9081:6881/udp" # Peer connections (UDP)
     restart: "no"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9093/"]
@@ -52,10 +52,9 @@ services:
       - TZ=Etc/UTC
       - DELUGE_LOGLEVEL=error #optional
     ports:
-      - 8112:8112
-      - 6882:6881
-      - 6882:6881/udp
-      - 58846:58846 #optional
+      - 9072:8112
+      - 9082:6881
+      - 9082:6881/udp
     restart: "no"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8112"]
@@ -76,7 +75,7 @@ services:
       - PGID=1000
       - TZ=Etc/UTC
     ports:
-      - 9117:9117
+      - 9075:9117
     restart: "no"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9117/UI/Dashboard"]
@@ -95,7 +94,7 @@ services:
       - PGID=1000
       - TZ=Etc/UTC
     ports:
-      - 9696:9696
+      - 9076:9696
     restart: no
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9696/"]
@@ -114,10 +113,10 @@ services:
       - POSTGRES_PASSWORD=postgres
     ports:
       # API and WebUI port:
-      - "3333:3333"
+      - "9077:3333"
       # BitTorrent ports:
-      - "3334:3334/tcp"
-      - "3334:3334/udp"
+      - "9087:3334/tcp"
+      - "9087:3334/udp"
     restart: no
     command:
       - worker

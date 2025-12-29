@@ -24,6 +24,6 @@ def pytest_addoption(parser):
     parser.addoption(
         "--transmission-port",
         action="store",
-        default="9092",
-        help="Port number for Transmission daemon (default: 9092)",
+        default="9070",
+        help="Port number for Transmission daemon (default: 9070)",
     )

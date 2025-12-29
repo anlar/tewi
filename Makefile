@@ -45,13 +45,13 @@ docker-init-full:
 	./docker/init-torrents.sh 10
 
 run-transmission:
-	PYTHONPATH=src textual run --dev tewi.app:create_app -- --client-type transmission --port 9092
+	PYTHONPATH=src textual run --dev tewi.app:create_app -- --client-type transmission --port 9070
 
 run-qbittorrent:
-	PYTHONPATH=src textual run --dev tewi.app:create_app -- --client-type qbittorrent --port 9093 --username admin --password $$(docker logs tewi-qbittorrent-dev 2>&1 | grep 'temporary password' | tail -1 | sed 's/.*: //')
+	PYTHONPATH=src textual run --dev tewi.app:create_app -- --client-type qbittorrent --port 9071 --username admin --password $$(docker logs tewi-qbittorrent-dev 2>&1 | grep 'temporary password' | tail -1 | sed 's/.*: //')
 
 run-deluge:
-	PYTHONPATH=src textual run --dev tewi.app:create_app -- --client-type deluge --port 8112 --password deluge
+	PYTHONPATH=src textual run --dev tewi.app:create_app -- --client-type deluge --port 9072 --password deluge
 
 auto-test: docker-up docker-init check test-all
 	@timeout 5 $(MAKE) run-transmission; status=$$?; [ $$status -eq 124 ] || exit $$status
