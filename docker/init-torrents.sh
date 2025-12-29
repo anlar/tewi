@@ -8,7 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 
 head -n $LIMIT "$SCRIPT_DIR/magnets.txt" | xargs -L 1 transmission-remote localhost:9070 --add
 
-transmission-remote localhost:9070 -l | awk 'NR>1 && !/^Sum:/ {print $1}' | while read id; do 
+transmission-remote localhost:9070 -l | awk 'NR>1 && !/^Sum:/ {print $1}' | while read id; do
   rand=$(od -An -N1 -tu1 /dev/urandom | awk '{print $1 % 3}')
   case $rand in
     0) transmission-remote localhost:9070 -t "$id" -Bh ;;
@@ -16,6 +16,8 @@ transmission-remote localhost:9070 -l | awk 'NR>1 && !/^Sum:/ {print $1}' | whil
     2) transmission-remote localhost:9070 -t "$id" -Bn ;;
   esac
 done
+
+transmission-remote localhost:9070 --alt-speed
 
 # qBittorrent
 
@@ -28,6 +30,8 @@ qbt_session=$(curl -i --header 'Referer: http://localhost:9071' --data "username
 echo "qbt session: $qbt_session"
 
 head -n $LIMIT "$SCRIPT_DIR/magnets.txt" | xargs -I {} curl -X POST -H "Referer: http://localhost:9071" -b "SID=$qbt_session" --data-urlencode "urls={}" http://localhost:9071/api/v2/torrents/add
+
+curl -X POST -H "Referer: http://localhost:9071" -b "SID=$qbt_session" http://localhost:9071/api/v2/transfer/toggleSpeedLimitsMode
 
 # Deluge
 
@@ -42,4 +46,6 @@ echo "deluge host: $deluge_host"
 curl -X POST http://localhost:9072/json -H "Content-Type: application/json" -d '{"method": "web.connect", "params": ["'$deluge_host'"], "id": 3}' --cookie "_session_id=$deluge_session"
 
 head -n $LIMIT "$SCRIPT_DIR/magnets.txt" | xargs -I }{ curl -X POST http://localhost:9072/json -H "Content-Type: application/json" -d '{"method": "core.add_torrent_magnet","params": ["}{", {}],"id": 1}' --cookie "_session_id=$deluge_session"
+
+curl -X POST http://localhost:9072/json -H "Content-Type: application/json" -d '{"method": "core.set_config", "params": [{"max_download_speed": 100, "max_upload_speed": 100}], "id": 4}' --cookie "_session_id=$deluge_session"
 
