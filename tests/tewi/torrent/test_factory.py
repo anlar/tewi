@@ -50,13 +50,16 @@ class TestCreateClient:
         assert meta["name"] == "Transmission"
         assert isinstance(meta["version"], str)
 
-    def test_create_unknown_client(self):
+    def test_create_unknown_client(self, request):
         """Test creating an unknown client type raises ClientError."""
+
+        port = request.config.getoption("--transmission-port")
+
         with pytest.raises(ClientError) as exc_info:
             create_client(
                 client_type="unknown",
                 host="localhost",
-                port="9070",
+                port=port,
             )
 
         # Verify error message

@@ -27,7 +27,6 @@ def client(request):
     """Create TransmissionClient instance for all tests.
 
     Port can be configured with --transmission-port option.
-    Default port: 9070 (docker setup)
 
     Requires Transmission daemon running on localhost.
     Can be started with: make docker-up docker-init

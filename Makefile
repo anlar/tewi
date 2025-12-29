@@ -4,6 +4,9 @@ check:
 test:
 	python -m pytest -v
 
+test-github:
+	python -m pytest -v --transmission-port=9092
+
 test-all:
 	python -m pytest -v --runxfail
 
