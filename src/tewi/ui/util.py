@@ -1,6 +1,9 @@
 """UI utility functions."""
 
 import math
+import os
+import platform
+import subprocess
 from datetime import datetime
 from functools import cache
 
@@ -23,6 +26,34 @@ def subtitle_keys(*key_desc_pairs: tuple[str, str]) -> str:
         "(Enter) Search / (ESC) Close"
     """
     return " / ".join(f"({key}) {desc}" for key, desc in key_desc_pairs)
+
+
+def open(path: str) -> None:
+    """Open file or URL using platform-specific default application.
+
+    Args:
+        path: File path or URL to open
+
+    Raises:
+        Exception: If opening fails on the current platform
+    """
+    system = platform.system()
+    if system == "Linux":
+        subprocess.Popen(
+            ["xdg-open", path],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    elif system == "Darwin":  # macOS
+        subprocess.Popen(
+            ["open", path],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    elif system == "Windows":
+        os.startfile(path)
+    else:
+        raise Exception(f"Unsupported platform: {system}")
 
 
 # Functions from util/print.py

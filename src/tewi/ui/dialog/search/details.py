@@ -1,7 +1,5 @@
 """Torrent details dialog for web search results."""
 
-import webbrowser
-
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, ScrollableContainer
@@ -10,6 +8,7 @@ from textual.widgets import Link, Markdown, Static
 
 from ....util.log import log_time
 from ...messages import AddTorrentFromWebSearchCommand, Notification
+from ...util import open as open_path
 from ...util import subtitle_keys
 
 
@@ -101,7 +100,7 @@ class TorrentDetailsDialog(ModalScreen[None]):
     @log_time
     def action_open_link(self) -> None:
         if self.site_link:
-            webbrowser.open(self.site_link)
+            open_path(self.site_link)
 
     @log_time
     def action_close(self) -> None:

@@ -21,6 +21,7 @@ handle multi-line list body as single line.
 - Handle HTTP redirects when adding torrents from URLs, supporting both torrent file downloads and magnet link redirects (affects all clients: Transmission, qBittorrent, Deluge)
 - Denser torrent card stats display with better formatting, compact labels, and visual separators
 - Display torrent stats in compact view mode
+- Refactor file/URL opening into a unified `open()` function in ui/util module for platform-specific handling
 
 ### Fixed
 

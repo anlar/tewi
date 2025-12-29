@@ -1,6 +1,4 @@
 import os
-import platform
-import subprocess
 from datetime import datetime
 from typing import Any
 
@@ -21,6 +19,9 @@ from ...torrent.models import TorrentFile, TorrentFilePriority
 from ...util.geoip import get_country
 from ...util.log import log_time
 from ..messages import OpenTorrentListCommand, ToggleFileDownloadCommand
+from ..util import (
+    open as open_path,
+)
 from ..util import (
     print_size,
     print_speed,
@@ -677,17 +678,6 @@ class TorrentInfoPanel(ScrollableContainer):
         )
 
     @log_time
-    def _open_file_with_system_app(self, file_path: str):
-        """Open file using platform-specific default application."""
-        system = platform.system()
-        if system == "Linux":
-            subprocess.Popen(["xdg-open", file_path])
-        elif system == "Darwin":  # macOS
-            subprocess.Popen(["open", file_path])
-        elif system == "Windows":
-            os.startfile(file_path)
-
-    @log_time
     def action_open_file(self):
         """Open selected file with platform-specific default application."""
         # Only handle if we're on the files tab
@@ -734,7 +724,7 @@ class TorrentInfoPanel(ScrollableContainer):
         # Check if file exists and open it
         if os.path.exists(file_path):
             try:
-                self._open_file_with_system_app(file_path)
+                open_path(file_path)
             except Exception:
                 # Silently fail if opening doesn't work
                 pass

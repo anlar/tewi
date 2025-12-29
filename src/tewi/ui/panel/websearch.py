@@ -17,7 +17,14 @@ from ..messages import (
     Notification,
     OpenTorrentListCommand,
 )
-from ..util import escape_markup, print_size, subtitle_keys
+from ..util import (
+    escape_markup,
+    print_size,
+    subtitle_keys,
+)
+from ..util import (
+    open as open_path,
+)
 from ..widget.common import ReactiveLabel
 
 
@@ -275,7 +282,7 @@ class TorrentWebSearch(Static):
         result = self.r_results[table.cursor_row]
 
         if result.page_url:
-            self.app.open_url(result.page_url)
+            open_path(result.page_url)
 
     @log_time
     def action_cursor_down(self) -> None:
