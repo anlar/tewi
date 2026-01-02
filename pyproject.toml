@@ -8,7 +8,7 @@ dynamic = ["version"]
 authors = [
   { name="Anton Larionov", email="anton.larionov.dev@gmail.com" },
 ]
-description = "Text-based interface for BitTorrent clients (Transmission & qBittorrent)"
+description = "Text-based interface for BitTorrent clients (Transmission, qBittorrent, Deluge)"
 readme = "README.md"
 license = { file = "LICENSE.txt" }
 requires-python = ">=3.10"
