@@ -135,7 +135,7 @@ class TorrentDetailsWidget(Static):
     @log_time
     def compose(self) -> ComposeResult:
         """Compose the two-column layout with title (top) and link (bottom)."""
-        yield Static(self.title, classes="details-title")
+        yield Static(self.title, markup=False, classes="details-title")
         with ScrollableContainer():
             with Horizontal(classes="details-block"):
                 yield Markdown(self.common_content, classes="details-column")
