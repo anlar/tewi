@@ -21,14 +21,16 @@ dependencies = [
   "platformdirs >= 4.2.0"
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: End Users/Desktop",
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Topic :: Communications :: File Sharing"
+    "Topic :: Communications :: File Sharing",
+    "Topic :: Internet",
+    "Topic :: Utilities"
 ]
 keywords = ["transmission", "qbittorrent", "torrent"]
 
@@ -42,6 +44,7 @@ tewi = "tewi.app:cli"
 "Homepage" = "https://github.com/anlar/tewi"
 "Repository" = "https://github.com/anlar/tewi"
 "Bug Tracker" = "https://github.com/anlar/tewi/issues"
+"Changelog" = "https://github.com/anlar/tewi/blob/master/CHANGELOG.md"
 
 [tool.pytest.ini_options]
 markers = [
