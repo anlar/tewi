@@ -99,12 +99,10 @@ class TestGetCountry:
         import src.tewi.util.geoip as geoip_module
 
         # Save original state
-        original_available = geoip_module._geoip_available
         original_geoip = geoip_module.geoip
 
         try:
             # Simulate module not being available
-            geoip_module._geoip_available = False
             geoip_module.geoip = None
 
             # Test with a different IP to avoid cache hits
@@ -116,5 +114,4 @@ class TestGetCountry:
             )
         finally:
             # Restore original state
-            geoip_module._geoip_available = original_available
             geoip_module.geoip = original_geoip
