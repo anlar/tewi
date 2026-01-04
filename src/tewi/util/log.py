@@ -20,8 +20,12 @@ import logging
 import time
 from functools import wraps
 from pathlib import Path
+from typing import Callable, ParamSpec, TypeVar
 
 from platformdirs import user_log_dir
+
+P = ParamSpec("P")
+T = TypeVar("T")
 
 
 def get_logger() -> logging.Logger:
@@ -57,8 +61,9 @@ def init_logger(log_level: str) -> None:
     logging.basicConfig(
         filename=str(log_file),
         encoding="utf-8",
-        format="%(asctime)s.%(msecs)03d %(module)-15s "
-        "%(levelname)-8s %(message)s",
+        format=(
+            "%(asctime)s.%(msecs)03d %(module)-15s %(levelname)-8s %(message)s"
+        ),
         level=level,
         datefmt="%Y-%m-%d %H:%M:%S",
     )
@@ -70,11 +75,11 @@ def init_logger(log_level: str) -> None:
     )
 
 
-def log_time(func):
+def log_time(func: Callable[P, T]) -> Callable[P, T]:
     """Decorator to log function execution time if it exceeds 1ms."""
 
     @wraps(func)
-    def log_time_wrapper(*args, **kwargs):
+    def log_time_wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
         start_time = time.perf_counter()
 
         result = func(*args, **kwargs)

@@ -9,7 +9,6 @@ try:
     from geoip2fast import GeoIP2Fast
 
     geoip = GeoIP2Fast()
-    _geoip_available = True
 except ImportError:
     logger.warning(
         "GeoIP module (geoip2fast) not available, "
@@ -17,13 +16,12 @@ except ImportError:
         "unless provided by torrent client itself"
     )
     geoip = None
-    _geoip_available = False
 
 
 @log_time
 @cache
 def get_country(address: str) -> str | None:
-    if not _geoip_available:
+    if geoip is None:
         return None
 
     country_name = geoip.lookup(address).country_name
