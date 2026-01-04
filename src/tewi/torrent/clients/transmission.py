@@ -9,7 +9,7 @@ from datetime import datetime
 from transmission_rpc import Client as TransmissionRPCClient
 from transmission_rpc import File as TransmissionFile
 from transmission_rpc import Torrent as TransmissionTorrent
-from transmission_rpc.torrent import Tracker as TransmissionTracker
+from transmission_rpc.torrent import TrackerStats as TransmissionTrackerStats
 
 from ...util.log import log_time
 from ...util.misc import is_torrent_link
@@ -475,7 +475,7 @@ class TransmissionClient(BaseClient):
         )
 
     @log_time
-    def _tracker_to_dto(self, t: TransmissionTracker) -> TorrentTracker:
+    def _tracker_to_dto(self, t: TransmissionTrackerStats) -> TorrentTracker:
         """Convert transmission-rpc Tracker to TorrentTracker."""
 
         return TorrentTracker(
