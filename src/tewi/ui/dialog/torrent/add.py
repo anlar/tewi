@@ -1,3 +1,5 @@
+from typing import cast
+
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.reactive import reactive
@@ -66,7 +68,7 @@ class AddTorrentWidget(Static):
         text_area.cursor_location = text_area.document.end
 
     @log_time
-    def get_link_from_clipboard(self) -> str:
+    def get_link_from_clipboard(self) -> str | None:
         text = clipboard.paste()
 
         if text and is_torrent_link(text):
@@ -79,8 +81,8 @@ class AddTorrentWidget(Static):
         value = self.query_one(TextArea).text
 
         self.post_message(AddTorrentCommand(value))
-        self.parent.dismiss()
+        cast(ModalScreen[None], self.parent).dismiss()
 
     @log_time
     def action_close(self) -> None:
-        self.parent.dismiss()
+        cast(ModalScreen[None], self.parent).dismiss()
