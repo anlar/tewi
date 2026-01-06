@@ -54,5 +54,6 @@ markers = [
 [project.optional-dependencies]
 dev = [
   "pytest",
-  "ruff"
+  "ruff",
+  "debugpy",
 ]

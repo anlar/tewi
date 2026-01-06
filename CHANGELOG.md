@@ -13,6 +13,7 @@ handle multi-line list body as single line.
 ### Added
 
 - New torrent filters: Checking and Icomplete
+- Add `--debug PORT` CLI option to start debugpy server for remote debugging
 
 ### Changed
 
