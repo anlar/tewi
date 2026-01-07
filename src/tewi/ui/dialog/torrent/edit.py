@@ -1,16 +1,20 @@
+from typing import cast
+
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.widgets import Input, Label, Static
+
+from tewi.torrent.models import Torrent
 
 from ....util.log import log_time
 from ...messages import EditTorrentCommand
 from ...util import subtitle_keys
 
 
-class EditTorrentDialog(ModalScreen):
+class EditTorrentDialog(ModalScreen[None]):
     @log_time
-    def __init__(self, torrent):
+    def __init__(self, torrent: Torrent):
         self.torrent = torrent
         super().__init__()
 
@@ -26,7 +30,7 @@ class EditTorrentWidget(Static):
     ]
 
     @log_time
-    def __init__(self, torrent):
+    def __init__(self, torrent: Torrent):
         self.torrent = torrent
         super().__init__()
 
@@ -70,8 +74,8 @@ class EditTorrentWidget(Static):
             EditTorrentCommand(self.torrent.hash, new_name, new_location)
         )
 
-        self.parent.dismiss(False)
+        cast(ModalScreen[None], self.parent).dismiss()
 
     @log_time
     def action_close(self) -> None:
-        self.parent.dismiss(False)
+        cast(ModalScreen[None], self.parent).dismiss()
