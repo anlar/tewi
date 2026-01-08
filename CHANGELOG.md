@@ -16,6 +16,12 @@ handle multi-line list body as single line.
 
 ### Removed
 
+## [2.3.1] - 2026-01-08 - Dozing Rabbit
+
+### Changed
+
+- Renamed PyPI package to `tewi-torrent` from `tewi-transmission`
+
 ## [2.3.0] - 2026-01-08 - Dozing Rabbit
 
 ### Added
