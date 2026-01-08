@@ -1,4 +1,4 @@
-name: Close inactive issues
+name: Stale Issues
 on:
   schedule:
     - cron: "0 0 * * *"
@@ -20,4 +20,3 @@ jobs:
           days-before-pr-close: -1
           exempt-all-assignees: true
           exempt-all-milestones: true
-
