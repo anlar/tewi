@@ -12,8 +12,8 @@ handle multi-line list body as single line.
 
 ### Added
 
-- New torrent filters: Checking and Icomplete
-- Add `--debug PORT` CLI option to start debugpy server for remote debugging
+- New torrent filters: `Checking` and `Incomplete`
+- Add `--debug PORT` CLI option to start `debugpy` server for remote debugging
 
 ### Changed
 
@@ -23,10 +23,7 @@ handle multi-line list body as single line.
 - Denser torrent card stats display with better formatting, compact labels, and visual separators
 - Display torrent stats in compact view mode
 - Refactor file/URL opening into a unified `open()` function in ui/util module for platform-specific handling
-
-### Fixed
-
-- Fix DuplicateKey error when torrent has multiple peers/trackers with the same host in details tables
+- Fix `DuplicateKey` error when torrent has multiple peers/trackers with the same host in details tables
 
 ### Removed
 
@@ -91,7 +88,7 @@ handle multi-line list body as single line.
 - Category filtering in web search - search providers now support category filter in search requests
 - Cache Jackett search indexers for 10 minutes [#131](https://github.com/anlar/tewi/issues/131)
 - Option to specify enabled search providers: `--search-providers`, config `[search].providers` [#132](https://github.com/anlar/tewi/issues/132)
-- Command to list avaialable search providers: `--list-search-providers` [#132](https://github.com/anlar/tewi/issues/132)
+- Command to list available search providers: `--list-search-providers` [#132](https://github.com/anlar/tewi/issues/132)
 
 ### Changed
 
@@ -150,7 +147,7 @@ handle multi-line list body as single line.
 - Load peer country from qBittorrent details
 - Unified naming scheme for peer connection types
 - Fix wrong order of upload and download speed columns in peers
-- Use short country names for qbittorrent peers
+- Use short country names for qBittorrent peers
 - Merge priority and select columns in files (shorten rows)
 - Change Progress column to Done in files (shorten rows)
 - Sort files alphabetically by name in torrent details
