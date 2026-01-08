@@ -21,7 +21,7 @@ build: check test clean
 	python -m build
 
 install-pipx: build
-	pipx install --force ./dist/tewi_transmission-*-py3-none-any.whl
+	pipx install --force ./dist/tewi_torrent-*-py3-none-any.whl
 
 release-pypi-test: build
 	python -m twine upload --repository testpypi dist/*

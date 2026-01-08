@@ -10,6 +10,12 @@
 
 ## About
 
+> [!IMPORTANT]
+> The PyPI package has been renamed from `tewi-transmission` to `tewi-torrent`
+> to reflect multi-client support. If you have the old package installed,
+> please uninstall it first. Future updates will be published only in
+> `tewi-torrent`.
+
 ![Tewi Screen Shot](https://raw.githubusercontent.com/anlar/tewi/refs/heads/master/docs/images/tewi-screenshot-1.png)
 
 <p align="center">
@@ -64,15 +70,15 @@ Tewi requires Python 3.10+.
 Recommended way to install is to use `pipx`, `pip`, or `uv`:
 
 ```
-$ pipx install tewi-transmission
+$ pipx install tewi-torrent
 ```
 
 ```
-$ pip install tewi-transmission
+$ pip install tewi-torrent
 ```
 
 ```
-$ uv tool install tewi-transmission
+$ uv tool install tewi-torrent
 ```
 
 ## Usage
