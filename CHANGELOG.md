@@ -12,6 +12,14 @@ handle multi-line list body as single line.
 
 ### Added
 
+### Changed
+
+### Removed
+
+## [2.3.0] - 2026-01-08 - Dozing Rabbit
+
+### Added
+
 - New torrent filters: `Checking` and `Incomplete`
 - Add `--debug PORT` CLI option to start `debugpy` server for remote debugging
 
@@ -24,8 +32,6 @@ handle multi-line list body as single line.
 - Display torrent stats in compact view mode
 - Refactor file/URL opening into a unified `open()` function in ui/util module for platform-specific handling
 - Fix `DuplicateKey` error when torrent has multiple peers/trackers with the same host in details tables
-
-### Removed
 
 ## [2.2.0] - 2025-12-25 - Inaba Trace
 
