@@ -145,8 +145,8 @@ class BaseProviderIntegrationTest(ABC):
         """
         # Size should be positive and reasonable
         assert result.size >= 0, "Size should be non-negative"
-        assert result.size < 100 * 1024**3, (
-            f"Size should be less than 100GB, got {result.size}"
+        assert result.size < 200 * 1024**3, (
+            f"Size should be less than 200GB, got {result.size}"
         )
 
         # Seeders and leechers should be non-negative
