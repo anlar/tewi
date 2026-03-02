@@ -1,5 +1,6 @@
 """Utility functions for torrent search operations."""
 
+import re
 import urllib.parse
 import urllib.request
 from typing import Any
@@ -94,6 +95,10 @@ def detect_category_from_name(name: str) -> Category | None:
     """
     name_lower = name.lower()
 
+    # TV: contains season and episode - S01, S01E01
+    if re.search(r"s\d{2}(e\d{2})?", name_lower):
+        return StandardCategories.TV
+
     # AUDIO: Check for audio file extensions and keywords
     audio_patterns = [
         ".mp3",
@@ -114,6 +119,20 @@ def detect_category_from_name(name: str) -> Category | None:
         return StandardCategories.AUDIO
 
     # VIDEO: Check for video file extensions and keywords
+    video_uhd_patterns = [
+        "2160p",
+        "4k",
+    ]
+    if any(pattern in name_lower for pattern in video_uhd_patterns):
+        return StandardCategories.MOVIES_UHD
+
+    video_hd_patterns = [
+        "1080p",
+        "720p",
+    ]
+    if any(pattern in name_lower for pattern in video_hd_patterns):
+        return StandardCategories.MOVIES_HD
+
     video_patterns = [
         ".mkv",
         ".mp4",
@@ -125,10 +144,6 @@ def detect_category_from_name(name: str) -> Category | None:
         ".m4v",
         "movie",
         "film",
-        "1080p",
-        "720p",
-        "2160p",
-        "4k",
         "bluray",
         "webrip",
         "hdtv",

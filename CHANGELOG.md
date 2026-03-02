@@ -14,6 +14,8 @@ handle multi-line list body as single line.
 
 ### Changed
 
+- Improve category detection for TV and Movies in Torrents-CSV search provider
+
 ### Removed
 
 ## [2.3.1] - 2026-01-08 - Dozing Rabbit

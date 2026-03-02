@@ -13,6 +13,17 @@ from src.tewi.search.util import (
 class TestDetectCategoryFromName:
     """Test category detection from torrent names."""
 
+    def test_detect_tv_by_keyword(self):
+        """Test detection of TV category by keyword."""
+        assert (
+            detect_category_from_name("Some name S05") == StandardCategories.TV
+        )
+
+        assert (
+            detect_category_from_name("Some name S05E19")
+            == StandardCategories.TV
+        )
+
     def test_detect_audio_by_extension(self):
         """Test detection of audio category by file extension."""
         assert (
@@ -52,8 +63,7 @@ class TestDetectCategoryFromName:
         )
 
         assert (
-            detect_category_from_name("Series.S01E01.mp4")
-            == StandardCategories.MOVIES
+            detect_category_from_name("Movie.mp4") == StandardCategories.MOVIES
         )
 
         assert (
@@ -65,16 +75,20 @@ class TestDetectCategoryFromName:
         """Test detection of video category by keyword."""
         assert (
             detect_category_from_name("The Matrix (1999) 1080p BluRay x264")
-            == StandardCategories.MOVIES
+            == StandardCategories.MOVIES_HD
         )
 
         assert (
             detect_category_from_name("Film Title 2024 4K HEVC")
-            == StandardCategories.MOVIES
+            == StandardCategories.MOVIES_UHD
         )
 
         assert (
-            detect_category_from_name("Series S01 720p WEBRip")
+            detect_category_from_name("Movie.mkv") == StandardCategories.MOVIES
+        )
+
+        assert (
+            detect_category_from_name("Movie WEBRip")
             == StandardCategories.MOVIES
         )
 
