@@ -1,5 +1,6 @@
 """Utility functions for torrent search operations."""
 
+import re
 import urllib.parse
 import urllib.request
 from typing import Any
@@ -93,6 +94,10 @@ def detect_category_from_name(name: str) -> Category | None:
         Detected Jackett Category or None if no pattern matches
     """
     name_lower = name.lower()
+
+    # TV: contains season and episode - S01, S01E01
+    if re.search(r"s\d{2}(e\d{2})?", name_lower):
+        return StandardCategories.TV
 
     # AUDIO: Check for audio file extensions and keywords
     audio_patterns = [
