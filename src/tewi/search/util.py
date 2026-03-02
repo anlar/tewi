@@ -114,6 +114,20 @@ def detect_category_from_name(name: str) -> Category | None:
         return StandardCategories.AUDIO
 
     # VIDEO: Check for video file extensions and keywords
+    video_uhd_patterns = [
+        "2160p",
+        "4k",
+    ]
+    if any(pattern in name_lower for pattern in video_uhd_patterns):
+        return StandardCategories.MOVIES_UHD
+
+    video_hd_patterns = [
+        "1080p",
+        "720p",
+    ]
+    if any(pattern in name_lower for pattern in video_hd_patterns):
+        return StandardCategories.MOVIES_HD
+
     video_patterns = [
         ".mkv",
         ".mp4",
@@ -125,10 +139,6 @@ def detect_category_from_name(name: str) -> Category | None:
         ".m4v",
         "movie",
         "film",
-        "1080p",
-        "720p",
-        "2160p",
-        "4k",
         "bluray",
         "webrip",
         "hdtv",

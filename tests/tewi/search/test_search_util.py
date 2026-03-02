@@ -65,16 +65,21 @@ class TestDetectCategoryFromName:
         """Test detection of video category by keyword."""
         assert (
             detect_category_from_name("The Matrix (1999) 1080p BluRay x264")
-            == StandardCategories.MOVIES
+            == StandardCategories.MOVIES_HD
         )
 
         assert (
             detect_category_from_name("Film Title 2024 4K HEVC")
+            == StandardCategories.MOVIES_UHD
+        )
+
+        assert (
+            detect_category_from_name("Movie.mkv")
             == StandardCategories.MOVIES
         )
 
         assert (
-            detect_category_from_name("Series S01 720p WEBRip")
+            detect_category_from_name("Series S01 WEBRip")
             == StandardCategories.MOVIES
         )
 
