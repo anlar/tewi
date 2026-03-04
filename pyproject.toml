@@ -10,7 +10,8 @@ authors = [
 ]
 description = "Text-based interface for BitTorrent clients (Transmission, qBittorrent, Deluge)"
 readme = "README.md"
-license = { file = "LICENSE.txt" }
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE.txt"]
 requires-python = ">=3.10"
 dependencies = [
   "textual >= 0.83.0",
@@ -24,7 +25,6 @@ classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Environment :: Console",
     "Intended Audience :: End Users/Desktop",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Natural Language :: English",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
