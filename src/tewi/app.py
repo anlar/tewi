@@ -157,6 +157,7 @@ class MainApp(App):
         badge_max_count: int,
         badge_max_length: int,
         search_providers: list[str] | None = None,
+        search_hide_zero_seeders: bool = False,
     ):
         super().__init__()
 
@@ -202,6 +203,7 @@ class MainApp(App):
             prowlarr_multi,
             bitmagnet_url,
             search_providers,
+            search_hide_zero_seeders,
         )
 
         self.filter_option = get_filter_by_id(filter)
@@ -953,6 +955,12 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         action="store_true",
         help="List available search providers and exit",
     )
+    p.add_argument(
+        "--search-hide-zero-seeders",
+        action="store_true",
+        default=False,
+        help="Hide search results with zero seeders",
+    )
 
     # Profiles
     p.add_argument(
@@ -1146,6 +1154,7 @@ def create_app():
             badge_max_count=args.badge_max_count,
             badge_max_length=args.badge_max_length,
             search_providers=getattr(args, "search_providers", None),
+            search_hide_zero_seeders=args.search_hide_zero_seeders,
         )
         return app
     except ClientError as e:

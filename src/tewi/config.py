@@ -209,13 +209,10 @@ def _load_debug_section(
         config["test_mode"] = val
 
 
-def _load_search_section(
+def _load_search_indexers(
     parser: configparser.ConfigParser, config: dict
 ) -> None:
-    """Load [search] section options into config dict."""
-    if not parser.has_section("search"):
-        return
-
+    """Load indexer-related [search] options into config dict."""
     val = _get_string_option(parser, "search", "jackett_url")
     if val:
         config["jackett_url"] = val
@@ -237,9 +234,22 @@ def _load_search_section(
     val = _get_string_option(parser, "search", "bitmagnet_url")
     if val:
         config["bitmagnet_url"] = val
+
+
+def _load_search_section(
+    parser: configparser.ConfigParser, config: dict
+) -> None:
+    """Load [search] section options into config dict."""
+    if not parser.has_section("search"):
+        return
+
+    _load_search_indexers(parser, config)
     val = _get_list_option(parser, "search", "providers")
     if val:
         config["search_providers"] = val
+    val = _get_bool_option(parser, "search", "hide_zero_seeders")
+    if val is not None:
+        config["search_hide_zero_seeders"] = val
 
 
 def _load_config_file(config_path: Path, config: dict) -> None:
@@ -390,6 +400,9 @@ bitmagnet_url =
 # Order matters: providers listed first take priority when deduplicating
 # results and appear first in the search dialog
 providers =
+
+# Hide torrents with zero seeders from search results (default: false)
+hide_zero_seeders =
 
 [debug]
 # Log level: debug, info, warning, error, critical

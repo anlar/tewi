@@ -87,6 +87,7 @@ class SearchClient:
         prowlarr_multi: bool,
         bitmagnet_url: str | None,
         enabled_providers: list[str] | None = None,
+        hide_zero_seeders: bool = False,
     ):
         """Initialize search client with available providers.
 
@@ -100,6 +101,7 @@ class SearchClient:
             bitmagnet_url: Base URL of Bitmagnet instance (optional)
             enabled_providers: List of provider IDs to enable,
                              or None to enable all providers
+            hide_zero_seeders: Filter out results with zero seeders
         """
         self._providers: list[BaseSearchProvider] | None = None
         self._jackett_url = jackett_url
@@ -109,6 +111,7 @@ class SearchClient:
         self._prowlarr_api_key = prowlarr_api_key
         self._prowlarr_multi = prowlarr_multi
         self._bitmagnet_url = bitmagnet_url
+        self._hide_zero_seeders = hide_zero_seeders
         self._enabled_providers = self._parse_enabled_providers(
             enabled_providers
         )
@@ -343,6 +346,14 @@ class SearchClient:
             all_results = self._filter_by_categories(
                 all_results, selected_categories
             )
+
+        # Filter out zero-seeder results if requested
+        if self._hide_zero_seeders:
+            all_results = [
+                r
+                for r in all_results
+                if r.seeders is None or r.seeders > 0
+            ]
 
         # Sort by seeders for relevance
         all_results.sort(key=lambda r: r.seeders or 0, reverse=True)

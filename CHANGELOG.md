@@ -12,6 +12,8 @@ handle multi-line list body as single line.
 
 ### Added
 
+- Add `--search-hide-zero-seeders` CLI flag and `hide_zero_seeders` config option to filter out dead torrents from search results [#167](https://github.com/anlar/tewi/issues/167)
+
 ### Changed
 
 - Improve category detection for TV and Movies in Torrents-CSV search provider
