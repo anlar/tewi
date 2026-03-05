@@ -13,6 +13,7 @@ handle multi-line list body as single line.
 ### Added
 
 - Add `--search-hide-zero-seeders` CLI flag and `hide_zero_seeders` config option to filter out dead torrents from search results [#167](https://github.com/anlar/tewi/issues/167)
+- Add `PgUp`/`PgDown` hotkeys to torrent list [#165](https://github.com/anlar/tewi/issues/165)
 
 ### Changed
 

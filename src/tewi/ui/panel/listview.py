@@ -53,9 +53,9 @@ class TorrentListViewPanel(ListView):
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding("k", "cursor_up", "[Navigation] Move up"),
         Binding("j", "cursor_down", "[Navigation] Move down"),
-        Binding("g", "move_top", "[Navigation] Go to first item"),
+        Binding("g,pageup", "move_top", "[Navigation] Go to first item"),
         Binding("home", "move_top", "[Navigation] Go to first item"),
-        Binding("G", "move_bottom", "[Navigation] Go to last item"),
+        Binding("G,pagedown", "move_bottom", "[Navigation] Go to last item"),
         Binding("end", "move_bottom", "[Navigation] Go to last item"),
         Binding("enter,l,right", "select_cursor", "[Navigation] Open"),
         Binding("a", "add_torrent", "[Torrent] Add"),
