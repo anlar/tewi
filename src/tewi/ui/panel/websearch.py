@@ -333,6 +333,7 @@ class TorrentWebSearch(Static):
             selected_indexers: List of indexer IDs to search,
                               or None to search all
         """
+        self.r_results = []
         self.r_search_status = "Searching..."
 
         all_results, errors = self.app.search.search(
