@@ -20,7 +20,7 @@ from .providers import (
 logger = get_logger()
 
 # Available provider IDs
-AVAILABLE_PROVIDERS = {
+AVAILABLE_PROVIDERS: dict[str, type[BaseSearchProvider]] = {
     "tpb": TPBProvider,
     "torrentscsv": TorrentsCsvProvider,
     "torrentz2": Torrentz2Provider,
@@ -53,12 +53,12 @@ def print_available_providers() -> None:
     for provider_id in DEFAULT_PROVIDER_ORDER:
         provider_class = AVAILABLE_PROVIDERS[provider_id]
         # Create temporary instance to get name
-        if provider_id in ("jackett", "prowlarr"):
-            # Jackett and Prowlarr need dummy args to instantiate
-            instance = provider_class(None, None)
+        if provider_id == "jackett":
+            instance = JackettProvider(None, None)
+        elif provider_id == "prowlarr":
+            instance = ProwlarrProvider(None, None)
         elif provider_id == "bitmagnet":
-            # Bitmagnet needs URL arg
-            instance = provider_class(None)
+            instance = BitmagnetProvider(None)
         else:
             instance = provider_class()
         print(f"  - {provider_id}: {instance.name}")
@@ -136,20 +136,20 @@ class SearchClient:
             return None
 
         # Validate provider IDs
-        unknown_providers = []
+        unknown_providers: list[str] = []
         for provider_id in enabled_providers:
             if provider_id not in AVAILABLE_PROVIDERS:
                 unknown_providers.append(provider_id)
 
         if unknown_providers:
+            unknown = ", ".join(unknown_providers)
             print(
-                f"Error: Unknown search provider(s): "
-                f"{', '.join(unknown_providers)}",
+                f"Error: Unknown search provider(s): {unknown}",
                 file=sys.stderr,
             )
+            available = ", ".join(sorted(AVAILABLE_PROVIDERS.keys()))
             print(
-                f"Available providers: "
-                f"{', '.join(sorted(AVAILABLE_PROVIDERS.keys()))}",
+                f"Available providers: {available}",
                 file=sys.stderr,
             )
             sys.exit(1)
@@ -189,7 +189,7 @@ class SearchClient:
                     if self._jackett_url and self._jackett_api_key:
                         provider_class = AVAILABLE_PROVIDERS[provider_id]
                         self._providers.append(
-                            provider_class(
+                            JackettProvider(
                                 self._jackett_url,
                                 self._jackett_api_key,
                                 self._jackett_multi,
@@ -200,7 +200,7 @@ class SearchClient:
                     if self._prowlarr_url and self._prowlarr_api_key:
                         provider_class = AVAILABLE_PROVIDERS[provider_id]
                         self._providers.append(
-                            provider_class(
+                            ProwlarrProvider(
                                 self._prowlarr_url,
                                 self._prowlarr_api_key,
                                 self._prowlarr_multi,
@@ -211,7 +211,7 @@ class SearchClient:
                     if self._bitmagnet_url:
                         provider_class = AVAILABLE_PROVIDERS[provider_id]
                         self._providers.append(
-                            provider_class(self._bitmagnet_url)
+                            BitmagnetProvider(self._bitmagnet_url)
                         )
                 else:
                     # Regular providers
@@ -234,7 +234,7 @@ class SearchClient:
         if not providers:
             return []
 
-        all_indexers = []
+        all_indexers: list[Indexer] = []
         with ThreadPoolExecutor(max_workers=len(providers)) as executor:
             # Submit all tasks and maintain provider order
             future_to_provider = {
@@ -287,8 +287,8 @@ class SearchClient:
                       (highest first)
             - errors: List of error messages from failed providers
         """
-        all_results = []
-        errors = []
+        all_results: list[SearchResult] = []
+        errors: list[str] = []
 
         # Filter providers based on selected indexers
         providers_to_search = self._filter_providers(selected_indexers)
@@ -306,7 +306,7 @@ class SearchClient:
             }
 
             # Collect results in provider order for proper deduplication
-            results_by_provider = {}
+            results_by_provider: dict[int, list[SearchResult]] = {}
             for future in as_completed(future_to_provider):
                 provider, idx = future_to_provider[future]
                 try:
@@ -324,7 +324,7 @@ class SearchClient:
 
         # Deduplicate by info_hash, keeping first occurrence (by provider
         # order)
-        best_results = {}
+        best_results: dict[str, SearchResult] = {}
         for result in all_results:
             # Use info_hash as key; fall back to title:size for results without
             if result.info_hash:
@@ -369,9 +369,9 @@ class SearchClient:
         Returns:
             Tuple of (regular_providers, jackett_indexers, prowlarr_indexers)
         """
-        regular_providers = set()
-        jackett_indexers = []
-        prowlarr_indexers = []
+        regular_providers: set[str] = set()
+        jackett_indexers: list[str] = []
+        prowlarr_indexers: list[str] = []
 
         for indexer_id in selected_indexers:
             if indexer_id.startswith("jackett:"):
@@ -403,7 +403,9 @@ class SearchClient:
             return [(p, None) for p in self.get_providers()]
 
         regular, jackett, prowlarr = self._group_indexers(selected_indexers)
-        providers_to_search = []
+        providers_to_search: list[
+            tuple[BaseSearchProvider, list[str] | None]
+        ] = []
 
         for provider in self.get_providers():
             provider_id = provider.id
@@ -440,7 +442,7 @@ class SearchClient:
         # Extract category IDs from Category objects
         selected_cat_ids = {cat.id for cat in selected_categories}
 
-        filtered_results = []
+        filtered_results: list[SearchResult] = []
         for result in results:
             if not result.categories:
                 # No categories assigned - skip
