@@ -52,6 +52,17 @@ class BaseSearchProvider(ABC):
         """
         pass
 
+    @abstractmethod
+    def details_extended(self, result: SearchResult) -> str:
+        """Generate provider-specific details for right column.
+
+        Args:
+            result: Search result to format
+
+        Returns:
+            Markdown-formatted string with provider-specific details
+        """
+
     def indexers(self) -> list[Indexer]:
         """Return list of available indexers for this provider.
 
@@ -106,17 +117,3 @@ class BaseSearchProvider(ABC):
             md += "- **Freeleech:** Yes\n"
 
         return md
-
-    def details_extended(self, result: SearchResult) -> str:
-        """Generate provider-specific details for right column.
-
-        Base implementation returns empty string.
-        Subclasses should override to add provider-specific fields.
-
-        Args:
-            result: Search result to format
-
-        Returns:
-            Markdown-formatted string with provider-specific details
-        """
-        return ""
