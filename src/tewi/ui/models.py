@@ -25,9 +25,9 @@ sort_orders = [
         "Queue Order",
         "o",
         "O",
-        lambda t: t.queue_position
-        if t.queue_position is not None
-        else float("inf"),
+        lambda t: (
+            t.queue_position if t.queue_position is not None else float("inf")
+        ),
     ),
     SortOrder("ratio", "Ratio", "r", "R", lambda t: t.ratio),
     SortOrder("progress", "Progress", "p", "P", lambda t: t.percent_done),
