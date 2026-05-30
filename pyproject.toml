@@ -60,4 +60,5 @@ dev = [
   "pytest",
   "ruff",
   "debugpy",
+  "textual-dev",
 ]
