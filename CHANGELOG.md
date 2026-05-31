@@ -18,6 +18,7 @@ handle multi-line list body as single line.
 ### Changed
 
 - Improve category detection for TV and Movies in Torrents-CSV search provider
+- Update YTS provider domain proxy to .bz
 
 ### Removed
 

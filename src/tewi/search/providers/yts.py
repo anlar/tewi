@@ -19,12 +19,14 @@ class YTSProvider(BaseSearchProvider):
     """Search provider for YTS (movie torrents).
 
     YTS provides a public API for searching movie torrents.
-    Documentation: https://yts.lt/api
-    Status: https://yifystatus.com/
-    Domains: https://gosites.org/yts
+    Documentation: https://yts.bz/api
+    Status/proxies:
+    * https://yifystatus.com/
+    * https://ytsproxies.com/
+    * https://gosites.org/yts
     """
 
-    DOMAIN = "yts.lt"
+    DOMAIN = "yts.bz"
     API_URL = f"https://{DOMAIN}/api/v2/list_movies.json"
 
     # Recommended trackers from YTS documentation
