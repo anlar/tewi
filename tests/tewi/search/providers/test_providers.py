@@ -292,15 +292,7 @@ class TestTorrentsCsvProviderIntegration(BaseProviderIntegrationTest):
     def get_valid_categories(self) -> set:
         # TorrentsCSV returns empty categories, but refinement may detect
         # categories from torrent names
-        return {
-            StandardCategories.AUDIO,
-            StandardCategories.MOVIES,
-            StandardCategories.PC,
-            StandardCategories.CONSOLE,
-            StandardCategories.XXX,
-            StandardCategories.BOOKS,
-            StandardCategories.OTHER,
-        }
+        return set(StandardCategories.all_categories())
 
     def requires_trackers(self) -> bool:
         return False
