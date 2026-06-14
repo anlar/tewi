@@ -27,7 +27,7 @@ class YTSProvider(BaseSearchProvider):
     """
 
     DOMAIN = "yts.bz"
-    API_URL = f"https://{DOMAIN}/api/v2/list_movies.json"
+    API_URL = "https://movies-api.accel.li/api/v2/list_movies.json"
 
     # Recommended trackers from YTS documentation
     TRACKERS = [
