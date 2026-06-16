@@ -52,14 +52,19 @@ class TorrentWebSearch(Static):
     # always update to trigger focus setup and label updates
     # to cover case when search executes on the same query twice
     r_results: list[SearchResult] = reactive(list, always_update=True)
-    r_view_compact: bool = reactive(False, init=False)
 
-    def __init__(self, hide_zero_seeders: bool = False, **kwargs) -> None:
+    def __init__(
+        self,
+        hide_zero_seeders: bool,
+        default_mode: str,
+        **kwargs,
+    ) -> None:
         super().__init__(**kwargs)
 
         self.providers = self.app.search.get_providers()
 
         self._hide_zero_seeders = hide_zero_seeders
+        self._view_compact = default_mode == "compact"
 
         # Workaround to get color from theme, because DataTable doesn't
         # support CSS variables lik $success.
@@ -148,7 +153,7 @@ class TorrentWebSearch(Static):
 
         for r in results:
             if r.upload_date:
-                if self.r_view_compact:
+                if self._view_compact:
                     up_date = r.upload_date.strftime("%Y-%m")
                 else:
                     up_date = r.upload_date.strftime("%Y-%m-%d")
@@ -164,7 +169,7 @@ class TorrentWebSearch(Static):
             if r.freeleech:
                 title = f"[bold {self.color_success}]\\[F][/] {title}"
 
-            if self.r_view_compact:
+            if self._view_compact:
                 table.add_row(
                     r.provider,
                     up_date,
@@ -195,21 +200,17 @@ class TorrentWebSearch(Static):
         self.draw_table(results)
 
     @log_time
-    def watch_r_view_compact(self) -> None:
-        self.draw_table(self.r_results)
-
-    @log_time
     def create_table_columns(self) -> None:
         table = self.query_one("#websearch-results", DataTable)
 
         table.add_column("Source", key="source")
         table.add_column("Uploaded", key="uploaded")
         table.add_column("S ↓", key="seeders")
-        if not self.r_view_compact:
+        if not self._view_compact:
             table.add_column("L", key="leechers")
             table.add_column("D", key="downloads")
         table.add_column("Size", key="size")
-        if not self.r_view_compact:
+        if not self._view_compact:
             table.add_column("Files", key="files")
         table.add_column("Category", key="category")
         table.add_column("Name", key="name")
@@ -333,7 +334,8 @@ class TorrentWebSearch(Static):
     @log_time
     def action_toggle_view_mode(self) -> None:
         """Toggle between standard and compact view modes."""
-        self.r_view_compact = not self.r_view_compact
+        self._view_compact = not self._view_compact
+        self.draw_table(self.r_results)
 
     @log_time
     def action_cursor_down(self) -> None:

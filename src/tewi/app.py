@@ -156,6 +156,7 @@ class MainApp(App):
         filter: str,
         badge_max_count: int,
         badge_max_length: int,
+        search_default_mode: str,
         search_providers: list[str] | None = None,
         search_hide_zero_seeders: bool = False,
     ):
@@ -181,6 +182,7 @@ class MainApp(App):
         self.prowlarr_url = prowlarr_url
         self.prowlarr_api_key = prowlarr_api_key
         self.search_hide_zero_seeders = search_hide_zero_seeders
+        self.search_default_mode = search_default_mode
 
         self.c_type = client_type
         self.c_host = host
@@ -247,6 +249,7 @@ class MainApp(App):
                 yield TorrentWebSearch(
                     id="torrent-websearch",
                     hide_zero_seeders=self.search_hide_zero_seeders,
+                    default_mode=self.search_default_mode,
                 )
 
         yield StatePanel().data_bind(
@@ -964,6 +967,14 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         default=False,
         help="Hide search results with zero seeders",
     )
+    p.add_argument(
+        "--search-default-mode",
+        type=str,
+        choices=["standard", "compact"],
+        default="standard",
+        action=TrackSetAction,
+        help="Default view mode for search results",
+    )
 
     # Profiles
     p.add_argument(
@@ -1158,6 +1169,7 @@ def create_app():
             badge_max_length=args.badge_max_length,
             search_providers=getattr(args, "search_providers", None),
             search_hide_zero_seeders=args.search_hide_zero_seeders,
+            search_default_mode=args.search_default_mode,
         )
         return app
     except ClientError as e:
