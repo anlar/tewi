@@ -15,6 +15,7 @@ handle multi-line list body as single line.
 - Add `--search-hide-zero-seeders` CLI flag and `hide_zero_seeders` config option to filter out dead torrents from search results [#167](https://github.com/anlar/tewi/issues/167)
 - Add `PgUp`/`PgDown` hotkeys to torrent list [#165](https://github.com/anlar/tewi/issues/165)
 - Show number of hidden search results with zero seeders
+- Add compact mode for search results, toggled with `V` key and configurable via `--search-default-mode compact` [#166](https://github.com/anlar/tewi/issues/166)
 
 ### Changed
 
