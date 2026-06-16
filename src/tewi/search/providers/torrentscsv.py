@@ -33,6 +33,10 @@ class TorrentsCsvProvider(BaseSearchProvider):
     def name(self) -> str:
         return "Torrents-CSV"
 
+    @property
+    def short_name(self) -> str:
+        return "T-CSV"
+
     @log_time
     def search(
         self,
@@ -141,6 +145,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 torrent_link=None,
                 provider=self.name,
                 provider_id=self.id,
+                provider_short=self.short_name,
                 categories=[category] if category else None,
                 seeders=torrent.get("seeders"),
                 leechers=torrent.get("leechers"),

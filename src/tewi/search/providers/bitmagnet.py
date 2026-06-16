@@ -648,6 +648,7 @@ class BitmagnetProvider(BaseSearchProvider):
                 torrent_link=None,
                 provider=self.name,
                 provider_id=self.id,
+                provider_short=self.short_name,
                 categories=categories,
                 seeders=seeders,
                 leechers=leechers,

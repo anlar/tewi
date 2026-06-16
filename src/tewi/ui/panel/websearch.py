@@ -171,7 +171,7 @@ class TorrentWebSearch(Static):
 
             if self._view_compact:
                 table.add_row(
-                    r.provider,
+                    r.provider_short or r.provider,
                     up_date,
                     r.seeders,
                     print_size(r.size, ndigits=0),

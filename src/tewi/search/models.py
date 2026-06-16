@@ -191,6 +191,7 @@ class SearchResult:
     # Required fields (provider)
     provider: str
     provider_id: str
+    provider_short: str
 
     # Optional fields - can be None if not available
     categories: list[Category] | None = None
