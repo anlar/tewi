@@ -52,10 +52,12 @@ class TorrentWebSearch(Static):
     # to cover case when search executes on the same query twice
     r_results: list[SearchResult] = reactive(list, always_update=True)
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, hide_zero_seeders: bool = False, **kwargs) -> None:
         super().__init__(**kwargs)
 
         self.providers = self.app.search.get_providers()
+
+        self._hide_zero_seeders = hide_zero_seeders
 
         # Workaround to get color from theme, because DataTable doesn't
         # support CSS variables lik $success.
@@ -119,11 +121,27 @@ class TorrentWebSearch(Static):
         table.clear(columns=True)
         self.create_table_columns()
 
+        total_count = len(results)
+
+        # Filter out zero-seeder results if requested
+        if self._hide_zero_seeders:
+            results = [r for r in results if r.seeders is None or r.seeders > 0]
+
+        filtered_count = total_count - len(results)
+
+        if filtered_count:
+            detail = (
+                f" ({len(results)} shown,"
+                + f" {filtered_count} without seeders hidden)"
+            )
+        else:
+            detail = ""
+
         if not results:
-            self.r_search_status = "No results found"
+            self.r_search_status = f"No results found{detail}"
             return
         else:
-            self.r_search_status = f"Found {len(results)} results"
+            self.r_search_status = f"Found {total_count} results{detail}"
 
         for r in results:
             up_date = (

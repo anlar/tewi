@@ -180,6 +180,7 @@ class MainApp(App):
         self.jackett_api_key = jackett_api_key
         self.prowlarr_url = prowlarr_url
         self.prowlarr_api_key = prowlarr_api_key
+        self.search_hide_zero_seeders = search_hide_zero_seeders
 
         self.c_type = client_type
         self.c_host = host
@@ -203,7 +204,6 @@ class MainApp(App):
             prowlarr_multi,
             bitmagnet_url,
             search_providers,
-            search_hide_zero_seeders,
         )
 
         self.filter_option = get_filter_by_id(filter)
@@ -244,7 +244,10 @@ class MainApp(App):
                     ),
                     id="torrent-info",
                 )
-                yield TorrentWebSearch(id="torrent-websearch")
+                yield TorrentWebSearch(
+                    id="torrent-websearch",
+                    hide_zero_seeders=self.search_hide_zero_seeders,
+                )
 
         yield StatePanel().data_bind(
             r_session=MainApp.r_session,

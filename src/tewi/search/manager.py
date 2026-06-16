@@ -347,12 +347,6 @@ class SearchClient:
                 all_results, selected_categories
             )
 
-        # Filter out zero-seeder results if requested
-        if self._hide_zero_seeders:
-            all_results = [
-                r for r in all_results if r.seeders is None or r.seeders > 0
-            ]
-
         # Sort by seeders for relevance
         all_results.sort(key=lambda r: r.seeders or 0, reverse=True)
 
