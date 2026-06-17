@@ -388,6 +388,7 @@ class ProwlarrProvider(BaseSearchProvider):
                 magnet_link=magnet_link,
                 torrent_link=torrent_link,
                 provider=self._build_provider_name(result),
+                provider_short=self._build_provider_name(result),
                 provider_id=self.id,
                 categories=self._map_prowlarr_category(result),
                 seeders=result.get("seeders"),
