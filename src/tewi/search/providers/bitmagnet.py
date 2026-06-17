@@ -166,6 +166,10 @@ class BitmagnetProvider(BaseSearchProvider):
     def name(self) -> str:
         return "Bitmagnet"
 
+    @property
+    def short_name(self) -> str:
+        return "BitMT"
+
     @log_time
     def search(
         self,

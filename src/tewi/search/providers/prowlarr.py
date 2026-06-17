@@ -388,7 +388,7 @@ class ProwlarrProvider(BaseSearchProvider):
                 magnet_link=magnet_link,
                 torrent_link=torrent_link,
                 provider=self._build_provider_name(result),
-                provider_short=self._build_provider_name(result),
+                provider_short=self._build_provider_name(result, short=True),
                 provider_id=self.id,
                 categories=self._map_prowlarr_category(result),
                 seeders=result.get("seeders"),
@@ -476,7 +476,9 @@ class ProwlarrProvider(BaseSearchProvider):
         except (ValueError, AttributeError):
             return None
 
-    def _build_provider_name(self, result: dict[str, Any]) -> str:
+    def _build_provider_name(
+        self, result: dict[str, Any], short: bool = False
+    ) -> str:
         """Build provider name in format 'IndexerName (Prowlarr)'.
 
         Args:
@@ -486,7 +488,10 @@ class ProwlarrProvider(BaseSearchProvider):
             Provider name string
         """
         indexer = result.get("indexer", "Unknown")
-        return f"{indexer} [dim](P)[/]"
+        if short:
+            return f"{indexer[:5]}[dim]|P[/]"
+        else:
+            return f"{indexer} [dim](P)[/]"
 
     def _build_fields(self, result: dict[str, Any]) -> dict[str, str]:
         """Build provider-specific fields dict.

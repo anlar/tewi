@@ -467,7 +467,7 @@ class JackettProvider(BaseSearchProvider):
                 magnet_link=magnet_link,
                 torrent_link=torrent_link,
                 provider=self._build_provider_name(result),
-                provider_short=self._build_provider_name(result),
+                provider_short=self._build_provider_name(result, short=True),
                 provider_id=self.id,
                 categories=self._map_jackett_category(result),
                 seeders=result.get("Seeders"),
@@ -525,7 +525,9 @@ class JackettProvider(BaseSearchProvider):
         except (ValueError, AttributeError):
             return None
 
-    def _build_provider_name(self, result: dict[str, Any]) -> str:
+    def _build_provider_name(
+        self, result: dict[str, Any], short: bool = False
+    ) -> str:
         """Build provider name in format 'IndexerName (J)'.
 
         Args:
@@ -536,7 +538,10 @@ class JackettProvider(BaseSearchProvider):
         """
         tracker_id = result.get("TrackerId", "Unknown")
         tracker = result.get("Tracker", tracker_id)
-        return f"{tracker} [dim](J)[/]"
+        if short:
+            return f"{tracker[:5]}[dim]|J[/]"
+        else:
+            return f"{tracker} [dim](J)[/]"
 
     def _build_fields(self, result: dict[str, Any]) -> dict[str, str]:
         """Build provider-specific fields dict.
