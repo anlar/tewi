@@ -29,6 +29,14 @@ class BaseSearchProvider(ABC):
         """Return the provider name."""
         pass
 
+    @property
+    def short_name(self) -> str:
+        """Return a short provider name for compact display.
+
+        Defaults to name. Override in providers with long names.
+        """
+        return self.name
+
     @abstractmethod
     def search(
         self,

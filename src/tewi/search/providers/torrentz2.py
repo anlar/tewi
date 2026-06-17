@@ -164,6 +164,10 @@ class Torrentz2Provider(BaseSearchProvider):
     def name(self) -> str:
         return "Torrentz2"
 
+    @property
+    def short_name(self) -> str:
+        return "TRZ2"
+
     @log_time
     def search(
         self,
@@ -271,6 +275,7 @@ class Torrentz2Provider(BaseSearchProvider):
                 torrent_link=None,
                 provider=self.name,
                 provider_id=self.id,
+                provider_short=self.short_name,
                 categories=[category] if category else None,
                 seeders=torrent.get("seeders"),
                 leechers=torrent.get("leechers"),

@@ -166,6 +166,10 @@ class BitmagnetProvider(BaseSearchProvider):
     def name(self) -> str:
         return "Bitmagnet"
 
+    @property
+    def short_name(self) -> str:
+        return "BitMT"
+
     @log_time
     def search(
         self,
@@ -648,6 +652,7 @@ class BitmagnetProvider(BaseSearchProvider):
                 torrent_link=None,
                 provider=self.name,
                 provider_id=self.id,
+                provider_short=self.short_name,
                 categories=categories,
                 seeders=seeders,
                 leechers=leechers,

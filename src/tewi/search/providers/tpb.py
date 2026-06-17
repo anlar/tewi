@@ -115,6 +115,10 @@ class TPBProvider(BaseSearchProvider):
     def name(self) -> str:
         return "The Pirate Bay"
 
+    @property
+    def short_name(self) -> str:
+        return "TPB"
+
     @log_time
     def search(
         self,
@@ -265,6 +269,7 @@ class TPBProvider(BaseSearchProvider):
                 torrent_link=None,
                 provider=self.name,
                 provider_id=self.id,
+                provider_short=self.short_name,
                 categories=categories,
                 seeders=int(torrent.get("seeders")),
                 leechers=int(torrent.get("leechers")),

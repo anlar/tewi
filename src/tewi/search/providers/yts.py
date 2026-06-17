@@ -234,6 +234,7 @@ class YTSProvider(BaseSearchProvider):
                 torrent_link=torrent.get("url"),
                 provider=self.name,
                 provider_id=self.id,
+                provider_short=self.short_name,
                 categories=self._get_category_from_quality(quality),
                 seeders=torrent.get("seeds"),
                 leechers=torrent.get("peers"),

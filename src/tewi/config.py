@@ -250,6 +250,9 @@ def _load_search_section(
     val = _get_bool_option(parser, "search", "hide_zero_seeders")
     if val is not None:
         config["search_hide_zero_seeders"] = val
+    val = _get_string_option(parser, "search", "default_mode")
+    if val:
+        config["search_default_mode"] = val
 
 
 def _load_config_file(config_path: Path, config: dict) -> None:
@@ -403,6 +406,9 @@ providers =
 
 # Hide torrents with zero seeders from search results (default: false)
 hide_zero_seeders =
+
+# Default view mode for search results: standard or compact (default: standard)
+default_mode =
 
 [debug]
 # Log level: debug, info, warning, error, critical
