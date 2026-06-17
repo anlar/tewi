@@ -123,6 +123,7 @@ class TorrentWebSearch(Static):
     def draw_table(self, results: list[SearchResult]) -> None:
         """Update the table when results change."""
         table = self.query_one("#websearch-results", DataTable)
+        prev_cursor_row = table.cursor_row
 
         # Re-create columns after each search to force them to fit to the new
         # content. See: https://github.com/Textualize/textual/issues/6247
@@ -194,6 +195,9 @@ class TorrentWebSearch(Static):
                 )
 
         table.focus()
+
+        # select previously selected row - handle view mode switch
+        table.move_cursor(row=prev_cursor_row)
 
     @log_time
     def watch_r_results(self, results: list[SearchResult]) -> None:
