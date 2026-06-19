@@ -1006,6 +1006,14 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         help="Set logging level",
     )
     p.add_argument(
+        "--log-size",
+        type=int,
+        default=10,
+        metavar="MB",
+        action=TrackSetAction,
+        help="Max size per log file in MB (up to 3 backups kept)",
+    )
+    p.add_argument(
         "--version",
         action="version",
         version="%(prog)s " + version,
@@ -1117,7 +1125,7 @@ def create_app():
     merge_config_with_args(config, args)
 
     # Initialize logging
-    init_logger(args.log_level)
+    init_logger(args.log_level, args.log_size)
 
     # Start debugpy server if --debug option is provided
     if hasattr(args, "debug") and args.debug:

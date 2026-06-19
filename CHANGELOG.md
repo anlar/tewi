@@ -16,6 +16,7 @@ handle multi-line list body as single line.
 - Add `PgUp`/`PgDown` hotkeys to torrent list [#165](https://github.com/anlar/tewi/issues/165)
 - Show number of hidden search results with zero seeders
 - Add compact mode for search results, toggled with `V` key and configurable via `--search-default-mode compact` [#166](https://github.com/anlar/tewi/issues/166)
+- Limit and rotate log files by their size (`--log-size` CLI flag and `log_size` config option) (default: 10 MB, up to 3 files) [#170](https://github.com/anlar/tewi/issues/170)
 
 ### Changed
 

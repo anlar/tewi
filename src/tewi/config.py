@@ -204,6 +204,9 @@ def _load_debug_section(
     val = _get_string_option(parser, "debug", "log_level")
     if val:
         config["log_level"] = val
+    val = _get_int_option(parser, "debug", "log_size")
+    if val is not None:
+        config["log_size"] = val
     val = _get_int_option(parser, "debug", "test_mode")
     if val is not None:
         config["test_mode"] = val
@@ -413,6 +416,9 @@ default_mode =
 [debug]
 # Log level: debug, info, warning, error, critical
 log_level =
+
+# Max size per log file in MB (default: 10, up to 3 backups kept)
+log_size =
 
 """
 

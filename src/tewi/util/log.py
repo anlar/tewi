@@ -19,6 +19,7 @@
 import logging
 import time
 from functools import wraps
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Callable, ParamSpec, TypeVar
 
@@ -26,6 +27,8 @@ from platformdirs import user_log_dir
 
 P = ParamSpec("P")
 T = TypeVar("T")
+
+_BACKUP_COUNT = 3
 
 
 def get_logger() -> logging.Logger:
@@ -37,13 +40,15 @@ def get_logger() -> logging.Logger:
     return logging.getLogger("tewi")
 
 
-def init_logger(log_level: str) -> None:
-    """Initialize logging configuration.
+def init_logger(log_level: str, log_size_mb: int = 10) -> None:
+    """Initialize logging configuration with size-based rotation.
 
     Args:
         log_level: Log level (debug, info, warning, error, critical)
+        log_size_mb: Max size in MB per log file (default: 10).
+                     Up to 3 backup files are kept, so total disk
+                     usage is at most log_size_mb * 4 MB.
     """
-    # Map string levels to logging constants
     level_map = {
         "debug": logging.DEBUG,
         "info": logging.INFO,
@@ -54,24 +59,34 @@ def init_logger(log_level: str) -> None:
 
     level = level_map.get(log_level.lower(), logging.WARNING)
 
-    # Always set up file logging
     log_dir = Path(user_log_dir("tewi", appauthor=False))
     log_dir.mkdir(parents=True, exist_ok=True)
     log_file = log_dir / "tewi.log"
-    logging.basicConfig(
+
+    handler = RotatingFileHandler(
         filename=str(log_file),
+        maxBytes=log_size_mb * 1024 * 1024,
+        backupCount=_BACKUP_COUNT,
         encoding="utf-8",
-        format=(
-            "%(asctime)s.%(msecs)03d %(module)-15s %(levelname)-8s %(message)s"
-        ),
-        level=level,
-        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+    handler.setFormatter(
+        logging.Formatter(
+            fmt=(
+                "%(asctime)s.%(msecs)03d"
+                " %(module)-15s %(levelname)-8s %(message)s"
+            ),
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
     )
 
-    # Log initialization info
+    root = logging.getLogger()
+    root.setLevel(level)
+    root.addHandler(handler)
+
     logger = get_logger()
     logger.info(
-        f"Logging initialized: level={log_level.upper()}, file={log_file}"
+        f"Logging initialized: level={log_level.upper()},"
+        f" file={log_file}, log_size_mb={log_size_mb}"
     )
 
 
