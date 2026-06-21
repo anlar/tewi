@@ -12,6 +12,14 @@ handle multi-line list body as single line.
 
 ### Added
 
+### Changed
+
+### Removed
+
+## [2.4.0] - 2026-06-21 - Eientei Engine
+
+### Added
+
 - Add `--search-hide-zero-seeders` CLI flag and `hide_zero_seeders` config option to filter out dead torrents from search results [#167](https://github.com/anlar/tewi/issues/167)
 - Add `PgUp`/`PgDown` hotkeys to torrent list [#165](https://github.com/anlar/tewi/issues/165)
 - Show number of hidden search results with zero seeders
@@ -23,8 +31,6 @@ handle multi-line list body as single line.
 - Improve category detection for TV and Movies in Torrents-CSV search provider
 - Update YTS provider domain proxy to .bz
 - Update YTS provider API URL
-
-### Removed
 
 ## [2.3.1] - 2026-01-08 - Dozing Rabbit
 
