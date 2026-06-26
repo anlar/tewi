@@ -14,6 +14,10 @@ handle multi-line list body as single line.
 
 ### Changed
 
+### Fixed
+
+- qBittorrent: fix crash on torrent details view for qBittorrent 4.6.x [#174](https://github.com/anlar/tewi/issues/174)
+
 ### Removed
 
 ## [2.4.0] - 2026-06-21 - Eientei Engine

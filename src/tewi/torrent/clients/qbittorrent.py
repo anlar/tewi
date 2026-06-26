@@ -533,6 +533,7 @@ class QBittorrentClient(BaseClient):
         base_dict = asdict(base_torrent)
 
         # Get piece information from properties
+        props = None
         try:
             props = self.client.torrents.properties(torrent_hash=torrent.hash)
             piece_size = props.piece_size
@@ -563,11 +564,9 @@ class QBittorrentClient(BaseClient):
             hash_string=torrent.hash,
             piece_count=piece_count,
             piece_size=piece_size,
-            is_private=getattr(torrent, "is_private", False),
-            comment=torrent.comment if torrent.comment else "",
-            creator=torrent.created_by
-            if hasattr(torrent, "created_by")
-            else "",
+            is_private=getattr(props, "is_private", False),
+            comment=getattr(props, "comment", ""),
+            creator=getattr(props, "created_by", ""),
             downloaded_ever=torrent.downloaded,
             error_string="",  # qBittorrent doesn't provide error string
             start_date=(
