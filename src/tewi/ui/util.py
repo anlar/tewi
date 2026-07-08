@@ -75,7 +75,9 @@ def print_size(
             break
         num /= size_bytes
 
-    r_size = f"{r_num:.{ndigits}f}".rstrip("0").rstrip(".")
+    r_size = f"{r_num:.{ndigits}f}"
+    if "." in r_size:
+        r_size = r_size.rstrip("0").rstrip(".")
 
     return f"{r_size} {r_unit}{suffix}"
 

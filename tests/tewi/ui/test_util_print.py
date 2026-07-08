@@ -79,6 +79,15 @@ class TestPrintSize:
         assert print_size(1000) == "1 kB"  # Should strip .00
         assert print_size(1001) == "1 kB"  # Should round to 1.00 then strip
 
+    def test_ndigits_zero_preserves_trailing_zeros(self):
+        """Test that ndigits=0 doesn't strip significant trailing zeros."""
+        # 679.68 MB rounds to 680, not 68
+        assert print_size(679680000, ndigits=0) == "680 MB"
+        # 700 MB should stay 700, not 7
+        assert print_size(700000000, ndigits=0) == "700 MB"
+        # 100 kB should stay 100, not 1
+        assert print_size(100000, ndigits=0) == "100 kB"
+
 
 class TestPrintRatio:
     """Test cases for print_ratio function."""
