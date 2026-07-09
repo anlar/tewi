@@ -452,13 +452,6 @@ hide_zero_seeders =
 # Default view mode for search results: standard or compact (default: standard)
 default_mode =
 
-[debug]
-# Log level: debug, info, warning, error, critical
-log_level =
-
-# Max size per log file in MB (default: 10, up to 3 backups kept)
-log_size =
-
 # Search presets: define named combinations of indexers and categories.
 # Add one [search.preset.NAME] section per preset. When any presets are
 # defined, a preset selector appears in the search dialog above the indexer
@@ -468,23 +461,31 @@ log_size =
 # Use default_preset in [search] to pre-select a preset when the search
 # dialog opens. The value must match a [search.preset.NAME] section name.
 #
-# indexers: comma-separated indexer IDs (e.g. tpb, yts, jackett:my-idx)
-#           omit to select all indexers
-# categories: comma-separated parent category names
+# indexers: comma-separated indexer IDs; omit to select all indexers
+#   - built-in providers: tpb, yts, nyaa, torrentscsv, bitmagnet, torrentz2
+#   - Jackett: jackett:all (all indexers) or jackett:NAME (by indexer name)
+#   - Prowlarr: prowlarr:all (all indexers), prowlarr:NAME (by indexer name),
+#               or prowlarr:ID (by numeric Prowlarr ID)
+# categories: comma-separated parent category names; omit to select all
 #             (Console, Movies, Audio, PC, TV, XXX, Books, Other)
-#             omit to select all categories
 #
 # Example:
-# [search]
 # default_preset = Movies HD
 #
 # [search.preset.Movies HD]
-# indexers = yts, tpb
+# indexers = yts, tpb, prowlarr:1337x
 # categories = Movies
 #
 # [search.preset.Anime]
-# indexers = nyaa
+# indexers = nyaa, prowlarr:BakaBT
 # categories = TV, Audio
+
+[debug]
+# Log level: debug, info, warning, error, critical
+log_level =
+
+# Max size per log file in MB (default: 10, up to 3 backups kept)
+log_size =
 
 """
 
