@@ -23,6 +23,8 @@ from pathlib import Path
 
 from platformdirs import user_config_dir
 
+from .search.models import SearchPreset
+
 
 class TrackSetAction(Action):
     SET_POSTFIX = "_was_set"
@@ -239,6 +241,30 @@ def _load_search_indexers(
         config["bitmagnet_url"] = val
 
 
+def _load_search_presets(
+    parser: configparser.ConfigParser,
+) -> list[SearchPreset]:
+    """Load [search.preset.NAME] sections into a list of SearchPreset objects.
+
+    Args:
+        parser: ConfigParser instance
+
+    Returns:
+        List of SearchPreset objects, in config file order
+    """
+    presets = []
+    for section in parser.sections():
+        if not section.startswith("search.preset."):
+            continue
+        name = section[len("search.preset.") :]
+        indexers = _get_list_option(parser, section, "indexers")
+        categories = _get_list_option(parser, section, "categories")
+        presets.append(
+            SearchPreset(name=name, indexers=indexers, categories=categories)
+        )
+    return presets
+
+
 def _load_search_section(
     parser: configparser.ConfigParser, config: dict
 ) -> None:
@@ -256,6 +282,18 @@ def _load_search_section(
     val = _get_string_option(parser, "search", "default_mode")
     if val:
         config["search_default_mode"] = val
+    val = _get_string_option(parser, "search", "default_preset")
+    if val:
+        config["search_default_preset"] = val
+
+
+def _load_preset_sections(
+    parser: configparser.ConfigParser, config: dict
+) -> None:
+    """Load [search.preset.NAME] sections into config dict."""
+    presets = _load_search_presets(parser)
+    if presets:
+        config["search_presets"] = presets
 
 
 def _load_config_file(config_path: Path, config: dict) -> None:
@@ -284,6 +322,7 @@ def _load_config_file(config_path: Path, config: dict) -> None:
     _load_ui_section(parser, config)
     _load_debug_section(parser, config)
     _load_search_section(parser, config)
+    _load_preset_sections(parser, config)
 
 
 def load_config(profile: str | None = None) -> dict:
@@ -412,6 +451,34 @@ hide_zero_seeders =
 
 # Default view mode for search results: standard or compact (default: standard)
 default_mode =
+
+# Search presets: define named combinations of indexers and categories.
+# Add one [search.preset.NAME] section per preset. When any presets are
+# defined, a preset selector appears in the search dialog above the indexer
+# and category lists. "Default" (all indexers, all categories) is always
+# available as the first option.
+#
+# Use default_preset in [search] to pre-select a preset when the search
+# dialog opens. The value must match a [search.preset.NAME] section name.
+#
+# indexers: comma-separated indexer IDs; omit to select all indexers
+#   - built-in providers: tpb, yts, nyaa, torrentscsv, bitmagnet, torrentz2
+#   - Jackett: jackett:all (all indexers) or jackett:NAME (by indexer name)
+#   - Prowlarr: prowlarr:all (all indexers), prowlarr:NAME (by indexer name),
+#               or prowlarr:ID (by numeric Prowlarr ID)
+# categories: comma-separated parent category names; omit to select all
+#             (Console, Movies, Audio, PC, TV, XXX, Books, Other)
+#
+# Example:
+# default_preset = Movies HD
+#
+# [search.preset.Movies HD]
+# indexers = yts, tpb, prowlarr:1337x
+# categories = Movies
+#
+# [search.preset.Anime]
+# indexers = nyaa, prowlarr:BakaBT
+# categories = TV, Audio
 
 [debug]
 # Log level: debug, info, warning, error, critical

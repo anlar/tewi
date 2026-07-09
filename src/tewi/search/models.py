@@ -168,6 +168,16 @@ class StandardCategories:
 class Indexer:
     id: str
     name: str
+    display_name: str = ""
+
+
+@dataclass(frozen=True)
+class SearchPreset:
+    """Named preset for search with specific indexers and categories."""
+
+    name: str
+    indexers: list[str] | None = None
+    categories: list[str] | None = None
 
 
 @dataclass(frozen=True)

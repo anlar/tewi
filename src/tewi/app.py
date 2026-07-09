@@ -129,6 +129,7 @@ class MainApp(App):
     last_search_query = None
     last_search_indexers = None
     last_search_categories = None
+    last_search_preset = None
 
     @log_time
     def __init__(
@@ -159,6 +160,8 @@ class MainApp(App):
         search_default_mode: str,
         search_providers: list[str] | None = None,
         search_hide_zero_seeders: bool = False,
+        search_presets: list | None = None,
+        search_default_preset: str | None = None,
     ):
         super().__init__()
 
@@ -183,6 +186,8 @@ class MainApp(App):
         self.prowlarr_api_key = prowlarr_api_key
         self.search_hide_zero_seeders = search_hide_zero_seeders
         self.search_default_mode = search_default_mode
+        self.search_presets = search_presets or []
+        self.search_default_preset = search_default_preset
 
         self.c_type = client_type
         self.c_host = host
@@ -361,7 +366,12 @@ class MainApp(App):
     @log_time
     def action_open_websearch_clean(self) -> None:
         """Open web search dialog with clean state (no pre-filled data)."""
-        self.push_screen(WebSearchQueryDialog())
+        self.push_screen(
+            WebSearchQueryDialog(
+                presets=self.search_presets,
+                default_preset=self.search_default_preset,
+            )
+        )
 
     @log_time
     def action_open_websearch(self) -> None:
@@ -371,6 +381,8 @@ class MainApp(App):
                 self.last_search_query,
                 self.last_search_indexers,
                 self.last_search_categories,
+                presets=self.search_presets,
+                restore_preset=self.last_search_preset,
             )
         )
 
@@ -728,6 +740,7 @@ class MainApp(App):
         self.last_search_query = event.query
         self.last_search_indexers = event.selected_indexers
         self.last_search_categories = event.selected_categories
+        self.last_search_preset = event.selected_preset
         # Switch to results panel
         logger.info("Switching to web search results view")
         self.query_one(ContentSwitcher).current = "torrent-websearch"
@@ -975,6 +988,13 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         action=TrackSetAction,
         help="Default view mode for search results",
     )
+    p.add_argument(
+        "--search-default-preset",
+        type=str,
+        default=None,
+        action=TrackSetAction,
+        help="Name of the preset to select by default in search dialog",
+    )
 
     # Profiles
     p.add_argument(
@@ -1178,6 +1198,8 @@ def create_app():
             search_providers=getattr(args, "search_providers", None),
             search_hide_zero_seeders=args.search_hide_zero_seeders,
             search_default_mode=args.search_default_mode,
+            search_presets=getattr(args, "search_presets", []),
+            search_default_preset=getattr(args, "search_default_preset", None),
         )
         return app
     except ClientError as e:

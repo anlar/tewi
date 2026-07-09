@@ -12,6 +12,8 @@ handle multi-line list body as single line.
 
 ### Added
 
+- Search presets to switch between predefined indexer and category combinations via `[search.preset.NAME]` config sections [#171](https://github.com/anlar/tewi/issues/171)
+
 ### Changed
 
 - Fix incorrect size display in compact search view where integer sizes with trailing zeros (e.g. 680 MB) were stripped to wrong values (e.g. 68 MB)

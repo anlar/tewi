@@ -131,6 +131,7 @@ class WebSearchQuerySubmitted(Message):
     query: str
     selected_indexers: list[str] | None = None
     selected_categories: list[Category] | None = None
+    selected_preset: str | None = None
 
 
 # Events
