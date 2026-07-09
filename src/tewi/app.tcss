@@ -513,8 +513,25 @@ WebSearchQueryWidget {
     border: round $warning;
 }
 
-WebSearchQueryWidget > Input {
+WebSearchQueryWidget > #websearch-query-row {
+    height: 3;
+}
+
+WebSearchQueryWidget > #websearch-query-row > Input {
     border: round $warning;
+    width: 1fr;
+}
+
+WebSearchQueryWidget > #websearch-query-row > CycleSelect {
+    border: round $warning;
+    background: $surface;
+    width: 25%;
+    padding: 0 1;
+    text-align: center;
+}
+
+WebSearchQueryWidget > #websearch-query-row > CycleSelect:focus {
+    background-tint: $foreground 5%;
 }
 
 WebSearchQueryWidget > Horizontal {
