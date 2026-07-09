@@ -280,7 +280,11 @@ class JackettProvider(BaseSearchProvider):
                 # Prefix with jackett: to distinguish from other providers
                 full_id = f"jackett:{indexer_id}"
                 indexers.append(
-                    Indexer(full_id, f"{indexer_name} [dim](Jackett)[/]")
+                    Indexer(
+                        full_id,
+                        indexer_name,
+                        f"{indexer_name} [dim](Jackett)[/]",
+                    )
                 )
         return indexers
 

@@ -366,10 +366,12 @@ class MainApp(App):
     @log_time
     def action_open_websearch_clean(self) -> None:
         """Open web search dialog with clean state (no pre-filled data)."""
-        self.push_screen(WebSearchQueryDialog(
-            presets=self.search_presets,
-            default_preset=self.search_default_preset,
-        ))
+        self.push_screen(
+            WebSearchQueryDialog(
+                presets=self.search_presets,
+                default_preset=self.search_default_preset,
+            )
+        )
 
     @log_time
     def action_open_websearch(self) -> None:

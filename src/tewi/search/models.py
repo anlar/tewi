@@ -168,6 +168,7 @@ class StandardCategories:
 class Indexer:
     id: str
     name: str
+    display_name: str = ""
 
 
 @dataclass(frozen=True)

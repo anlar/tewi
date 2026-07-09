@@ -79,6 +79,7 @@ class WebSearchQueryWidget(Static):
         self._skip_preset_apply = False
         self._indexer_order: list[str] = []
         self._category_order: list = []
+        self._indexer_name_to_id: dict[str, str] = {}
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -125,10 +126,18 @@ class WebSearchQueryWidget(Static):
             selected_ids = available_indexer_ids
 
         self._indexer_order = []
+        self._indexer_name_to_id = {}
         for indexer in available_indexers:
             is_selected = indexer.id in selected_ids
             self._indexer_order.append(indexer.id)
-            selections.append(Selection(indexer.name, indexer.id, is_selected))
+            selections.append(
+                Selection(
+                    indexer.display_name or indexer.name,
+                    indexer.id,
+                    is_selected,
+                )
+            )
+            self._indexer_name_to_id[indexer.name.lower()] = indexer.id
         return selections
 
     def _build_category_selections(self) -> list[Selection]:
@@ -154,6 +163,20 @@ class WebSearchQueryWidget(Static):
             )
         return selections
 
+    def _resolve_indexer_id(self, preset_id: str) -> str | None:
+        """Resolve preset indexer ID, supporting name-based Prowlarr IDs.
+
+        Allows presets to reference Prowlarr indexers by name
+        (e.g. ``prowlarr:1337x``) in addition to numeric ID
+        (e.g. ``prowlarr:12``). Returns the canonical indexer ID,
+        or None if a name-based reference cannot be resolved.
+        """
+        if preset_id.startswith("prowlarr:"):
+            suffix = preset_id.removeprefix("prowlarr:")
+            if not suffix.isdigit() and suffix != "all":
+                return self._indexer_name_to_id.get(suffix.lower())
+        return preset_id
+
     @log_time
     def on_mount(self) -> None:
         """Focus on input when dialog opens."""
@@ -165,15 +188,11 @@ class WebSearchQueryWidget(Static):
             ("ESC", "Close"),
         )
 
-        self.query_one(
-            "#websearch-indexers-list"
-        ).border_title = "Indexers"
+        self.query_one("#websearch-indexers-list").border_title = "Indexers"
         self.query_one("#websearch-categories-list").border_title = "Categories"
 
         if self._presets:
-            cycle = self.query_one(
-                "#websearch-preset-cycle", CycleSelect
-            )
+            cycle = self.query_one("#websearch-preset-cycle", CycleSelect)
             cycle.border_title = "Preset"
             names = [p.name for p in self._presets]
             if self._default_preset and self._default_preset in names:
@@ -209,7 +228,11 @@ class WebSearchQueryWidget(Static):
             indexers_list.select_all()
         else:
             indexers_list.deselect_all()
-            preset_ids = set(preset.indexers)
+            preset_ids = set()
+            for pid in preset.indexers:
+                resolved = self._resolve_indexer_id(pid)
+                if resolved:
+                    preset_ids.add(resolved)
             for indexer_id in self._indexer_order:
                 if indexer_id in preset_ids:
                     indexers_list.select(indexer_id)

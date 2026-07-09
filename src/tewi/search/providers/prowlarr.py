@@ -259,7 +259,11 @@ class ProwlarrProvider(BaseSearchProvider):
                 # Prefix with prowlarr: to distinguish from other providers
                 full_id = f"prowlarr:{indexer_id}"
                 indexers.append(
-                    Indexer(full_id, f"{indexer_name} [dim](Prowlarr)[/]")
+                    Indexer(
+                        full_id,
+                        indexer_name,
+                        f"{indexer_name} [dim](Prowlarr)[/]",
+                    )
                 )
         return indexers
 
