@@ -156,4 +156,4 @@ class PageIndicator(Static):
             return ""
         else:
             # include padding by spaces
-            return f" [ {self.state.current + 1} / {self.state.total} ] "
+            return f" [{self.state.current + 1}/{self.state.total}]"

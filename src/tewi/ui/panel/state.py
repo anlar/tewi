@@ -24,8 +24,6 @@ class StatePanel(Static):
     r_alt_speed = reactive("", recompose=True)
     r_alt_delimiter = reactive("", recompose=True)
 
-    r_stats_size = reactive("", recompose=True)
-
     r_upload_speed = reactive(0)
     r_download_speed = reactive(0)
 
@@ -38,11 +36,8 @@ class StatePanel(Static):
             yield PageIndicator(classes="column page").data_bind(
                 state=StatePanel.r_page
             )
-            yield ReactiveLabel(classes="column").data_bind(
+            yield ReactiveLabel(classes="column", markup=True).data_bind(
                 name=StatePanel.r_stats
-            )
-            yield ReactiveLabel(classes="column").data_bind(
-                name=StatePanel.r_stats_size
             )
             yield ReactiveLabel(classes="column sort").data_bind(
                 name=StatePanel.r_sort
@@ -98,14 +93,6 @@ class StatePanel(Static):
         if new_r_session:
             self.r_stats = self.print_stats(new_r_session)
 
-            complete_size = print_size(new_r_session["torrents_complete_size"])
-            total_size = print_size(new_r_session["torrents_total_size"])
-
-            if complete_size < total_size:
-                self.r_stats_size = f"Size: {complete_size} / {total_size}"
-            else:
-                self.r_stats_size = f"Size: {complete_size}"
-
             self.r_upload_speed = new_r_session["upload_speed"]
             self.r_download_speed = new_r_session["download_speed"]
             alt_speed_enabled = new_r_session["alt_speed_enabled"]
@@ -116,7 +103,7 @@ class StatePanel(Static):
                 alt_speed_up = print_speed(alt_speed_up_bytes)
                 alt_speed_down = print_speed(alt_speed_down_bytes)
                 self.r_alt_speed = (
-                    f"Speed Limits: ↑ {alt_speed_up} ↓ {alt_speed_down}"
+                    f"Limits: ↑ {alt_speed_up} ↓ {alt_speed_down}"
                 )
                 self.r_alt_delimiter = "»»»"
             else:
@@ -139,23 +126,31 @@ class StatePanel(Static):
 
     @log_time
     def print_stats(self, session) -> str:
-        stats = f"Torrents: {session['torrents_count']}"
+        stats = f"Total: {session['torrents_count']}"
 
         statuses = []
 
+        if session["torrents_check"] > 0:
+            statuses.append(f"Verify: {session['torrents_check']}")
+
         if session["torrents_down"] > 0:
-            statuses.append(f"Downloading: {session['torrents_down']}")
+            statuses.append(f"Down: {session['torrents_down']}")
 
         if session["torrents_seed"] > 0:
-            statuses.append(f"Seeding: {session['torrents_seed']}")
-
-        if session["torrents_check"] > 0:
-            statuses.append(f"Verifying: {session['torrents_check']}")
+            statuses.append(f"Seed: {session['torrents_seed']}")
 
         if session["torrents_stop"] > 0:
-            statuses.append(f"Paused: {session['torrents_stop']}")
+            statuses.append(f"Pause: {session['torrents_stop']}")
 
         if len(statuses) > 0:
-            stats = f"{stats} ({', '.join(statuses)})"
+            stats = f"{stats} [dim]|[/] {', '.join(statuses)}"
+
+        complete_size = print_size(session["torrents_complete_size"])
+        total_size = print_size(session["torrents_total_size"])
+
+        if complete_size < total_size:
+            stats = f"{stats} [dim]|[/] Size: {complete_size} / {total_size}"
+        else:
+            stats = f"{stats} [dim]|[/] Size: {complete_size}"
 
         return stats
