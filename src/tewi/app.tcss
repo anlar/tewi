@@ -499,6 +499,27 @@ SearchWidget > #search-input {
     margin: 0;
 }
 
+/* SCREEN: FILTER NAME DIALOG */
+
+FilterNameDialog {
+    align: center middle;
+}
+
+FilterNameWidget {
+    height: auto;
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
+FilterNameWidget > #filter-name-input {
+    height: auto;
+
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
 /* SCREEN: WEB SEARCH QUERY DIALOG */
 
 WebSearchQueryDialog {

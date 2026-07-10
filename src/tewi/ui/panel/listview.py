@@ -10,10 +10,12 @@ from ...torrent.models import Torrent
 from ...util.log import log_time
 from ..messages import (
     ChangeTorrentPriorityCommand,
+    ClearFiltersCommand,
     Notification,
     OpenAddTorrentCommand,
     OpenEditTorrentCommand,
     OpenFilterCommand,
+    OpenFilterNameCommand,
     OpenSearchCommand,
     OpenSortOrderCommand,
     OpenTorrentInfoCommand,
@@ -63,7 +65,9 @@ class TorrentListViewPanel(ListView):
         Binding("L", "update_torrent_labels", "[Torrent] Update labels"),
         Binding("C", "update_torrent_category", "[Torrent] Set category"),
         Binding("s", "sort_order", "[Torrent] Sort order"),
-        Binding("f", "filter", "[Torrent] Filter"),
+        Binding("f", "filter", "[Torrent] Filter by state"),
+        Binding("F", "filter_name", "[Torrent] Filter by name"),
+        Binding("escape", "clear_filters", "[Torrent] Clear filters"),
         Binding("p", "change_priority", "[Torrent] Change priority"),
         Binding("space", "toggle_torrent", "[Torrent] Toggle state"),
         Binding("r", "remove_torrent", "[Torrent] Remove"),
@@ -374,6 +378,14 @@ class TorrentListViewPanel(ListView):
     @log_time
     def action_filter(self) -> None:
         self.post_message(OpenFilterCommand())
+
+    @log_time
+    def action_filter_name(self) -> None:
+        self.post_message(OpenFilterNameCommand())
+
+    @log_time
+    def action_clear_filters(self) -> None:
+        self.post_message(ClearFiltersCommand())
 
     @log_time
     def action_change_priority(self) -> None:

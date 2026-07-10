@@ -40,6 +40,16 @@ class OpenFilterCommand(Message):
 
 
 @dataclass
+class OpenFilterNameCommand(Message):
+    pass
+
+
+@dataclass
+class ClearFiltersCommand(Message):
+    pass
+
+
+@dataclass
 class OpenUpdateTorrentLabelsCommand(Message):
     torrent: Torrent
 
@@ -178,6 +188,11 @@ class SortOrderUpdatedEvent(Message):
 @dataclass
 class FilterUpdatedEvent(Message):
     filter_option: FilterOption
+
+
+@dataclass
+class FilterNameUpdatedEvent(Message):
+    name: str
 
 
 @dataclass

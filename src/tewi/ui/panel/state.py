@@ -5,7 +5,7 @@ from textual.widgets import Static
 
 from ...util.log import log_time
 from ..models import FilterState, SortOrder
-from ..util import print_size, print_speed
+from ..util import esc_trunk, print_size, print_speed
 from ..widget.common import PageIndicator, ReactiveLabel, SpeedIndicator
 
 
@@ -74,9 +74,18 @@ class StatePanel(Static):
     @log_time
     def watch_r_filter_state(self, new_r_filter_state: FilterState) -> None:
         if new_r_filter_state:
+            parts = []
+
             if new_r_filter_state.option.id != "all":
+                parts.append(new_r_filter_state.option.name)
+
+            if new_r_filter_state.name:
+                name = esc_trunk(new_r_filter_state.name, 10)
+                parts.append(f'"{name}"')
+
+            if parts:
                 self.r_filter = (
-                    f"Filter: {new_r_filter_state.option.name} "
+                    f"Filter: {' + '.join(parts)} "
                     f"({new_r_filter_state.torrent_count})"
                 )
                 return

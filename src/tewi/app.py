@@ -46,6 +46,7 @@ from .ui.dialog.torrent.add import AddTorrentDialog
 from .ui.dialog.torrent.category import UpdateTorrentCategoryDialog
 from .ui.dialog.torrent.edit import EditTorrentDialog
 from .ui.dialog.torrent.filter import FilterDialog
+from .ui.dialog.torrent.filter_name import FilterNameDialog
 from .ui.dialog.torrent.label import UpdateTorrentLabelsDialog
 from .ui.dialog.torrent.search import SearchDialog
 from .ui.dialog.torrent.sort import SortOrderDialog
@@ -53,13 +54,16 @@ from .ui.messages import (
     AddTorrentCommand,
     AddTorrentFromWebSearchCommand,
     ChangeTorrentPriorityCommand,
+    ClearFiltersCommand,
     Confirm,
     EditTorrentCommand,
+    FilterNameUpdatedEvent,
     FilterUpdatedEvent,
     Notification,
     OpenAddTorrentCommand,
     OpenEditTorrentCommand,
     OpenFilterCommand,
+    OpenFilterNameCommand,
     OpenSearchCommand,
     OpenSortOrderCommand,
     OpenTorrentInfoCommand,
@@ -214,7 +218,10 @@ class MainApp(App):
         )
 
         self.filter_option = get_filter_by_id(filter)
-        self.r_filter_state = FilterState(self.filter_option, 0)
+        self.filter_name = ""
+        self.r_filter_state = FilterState(
+            self.filter_option, 0, self.filter_name
+        )
 
         logger.info("Application initialization completed")
 
@@ -310,7 +317,15 @@ class MainApp(App):
                 t for t in torrents if self.filter_option.filter_func(t)
             ]
 
-            filter_state = FilterState(self.filter_option, len(torrents))
+            if self.filter_name:
+                filter_name = self.filter_name.lower()
+                torrents = [
+                    t for t in torrents if filter_name in t.name.lower()
+                ]
+
+            filter_state = FilterState(
+                self.filter_option, len(torrents), self.filter_name
+            )
 
             torrents.sort(
                 key=self.r_sort_order.sort_func,
@@ -414,6 +429,13 @@ class MainApp(App):
     @on(OpenFilterCommand)
     def handle_open_filter_command(self, event: OpenFilterCommand) -> None:
         self.push_screen(FilterDialog())
+
+    @log_time
+    @on(OpenFilterNameCommand)
+    def handle_open_filter_name_command(
+        self, event: OpenFilterNameCommand
+    ) -> None:
+        self.push_screen(FilterNameDialog())
 
     @log_time
     @on(OpenSearchCommand)
@@ -592,6 +614,30 @@ class MainApp(App):
         self.post_message(
             Notification(f"Selected filter: {event.filter_option.name}")
         )
+
+    @log_time
+    @on(FilterNameUpdatedEvent)
+    def handle_filter_name_updated_event(
+        self, event: FilterNameUpdatedEvent
+    ) -> None:
+        self.filter_name = event.name.strip()
+
+        if self.filter_name:
+            self.post_message(
+                Notification(f"Filter by name: {self.filter_name}")
+            )
+        else:
+            self.post_message(Notification("Filter by name cleared"))
+
+    @log_time
+    @on(ClearFiltersCommand)
+    def handle_clear_filters_command(
+        self, event: ClearFiltersCommand
+    ) -> None:
+        self.filter_option = get_filter_by_id("all")
+        self.filter_name = ""
+
+        self.post_message(Notification("Filters cleared"))
 
     @log_time
     @on(PageChangedEvent)

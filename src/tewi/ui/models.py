@@ -52,6 +52,7 @@ class FilterOption(NamedTuple):
 class FilterState(NamedTuple):
     option: FilterOption
     torrent_count: int
+    name: str = ""
 
 
 filter_options = [
