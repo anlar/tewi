@@ -631,9 +631,7 @@ class MainApp(App):
 
     @log_time
     @on(ClearFiltersCommand)
-    def handle_clear_filters_command(
-        self, event: ClearFiltersCommand
-    ) -> None:
+    def handle_clear_filters_command(self, event: ClearFiltersCommand) -> None:
         self.filter_option = get_filter_by_id("all")
         self.filter_name = ""
 
