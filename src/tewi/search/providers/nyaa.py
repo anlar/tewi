@@ -9,10 +9,7 @@ from datetime import datetime
 from ...util.log import log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
-from ..util import (
-    build_magnet_link,
-    urlopen,
-)
+from ..util import build_magnet_link
 
 
 class NyaaProvider(BaseSearchProvider):
@@ -130,7 +127,7 @@ class NyaaProvider(BaseSearchProvider):
         url = f"{self.RSS_URL}&{urllib.parse.urlencode(params)}"
 
         try:
-            with urlopen(url) as response:
+            with self.urlopen(url) as response:
                 data = response.read().decode("utf-8")
 
             # Parse RSS XML

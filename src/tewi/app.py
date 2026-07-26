@@ -162,6 +162,7 @@ class MainApp(App):
         badge_max_count: int,
         badge_max_length: int,
         search_default_mode: str,
+        search_timeout: int,
         search_providers: list[str] | None = None,
         search_hide_zero_seeders: bool = False,
         search_presets: list | None = None,
@@ -214,7 +215,8 @@ class MainApp(App):
             prowlarr_api_key,
             prowlarr_multi,
             bitmagnet_url,
-            search_providers,
+            search_timeout,
+            enabled_providers=search_providers,
         )
 
         self.filter_option = get_filter_by_id(filter)
@@ -1039,6 +1041,14 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         action=TrackSetAction,
         help="Name of the preset to select by default in search dialog",
     )
+    p.add_argument(
+        "--search-timeout",
+        type=int,
+        default=30,
+        metavar="SECONDS",
+        action=TrackSetAction,
+        help="Timeout in seconds for search provider HTTP requests",
+    )
 
     # Profiles
     p.add_argument(
@@ -1244,6 +1254,7 @@ def create_app():
             search_default_mode=args.search_default_mode,
             search_presets=getattr(args, "search_presets", []),
             search_default_preset=getattr(args, "search_default_preset", None),
+            search_timeout=args.search_timeout,
         )
         return app
     except ClientError as e:

@@ -8,10 +8,7 @@ from typing import Any
 from ...util.log import log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
-from ..util import (
-    build_magnet_link,
-    urlopen,
-)
+from ..util import build_magnet_link
 
 
 class Torrentz2Provider(BaseSearchProvider):
@@ -196,7 +193,7 @@ class Torrentz2Provider(BaseSearchProvider):
         url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
 
         try:
-            with urlopen(url) as response:
+            with self.urlopen(url) as response:
                 data = json.loads(response.read().decode("utf-8"))
 
             success = data.get("success")

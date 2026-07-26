@@ -21,6 +21,7 @@ import configparser
 from src.tewi.config import (
     _load_client_section,
     _load_debug_section,
+    _load_search_section,
     _load_ui_section,
 )
 
@@ -686,3 +687,46 @@ test_mode =   2
 
         # All values should be trimmed
         assert config == {"log_level": "warning", "test_mode": 2}
+
+
+class TestLoadSearchSectionTimeout:
+    """Test cases for the [search] timeout option."""
+
+    def test_no_section(self):
+        """Test handling of config without [search] section."""
+        config_text = ""
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+
+        _load_search_section(parser, config)
+
+        assert config == {}
+
+    def test_empty_timeout(self):
+        """Test handling of empty timeout value."""
+        config_text = """
+[search]
+timeout =
+"""
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+
+        _load_search_section(parser, config)
+
+        assert "search_timeout" not in config
+
+    def test_custom_timeout(self):
+        """Test loading a custom timeout value."""
+        config_text = """
+[search]
+timeout = 60
+"""
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+
+        _load_search_section(parser, config)
+
+        assert config["search_timeout"] == 60

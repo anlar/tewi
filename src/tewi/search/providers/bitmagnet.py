@@ -10,7 +10,6 @@ from typing import Any
 from ...util.log import get_logger, log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
-from ..util import urlopen_post
 
 logger = get_logger()
 
@@ -149,12 +148,16 @@ class BitmagnetProvider(BaseSearchProvider):
         # "unknown" (0) -> not in map, returns empty list
     }
 
-    def __init__(self, bitmagnet_url: str | None = None) -> None:
+    def __init__(
+        self, bitmagnet_url: str | None = None, timeout: int | None = None
+    ) -> None:
         """Initialize Bitmagnet provider with configuration.
 
         Args:
             bitmagnet_url: Base URL of Bitmagnet instance
+            timeout: Default timeout in seconds for search requests
         """
+        super().__init__(timeout)
         self.bitmagnet_url: str | None = bitmagnet_url
         self._config_error: str | None = self._validate_config(bitmagnet_url)
 
@@ -389,7 +392,7 @@ class BitmagnetProvider(BaseSearchProvider):
             post_data = json.dumps(query_body).encode("utf-8")
 
             logger.debug(f"Bitmagnet: requesting URL: {url}")
-            with urlopen_post(url, data=post_data) as response:
+            with self.urlopen_post(url, data=post_data) as response:
                 response_data = json.loads(response.read().decode("utf-8"))
 
             # Check for GraphQL errors
@@ -454,7 +457,7 @@ class BitmagnetProvider(BaseSearchProvider):
             post_data = json.dumps(query_body).encode("utf-8")
 
             logger.debug(f"Bitmagnet: fetching content details for {info_hash}")
-            with urlopen_post(url, data=post_data) as response:
+            with self.urlopen_post(url, data=post_data) as response:
                 response_data = json.loads(response.read().decode("utf-8"))
 
             # Navigate to content object

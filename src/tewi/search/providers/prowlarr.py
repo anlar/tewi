@@ -9,10 +9,7 @@ from typing import Any
 from ...util.log import get_logger, log_time
 from ..base import BaseSearchProvider
 from ..models import Category, Indexer, SearchResult, StandardCategories
-from ..util import (
-    build_magnet_link,
-    urlopen,
-)
+from ..util import build_magnet_link
 
 logger = get_logger()
 
@@ -30,6 +27,7 @@ class ProwlarrProvider(BaseSearchProvider):
         prowlarr_url: str | None = None,
         api_key: str | None = None,
         multi_indexer: bool = False,
+        timeout: int | None = None,
     ):
         """Initialize Prowlarr provider with configuration.
 
@@ -38,7 +36,9 @@ class ProwlarrProvider(BaseSearchProvider):
             api_key: API key for Prowlarr authentication
             multi_indexer: If True, load all indexers individually.
                           If False, use single "all" endpoint (default)
+            timeout: Default timeout in seconds for search requests
         """
+        super().__init__(timeout)
         self.prowlarr_url: str | None = prowlarr_url
         self.api_key: str | None = api_key
         self.multi_indexer: bool = multi_indexer
@@ -223,7 +223,7 @@ class ProwlarrProvider(BaseSearchProvider):
             Exception: If request fails or response invalid
         """
         try:
-            with urlopen(url, timeout=10) as response:
+            with self.urlopen(url, timeout=10) as response:
                 return json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
@@ -320,7 +320,7 @@ class ProwlarrProvider(BaseSearchProvider):
         """
         try:
             logger.debug(f"Prowlarr: requesting URL: {url}")
-            with urlopen(url) as response:
+            with self.urlopen(url) as response:
                 return json.loads(response.read().decode("utf-8"))
         except urllib.error.HTTPError as e:
             # Read error response body for more details

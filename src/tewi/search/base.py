@@ -1,9 +1,12 @@
 """Abstract base class for torrent search providers."""
 
 from abc import ABC, abstractmethod
+from typing import Any
 
 from ..ui.util import print_size
 from .models import Category, Indexer, SearchResult
+from .util import urlopen as _urlopen
+from .util import urlopen_post as _urlopen_post
 
 
 class BaseSearchProvider(ABC):
@@ -12,6 +15,53 @@ class BaseSearchProvider(ABC):
     Each provider implements search functionality for a specific
     public tracker or torrent search engine.
     """
+
+    def __init__(self, timeout: int | None = None) -> None:
+        """Initialize provider with a request timeout.
+
+        Args:
+            timeout: Default timeout in seconds for HTTP requests made
+                    via `urlopen`/`urlopen_post`. When None, the
+                    underlying `urlopen`/`urlopen_post` default is used.
+        """
+        self.timeout = timeout
+
+    def urlopen(self, url: str, timeout: int | None = None) -> Any:
+        """Open URL with the provider's configured timeout.
+
+        Args:
+            url: URL to fetch
+            timeout: Override timeout in seconds (defaults to
+                    `self.timeout` when not given)
+
+        Returns:
+            HTTP response context manager
+        """
+        if timeout is not None:
+            return _urlopen(url, timeout=timeout)
+        if self.timeout is not None:
+            return _urlopen(url, timeout=self.timeout)
+        return _urlopen(url)
+
+    def urlopen_post(
+        self, url: str, data: bytes, timeout: int | None = None
+    ) -> Any:
+        """Open URL with a POST request using the provider's timeout.
+
+        Args:
+            url: URL to fetch
+            data: POST data as bytes
+            timeout: Override timeout in seconds (defaults to
+                    `self.timeout` when not given)
+
+        Returns:
+            HTTP response context manager
+        """
+        if timeout is not None:
+            return _urlopen_post(url, data=data, timeout=timeout)
+        if self.timeout is not None:
+            return _urlopen_post(url, data=data, timeout=self.timeout)
+        return _urlopen_post(url, data=data)
 
     @property
     @abstractmethod

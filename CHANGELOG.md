@@ -15,11 +15,12 @@ handle multi-line list body as single line.
 - Search presets to switch between predefined indexer and category combinations via `[search.preset.NAME]` config sections [#171](https://github.com/anlar/tewi/issues/171)
 - Filter torrents by name via `F` hotkey in torrent list (`Esc` to clear filter) [#111](https://github.com/anlar/tewi/issues/111)
 - Add torrent by a bare info hash, converted to a magnet link (Transmission, qBittorrent, Deluge)
+- Add `--search-timeout` CLI flag and `timeout` config option in `[search]` section to configure the HTTP request timeout used by search providers (default: 30 seconds)
 
 ### Changed
 
 - Fix incorrect size display in compact search view where integer sizes with trailing zeros (e.g. 680 MB) were stripped to wrong values (e.g. 68 MB)
-- Bitmagnet: use default timeouts for URL requests (increase content details request timeout from 5 to 30 seconds)
+- Bitmagnet: content details request timeout is now configurable via `--search-timeout` (previously hardcoded to 5 seconds)
 
 ### Removed
 

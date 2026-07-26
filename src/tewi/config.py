@@ -285,6 +285,9 @@ def _load_search_section(
     val = _get_string_option(parser, "search", "default_preset")
     if val:
         config["search_default_preset"] = val
+    val = _get_int_option(parser, "search", "timeout")
+    if val is not None:
+        config["search_timeout"] = val
 
 
 def _load_preset_sections(
@@ -451,6 +454,9 @@ hide_zero_seeders =
 
 # Default view mode for search results: standard or compact (default: standard)
 default_mode =
+
+# Timeout in seconds for search provider HTTP requests (default: 30)
+timeout =
 
 # Search presets: define named combinations of indexers and categories.
 # Add one [search.preset.NAME] section per preset. When any presets are

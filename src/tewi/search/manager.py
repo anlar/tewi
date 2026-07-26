@@ -86,6 +86,7 @@ class SearchClient:
         prowlarr_api_key: str | None,
         prowlarr_multi: bool,
         bitmagnet_url: str | None,
+        search_timeout: int,
         enabled_providers: list[str] | None = None,
         hide_zero_seeders: bool = False,
     ):
@@ -99,6 +100,8 @@ class SearchClient:
             prowlarr_api_key: API key for Prowlarr authentication (optional)
             prowlarr_multi: Load all Prowlarr indexers individually (optional)
             bitmagnet_url: Base URL of Bitmagnet instance (optional)
+            search_timeout: Default timeout in seconds for provider
+                           HTTP requests
             enabled_providers: List of provider IDs to enable,
                              or None to enable all providers
             hide_zero_seeders: Filter out results with zero seeders
@@ -112,6 +115,7 @@ class SearchClient:
         self._prowlarr_multi = prowlarr_multi
         self._bitmagnet_url = bitmagnet_url
         self._hide_zero_seeders = hide_zero_seeders
+        self._search_timeout = search_timeout
         self._enabled_providers = self._parse_enabled_providers(
             enabled_providers
         )
@@ -193,6 +197,7 @@ class SearchClient:
                                 self._jackett_url,
                                 self._jackett_api_key,
                                 self._jackett_multi,
+                                self._search_timeout,
                             )
                         )
                 elif provider_id == "prowlarr":
@@ -204,6 +209,7 @@ class SearchClient:
                                 self._prowlarr_url,
                                 self._prowlarr_api_key,
                                 self._prowlarr_multi,
+                                self._search_timeout,
                             )
                         )
                 elif provider_id == "bitmagnet":
@@ -211,12 +217,16 @@ class SearchClient:
                     if self._bitmagnet_url:
                         provider_class = AVAILABLE_PROVIDERS[provider_id]
                         self._providers.append(
-                            BitmagnetProvider(self._bitmagnet_url)
+                            BitmagnetProvider(
+                                self._bitmagnet_url, self._search_timeout
+                            )
                         )
                 else:
                     # Regular providers
                     provider_class = AVAILABLE_PROVIDERS[provider_id]
-                    self._providers.append(provider_class())
+                    self._providers.append(
+                        provider_class(timeout=self._search_timeout)
+                    )
 
         return self._providers
 
