@@ -32,7 +32,7 @@ classifiers = [
     "Topic :: Internet",
     "Topic :: Utilities"
 ]
-keywords = ["transmission", "qbittorrent", "torrent"]
+keywords = ["transmission", "qbittorrent", "deluge", "torrent", "bittorrent", "tui"]
 
 [tool.setuptools.dynamic]
 version = {attr = "tewi.version.__version__"}
