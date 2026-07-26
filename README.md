@@ -57,7 +57,11 @@ Features:
 * [Textual](https://textual.textualize.io/)
 * [transmission-rpc](https://github.com/Trim21/transmission-rpc)
 * [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api)
-* [pyperclip](https://github.com/asweigart/pyperclip)
+* [platformdirs](https://github.com/tox-dev/platformdirs)
+* [geoip2fast](https://github.com/rabuchaim/geoip2fast) (optional, used for
+  peer country lookup)
+* [pyperclip](https://github.com/asweigart/pyperclip) (optional, used for
+  pasting links from clipboard when adding torrents)
 
 ## Getting Started
 
