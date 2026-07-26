@@ -47,7 +47,9 @@ class AddTorrentWidget(Static):
 
     @log_time
     def on_mount(self) -> None:
-        self.border_title = "Add torrent (local file, magnet link, URL)"
+        self.border_title = (
+            "Add torrent (local file, magnet link, URL, info hash)"
+        )
         self.border_subtitle = subtitle_keys(("Enter", "Add"), ("ESC", "Close"))
 
         free_space = print_size(self.download_dir_free_space)
