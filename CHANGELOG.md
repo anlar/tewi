@@ -14,7 +14,7 @@ handle multi-line list body as single line.
 
 - Search presets to switch between predefined indexer and category combinations via `[search.preset.NAME]` config sections [#171](https://github.com/anlar/tewi/issues/171)
 - Filter torrents by name via `F` hotkey in torrent list (`Esc` to clear filter) [#111](https://github.com/anlar/tewi/issues/111)
-
+- Add torrent by a bare info hash, converted to a magnet link (Transmission, qBittorrent, Deluge)
 
 ### Changed
 

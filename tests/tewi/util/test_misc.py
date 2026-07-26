@@ -1,4 +1,4 @@
-from src.tewi.util.misc import is_torrent_link
+from src.tewi.util.misc import is_torrent_hash, is_torrent_link
 
 
 class TestIsTorrentLink:
@@ -110,3 +110,46 @@ class TestIsTorrentLink:
             is_torrent_link("http://tracker.site.org/announce?passkey=abc123")
             is True
         )
+
+
+class TestIsTorrentHash:
+    """Test cases for is_torrent_hash function."""
+
+    def test_hex_hash(self):
+        """Test that a 40-char hex info hash is recognized."""
+        hex_hash = "c12fe1c06bba254a9dc9f519b335aa7c1367a88a"
+        assert is_torrent_hash(hex_hash) is True
+        assert is_torrent_hash(hex_hash.upper()) is True
+
+    def test_base32_hash(self):
+        """Test that a 32-char Base32 info hash is recognized."""
+        base32_hash = "MFRGG2LTMVZW443UOJUW4ZLTMVXHI2LM"
+        assert is_torrent_hash(base32_hash) is True
+
+    def test_whitespace_handling(self):
+        """Test that leading/trailing whitespace is stripped."""
+        hex_hash = "c12fe1c06bba254a9dc9f519b335aa7c1367a88a"
+        assert is_torrent_hash(f"  {hex_hash}  ") is True
+
+    def test_wrong_length(self):
+        """Test that strings of the wrong length are rejected."""
+        assert (
+            is_torrent_hash("c12fe1c06bba254a9dc9f519b335aa7c1367a88") is False
+        )
+        assert (
+            is_torrent_hash("c12fe1c06bba254a9dc9f519b335aa7c1367a88aa")
+            is False
+        )
+
+    def test_non_hash_values(self):
+        """Test that non-hash text is rejected."""
+        assert is_torrent_hash("") is False
+        assert is_torrent_hash("   ") is False
+        assert is_torrent_hash("not-a-hash") is False
+        assert (
+            is_torrent_hash(
+                "magnet:?xt=urn:btih:c12fe1c06bba254a9dc9f519b335aa7c1367a88a"
+            )
+            is False
+        )
+        assert is_torrent_hash("~/downloads/file.torrent") is False

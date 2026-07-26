@@ -9,7 +9,7 @@ from typing import Any
 import requests
 
 from ...util.log import log_time
-from ...util.misc import is_torrent_link
+from ...util.misc import is_torrent_hash, is_torrent_link
 from ..base import BaseClient, ClientCapability
 from ..models import (
     ClientError,
@@ -359,7 +359,15 @@ class DelugeClient(BaseClient):
 
     @log_time
     def add_torrent(self, value: str) -> None:
-        if is_torrent_link(value):
+        """Add a torrent from an info hash, magnet link, URL or file.
+
+        A bare v1 info hash (40-char hex or 32-char Base32) is
+        converted to a magnet link before being submitted.
+        """
+        if is_torrent_hash(value):
+            magnet_link = f"magnet:?xt=urn:btih:{value.strip()}"
+            self._call("core.add_torrent_magnet", [magnet_link, {}])
+        elif is_torrent_link(value):
             magnet_link, torrent_data = download_torrent_from_url(value)
             if magnet_link:
                 self._call("core.add_torrent_magnet", [magnet_link, {}])
