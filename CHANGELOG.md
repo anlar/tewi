@@ -19,6 +19,7 @@ handle multi-line list body as single line.
 ### Changed
 
 - Fix incorrect size display in compact search view where integer sizes with trailing zeros (e.g. 680 MB) were stripped to wrong values (e.g. 68 MB)
+- Bitmagnet: use default timeouts for URL requests (increase content details request timeout from 5 to 30 seconds)
 
 ### Removed
 

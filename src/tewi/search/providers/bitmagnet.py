@@ -210,7 +210,7 @@ class BitmagnetProvider(BaseSearchProvider):
         """Generate Bitmagnet-specific details for right column.
 
         Prints extended metadata from the search result. Attempts to fetch
-        additional content details from GraphQL API with 5-second timeout.
+        additional content details from GraphQL API.
 
         Args:
             result: Search result to format
@@ -389,7 +389,7 @@ class BitmagnetProvider(BaseSearchProvider):
             post_data = json.dumps(query_body).encode("utf-8")
 
             logger.debug(f"Bitmagnet: requesting URL: {url}")
-            with urlopen_post(url, data=post_data, timeout=30) as response:
+            with urlopen_post(url, data=post_data) as response:
                 response_data = json.loads(response.read().decode("utf-8"))
 
             # Check for GraphQL errors
@@ -450,12 +450,11 @@ class BitmagnetProvider(BaseSearchProvider):
             )
             query_body = {"query": query_str}
 
-            # Fetch with 5-second timeout
             url = f"{self.bitmagnet_url.rstrip('/')}/graphql"
             post_data = json.dumps(query_body).encode("utf-8")
 
             logger.debug(f"Bitmagnet: fetching content details for {info_hash}")
-            with urlopen_post(url, data=post_data, timeout=5) as response:
+            with urlopen_post(url, data=post_data) as response:
                 response_data = json.loads(response.read().decode("utf-8"))
 
             # Navigate to content object
