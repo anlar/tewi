@@ -35,7 +35,7 @@ services:
       - "9081:6881/udp" # Peer connections (UDP)
     restart: "no"
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9093/"]
+      test: ["CMD", "curl", "-f", "http://localhost:9071/"]
       interval: 10s
       timeout: 5s
       retries: 5
