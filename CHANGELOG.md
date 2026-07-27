@@ -12,6 +12,14 @@ handle multi-line list body as single line.
 
 ### Added
 
+### Changed
+
+### Removed
+
+## [2.5.0] - 2026-07-27 - Carrot Magnet
+
+### Added
+
 - Search presets to switch between predefined indexer and category combinations via `[search.preset.NAME]` config sections [#171](https://github.com/anlar/tewi/issues/171)
 - Filter torrents by name via `F` hotkey in torrent list (`Esc` to clear filter) [#111](https://github.com/anlar/tewi/issues/111)
 - Add torrent by a bare info hash, converted to a magnet link (Transmission, qBittorrent, Deluge)
@@ -21,8 +29,6 @@ handle multi-line list body as single line.
 
 - Fix incorrect size display in compact search view where integer sizes with trailing zeros (e.g. 680 MB) were stripped to wrong values (e.g. 68 MB)
 - Bitmagnet: content details request timeout is now configurable via `--search-timeout` (previously hardcoded to 5 seconds)
-
-### Removed
 
 ## [2.4.1] - 2026-06-28 - Eientei Engine
 
