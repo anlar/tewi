@@ -58,6 +58,7 @@ Features:
 * [transmission-rpc](https://github.com/Trim21/transmission-rpc)
 * [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api)
 * [platformdirs](https://github.com/tox-dev/platformdirs)
+* [shtab](https://github.com/iterative/shtab)
 * [geoip2fast](https://github.com/rabuchaim/geoip2fast) (optional, used for
   peer country lookup)
 * [pyperclip](https://github.com/asweigart/pyperclip) (optional, used for
@@ -84,6 +85,38 @@ $ pip install tewi-torrent
 ```
 $ uv tool install tewi-torrent
 ```
+
+### Shell completion
+
+Tewi can print a completion script for `bash`, `zsh`, or `tcsh` via
+`--print-completion`. Install it into your user data directory (XDG
+`$XDG_DATA_HOME`, `~/.local/share` by default).
+
+For `bash` (loaded automatically by `bash-completion` in new shells):
+
+```
+$ mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/bash-completion/completions"
+$ tewi --print-completion bash > \
+    "${XDG_DATA_HOME:-$HOME/.local/share}/bash-completion/completions/tewi"
+```
+
+For `zsh`:
+
+```
+$ mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/zsh/site-functions"
+$ tewi --print-completion zsh > \
+    "${XDG_DATA_HOME:-$HOME/.local/share}/zsh/site-functions/_tewi"
+```
+
+If that directory is not in your `fpath` yet, add it to `~/.zshrc` before
+`compinit` is called:
+
+```
+fpath=("${XDG_DATA_HOME:-$HOME/.local/share}/zsh/site-functions" $fpath)
+```
+
+The generated script is static: re-generate it after upgrading Tewi to pick
+up new command line options.
 
 ## Usage
 

@@ -12,6 +12,8 @@ handle multi-line list body as single line.
 
 ### Added
 
+- Add `--print-completion` CLI flag to generate shell completion script for bash, zsh, or tcsh
+
 ### Changed
 
 - Replace dark/light theme toggle (`d` hotkey) with theme selector (`T` hotkey), with startup theme configurable via `--theme` CLI flag and `theme` config option in `[ui]` section (default: `textual-dark`), and `--list-themes` CLI flag to list available themes

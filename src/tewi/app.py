@@ -19,6 +19,7 @@
 import argparse
 import sys
 
+import shtab
 from textual import on, work
 from textual.app import App, ComposeResult
 from textual.binding import Binding
@@ -834,14 +835,17 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
+    shtab.add_argument_to(p, "--print-completion")
+
     # Actions
-    p.add_argument(
+    add_torrent_arg = p.add_argument(
         "-a",
         "--add-torrent",
         type=str,
         metavar="PATH_OR_MAGNET",
         help="Add torrent from file path or magnet link and exit",
     )
+    add_torrent_arg.complete = shtab.FILE
     p.add_argument(
         "-s",
         "--search",
