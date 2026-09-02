@@ -24,6 +24,7 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.reactive import reactive
+from textual.theme import BUILTIN_THEMES
 from textual.widgets import ContentSwitcher
 
 from .config import (
@@ -100,6 +101,8 @@ from .version import __version__
 
 logger = get_logger()
 
+DEFAULT_THEME = "textual-dark"
+
 
 # Core UI panels
 
@@ -116,7 +119,7 @@ class MainApp(App):
         Binding("w", "open_websearch_clean", "[Search] Web search (clean)"),
         Binding("W", "open_websearch", "[Search] Web search"),
         Binding('"', "screenshot", "[App] Screenshot", priority=True),
-        Binding("d", "toggle_dark", "[UI] Toggle theme"),
+        Binding("T", "change_theme", "[UI] Theme"),
         Binding("?", "help", "[App] Help"),
         Binding("q", "quit", "[App] Quit", priority=True),
     ]
@@ -167,6 +170,7 @@ class MainApp(App):
         search_hide_zero_seeders: bool = False,
         search_presets: list | None = None,
         search_default_preset: str | None = None,
+        theme: str = DEFAULT_THEME,
     ):
         super().__init__()
 
@@ -174,6 +178,7 @@ class MainApp(App):
         logger.info(f"Client configuration: {client_type} at {host}:{port}")
 
         self.title = "Tewi"
+        self.theme = theme
 
         self.view_mode = view_mode
         self.refresh_interval = refresh_interval
@@ -903,6 +908,20 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         help="View mode for torrents in list",
     )
     p.add_argument(
+        "--theme",
+        type=str,
+        default=DEFAULT_THEME,
+        choices=sorted(BUILTIN_THEMES),
+        metavar="THEME",
+        action=TrackSetAction,
+        help="Color theme (see --list-themes for available values)",
+    )
+    p.add_argument(
+        "--list-themes",
+        action="store_true",
+        help="List available themes and exit",
+    )
+    p.add_argument(
         "--page-size",
         type=int,
         default=30,
@@ -1154,6 +1173,16 @@ def _handle_list_search_providers_command():
     sys.exit(0)
 
 
+def _handle_list_themes_command():
+    """Handle --list-themes command."""
+    print("Available themes:")
+    for name in sorted(BUILTIN_THEMES):
+        mode = "dark" if BUILTIN_THEMES[name].dark else "light"
+        default = " [default]" if name == DEFAULT_THEME else ""
+        print(f"  - {name} ({mode}){default}")
+    sys.exit(0)
+
+
 def _handle_create_config_command(profile: str | None):
     """Handle --create-config command to create config file."""
     config_path = get_config_path(profile)
@@ -1171,6 +1200,11 @@ def _handle_commands(args) -> None:
     if args.list_search_providers:
         logger.info("Listing available search providers")
         _handle_list_search_providers_command()
+
+    # Handle --list-themes (list themes and exit)
+    if args.list_themes:
+        logger.info("Listing available themes")
+        _handle_list_themes_command()
 
     # Handle --profiles (list available profiles and exit)
     if args.profiles:
@@ -1210,6 +1244,15 @@ def create_app():
         logger.info(f"Using configuration profile: {profile}")
     logger.info(f"Loaded CLI options: {args}")
 
+    # Validate theme (values from config file bypass argparse checks)
+    if args.theme not in BUILTIN_THEMES:
+        print(
+            f"Warning: Unknown theme '{args.theme}', "
+            f"using default: {DEFAULT_THEME}",
+            file=sys.stderr,
+        )
+        args.theme = DEFAULT_THEME
+
     # Validate search query if provided
     if args.search:
         query = args.search.strip()
@@ -1233,6 +1276,7 @@ def create_app():
             username=args.username,
             password=args.password,
             view_mode=args.view_mode,
+            theme=args.theme,
             refresh_interval=args.refresh_interval,
             page_size=args.page_size,
             limit_torrents=args.limit_torrents,

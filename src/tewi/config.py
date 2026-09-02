@@ -176,6 +176,9 @@ def _load_ui_section(parser: configparser.ConfigParser, config: dict) -> None:
     val = _get_string_option(parser, "ui", "view_mode")
     if val:
         config["view_mode"] = val
+    val = _get_string_option(parser, "ui", "theme")
+    if val:
+        config["theme"] = val
     val = _get_int_option(parser, "ui", "page_size")
     if val is not None:
         config["page_size"] = val
@@ -396,6 +399,11 @@ path =
 [ui]
 # View mode for torrent list: card, compact, or oneline
 view_mode =
+
+# Color theme (default: textual-dark)
+# Any theme available in the theme selector, e.g. textual-light, nord,
+# gruvbox, dracula, monokai, solarized-dark
+theme =
 
 # Number of torrents displayed per page
 page_size =

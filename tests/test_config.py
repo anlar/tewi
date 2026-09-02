@@ -203,6 +203,34 @@ page_size = 50
 
         assert config == {"view_mode": "compact", "page_size": 50}
 
+    def test_theme_value(self):
+        """Test handling of theme option in [ui] section."""
+        config_text = """
+[ui]
+theme = nord
+"""
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+
+        _load_ui_section(parser, config)
+
+        assert config == {"theme": "nord"}
+
+    def test_theme_empty_value(self):
+        """Test that empty theme option is skipped."""
+        config_text = """
+[ui]
+theme =
+"""
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+
+        _load_ui_section(parser, config)
+
+        assert config == {}
+
     def test_partial_values_view_mode_only(self):
         """Test with only view_mode filled."""
         config_text = """
