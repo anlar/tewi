@@ -2,13 +2,13 @@ check:
 	ruff check
 
 test:
-	python -m pytest -v
+	python -m pytest -W error::DeprecationWarning -v
 
 test-github:
-	python -m pytest -v --transmission-port=9092
+	python -m pytest -W error::DeprecationWarning -v --transmission-port=9092
 
 test-all:
-	python -m pytest -v --runxfail
+	python -m pytest -W error::DeprecationWarning -v --runxfail
 
 fix:
 	ruff format
