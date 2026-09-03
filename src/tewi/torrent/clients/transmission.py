@@ -96,9 +96,15 @@ class TransmissionClient(BaseClient):
 
         counts = count_torrents_by_status(torrents)
 
+        # Get free space for download directory
+        try:
+            free_space = self.client.free_space(s.download_dir) or 0
+        except Exception:
+            free_space = 0
+
         return {
             "download_dir": s.download_dir,
-            "download_dir_free_space": s.download_dir_free_space,
+            "download_dir_free_space": free_space,
             "upload_speed": stats.upload_speed,
             "download_speed": stats.download_speed,
             "alt_speed_enabled": s.alt_speed_enabled,
