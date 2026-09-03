@@ -56,10 +56,17 @@ markers = [
 reportUnannotatedClassAttribute = false
 reportUnusedCallResult = false
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
   "pytest",
   "ruff",
   "debugpy",
   "textual-dev",
 ]
+release = [
+  "build",
+  "twine",
+]
+
+[tool.uv]
+default-groups = ["dev", "release"]

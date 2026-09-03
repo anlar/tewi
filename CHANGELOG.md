@@ -17,6 +17,7 @@ handle multi-line list body as single line.
 ### Changed
 
 - Replace dark/light theme toggle (`d` hotkey) with theme selector (`T` hotkey), with startup theme configurable via `--theme` CLI flag and `theme` config option in `[ui]` section (default: `textual-dark`), and `--list-themes` CLI flag to list available themes
+- Move development dependencies from extras to PEP 735 dependency groups (`dev`, `release`), with `build` and `twine` now declared for the release targets in `Makefile`
 
 ### Removed
 

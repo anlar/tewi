@@ -31,7 +31,8 @@ jobs:
 
     - name: Install project dependencies
       run: |
-        python -m pip install .[dev]
+        # --group requires pip >= 25.1 (PEP 735 dependency groups)
+        python -m pip install . --group dev
 
     - name: Install Transmission (cached)
       uses: awalsh128/cache-apt-pkgs-action@latest
