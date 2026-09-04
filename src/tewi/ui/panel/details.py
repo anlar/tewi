@@ -28,7 +28,7 @@ from ..util import (
     print_time_ago,
     subtitle_keys,
 )
-from ..widget.common import ReactiveLabel, VimDataTable
+from ..widget.common import ReactiveLabel, ReactiveLinkLabel, VimDataTable
 
 
 class TorrentInfoPanel(ScrollableContainer):
@@ -166,7 +166,7 @@ class TorrentInfoPanel(ScrollableContainer):
                             )
 
                             yield Static("Comment:", classes="name")
-                            yield ReactiveLabel().data_bind(
+                            yield ReactiveLinkLabel().data_bind(
                                 name=TorrentInfoPanel.t_comment
                             )
                             yield Static("Creator:", classes="name")

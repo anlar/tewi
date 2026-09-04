@@ -6,6 +6,9 @@ from .log import log_time
 _HASH_HEX_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 _HASH_BASE32_RE = re.compile(r"^[A-Za-z2-7]{32}$")
 
+# Text consisting of a single HTTP(S) URL and nothing else
+_HTTP_URL_RE = re.compile(r"^https?://\S+$", re.IGNORECASE)
+
 
 @log_time
 def is_torrent_link(text: str) -> bool:
@@ -14,6 +17,16 @@ def is_torrent_link(text: str) -> bool:
     Case-insensitive check for magnet:, http://, or https:// prefixes.
     """
     return text.strip().lower().startswith(("magnet:", "http://", "https://"))
+
+
+@log_time
+def is_http_url(text: str) -> bool:
+    """Check if text is a single HTTP(S) URL and nothing else.
+
+    Surrounding whitespace is ignored, but any other content (such as
+    a description around the URL) makes the check fail.
+    """
+    return bool(_HTTP_URL_RE.match(text.strip())) if text else False
 
 
 @log_time

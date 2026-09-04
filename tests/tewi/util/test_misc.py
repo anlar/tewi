@@ -1,4 +1,4 @@
-from src.tewi.util.misc import is_torrent_hash, is_torrent_link
+from src.tewi.util.misc import is_http_url, is_torrent_hash, is_torrent_link
 
 
 class TestIsTorrentLink:
@@ -110,6 +110,41 @@ class TestIsTorrentLink:
             is_torrent_link("http://tracker.site.org/announce?passkey=abc123")
             is True
         )
+
+
+class TestIsHttpUrl:
+    """Test cases for is_http_url function."""
+
+    def test_plain_urls(self):
+        """Test that bare HTTP(S) URLs are recognized."""
+        assert is_http_url("http://example.com") is True
+        assert is_http_url("https://example.com/torrent/123") is True
+        assert is_http_url("https://example.com/t?id=1&key=abc#frag") is True
+
+    def test_case_insensitive_scheme(self):
+        """Test that scheme case is ignored."""
+        assert is_http_url("HTTPS://example.com") is True
+        assert is_http_url("Http://example.com") is True
+
+    def test_whitespace_handling(self):
+        """Test that surrounding whitespace is stripped."""
+        assert is_http_url("  https://example.com  ") is True
+        assert is_http_url("\thttp://example.com\n") is True
+
+    def test_url_with_other_text(self):
+        """Test that URLs mixed with other text are rejected."""
+        assert is_http_url("Visit https://example.com") is False
+        assert is_http_url("https://example.com for details") is False
+        assert is_http_url("https://example.com https://example.org") is False
+
+    def test_non_http_values(self):
+        """Test that non-HTTP text is rejected."""
+        assert is_http_url("") is False
+        assert is_http_url("   ") is False
+        assert is_http_url("Created by some tool") is False
+        assert is_http_url("ftp://example.com/file") is False
+        assert is_http_url("magnet:?xt=urn:btih:abcd") is False
+        assert is_http_url("example.com") is False
 
 
 class TestIsTorrentHash:

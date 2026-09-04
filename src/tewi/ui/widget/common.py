@@ -2,12 +2,14 @@ from typing import TypeVar
 
 from rich.text import Text
 from textual import on
+from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.message import Message
 from textual.reactive import reactive
-from textual.widgets import DataTable, Label, SelectionList, Static
+from textual.widgets import DataTable, Label, Link, SelectionList, Static
 
 from ...util.log import log_time
+from ...util.misc import is_http_url
 from ..util import print_speed
 
 
@@ -125,6 +127,45 @@ class ReactiveLabel(Label):
             return self.name
         else:
             return ""
+
+
+class ReactiveLinkLabel(Static):
+    """Label showing its value as clickable link when it is a single URL.
+
+    Any other value (including an URL surrounded by other text) is shown
+    as plain text.
+    """
+
+    name = reactive(None, layout=True)
+
+    @log_time
+    def compose(self) -> ComposeResult:
+        yield ReactiveLabel()
+        yield Link("")
+
+    @log_time
+    def on_mount(self) -> None:
+        self.update_content()
+
+    @log_time
+    def watch_name(self, name: str | None) -> None:
+        if self.is_mounted:
+            self.update_content()
+
+    @log_time
+    def update_content(self) -> None:
+        """Show value either as link or as plain text label."""
+        value = self.name if self.name else ""
+        is_link = is_http_url(value)
+
+        label = self.query_one(ReactiveLabel)
+        label.display = not is_link
+        label.name = value
+
+        link = self.query_one(Link)
+        link.display = is_link
+        link.text = value
+        link.url = value
 
 
 class SpeedIndicator(Static):
