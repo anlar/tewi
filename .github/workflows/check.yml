@@ -29,6 +29,9 @@ jobs:
         python-version: ${{ matrix.python-version }}
         cache: "pip"
 
+    - name: Install uv
+      uses: astral-sh/setup-uv@v10.0.1
+
     - name: Install project dependencies
       run: |
         # --group requires pip >= 25.1 (PEP 735 dependency groups)
