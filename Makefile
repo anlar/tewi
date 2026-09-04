@@ -1,5 +1,5 @@
 check:
-	ruff check
+	uv run ruff check
 
 test:
 	python -m pytest -W error::DeprecationWarning -v
@@ -11,8 +11,8 @@ test-all:
 	python -m pytest -W error::DeprecationWarning -v --runxfail
 
 fix:
-	ruff format
-	ruff check --fix
+	uv run ruff format
+	uv run ruff check --fix
 
 clean:
 	rm --force dist/*
