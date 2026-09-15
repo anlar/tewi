@@ -20,6 +20,7 @@ handle multi-line list body as single line.
 - Move development dependencies from extras to PEP 735 dependency groups (`dev`, `release`), with `build` and `twine` now declared for the release targets in `Makefile`
 - Use `Client.free_space()` instead of deprecated `Session.download_dir_free_space` to get free space in Transmission client
 - Show torrent comment in details panel as clickable link when it contains only an HTTP(S) URL
+- Use `uv run python` instead of bare `python` in `Makefile` targets
 
 ### Removed
 

@@ -2,13 +2,13 @@ check:
 	uv run ruff check
 
 test:
-	python -m pytest -W error::DeprecationWarning -v
+	uv run python -m pytest -W error::DeprecationWarning -v
 
 test-github:
-	python -m pytest -W error::DeprecationWarning -v --transmission-port=9092
+	uv run python -m pytest -W error::DeprecationWarning -v --transmission-port=9092
 
 test-all:
-	python -m pytest -W error::DeprecationWarning -v --runxfail
+	uv run python -m pytest -W error::DeprecationWarning -v --runxfail
 
 fix:
 	uv run ruff format
@@ -18,16 +18,16 @@ clean:
 	rm --force dist/*
 
 build: check test clean
-	python -m build
+	uv run python -m build
 
 install-pipx: build
 	pipx install --force ./dist/tewi_torrent-*-py3-none-any.whl
 
 release-pypi-test: build
-	python -m twine upload --repository testpypi dist/*
+	uv run python -m twine upload --repository testpypi dist/*
 
 release-pypi-main: build
-	python -m twine upload dist/*
+	uv run python -m twine upload dist/*
 
 docker-up:
 	docker compose -f docker/docker-compose.yml up -d
