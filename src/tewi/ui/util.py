@@ -25,7 +25,7 @@ def subtitle_keys(*key_desc_pairs: tuple[str, str]) -> str:
         >>> subtitle_keys(("Enter", "Search"), ("ESC", "Close"))
         "(Enter) Search / (ESC) Close"
     """
-    return " / ".join(f"({key}) {desc}" for key, desc in key_desc_pairs)
+    return " [dim]·[/] ".join(f"<{key}> [dim]{desc}[/]" for key, desc in key_desc_pairs)
 
 
 def open(path: str) -> None:
