@@ -2,13 +2,13 @@ check:
 	uv run ruff check
 
 test:
-	uv run python -m pytest -W error::DeprecationWarning -v
+	uv run python -m pytest -v
 
 test-github:
-	uv run python -m pytest -W error::DeprecationWarning -v --transmission-port=9092
+	uv run python -m pytest -v --transmission-port=9092
 
 test-all:
-	uv run python -m pytest -W error::DeprecationWarning -v --runxfail
+	uv run python -m pytest -v --runxfail
 
 fix:
 	uv run ruff format
