@@ -25,12 +25,13 @@ class TestSubtitleKeys:
     def test_single_key(self):
         """Test formatting a single key-description pair."""
         result = subtitle_keys(("X", "Close"))
-        assert result == "(X) Close"
+        assert result == "<X> [dim]Close[/]"
 
     def test_two_keys(self):
         """Test formatting two key-description pairs."""
         result = subtitle_keys(("Y", "Yes"), ("N", "No"))
-        assert result == "(Y) Yes / (N) No"
+        expected = "<Y> [dim]Yes[/] [dim]·[/] <N> [dim]No[/]"
+        assert result == expected
 
     def test_multiple_keys(self):
         """Test formatting multiple key-description pairs."""
@@ -40,7 +41,12 @@ class TestSubtitleKeys:
             ("Enter", "Details"),
             ("X", "Close"),
         )
-        expected = "(A) Add / (O) Open Link / (Enter) Details / (X) Close"
+        expected = (
+            "<A> [dim]Add[/] [dim]·[/] "
+            "<O> [dim]Open Link[/] [dim]·[/] "
+            "<Enter> [dim]Details[/] [dim]·[/] "
+            "<X> [dim]Close[/]"
+        )
         assert result == expected
 
     def test_word_keys(self):
@@ -48,7 +54,11 @@ class TestSubtitleKeys:
         result = subtitle_keys(
             ("Enter", "Search"), ("Tab", "Switch"), ("ESC", "Close")
         )
-        expected = "(Enter) Search / (Tab) Switch / (ESC) Close"
+        expected = (
+            "<Enter> [dim]Search[/] [dim]·[/] "
+            "<Tab> [dim]Switch[/] [dim]·[/] "
+            "<ESC> [dim]Close[/]"
+        )
         assert result == expected
 
     def test_mixed_key_types(self):
@@ -56,7 +66,11 @@ class TestSubtitleKeys:
         result = subtitle_keys(
             ("Enter", "Update"), ("Tab", "Switch field"), ("ESC", "Close")
         )
-        expected = "(Enter) Update / (Tab) Switch field / (ESC) Close"
+        expected = (
+            "<Enter> [dim]Update[/] [dim]·[/] "
+            "<Tab> [dim]Switch field[/] [dim]·[/] "
+            "<ESC> [dim]Close[/]"
+        )
         assert result == expected
 
     def test_empty_input(self):
@@ -69,5 +83,9 @@ class TestSubtitleKeys:
         result = subtitle_keys(
             ("1/O", "Overview"), ("2/F", "Files"), ("3/P", "Peers")
         )
-        expected = "(1/O) Overview / (2/F) Files / (3/P) Peers"
+        expected = (
+            "<1/O> [dim]Overview[/] [dim]·[/] "
+            "<2/F> [dim]Files[/] [dim]·[/] "
+            "<3/P> [dim]Peers[/]"
+        )
         assert result == expected

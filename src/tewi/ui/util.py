@@ -17,13 +17,14 @@ def subtitle_keys(*key_desc_pairs: tuple[str, str]) -> str:
         *key_desc_pairs: Variable number of (key, description) tuples
 
     Returns:
-        Formatted string like "(A) Add / (O) Open / (X) Close"
+        Formatted string like
+        "<A> [dim]Add[/] [dim]·[/] <O> [dim]Open[/]"
 
     Example:
         >>> subtitle_keys(("Y", "Yes"), ("N", "No"))
-        "(Y) Yes / (N) No"
+        "<Y> [dim]Yes[/] [dim]·[/] <N> [dim]No[/]"
         >>> subtitle_keys(("Enter", "Search"), ("ESC", "Close"))
-        "(Enter) Search / (ESC) Close"
+        "<Enter> [dim]Search[/] [dim]·[/] <ESC> [dim]Close[/]"
     """
     return " [dim]·[/] ".join(
         f"<{key}> [dim]{desc}[/]" for key, desc in key_desc_pairs
