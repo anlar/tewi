@@ -289,10 +289,11 @@ class TorrentItemCompact(TorrentItem):
     def print_size_stats(self, full_ratio=True) -> str:
         result = None
 
-        size_total = print_size(self.t_size_total)
-
         if self.t_size_left > 0:
-            size_current = print_size(self.t_size_total - self.t_size_left)
+            size_current = print_size(
+                self.t_size_total - self.t_size_left, int_width=3, unit_width=1
+            )
+            size_total = print_size(self.t_size_total)
             progress = self.t_progress * 100
             result = f"{size_current} / {size_total} [dim]|[/] {progress:.1f}%"
 
@@ -302,6 +303,7 @@ class TorrentItemCompact(TorrentItem):
                     f"{print_time(self.t_eta.total_seconds(), 2)}"
                 )
         else:
+            size_total = print_size(self.t_size_total, int_width=3)
             result = f"{size_total} [dim]|[/] Ratio: {self.t_ratio:.2f}"
 
         return result

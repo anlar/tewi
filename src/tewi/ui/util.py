@@ -65,7 +65,12 @@ def open(path: str) -> None:
 @log_time
 @cache
 def print_size(
-    num: int, suffix: str = "B", size_bytes: int = 1000, ndigits: int = 2
+    num: int,
+    suffix: str = "B",
+    size_bytes: int = 1000,
+    ndigits: int = 2,
+    int_width: int = 0,
+    unit_width: int = 0,
 ) -> str:
     """Format a number of bytes as a human-readable size string."""
     r_unit = None
@@ -78,11 +83,13 @@ def print_size(
             break
         num /= size_bytes
 
+    width = int_width + (ndigits + 1 if ndigits and int_width else 0)
     r_size = f"{r_num:.{ndigits}f}"
     if "." in r_size:
         r_size = r_size.rstrip("0").rstrip(".")
+    r_size = r_size.rjust(width)
 
-    return f"{r_size} {r_unit}{suffix}"
+    return f"{r_size} {r_unit:{' '}>{unit_width}}{suffix}"
 
 
 @log_time
