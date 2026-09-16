@@ -273,9 +273,13 @@ class TorrentItemCompact(TorrentItem):
             self.t_ratio = torrent.ratio
             self.t_priority = torrent.priority
 
-            self.t_stats_uploaded = (
-                print_size(torrent.uploaded_ever) + " uploaded"
-            )
+            if torrent.uploaded_ever:
+                self.t_stats_uploaded = (
+                    print_size(torrent.uploaded_ever, int_width=3, unit_width=1)
+                    + " uploaded"
+                )
+            else:
+                self.t_stats_uploaded = ""
 
             peer_label = "peer" if self.t_peers_connected == 1 else "peers"
 
