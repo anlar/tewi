@@ -160,6 +160,10 @@ TorrentItem > #name-container {
     height: auto;
 }
 
+TorrentItem > #name-container > #name {
+    width: 1fr;
+}
+
 /* TORRENT LIST PANEL: TORRENT ITEM ONELINE */
 
 TorrentItemOneline {
@@ -238,13 +242,14 @@ TorrentItemCompact > #speed {
 
 TorrentItemCompact > #stats {
     grid-size: 4;
-    grid-columns: 25 25 40 auto;
+    grid-columns: 25 25 40 100%;
     height: auto;
     background: $primary-background-darken-1;
 }
 
-TorrentItemCompact > #stats > .column {
+TorrentItemCompact > #stats > .stat {
     text-opacity: 75%;
+    width: 1fr;
 }
 
 TorrentItemCompact > ProgressBar > Bar {
@@ -278,12 +283,13 @@ TorrentItemCard > #name-container > #name {
 
 TorrentItemCard > #stats {
     grid-size: 4;
-    grid-columns: 25 25 40 auto;
+    grid-columns: 25 25 40 100%;
     height: auto;
 }
 
-TorrentItemCard > #stats > .column {
+TorrentItemCard > #stats > .stat {
     text-opacity: 75%;
+    width: 1fr;
 }
 
 TorrentItemCard > ProgressBar > Bar {
@@ -308,7 +314,7 @@ TorrentInfoPanel .overview-block {
 
     layout: grid;
     grid-size: 2;
-    grid-columns: 15 2fr;
+    grid-columns: 15 100%;
     grid-gutter: 0 1;
 }
 
@@ -332,6 +338,9 @@ TorrentInfoPanel .name {
     text-align: right;
 }
 
+TorrentInfoPanel .value {
+    width: 100%;
+}
 
 /* NOTIFICATIONS */
 

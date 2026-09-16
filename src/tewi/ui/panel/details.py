@@ -133,60 +133,60 @@ class TorrentInfoPanel(ScrollableContainer):
                             block.border_title = "Details"
 
                             yield Static("Name:", classes="name")
-                            yield ReactiveLabel().data_bind(
+                            yield ReactiveLabel(classes="value").data_bind(
                                 name=TorrentInfoPanel.t_name
                             )
                             # Only show ID if client has separate ID field
                             # (not same as hash)
                             if self.capability_torrent_id:
                                 yield Static("ID:", classes="name")
-                                yield ReactiveLabel().data_bind(
+                                yield ReactiveLabel(classes="value").data_bind(
                                     name=TorrentInfoPanel.t_id
                                 )
                             yield Static("Hash:", classes="name")
-                            yield ReactiveLabel().data_bind(
+                            yield ReactiveLabel(classes="value").data_bind(
                                 name=TorrentInfoPanel.t_hash
                             )
 
                             yield Static("Size:", classes="name")
-                            yield ReactiveLabel().data_bind(
+                            yield ReactiveLabel(classes="value").data_bind(
                                 name=TorrentInfoPanel.t_size
                             )
                             yield Static("Files:", classes="name")
-                            yield ReactiveLabel().data_bind(
+                            yield ReactiveLabel(classes="value").data_bind(
                                 name=TorrentInfoPanel.t_files
                             )
                             yield Static("Pieces:", classes="name")
-                            yield ReactiveLabel().data_bind(
+                            yield ReactiveLabel(classes="value").data_bind(
                                 name=TorrentInfoPanel.t_pieces
                             )
                             yield Static("Privacy:", classes="name")
-                            yield ReactiveLabel().data_bind(
+                            yield ReactiveLabel(classes="value").data_bind(
                                 name=TorrentInfoPanel.t_privacy
                             )
 
                             yield Static("Comment:", classes="name")
-                            yield ReactiveLinkLabel().data_bind(
+                            yield ReactiveLinkLabel(classes="value").data_bind(
                                 name=TorrentInfoPanel.t_comment
                             )
                             yield Static("Creator:", classes="name")
-                            yield ReactiveLabel().data_bind(
+                            yield ReactiveLabel(classes="value").data_bind(
                                 name=TorrentInfoPanel.t_creator
                             )
                             yield Static("Labels:", classes="name")
-                            yield ReactiveLabel().data_bind(
+                            yield ReactiveLabel(classes="value").data_bind(
                                 name=TorrentInfoPanel.t_labels
                             )
                             yield Static("Category:", classes="name")
-                            yield ReactiveLabel().data_bind(
+                            yield ReactiveLabel(classes="value").data_bind(
                                 name=TorrentInfoPanel.t_category
                             )
                             yield Static("Location:", classes="name")
-                            yield ReactiveLabel().data_bind(
+                            yield ReactiveLabel(classes="value").data_bind(
                                 name=TorrentInfoPanel.t_location
                             )
                             yield Static("Error:", classes="name")
-                            yield ReactiveLabel().data_bind(
+                            yield ReactiveLabel(classes="value").data_bind(
                                 name=TorrentInfoPanel.t_error
                             )
 
@@ -202,19 +202,19 @@ class TorrentInfoPanel(ScrollableContainer):
                                 block.border_title = "State"
 
                                 yield Static("Status:", classes="name")
-                                yield ReactiveLabel().data_bind(
+                                yield ReactiveLabel(classes="value").data_bind(
                                     name=TorrentInfoPanel.t_status
                                 )
                                 yield Static("Downloaded:", classes="name")
-                                yield ReactiveLabel().data_bind(
+                                yield ReactiveLabel(classes="value").data_bind(
                                     name=TorrentInfoPanel.t_downloaded
                                 )
                                 yield Static("Uploaded:", classes="name")
-                                yield ReactiveLabel().data_bind(
+                                yield ReactiveLabel(classes="value").data_bind(
                                     name=TorrentInfoPanel.t_uploaded
                                 )
                                 yield Static("Ratio:", classes="name")
-                                yield ReactiveLabel().data_bind(
+                                yield ReactiveLabel(classes="value").data_bind(
                                     name=TorrentInfoPanel.t_ratio
                                 )
 
@@ -225,19 +225,19 @@ class TorrentInfoPanel(ScrollableContainer):
                                 block.border_title = "Dates"
 
                                 yield Static("Added:", classes="name")
-                                yield ReactiveLabel().data_bind(
+                                yield ReactiveLabel(classes="value").data_bind(
                                     name=TorrentInfoPanel.t_date_added
                                 )
                                 yield Static("Started:", classes="name")
-                                yield ReactiveLabel().data_bind(
+                                yield ReactiveLabel(classes="value").data_bind(
                                     name=TorrentInfoPanel.t_date_started
                                 )
                                 yield Static("Completed:", classes="name")
-                                yield ReactiveLabel().data_bind(
+                                yield ReactiveLabel(classes="value").data_bind(
                                     name=TorrentInfoPanel.t_date_completed
                                 )
                                 yield Static("Last active:", classes="name")
-                                yield ReactiveLabel().data_bind(
+                                yield ReactiveLabel(classes="value").data_bind(
                                     name=TorrentInfoPanel.t_date_active
                                 )
 
@@ -248,15 +248,15 @@ class TorrentInfoPanel(ScrollableContainer):
                                 block.border_title = "Peers"
 
                                 yield Static("Active:", classes="name")
-                                yield ReactiveLabel().data_bind(
+                                yield ReactiveLabel(classes="value").data_bind(
                                     name=TorrentInfoPanel.t_peers_active
                                 )
                                 yield Static("Seeding:", classes="name")
-                                yield ReactiveLabel().data_bind(
+                                yield ReactiveLabel(classes="value").data_bind(
                                     name=TorrentInfoPanel.t_peers_up
                                 )
                                 yield Static("Downloading:", classes="name")
-                                yield ReactiveLabel().data_bind(
+                                yield ReactiveLabel(classes="value").data_bind(
                                     name=TorrentInfoPanel.t_peers_down
                                 )
 

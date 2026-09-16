@@ -114,7 +114,7 @@ class CycleSelect(Static):
 
 
 class ReactiveLabel(Label):
-    name = reactive(None, layout=True)
+    name = reactive(None, layout=False)
 
     @log_time
     def __init__(self, *args, markup=False, **kwargs):

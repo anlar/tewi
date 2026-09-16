@@ -236,16 +236,16 @@ class TorrentItemCompact(TorrentItem):
             )
 
         with Grid(id="stats"):
-            yield ReactiveLabel(markup=True).data_bind(
+            yield ReactiveLabel(classes="stat", markup=True).data_bind(
                 name=TorrentItemCompact.t_status_markup
             )
-            yield ReactiveLabel().data_bind(
+            yield ReactiveLabel(classes="stat").data_bind(
                 name=TorrentItemCompact.t_stats_uploaded
             )
-            yield ReactiveLabel(markup=True).data_bind(
+            yield ReactiveLabel(classes="stat", markup=True).data_bind(
                 name=TorrentItemCompact.t_stats_peer
             )
-            yield ReactiveLabel(markup=True).data_bind(
+            yield ReactiveLabel(classes="stat", markup=True).data_bind(
                 name=TorrentItemCompact.t_size_stats
             )
 
@@ -395,15 +395,15 @@ class TorrentItemCard(TorrentItemCompact):
         )
 
         with Grid(id="stats"):
-            yield ReactiveLabel(markup=True).data_bind(
+            yield ReactiveLabel(classes="stat", markup=True).data_bind(
                 name=TorrentItemCard.t_status_markup
             )
-            yield ReactiveLabel().data_bind(
+            yield ReactiveLabel(classes="stat").data_bind(
                 name=TorrentItemCard.t_stats_uploaded
             )
-            yield ReactiveLabel(markup=True).data_bind(
+            yield ReactiveLabel(classes="stat", markup=True).data_bind(
                 name=TorrentItemCard.t_stats_peer
             )
-            yield ReactiveLabel(markup=True).data_bind(
+            yield ReactiveLabel(classes="stat", markup=True).data_bind(
                 name=TorrentItemCard.t_size_stats
             )
