@@ -13,6 +13,7 @@ handle multi-line list body as single line.
 ### Added
 
 - Add `--print-completion` CLI flag to generate shell completion script for bash, zsh, or tcsh
+- Support `${VAR_NAME}` environment variable references in config file values, useful for keeping secrets (passwords, API keys) out of the config file
 
 ### Changed
 

@@ -17,6 +17,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import configparser
+import os
+import re
 import sys
 from argparse import Action, Namespace
 from pathlib import Path
@@ -24,6 +26,22 @@ from pathlib import Path
 from platformdirs import user_config_dir
 
 from .search.models import SearchPreset
+
+_ENV_VAR_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+
+
+def _expand_env_vars(value: str) -> str:
+    """Expand ${VAR_NAME} references in a config value.
+
+    Unset variables are left unexpanded (rather than replaced with an
+    empty string) so a mistyped or missing variable name is easy to
+    notice instead of silently disappearing.
+    """
+
+    def _replace(match: re.Match) -> str:
+        return os.environ.get(match.group(1), match.group(0))
+
+    return _ENV_VAR_PATTERN.sub(_replace, value)
 
 
 class TrackSetAction(Action):
@@ -88,7 +106,9 @@ def _get_string_option(
     if parser.has_option(section, option):
         val = parser.get(section, option)
         # Return None if value is empty or contains only whitespace
-        return val.strip() if val and val.strip() else None
+        if not val or not val.strip():
+            return None
+        return _expand_env_vars(val.strip())
     return None
 
 
@@ -379,6 +399,11 @@ def create_default_config(path: Path) -> None:
     config_content = """\
 # Tewi Configuration File
 # This file uses INI format. Empty values use defaults.
+#
+# Any value may reference an environment variable with ${VAR_NAME}
+# syntax, e.g. password = ${TEWI_CLIENT_PASSWORD}. This is useful for
+# keeping secrets (passwords, API keys) out of the config file. If the
+# variable is not set, the ${VAR_NAME} text is left as-is.
 
 [client]
 # BitTorrent client type: transmission, qbittorrent, or deluge

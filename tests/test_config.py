@@ -19,11 +19,55 @@
 import configparser
 
 from src.tewi.config import (
+    _expand_env_vars,
     _load_client_section,
     _load_debug_section,
     _load_search_section,
     _load_ui_section,
 )
+
+
+class TestExpandEnvVars:
+    """Test cases for _expand_env_vars function."""
+
+    def test_no_reference(self):
+        """Test that a plain string is returned unchanged."""
+        assert _expand_env_vars("plain-value") == "plain-value"
+
+    def test_expands_set_variable(self, monkeypatch):
+        """Test that ${VAR_NAME} is replaced with the env variable."""
+        monkeypatch.setenv("TEWI_TEST_VAR", "secret123")
+
+        assert _expand_env_vars("${TEWI_TEST_VAR}") == "secret123"
+
+    def test_expands_variable_within_text(self, monkeypatch):
+        """Test expansion when the reference is part of larger text."""
+        monkeypatch.setenv("TEWI_TEST_HOST", "example.com")
+
+        result = _expand_env_vars("http://${TEWI_TEST_HOST}:9091")
+
+        assert result == "http://example.com:9091"
+
+    def test_unset_variable_left_as_is(self, monkeypatch):
+        """Test that an unset variable reference is left unexpanded."""
+        monkeypatch.delenv("TEWI_MISSING_VAR", raising=False)
+
+        result = _expand_env_vars("${TEWI_MISSING_VAR}")
+
+        assert result == "${TEWI_MISSING_VAR}"
+
+    def test_bare_dollar_sign_not_expanded(self):
+        """Test that bare $VAR (without braces) is not expanded."""
+        assert _expand_env_vars("$HOME/path") == "$HOME/path"
+
+    def test_multiple_variables(self, monkeypatch):
+        """Test expansion of multiple variables in the same value."""
+        monkeypatch.setenv("TEWI_TEST_USER", "admin")
+        monkeypatch.setenv("TEWI_TEST_PASS", "hunter2")
+
+        result = _expand_env_vars("${TEWI_TEST_USER}:${TEWI_TEST_PASS}")
+
+        assert result == "admin:hunter2"
 
 
 class TestLoadClientSection:
@@ -157,6 +201,22 @@ password = secret123
             "username": "admin",
             "password": "secret123",
         }
+
+    def test_password_from_env_var(self, monkeypatch):
+        """Test that password value expands an env variable reference."""
+        monkeypatch.setenv("TEWI_TEST_PASSWORD", "s3cr3t")
+        config_text = """
+[client]
+type = transmission
+password = ${TEWI_TEST_PASSWORD}
+"""
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+
+        _load_client_section(parser, config)
+
+        assert config["password"] == "s3cr3t"
 
 
 class TestLoadUiSection:
