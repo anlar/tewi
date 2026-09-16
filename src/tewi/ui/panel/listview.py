@@ -510,7 +510,7 @@ class TorrentListViewPanel(ListView):
     @log_time
     def on_key(self, event: events.Key) -> None:
         """Reset search status on any key press that are not search-related"""
-        if event.key != "n" and event.key != "N":
+        if self.search_active and event.key != "n" and event.key != "N":
             self._reset_search()
             self.post_message(SearchStateChangedEvent())
 
