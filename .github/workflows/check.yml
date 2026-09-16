@@ -32,6 +32,10 @@ jobs:
     - name: Install uv
       uses: astral-sh/setup-uv@v10.0.1
 
+    - name: Generate shell completions
+      run: |
+        make completions
+
     - name: Install project dependencies
       run: |
         # --group requires pip >= 25.1 (PEP 735 dependency groups)
@@ -83,5 +87,4 @@ jobs:
         # Python 3.12, so older versions need it ignored explicitly.
         PYTEST_ADDOPTS: ${{ (matrix.python-version == '3.10' || matrix.python-version == '3.11') && '-W "ignore:invalid escape sequence:DeprecationWarning"' || '' }}
       run: |
-        make completions
         make test-github
