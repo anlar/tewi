@@ -81,11 +81,11 @@ StatePanel > .search {
     text-opacity: 75%;
 }
 
-#state-panel > .alt-speed {
+#state-panel > .speed-limit {
     background: $secondary-lighten-2;
 }
 
-.alt-speed-none > #state-panel > #alt-speed {
+.speed-limit-none > #state-panel > #speed-limit {
     background: $secondary;
 }
 

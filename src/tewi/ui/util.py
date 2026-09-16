@@ -113,7 +113,7 @@ def print_speed(
     Returns:
         Formatted speed string or "-" if num is 0 and dash_for_zero is True
     """
-    if dash_for_zero and num == 0:
+    if dash_for_zero and not num:
         return "-"
 
     r_unit = None

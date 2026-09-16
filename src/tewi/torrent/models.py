@@ -196,6 +196,9 @@ class ClientSession(TypedDict):
     alt_speed_up: int  # bytes/second
     alt_speed_down: int  # bytes/second
 
+    speed_limit_up: int | None
+    speed_limit_down: int | None
+
     torrents_complete_size: int
     torrents_total_size: int
 

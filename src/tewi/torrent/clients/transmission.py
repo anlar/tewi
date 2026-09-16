@@ -96,6 +96,16 @@ class TransmissionClient(BaseClient):
 
         counts = count_torrents_by_status(torrents)
 
+        if s.speed_limit_up_enabled:
+            speed_limit_up = s.speed_limit_up * 1000
+        else:
+            speed_limit_up = None
+
+        if s.speed_limit_down_enabled:
+            speed_limit_down = s.speed_limit_down * 1000
+        else:
+            speed_limit_down = None
+
         # Get free space for download directory
         try:
             free_space = self.client.free_space(s.download_dir) or 0
@@ -111,6 +121,8 @@ class TransmissionClient(BaseClient):
             # Transmission returns KB/s - convert to bytes/s for consistency
             "alt_speed_up": s.alt_speed_up * 1000,
             "alt_speed_down": s.alt_speed_down * 1000,
+            "speed_limit_up": speed_limit_up,
+            "speed_limit_down": speed_limit_down,
             "torrents_complete_size": counts["complete_size"],
             "torrents_total_size": counts["total_size"],
             "torrents_count": counts["count"],

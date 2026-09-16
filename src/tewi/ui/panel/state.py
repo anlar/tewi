@@ -21,8 +21,8 @@ class StatePanel(Static):
     r_stats = reactive("", recompose=True)
     r_sort = reactive("", recompose=True)
     r_filter = reactive("", recompose=True)
-    r_alt_speed = reactive("", recompose=True)
-    r_alt_delimiter = reactive("", recompose=True)
+    r_speed_limit = reactive("", recompose=True)
+    r_speed_limit_delimiter = reactive("", recompose=True)
 
     r_upload_speed = reactive(0)
     r_download_speed = reactive(0)
@@ -47,10 +47,10 @@ class StatePanel(Static):
             )
             yield Static("", classes="column")
             yield ReactiveLabel(
-                id="alt-speed", classes="column alt-speed"
-            ).data_bind(name=StatePanel.r_alt_speed)
+                id="speed-limit", classes="column speed-limit"
+            ).data_bind(name=StatePanel.r_speed_limit)
             yield ReactiveLabel(classes="column delimiter").data_bind(
-                name=StatePanel.r_alt_delimiter
+                name=StatePanel.r_speed_limit_delimiter
             )
             yield Static("↑", classes="column arrow")
             yield SpeedIndicator(classes="column").data_bind(
@@ -104,27 +104,46 @@ class StatePanel(Static):
 
             self.r_upload_speed = new_r_session["upload_speed"]
             self.r_download_speed = new_r_session["download_speed"]
+
             alt_speed_enabled = new_r_session["alt_speed_enabled"]
             alt_speed_up_bytes = new_r_session["alt_speed_up"]
             alt_speed_down_bytes = new_r_session["alt_speed_down"]
 
+            speed_limit_up = new_r_session["speed_limit_up"]
+            speed_limit_down = new_r_session["speed_limit_down"]
+
             if alt_speed_enabled:
-                alt_speed_up = print_speed(alt_speed_up_bytes)
-                alt_speed_down = print_speed(alt_speed_down_bytes)
-                self.r_alt_speed = (
-                    f"Limits: ↑ {alt_speed_up} ↓ {alt_speed_down}"
-                )
-                self.r_alt_delimiter = "»»»"
+                up = print_speed(alt_speed_up_bytes)
+                down = print_speed(alt_speed_down_bytes)
+                self.r_speed_limit = f"Turtle: ↑ {up} ↓ {down}"
+                self.r_speed_limit_delimiter = "»»»"
+
+            elif speed_limit_up or speed_limit_down:
+                parts = [
+                    p
+                    for p in (
+                        f"↑ {print_speed(speed_limit_up)}"
+                        if speed_limit_up is not None
+                        else None,
+                        f"↓ {print_speed(speed_limit_down)}"
+                        if speed_limit_down is not None
+                        else None,
+                    )
+                    if p is not None
+                ]
+                self.r_speed_limit = f"Limit: {' '.join(parts)}"
+                self.r_speed_limit_delimiter = "»»»"
+
             else:
-                self.r_alt_speed = ""
-                self.r_alt_delimiter = ""
+                self.r_speed_limit = ""
+                self.r_speed_limit_delimiter = ""
 
     @log_time
-    def watch_r_alt_speed(self, new_value):
+    def watch_r_speed_limit(self, new_value):
         if new_value:
-            self.remove_class("alt-speed-none")
+            self.remove_class("speed-limit-none")
         else:
-            self.add_class("alt-speed-none")
+            self.add_class("speed-limit-none")
 
     @log_time
     def watch_r_filter(self, new_value):
