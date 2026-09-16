@@ -16,6 +16,7 @@ fix:
 
 clean:
 	rm --force dist/*
+	rm -rf completions
 
 completions:
 	mkdir -p completions/bash
