@@ -1,1 +1,2 @@
 include src/tewi/*.tcss
+recursive-include completions *

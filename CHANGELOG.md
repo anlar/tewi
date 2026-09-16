@@ -14,6 +14,7 @@ handle multi-line list body as single line.
 
 - Add `--print-completion` CLI flag to generate shell completion script for bash, zsh, or tcsh
 - Support `${VAR_NAME}` environment variable references in config file values, useful for keeping secrets (passwords, API keys) out of the config file
+- Ship a pre-generated bash completion script as a package data file
 
 ### Changed
 
@@ -23,6 +24,7 @@ handle multi-line list body as single line.
 - Show torrent comment in details panel as clickable link when it contains only an HTTP(S) URL
 - Use `uv run python` instead of bare `python` in `Makefile` targets
 - Pad torrent sizes in list to align them by separator
+- Don't print terminal title escape sequence before early CLI exits (e.g. `--print-completion`, `--version`), which corrupted the printed output
 
 ### Removed
 

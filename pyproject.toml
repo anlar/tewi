@@ -38,6 +38,9 @@ keywords = ["transmission", "qbittorrent", "deluge", "torrent", "bittorrent", "t
 [tool.setuptools.dynamic]
 version = {attr = "tewi.version.__version__"}
 
+[tool.setuptools.data-files]
+"share/bash-completion/completions" = ["completions/bash/tewi"]
+
 [project.scripts]
 tewi = "tewi.app:cli"
 

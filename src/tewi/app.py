@@ -1321,10 +1321,11 @@ def create_app():
 def cli():
     """CLI entry point. Creates and runs the MainApp."""
 
+    app = create_app()
+
     # set terminal title
     print("\33]0;Tewi\a", end="", flush=True)
 
-    app = create_app()
     logger.info("Starting Tewi application")
     try:
         app.run()

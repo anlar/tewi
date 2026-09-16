@@ -1,6 +1,7 @@
 venv
 dist
 build
+completions
 __pycache__
 *.egg-info
 *.prof

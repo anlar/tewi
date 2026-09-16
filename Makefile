@@ -17,10 +17,17 @@ fix:
 clean:
 	rm --force dist/*
 
-build: check test clean
+completions:
+	mkdir -p completions/bash
+	uv run tewi --print-completion bash > completions/bash/tewi
+
+build: check test clean completions
 	uv run python -m build
 
-install-pipx: build
+install-pipx:
+	# temporary disable warning to be able to setup with old Python versions
+	# https://github.com/rabuchaim/geoip2fast/issues/16#issuecomment-5677708133
+	PYTEST_ADDOPTS='-W "ignore:invalid escape sequence:DeprecationWarning"' $(MAKE) build
 	pipx install --force ./dist/tewi_torrent-*-py3-none-any.whl
 
 release-pypi-test: build

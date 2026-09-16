@@ -88,9 +88,16 @@ $ uv tool install tewi-torrent
 
 ### Shell completion
 
-Tewi can print a completion script for `bash`, `zsh`, or `tcsh` via
-`--print-completion`. Install it into your user data directory (XDG
-`$XDG_DATA_HOME`, `~/.local/share` by default).
+The package ships a pre-generated `bash` completion script as an installer data
+file (`share/bash-completion/completions/tewi`).
+
+If you install Tewi with `pipx` or `pip` into a prefix your shell already scans
+for completions (e.g. a system-wide install), it's picked up automatically.
+
+For any other install method, or for `zsh`/`tcsh`, generate the script manually
+with `--print-completion` and install it into your user data directory (XDG
+`$XDG_DATA_HOME`, `~/.local/share` by default). Tewi supports `bash`, `zsh`,
+and `tcsh`.
 
 For `bash` (loaded automatically by `bash-completion` in new shells):
 
