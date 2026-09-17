@@ -17,21 +17,22 @@
 import pytest
 
 from src.tewi.torrent.models import TorrentFile, TorrentFilePriority
-from src.tewi.ui.panel.details import TorrentInfoPanel
+from src.tewi.ui.panel.details import FileSelectionState, TorrentInfoPanel
+
+
+@pytest.fixture
+def priority_display():
+    """Create priority display mapping for testing."""
+    return {
+        TorrentFilePriority.NOT_DOWNLOADING: "[dim]-[/]",
+        TorrentFilePriority.LOW: "[dim yellow]↓[/]",
+        TorrentFilePriority.MEDIUM: "→",
+        TorrentFilePriority.HIGH: "[bold red]↑[/]",
+    }
 
 
 class TestGetFileList:
     """Test cases for get_file_list function."""
-
-    @pytest.fixture
-    def priority_display(self):
-        """Create priority display mapping for testing."""
-        return {
-            TorrentFilePriority.NOT_DOWNLOADING: "[dim]-[/]",
-            TorrentFilePriority.LOW: "[dim yellow]↓[/]",
-            TorrentFilePriority.MEDIUM: "→",
-            TorrentFilePriority.HIGH: "[bold red]↑[/]",
-        }
 
     @pytest.mark.parametrize(
         "files,expected_file_count,expected_dir_count",
@@ -259,3 +260,127 @@ class TestGetFileList:
                 (file_dto.completed / file_dto.size) * 100
             )
             assert file_entry["done"] == f"{expected_percentage}%"
+
+    def test_file_list_selection_defaults_to_unselected(self, priority_display):
+        """Without a selection argument, no row is marked as selected."""
+        files = [
+            TorrentFile(
+                id=0,
+                name="dir/file.txt",
+                size=1024,
+                completed=512,
+                priority=TorrentFilePriority.MEDIUM,
+            ),
+        ]
+
+        result = TorrentInfoPanel.get_file_list(files, priority_display)
+
+        assert all(item["sel"] == FileSelectionState.NONE for item in result)
+
+    def test_file_list_selection_markers(self, priority_display):
+        """Files and folders show full/partial/empty selection markers."""
+        files = [
+            TorrentFile(
+                id=0,
+                name="dir/a.txt",
+                size=1024,
+                completed=1024,
+                priority=TorrentFilePriority.MEDIUM,
+            ),
+            TorrentFile(
+                id=1,
+                name="dir/b.txt",
+                size=1024,
+                completed=1024,
+                priority=TorrentFilePriority.MEDIUM,
+            ),
+            TorrentFile(
+                id=2,
+                name="other/c.txt",
+                size=1024,
+                completed=1024,
+                priority=TorrentFilePriority.MEDIUM,
+            ),
+        ]
+
+        def by_file_id(result):
+            return {item["id"]: item for item in result if item["is_file"]}
+
+        def by_folder_path(result):
+            return {
+                item["folder_path"]: item
+                for item in result
+                if not item["is_file"]
+            }
+
+        # Fully select "dir" (both children), leave "other" unselected
+        result = TorrentInfoPanel.get_file_list(files, priority_display, {0, 1})
+
+        files_by_id = by_file_id(result)
+        folders_by_path = by_folder_path(result)
+        assert files_by_id[0]["sel"] == FileSelectionState.FULL
+        assert files_by_id[1]["sel"] == FileSelectionState.FULL
+        assert folders_by_path["dir"]["sel"] == FileSelectionState.FULL
+        assert files_by_id[2]["sel"] == FileSelectionState.NONE
+        assert folders_by_path["other"]["sel"] == FileSelectionState.NONE
+
+        # Partially select "dir" (only one of its two children)
+        result = TorrentInfoPanel.get_file_list(files, priority_display, {0})
+
+        files_by_id = by_file_id(result)
+        folders_by_path = by_folder_path(result)
+        assert files_by_id[0]["sel"] == FileSelectionState.FULL
+        assert files_by_id[1]["sel"] == FileSelectionState.NONE
+        assert folders_by_path["dir"]["sel"] == FileSelectionState.PARTIAL
+
+
+class TestFileListChildFileIds:
+    """Test cases for the "child_file_ids" field of get_file_list rows."""
+
+    def test_file_rows_have_no_children(self, priority_display):
+        files = [
+            TorrentFile(
+                id=0,
+                name="file.txt",
+                size=1,
+                completed=1,
+                priority=TorrentFilePriority.MEDIUM,
+            ),
+        ]
+
+        result = TorrentInfoPanel.get_file_list(files, priority_display)
+
+        assert result[0]["child_file_ids"] is None
+
+    def test_nested_folder_child_file_ids(self, priority_display):
+        files = [
+            TorrentFile(
+                id=0,
+                name="dir/sub/a.txt",
+                size=1,
+                completed=1,
+                priority=TorrentFilePriority.MEDIUM,
+            ),
+            TorrentFile(
+                id=1,
+                name="dir/sub/b.txt",
+                size=1,
+                completed=1,
+                priority=TorrentFilePriority.MEDIUM,
+            ),
+            TorrentFile(
+                id=2,
+                name="dir/c.txt",
+                size=1,
+                completed=1,
+                priority=TorrentFilePriority.MEDIUM,
+            ),
+        ]
+
+        result = TorrentInfoPanel.get_file_list(files, priority_display)
+
+        folders_by_path = {
+            item["folder_path"]: item for item in result if not item["is_file"]
+        }
+        assert set(folders_by_path["dir"]["child_file_ids"]) == {0, 1, 2}
+        assert set(folders_by_path["dir/sub"]["child_file_ids"]) == {0, 1}
