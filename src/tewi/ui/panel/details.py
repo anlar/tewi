@@ -335,18 +335,18 @@ class TorrentInfoPanel(ScrollableContainer):
     def create_table_peers_columns(self) -> None:
         table = self.query_one("#peers")
         table.add_columns(
-            "Encrypted",
-            "Up",
-            "Down",
+            Text("Encrypted", justify="right"),
+            Text("Up", justify="right"),
+            Text("Down", justify="right"),
             "UL State",
             "DL State",
-            "Progress",
+            Text("Progress", justify="right"),
             "Connection",
             "Direction",
             "Status",
             "Country",
             "Address",
-            "Port",
+            Text("Port", justify="right"),
             "Client",
         )
 
@@ -354,17 +354,17 @@ class TorrentInfoPanel(ScrollableContainer):
     def create_table_trackers_columns(self) -> None:
         table = self.query_one("#trackers")
         table.add_columns(
-            "Tier",
+            Text("Tier", justify="right"),
             "Host",
             "Status",
-            "P",
-            "S",
-            "L",
-            "DL",
+            Text("P", justify="right"),
+            Text("S", justify="right"),
+            Text("L", justify="right"),
+            Text("DL", justify="right"),
             "Announced",
-            "Next",
+            Text("Next", justify="right"),
             "Scraped",
-            "Next",
+            Text("Next", justify="right"),
             "Message",
         )
 
@@ -439,24 +439,37 @@ class TorrentInfoPanel(ScrollableContainer):
             for idx, p in enumerate(self.r_torrent.peers):
                 progress = p.progress * 100
                 table.add_row(
-                    "-"
-                    if p.is_encrypted is None
-                    else ("Yes" if p.is_encrypted else "No"),
-                    print_speed(
-                        p.rate_to_peer, print_secs=True, dash_for_zero=True
+                    Text(
+                        "-"
+                        if p.is_encrypted is None
+                        else ("Yes" if p.is_encrypted else "No"),
+                        justify="right",
                     ),
-                    print_speed(
-                        p.rate_to_client, print_secs=True, dash_for_zero=True
+                    Text(
+                        print_speed(
+                            p.rate_to_peer,
+                            print_secs=True,
+                            dash_for_zero=True,
+                        ),
+                        justify="right",
+                    ),
+                    Text(
+                        print_speed(
+                            p.rate_to_client,
+                            print_secs=True,
+                            dash_for_zero=True,
+                        ),
+                        justify="right",
                     ),
                     p.ul_state.value,
                     p.dl_state.value,
-                    f"{progress:.0f}%",
+                    Text(f"{progress:.0f}%", justify="right"),
                     p.connection_type or "-",
                     p.direction or "-",
                     p.flag_str or "-",
                     p.country or (get_country(p.address) or "-"),
                     p.address,
-                    self.print_count(p.port),
+                    Text(str(self.print_count(p.port)), justify="right"),
                     p.client_name,
                     key=f"peer_{idx}",
                 )
@@ -470,17 +483,30 @@ class TorrentInfoPanel(ScrollableContainer):
 
             for idx, t in enumerate(self.r_torrent.trackers):
                 table.add_row(
-                    self.print_count(t.tier),
+                    Text(str(self.print_count(t.tier)), justify="right"),
                     t.host,
                     t.status or "-",
-                    self.print_count(t.peer_count),
-                    self.print_count(t.seeder_count),
-                    self.print_count(t.leecher_count),
-                    self.print_count(t.download_count),
+                    Text(str(self.print_count(t.peer_count)), justify="right"),
+                    Text(
+                        str(self.print_count(t.seeder_count)), justify="right"
+                    ),
+                    Text(
+                        str(self.print_count(t.leecher_count)), justify="right"
+                    ),
+                    Text(
+                        str(self.print_count(t.download_count)),
+                        justify="right",
+                    ),
                     self.print_tracker_datetime(t.last_announce),
-                    self.print_tracker_next_time(t.next_announce),
+                    Text(
+                        self.print_tracker_next_time(t.next_announce),
+                        justify="right",
+                    ),
                     self.print_tracker_datetime(t.last_scrape),
-                    self.print_tracker_next_time(t.next_scrape),
+                    Text(
+                        self.print_tracker_next_time(t.next_scrape),
+                        justify="right",
+                    ),
                     t.message or "-",
                     key=f"tracker_{idx}",
                 )

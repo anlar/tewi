@@ -30,7 +30,7 @@ handle multi-line list body as single line.
 - Improve torrent list rendering performance by skipping layout recalculation on label updates, sizing columns via CSS instead
 - Align uploaded size and hide if it is empty in torrents list
 - Fix search preset `indexers` option so a bare `prowlarr` or `jackett` entry enables all sub-indexers of that provider
-- Right-align ID, Size, and Done columns in torrent details files tab
+- Right-align numeric columns in torrent details files, peers, and trackers tabs
 
 ### Removed
 
