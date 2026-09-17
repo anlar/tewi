@@ -34,9 +34,9 @@ qbt_session=$(curl -i --header "Referer: http://localhost:$QBITTORRENT_PORT" --d
 
 echo "qbt session: $qbt_session"
 
-head -n $LIMIT "$SCRIPT_DIR/magnets.txt" | xargs -I {} curl -X POST -H "Referer: http://localhost:$QBITTORRENT_PORT" -b "SID=$qbt_session" --data-urlencode "urls={}" http://localhost:$QBITTORRENT_PORT/api/v2/torrents/add
+head -n $LIMIT "$SCRIPT_DIR/magnets.txt" | xargs -I {} curl -X POST -H "Referer: http://localhost:$QBITTORRENT_PORT" -b "QBT_SID_$QBITTORRENT_PORT=$qbt_session" --data-urlencode "urls={}" http://localhost:$QBITTORRENT_PORT/api/v2/torrents/add
 
-curl -X POST -H "Referer: http://localhost:$QBITTORRENT_PORT" -b "SID=$qbt_session" http://localhost:$QBITTORRENT_PORT/api/v2/transfer/toggleSpeedLimitsMode
+curl -X POST -H "Referer: http://localhost:$QBITTORRENT_PORT" -b "QBT_SID_$QBITTORRENT_PORT=$qbt_session" http://localhost:$QBITTORRENT_PORT/api/v2/transfer/toggleSpeedLimitsMode
 
 # Deluge
 
