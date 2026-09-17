@@ -143,6 +143,8 @@ class QBittorrentClient(BaseClient):
             # qBittorrent returns bytes/s - store as-is
             "alt_speed_up": prefs.alt_up_limit,
             "alt_speed_down": prefs.alt_dl_limit,
+            "speed_limit_up": self.client.transfer_upload_limit(),
+            "speed_limit_down": self.client.transfer_download_limit(),
             "torrents_complete_size": counts["complete_size"],
             "torrents_total_size": counts["total_size"],
             "torrents_count": counts["count"],

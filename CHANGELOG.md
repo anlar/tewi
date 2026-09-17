@@ -15,7 +15,7 @@ handle multi-line list body as single line.
 - Add `--print-completion` CLI flag to generate shell completion script for bash, zsh, or tcsh
 - Support `${VAR_NAME}` environment variable references in config file values, useful for keeping secrets (passwords, API keys) out of the config file
 - Ship a pre-generated bash completion script as a package data file
-- Display general up/down speed limits (Transmission)
+- Display general up/down speed limits
 
 ### Changed
 

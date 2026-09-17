@@ -159,6 +159,18 @@ class DelugeClient(BaseClient):
         alt_speed_down = 0
         alt_speed_up = 0
 
+        # Return -1 if unlimited; value in KB/s
+        speed_limit_up = (
+            None
+            if config.get("max_upload_speed") == -1
+            else config.get("max_upload_speed") * 1000
+        )
+        speed_limit_down = (
+            None
+            if config.get("max_download_speed") == -1
+            else config.get("max_download_speed") * 1000
+        )
+
         return {
             "download_dir": download_dir,
             "download_dir_free_space": free_space,
@@ -167,6 +179,8 @@ class DelugeClient(BaseClient):
             "alt_speed_enabled": alt_speed_enabled,
             "alt_speed_up": alt_speed_up,
             "alt_speed_down": alt_speed_down,
+            "speed_limit_up": speed_limit_up,
+            "speed_limit_down": speed_limit_down,
             "torrents_complete_size": counts["complete_size"],
             "torrents_total_size": counts["total_size"],
             "torrents_count": counts["count"],
