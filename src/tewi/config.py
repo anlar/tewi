@@ -502,9 +502,12 @@ timeout =
 #
 # indexers: comma-separated indexer IDs; omit to select all indexers
 #   - built-in providers: tpb, yts, nyaa, torrentscsv, bitmagnet, torrentz2
-#   - Jackett: jackett:all (all indexers) or jackett:NAME (by indexer name)
-#   - Prowlarr: prowlarr:all (all indexers), prowlarr:NAME (by indexer name),
-#               or prowlarr:ID (by numeric Prowlarr ID)
+#   - Jackett: jackett (all sub-indexers), jackett:all (single Jackett
+#              indexer, when jackett_multi is disabled), or jackett:NAME
+#              (by indexer name)
+#   - Prowlarr: prowlarr (all sub-indexers), prowlarr:all (single Prowlarr
+#               indexer, when prowlarr_multi is disabled), prowlarr:NAME
+#               (by indexer name), or prowlarr:ID (by numeric Prowlarr ID)
 # categories: comma-separated parent category names; omit to select all
 #             (Console, Movies, Audio, PC, TV, XXX, Books, Other)
 #

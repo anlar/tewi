@@ -177,6 +177,24 @@ class WebSearchQueryWidget(Static):
                 return self._indexer_name_to_id.get(suffix.lower())
         return preset_id
 
+    def _resolve_preset_ids(self, preset_id: str) -> list[str]:
+        """Resolve a preset indexer entry to one or more indexer IDs.
+
+        A bare provider ID such as ``prowlarr`` or ``jackett`` enables
+        all of that provider's sub-indexers (e.g. ``prowlarr:1337x``,
+        ``prowlarr:12``). Any other entry is resolved as a single
+        indexer via ``_resolve_indexer_id``.
+        """
+        if preset_id in ("prowlarr", "jackett"):
+            prefix = f"{preset_id}:"
+            return [
+                indexer_id
+                for indexer_id in self._indexer_order
+                if indexer_id.startswith(prefix)
+            ]
+        resolved = self._resolve_indexer_id(preset_id)
+        return [resolved] if resolved else []
+
     @log_time
     def on_mount(self) -> None:
         """Focus on input when dialog opens."""
@@ -230,9 +248,7 @@ class WebSearchQueryWidget(Static):
             indexers_list.deselect_all()
             preset_ids = set()
             for pid in preset.indexers:
-                resolved = self._resolve_indexer_id(pid)
-                if resolved:
-                    preset_ids.add(resolved)
+                preset_ids.update(self._resolve_preset_ids(pid))
             for indexer_id in self._indexer_order:
                 if indexer_id in preset_ids:
                     indexers_list.select(indexer_id)

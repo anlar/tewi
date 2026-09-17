@@ -28,6 +28,7 @@ handle multi-line list body as single line.
 - Don't print terminal title escape sequence before early CLI exits (e.g. `--print-completion`, `--version`), which corrupted the printed output
 - Improve torrent list rendering performance by skipping layout recalculation on label updates, sizing columns via CSS instead
 - Align uploaded size and hide if it is empty in torrents list
+- Fix search preset `indexers` option so a bare `prowlarr` or `jackett` entry enables all sub-indexers of that provider
 
 ### Removed
 
