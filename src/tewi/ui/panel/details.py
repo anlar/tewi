@@ -3,6 +3,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Any
 
+from rich.console import JustifyMethod
+from rich.text import Text
 from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -51,11 +53,21 @@ FILE_SELECTION_ICONS = {
 }
 
 
-def _style_cell(value: Any, style: str) -> Any:
-    """Wrap a cell value in Rich markup for `style`, if any is set."""
+def _style_cell(
+    value: Any, style: str, justify: JustifyMethod | None = None
+) -> Any:
+    """Wrap a cell value in Rich markup for `style`, if any is set.
+
+    `justify` renders the cell as a `Text` object aligned accordingly
+    (e.g. `"right"`), since `DataTable` columns don't support a
+    per-column justify option directly.
+    """
     if value is None:
-        return ""
-    return f"[{style}]{value}[/{style}]" if style else value
+        value = ""
+    markup = f"[{style}]{value}[/{style}]" if style else str(value)
+    if justify:
+        return Text.from_markup(markup, justify=justify)
+    return markup
 
 
 class TorrentInfoPanel(ScrollableContainer):
@@ -312,9 +324,9 @@ class TorrentInfoPanel(ScrollableContainer):
         table = self.query_one("#files")
         table.add_columns(
             ("", "Sel"),
-            ("ID", "ID"),
-            ("Size", "Size"),
-            ("Done", "Done"),
+            (Text("ID", justify="right"), "ID"),
+            (Text("Size", justify="right"), "Size"),
+            (Text("Done", justify="right"), "Done"),
             ("P", "P"),
             ("Name", "Name"),
         )
@@ -514,9 +526,9 @@ class TorrentInfoPanel(ScrollableContainer):
 
         return (
             FILE_SELECTION_ICONS[item["sel"]],
-            _style_cell(item["id"], style),
-            _style_cell(item["size"], style),
-            _style_cell(item["done"], style),
+            _style_cell(item["id"], style, justify="right"),
+            _style_cell(item["size"], style, justify="right"),
+            _style_cell(item["done"], style, justify="right"),
             _style_cell(item["priority"], style),
             _style_cell(item["display_name"], style),
         )
