@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from enum import Enum
 from typing import Any
 
 from textual import on
@@ -31,6 +32,32 @@ from ..util import (
 from ..widget.common import ReactiveLabel, ReactiveLinkLabel, VimDataTable
 
 
+class FileSelectionState(Enum):
+    """Selection state of a file/folder row in the Files tab.
+
+    A folder is PARTIAL when only some of its descendant files are
+    selected, and FULL when all of them are.
+    """
+
+    NONE = "none"
+    PARTIAL = "partial"
+    FULL = "full"
+
+
+FILE_SELECTION_ICONS = {
+    FileSelectionState.NONE: " ",
+    FileSelectionState.PARTIAL: "-",
+    FileSelectionState.FULL: "✓",
+}
+
+
+def _style_cell(value: Any, style: str) -> Any:
+    """Wrap a cell value in Rich markup for `style`, if any is set."""
+    if value is None:
+        return ""
+    return f"[{style}]{value}[/{style}]" if style else value
+
+
 class TorrentInfoPanel(ScrollableContainer):
     BINDINGS = [
         Binding(
@@ -47,25 +74,20 @@ class TorrentInfoPanel(ScrollableContainer):
             "[Files] Open file",
             priority=True,
         ),
+        Binding("H", "toggle_file_download('HIGH')", "[Files] High priority"),
         Binding(
-            "space",
-            "toggle_file_download(None)",
-            "[Files] Toggle file download",
+            "M", "toggle_file_download('MEDIUM')", "[Files] Medium priority"
         ),
+        Binding("L", "toggle_file_download('LOW')", "[Files] Low priority"),
         Binding(
-            "H",
-            "toggle_file_download('high')",
-            "[Files] Set High file priority",
+            "N",
+            "toggle_file_download('NOT_DOWNLOADING')",
+            "[Files] Do not download",
         ),
-        Binding(
-            "M",
-            "toggle_file_download('medium')",
-            "[Files] Set Medium file priority",
-        ),
-        Binding(
-            "L", "toggle_file_download('low')", "[Files] Set Low file priority"
-        ),
-        Binding("x,esc", "close", "[Navigation] Close"),
+        Binding("space", "toggle_mark_file", "[Files] Toggle mark"),
+        Binding("V", "toggle_select_all", "[Files] Select/clear all"),
+        Binding("x", "close", "[Navigation] Close"),
+        Binding("escape", "escape_or_close", "[Navigation] Close"),
     ]
 
     @log_time
@@ -74,6 +96,7 @@ class TorrentInfoPanel(ScrollableContainer):
         self.capability_torrent_id = capability_torrent_id
         self.file_count = 0
         self.file_list = []
+        self.selected_file_ids: set[int] = set()
 
         self.color_priority_low = self.app.current_theme.accent
         self.color_priority_high = self.app.current_theme.error
@@ -288,6 +311,7 @@ class TorrentInfoPanel(ScrollableContainer):
     def create_table_files_columns(self) -> None:
         table = self.query_one("#files")
         table.add_columns(
+            ("", "Sel"),
             ("ID", "ID"),
             ("Size", "Size"),
             ("Done", "Done"),
@@ -381,7 +405,9 @@ class TorrentInfoPanel(ScrollableContainer):
 
             # Store for toggle action
             self.file_list = self.get_file_list(
-                self.r_torrent.files, self.priority_display
+                self.r_torrent.files,
+                self.priority_display,
+                self.selected_file_ids,
             )
 
             if self.file_count != len(self.file_list):
@@ -470,6 +496,32 @@ class TorrentInfoPanel(ScrollableContainer):
                 table.move_cursor(row=row)
 
     @log_time
+    def style_file_row_cells(self, item: dict[str, Any]) -> tuple:
+        """Compute styled cell values for a file/folder row.
+
+        Not-downloading files are dimmed, selected files/folders are
+        bolded (a partially-selected folder counts as selected).
+        """
+        dim = item.get("file_priority") == TorrentFilePriority.NOT_DOWNLOADING
+        bold = item["sel"] != FileSelectionState.NONE
+
+        styles = []
+        if bold:
+            styles.append("bold")
+        if dim:
+            styles.append("dim")
+        style = " ".join(styles)
+
+        return (
+            FILE_SELECTION_ICONS[item["sel"]],
+            _style_cell(item["id"], style),
+            _style_cell(item["size"], style),
+            _style_cell(item["done"], style),
+            _style_cell(item["priority"], style),
+            _style_cell(item["display_name"], style),
+        )
+
+    @log_time
     def update_file_table(self, table, file_list) -> None:
         row_keys = list(table.rows.keys())
 
@@ -478,43 +530,21 @@ class TorrentInfoPanel(ScrollableContainer):
                 break
 
             row_key = row_keys[row_idx]
+            sel, id_, size, done, priority, name = self.style_file_row_cells(
+                item
+            )
 
-            # Apply dim styling for not-downloading files
-            if item.get("file_priority") == TorrentFilePriority.NOT_DOWNLOADING:
-                table.update_cell(row_key, "ID", f"[dim]{item['id']}[/dim]")
-                table.update_cell(row_key, "Size", f"[dim]{item['size']}[/dim]")
-                table.update_cell(row_key, "Done", f"[dim]{item['done']}[/dim]")
-                table.update_cell(row_key, "P", item["priority"])
-                table.update_cell(
-                    row_key, "Name", f"[dim]{item['display_name']}[/dim]"
-                )
-            else:
-                table.update_cell(row_key, "ID", item["id"])
-                table.update_cell(row_key, "Size", item["size"])
-                table.update_cell(row_key, "Done", item["done"])
-                table.update_cell(row_key, "P", item["priority"])
-                table.update_cell(row_key, "Name", item["display_name"])
+            table.update_cell(row_key, "Sel", sel)
+            table.update_cell(row_key, "ID", id_)
+            table.update_cell(row_key, "Size", size)
+            table.update_cell(row_key, "Done", done)
+            table.update_cell(row_key, "P", priority)
+            table.update_cell(row_key, "Name", name)
 
     @log_time
     def draw_file_table(self, table, file_list) -> None:
         for item in file_list:
-            # Apply dim styling for not-downloading files
-            if item.get("file_priority") == TorrentFilePriority.NOT_DOWNLOADING:
-                table.add_row(
-                    f"[dim]{item['id']}[/dim]",
-                    f"[dim]{item['size']}[/dim]",
-                    f"[dim]{item['done']}[/dim]",
-                    item["priority"],
-                    f"[dim]{item['display_name']}[/dim]",
-                )
-            else:
-                table.add_row(
-                    item["id"],
-                    item["size"],
-                    item["done"],
-                    item["priority"],
-                    item["display_name"],
-                )
+            table.add_row(*self.style_file_row_cells(item))
 
     @log_time
     def print_count(self, value: int) -> int:
@@ -583,90 +613,69 @@ class TorrentInfoPanel(ScrollableContainer):
 
     @log_time
     def action_close(self):
+        # Reset selection so it doesn't carry over to the next torrent
+        # opened in this (reused) panel instance.
+        self.selected_file_ids.clear()
         self.post_message(OpenTorrentListCommand())
 
     @log_time
-    def _get_folder_child_file_ids(self, folder_path: str) -> list[int]:
-        """Collect all child file IDs using path-based detection.
-
-        Args:
-            folder_path: The folder path (e.g., "docs/api")
-
-        Returns:
-            List of file IDs that are children of this folder
-        """
-        file_ids = []
-        # Use path prefix matching on the original file list
-        folder_prefix = f"{folder_path}/"
-
-        for file in self.r_torrent.files:
-            if file.name.startswith(folder_prefix):
-                file_ids.append(file.id)
-
-        return file_ids
-
-    @log_time
-    def _determine_target_priority(
-        self, file_ids: list[int]
-    ) -> TorrentFilePriority:
-        """Determine target priority by checking first file's current
-        priority."""
-        first_file = next(
-            (f for f in self.r_torrent.files if f.id == file_ids[0]), None
-        )
-        if not first_file:
-            return TorrentFilePriority.MEDIUM
-
-        if first_file.priority == TorrentFilePriority.NOT_DOWNLOADING:
-            return TorrentFilePriority.MEDIUM
+    def action_escape_or_close(self):
+        """Clear an active file selection, or close if none is active."""
+        if self.active_tab_id() == "tab-files" and self.selected_file_ids:
+            self.selected_file_ids.clear()
+            self.refresh_file_table_selection()
         else:
-            return TorrentFilePriority.NOT_DOWNLOADING
+            self.action_close()
 
     @log_time
-    def action_toggle_file_download(self, action_code: str | None):
-        """Toggle download status for selected file or folder."""
-        # Only handle if we're on the files tab
+    def _current_file_row(self) -> tuple[int, dict[str, Any]] | None:
+        """Return (cursor_row, row) for the Files table, or None.
+
+        None is returned unless the Files tab is active, a torrent and
+        file list are loaded, and the cursor sits on a valid row.
+        """
         if (
             self.active_tab_id() != "tab-files"
             or not self.r_torrent
             or not self.file_list
         ):
-            return
+            return None
 
-        table = self.query_one("#files")
-        cursor_row = table.cursor_row
+        cursor_row = self.query_one("#files").cursor_row
 
-        # Check if cursor is at a valid position
         if (
             cursor_row is None
             or cursor_row < 0
             or cursor_row >= len(self.file_list)
         ):
+            return None
+
+        return cursor_row, self.file_list[cursor_row]
+
+    @log_time
+    def _resolve_row_file_ids(self, item: dict[str, Any]) -> list[int]:
+        """Return the file ids a row (file or folder) represents."""
+        if item["is_file"]:
+            return [item["id"]]
+        return item["child_file_ids"] or []
+
+    @log_time
+    def action_toggle_file_download(self, action_code: str):
+        """Toggle download status for selected file or folder."""
+        current = self._current_file_row()
+        if current is None:
             return
 
-        selected_item = self.file_list[cursor_row]
-
-        # Collect file IDs to toggle
-        if selected_item["is_file"]:
-            file_ids = [selected_item["id"]]
+        if self.selected_file_ids:
+            file_ids = list(self.selected_file_ids)
         else:
-            folder_path = selected_item.get("folder_path")
-            if not folder_path:
-                return  # No valid folder path
-            file_ids = self._get_folder_child_file_ids(folder_path)
+            _, item = current
+            file_ids = self._resolve_row_file_ids(item)
 
         if not file_ids:
             return
 
-        match action_code:
-            case "high":
-                target_priority = TorrentFilePriority.HIGH
-            case "medium":
-                target_priority = TorrentFilePriority.MEDIUM
-            case "low":
-                target_priority = TorrentFilePriority.LOW
-            case _:
-                target_priority = self._determine_target_priority(file_ids)
+        target_priority = TorrentFilePriority[action_code]
 
         # Post command to toggle files
         self.post_message(
@@ -678,9 +687,41 @@ class TorrentInfoPanel(ScrollableContainer):
         )
 
     @log_time
-    def action_open_file(self):
-        """Open selected file with platform-specific default application."""
-        # Only handle if we're on the files tab
+    def refresh_file_table_selection(self) -> None:
+        """Recompute file list and redraw table after selection change."""
+        table = self.query_one("#files")
+        self.file_list = self.get_file_list(
+            self.r_torrent.files,
+            self.priority_display,
+            self.selected_file_ids,
+        )
+        self.update_file_table(table, self.file_list)
+
+    @log_time
+    def action_toggle_mark_file(self):
+        """Toggle selection mark on the file or folder under the cursor."""
+        current = self._current_file_row()
+        if current is None:
+            return
+        cursor_row, item = current
+
+        file_ids = self._resolve_row_file_ids(item)
+        if not file_ids:
+            return
+
+        if all(fid in self.selected_file_ids for fid in file_ids):
+            self.selected_file_ids.difference_update(file_ids)
+        else:
+            self.selected_file_ids.update(file_ids)
+
+        self.refresh_file_table_selection()
+
+        if cursor_row + 1 < len(self.file_list):
+            self.query_one("#files").move_cursor(row=cursor_row + 1)
+
+    @log_time
+    def action_toggle_select_all(self):
+        """Select every file, or clear the selection if any is active."""
         if (
             self.active_tab_id() != "tab-files"
             or not self.r_torrent
@@ -688,18 +729,22 @@ class TorrentInfoPanel(ScrollableContainer):
         ):
             return
 
-        table = self.query_one("#files")
-        cursor_row = table.cursor_row
+        if self.selected_file_ids:
+            self.selected_file_ids.clear()
+        else:
+            self.selected_file_ids = {
+                item["id"] for item in self.file_list if item["is_file"]
+            }
 
-        # Check if cursor is at a valid position
-        if (
-            cursor_row is None
-            or cursor_row < 0
-            or cursor_row >= len(self.file_list)
-        ):
+        self.refresh_file_table_selection()
+
+    @log_time
+    def action_open_file(self):
+        """Open selected file with platform-specific default application."""
+        current = self._current_file_row()
+        if current is None:
             return
-
-        selected_item = self.file_list[cursor_row]
+        _, selected_item = current
 
         # Only open if it's a file (not a directory)
         if not selected_item["is_file"]:
@@ -754,9 +799,11 @@ class TorrentInfoPanel(ScrollableContainer):
     def get_file_list(
         files: list[TorrentFile],
         priority_display: dict[TorrentFilePriority, str],
+        selected_file_ids: set[int] | None = None,
     ) -> list[dict[str, Any]]:
         """Convert file list to flattened tree with display formatting."""
         node = TorrentInfoPanel.create_file_tree(files)
+        selected_ids = selected_file_ids or set()
 
         items_list: list[dict[str, Any]] = []
 
@@ -766,11 +813,20 @@ class TorrentInfoPanel(ScrollableContainer):
             is_last: bool = True,
             depth: int = 0,
             current_path: str = "",
-        ) -> None:
-            """Recursively flatten tree into list with tree symbols."""
+        ) -> tuple[list[int], int]:
+            """Recursively flatten tree into list with tree symbols.
+
+            Returns this subtree's descendant file ids and how many of
+            them are selected, so a folder's own row (appended before
+            its children, above) can be filled in with its selection
+            marker and cached descendant ids in the same single pass.
+            """
             items = [(k, v) for k, v in node.items() if k != "__is_file__"]
             # Sort items by name (case-insensitive)
             items.sort(key=lambda x: x[0].lower())
+
+            subtree_file_ids: list[int] = []
+            subtree_selected = 0
 
             for i, (name, subtree) in enumerate(items):
                 is_last_item = i == len(items) - 1
@@ -791,6 +847,7 @@ class TorrentInfoPanel(ScrollableContainer):
                 if subtree.get("__is_file__", False):
                     f = subtree["file"]
                     completion = (f.completed / f.size) * 100
+                    is_selected = f.id in selected_ids
                     items_list.append(
                         {
                             "is_file": True,
@@ -803,31 +860,56 @@ class TorrentInfoPanel(ScrollableContainer):
                             "file_priority": f.priority,
                             "depth": depth,  # Track tree depth
                             "folder_path": None,  # Files don't have folder_path
+                            "child_file_ids": None,  # Files have no children
+                            "sel": (
+                                FileSelectionState.FULL
+                                if is_selected
+                                else FileSelectionState.NONE
+                            ),
                         }
                     )
+                    subtree_file_ids.append(f.id)
+                    subtree_selected += is_selected
                 else:
-                    items_list.append(
-                        {
-                            "is_file": False,
-                            "display_name": display_name,
-                            "id": None,
-                            "size": None,
-                            "done": None,
-                            "priority": None,
-                            "file_priority": None,
-                            "depth": depth,  # Track tree depth
-                            # Store folder path for child detection
-                            "folder_path": item_path,
-                        }
-                    )
+                    # Row is appended now (folders precede their
+                    # children), "sel"/"child_file_ids" are filled in
+                    # below once the recursive call below returns them.
+                    folder_row: dict[str, Any] = {
+                        "is_file": False,
+                        "display_name": display_name,
+                        "id": None,
+                        "size": None,
+                        "done": None,
+                        "priority": None,
+                        "file_priority": None,
+                        "depth": depth,  # Track tree depth
+                        # Store folder path for child detection
+                        "folder_path": item_path,
+                    }
+                    items_list.append(folder_row)
 
                     extension = "│  " if not is_last_item else "  "
                     new_prefix = current_prefix + extension
                     # Pass folder path with trailing slash for next level
                     next_path = f"{item_path}/"
-                    flatten_tree(
+                    child_file_ids, child_selected = flatten_tree(
                         subtree, new_prefix, is_last_item, depth + 1, next_path
                     )
+
+                    if child_file_ids and child_selected == len(child_file_ids):
+                        folder_sel = FileSelectionState.FULL
+                    elif child_selected > 0:
+                        folder_sel = FileSelectionState.PARTIAL
+                    else:
+                        folder_sel = FileSelectionState.NONE
+
+                    folder_row["sel"] = folder_sel
+                    folder_row["child_file_ids"] = child_file_ids
+
+                    subtree_file_ids.extend(child_file_ids)
+                    subtree_selected += child_selected
+
+            return subtree_file_ids, subtree_selected
 
         flatten_tree(node)
 
