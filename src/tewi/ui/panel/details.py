@@ -74,23 +74,15 @@ class TorrentInfoPanel(ScrollableContainer):
             "[Files] Open file",
             priority=True,
         ),
+        Binding("H", "toggle_file_download('HIGH')", "[Files] High priority"),
         Binding(
-            "H",
-            "toggle_file_download('HIGH')",
-            "[Files] Set High file priority",
+            "M", "toggle_file_download('MEDIUM')", "[Files] Medium priority"
         ),
-        Binding(
-            "M",
-            "toggle_file_download('MEDIUM')",
-            "[Files] Set Medium file priority",
-        ),
-        Binding(
-            "L", "toggle_file_download('LOW')", "[Files] Set Low file priority"
-        ),
+        Binding("L", "toggle_file_download('LOW')", "[Files] Low priority"),
         Binding(
             "N",
             "toggle_file_download('NOT_DOWNLOADING')",
-            "[Files] Toggle file download",
+            "[Files] Do not download",
         ),
         Binding("space", "toggle_mark_file", "[Files] Toggle mark"),
         Binding("V", "toggle_select_all", "[Files] Select/clear all"),
