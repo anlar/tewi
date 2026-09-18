@@ -179,7 +179,6 @@ def print_time(seconds, abbr: bool = False, units: int = 1) -> str:
 
 
 @log_time
-@cache
 def print_time_ago(dt: datetime) -> str:
     if dt is None:
         return ""
