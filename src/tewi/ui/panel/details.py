@@ -53,6 +53,9 @@ FILE_SELECTION_ICONS = {
 }
 
 
+NONE = "-"
+
+
 def _style_cell(
     value: Any, style: str, justify: JustifyMethod | None = None
 ) -> Any:
@@ -388,21 +391,19 @@ class TorrentInfoPanel(ScrollableContainer):
             else:
                 self.t_privacy = "Public torrent"
 
-            self.t_comment = torrent.comment if torrent.comment else "None"
-            self.t_creator = torrent.creator if torrent.creator else "None"
+            self.t_comment = torrent.comment or NONE
+            self.t_creator = torrent.creator or NONE
             self.t_labels = (
-                ", ".join(torrent.labels) if len(torrent.labels) > 0 else "None"
+                ", ".join(torrent.labels) if len(torrent.labels) > 0 else NONE
             )
-            self.t_category = torrent.category if torrent.category else "None"
+            self.t_category = torrent.category if torrent.category else NONE
 
             self.t_status = torrent.status.title()
             self.t_location = torrent.download_dir
             self.t_downloaded = print_size(torrent.downloaded_ever)
             self.t_uploaded = print_size(torrent.uploaded_ever)
             self.t_ratio = f"{torrent.ratio:.2f}"
-            self.t_error = (
-                torrent.error_string if torrent.error_string else "None"
-            )
+            self.t_error = torrent.error_string or NONE
 
             self.t_date_added = self.print_datetime(torrent.added_date)
             self.t_date_started = self.print_datetime(torrent.start_date)
@@ -440,7 +441,7 @@ class TorrentInfoPanel(ScrollableContainer):
                 progress = p.progress * 100
                 table.add_row(
                     Text(
-                        "-"
+                        NONE
                         if p.is_encrypted is None
                         else ("Yes" if p.is_encrypted else "No"),
                         justify="right",
@@ -464,10 +465,10 @@ class TorrentInfoPanel(ScrollableContainer):
                     p.ul_state.value,
                     p.dl_state.value,
                     Text(f"{progress:.0f}%", justify="right"),
-                    p.connection_type or "-",
-                    p.direction or "-",
-                    p.flag_str or "-",
-                    p.country or (get_country(p.address) or "-"),
+                    p.connection_type or NONE,
+                    p.direction or NONE,
+                    p.flag_str or NONE,
+                    p.country or (get_country(p.address) or NONE),
                     p.address,
                     Text(str(self.print_count(p.port)), justify="right"),
                     p.client_name,
@@ -485,7 +486,7 @@ class TorrentInfoPanel(ScrollableContainer):
                 table.add_row(
                     Text(str(self.print_count(t.tier)), justify="right"),
                     t.host,
-                    t.status or "-",
+                    t.status or NONE,
                     Text(str(self.print_count(t.peer_count)), justify="right"),
                     Text(
                         str(self.print_count(t.seeder_count)), justify="right"
@@ -507,7 +508,7 @@ class TorrentInfoPanel(ScrollableContainer):
                         self.print_tracker_next_time(t.next_scrape),
                         justify="right",
                     ),
-                    t.message or "-",
+                    t.message or NONE,
                     key=f"tracker_{idx}",
                 )
 
@@ -586,7 +587,7 @@ class TorrentInfoPanel(ScrollableContainer):
 
     @log_time
     def print_count(self, value: int) -> int:
-        return value if value is not None else "-"
+        return value or NONE
 
     @log_time
     def print_datetime(self, value: datetime) -> str:
@@ -619,7 +620,7 @@ class TorrentInfoPanel(ScrollableContainer):
 
             return f"{value.strftime('%H:%M:%S')} ({ago})"
         else:
-            return "-"
+            return NONE
 
     @log_time
     def print_tracker_next_time(self, value: datetime) -> str:
@@ -643,7 +644,7 @@ class TorrentInfoPanel(ScrollableContainer):
                 days = int(total_seconds / 86400)
                 return f"{days}d"
         else:
-            return "-"
+            return NONE
 
     @log_time
     def action_open_tab(self, tab_id: str):
