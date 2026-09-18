@@ -18,6 +18,8 @@
 
 import argparse
 import sys
+from datetime import datetime
+from time import time
 
 import shtab
 from textual import on, work
@@ -129,6 +131,10 @@ class MainApp(App):
     r_session = reactive(None)
     r_page = reactive(None)
     r_search = reactive(None)
+
+    r_connected = reactive(True)
+    r_connected_ts = reactive(time)
+    r_connected_error_ts = reactive(None)
 
     r_sort_order = reactive(sort_orders[0])
     r_sort_order_asc = reactive(True)
@@ -242,6 +248,10 @@ class MainApp(App):
             self.client.meta()["version"],
             self.c_host,
             self.c_port,
+        ).data_bind(
+            r_connected=MainApp.r_connected,
+            r_connected_ts=MainApp.r_connected_ts,
+            r_connected_error_ts=MainApp.r_connected_error_ts,
         )
 
         with Horizontal():
@@ -312,46 +322,61 @@ class MainApp(App):
 
         current_pane = self.query_one(ContentSwitcher).current
 
-        if current_pane == "torrent-list":
-            if self.test_mode:
-                torrents = self.client.torrents_test(self.test_mode)
-            else:
-                torrents = self.client.torrents()
+        try:
+            if current_pane == "torrent-list":
+                if self.test_mode:
+                    torrents = self.client.torrents_test(self.test_mode)
+                else:
+                    torrents = self.client.torrents()
 
-            # Load session with full list of torrents (before filtering)
-            session = self.client.session(torrents)
+                # Load session with full list of torrents (before filtering)
+                session = self.client.session(torrents)
 
-            torrents = [
-                t for t in torrents if self.filter_option.filter_func(t)
-            ]
-
-            if self.filter_name:
-                filter_name = self.filter_name.lower()
                 torrents = [
-                    t for t in torrents if filter_name in t.name.lower()
+                    t for t in torrents if self.filter_option.filter_func(t)
                 ]
 
-            filter_state = FilterState(
-                self.filter_option, len(torrents), self.filter_name
-            )
+                if self.filter_name:
+                    filter_name = self.filter_name.lower()
+                    torrents = [
+                        t for t in torrents if filter_name in t.name.lower()
+                    ]
 
-            torrents.sort(
-                key=self.r_sort_order.sort_func,
-                reverse=not self.r_sort_order_asc,
-            )
+                filter_state = FilterState(
+                    self.filter_option, len(torrents), self.filter_name
+                )
 
-            logger.info(f"Loaded {len(torrents)} torrents from client")
+                torrents.sort(
+                    key=self.r_sort_order.sort_func,
+                    reverse=not self.r_sort_order_asc,
+                )
 
-            self.call_from_thread(
-                self.set_tdata_list, torrents, session, filter_state
-            )
-        elif current_pane == "torrent-info":
-            info_panel = self.query_one(TorrentInfoPanel)
-            torrent = self.client.torrent(info_panel.r_torrent.hash)
+                logger.info(f"Loaded {len(torrents)} torrents from client")
 
-            logger.info(f"Loaded torrent ID = {torrent.id} from client")
+                self.call_from_thread(
+                    self.set_tdata_list, torrents, session, filter_state
+                )
+            elif current_pane == "torrent-info":
+                info_panel = self.query_one(TorrentInfoPanel)
+                torrent = self.client.torrent(info_panel.r_torrent.hash)
 
-            self.call_from_thread(self.set_tdata_info, torrent)
+                logger.info(f"Loaded torrent ID = {torrent.id} from client")
+
+                self.call_from_thread(self.set_tdata_info, torrent)
+        except Exception as e:
+            logger.warning(f"Failed to load data from torrent client: {e}")
+            self.call_from_thread(self.set_connection_status, False)
+            return
+
+        self.call_from_thread(self.set_connection_status, True)
+
+    @log_time
+    def set_connection_status(self, connected: bool) -> None:
+        self.r_connected = connected
+        if connected:
+            self.r_connected_ts = datetime.now()
+        else:
+            self.r_connected_error_ts = datetime.now()
 
     @log_time
     def set_tdata_info(self, torrent: Torrent) -> None:

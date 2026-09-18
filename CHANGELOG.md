@@ -17,6 +17,7 @@ handle multi-line list body as single line.
 - Ship a pre-generated bash completion script as a package data file
 - Display general up/down speed limits
 - Add multi-select for files tab (`space` to mark a file or folder, `V` to select/clear all, `Esc` to clear selection) for priority change actions [#163](https://github.com/anlar/tewi/issues/163)
+- Display torrent client connection status in header bar (handle lost connection to the daemon and show time since last connection) [#134](https://github.com/anlar/tewi/issues/134)
 
 ### Changed
 

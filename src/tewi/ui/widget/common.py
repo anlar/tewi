@@ -129,6 +129,10 @@ class ReactiveLabel(Label):
             return ""
 
 
+class ReactiveLayoutLabel(ReactiveLabel):
+    name = reactive(None, layout=True)
+
+
 class ReactiveLinkLabel(Static):
     """Label showing its value as clickable link when it is a single URL.
 
