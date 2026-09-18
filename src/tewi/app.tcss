@@ -153,6 +153,12 @@ SpeedIndicator.non-zero {
     text-style: bold;
 }
 
+/* REACTIVE LINK LABEL */
+
+ReactiveLinkLabel > ReactiveLabel, ReactiveLinkLabel > Link {
+    width: 100%;
+}
+
 /* TORRENT LIST PANEL: COMMON */
 
 TorrentItem > #name-container {
