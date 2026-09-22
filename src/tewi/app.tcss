@@ -599,6 +599,23 @@ SortOrderWidget > DataTable {
     width: auto;
 }
 
+SearchSortDialog {
+    align: center middle;
+}
+
+SearchSortWidget {
+    width: auto;
+    height: auto;
+    border-title-align: center;
+    border: round $warning;
+    padding: 1;
+}
+
+SearchSortWidget > DataTable {
+    height: auto;
+    width: auto;
+}
+
 /* SCREEN: FILTER DIALOG */
 
 FilterDialog {
