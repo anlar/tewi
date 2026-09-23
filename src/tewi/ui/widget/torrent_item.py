@@ -24,7 +24,7 @@ from textual.widgets import ProgressBar, Static
 from ...torrent.models import Torrent
 from ...util.log import log_time
 from ..util import esc_trunk, print_size, print_time
-from .common import ReactiveLabel, SpeedIndicator
+from .common import ReactiveLabel, ReactiveLayoutLabel, SpeedIndicator
 
 
 class TorrentItem(Static):
@@ -223,7 +223,7 @@ class TorrentItemCompact(TorrentItem):
             )
 
         with Grid(id="speed"):
-            yield ReactiveLabel(markup=True).data_bind(
+            yield ReactiveLayoutLabel(markup=True).data_bind(
                 name=TorrentItemCompact.t_badges_markup
             )
             yield Static(" ↑ ")
@@ -380,7 +380,7 @@ class TorrentItemCard(TorrentItemCompact):
             )
 
         with Grid(id="speed"):
-            yield ReactiveLabel(markup=True).data_bind(
+            yield ReactiveLayoutLabel(markup=True).data_bind(
                 name=TorrentItemCard.t_badges_markup
             )
             yield Static(" ↑ ")
