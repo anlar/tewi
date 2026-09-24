@@ -10,8 +10,10 @@ from textual.reactive import reactive
 from textual.widgets import DataTable, Static
 
 from ...search.models import SearchResult
+from ...search.sorting import get_search_sort_option, sort_search_results
 from ...util.log import log_time
 from ..dialog.search.details import TorrentDetailsDialog
+from ..dialog.search.sort import SearchSortDialog
 from ..messages import (
     AddTorrentFromWebSearchCommand,
     Notification,
@@ -38,6 +40,7 @@ class TorrentWebSearch(Static):
         Binding("o", "open_link", "[Action] Open Link"),
         Binding("enter", "show_details", "[Action] Show Details"),
         Binding("v", "toggle_view_mode", "[Action] Toggle View Mode"),
+        Binding("s", "sort_results", "[Search] Sort results"),
         Binding("x,escape", "close", "[Navigation] Close"),
         Binding("j,down", "cursor_down", "[Navigation] Move down"),
         Binding("k,up", "cursor_up", "[Navigation] Move up"),
@@ -65,6 +68,9 @@ class TorrentWebSearch(Static):
 
         self._hide_zero_seeders = hide_zero_seeders
         self._view_compact = default_mode == "compact"
+        self._sort_key = "seeders"
+        self._sort_ascending = False
+        self._display_results: list[SearchResult] = []
 
         # Workaround to get color from theme, because DataTable doesn't
         # support CSS variables lik $success.
@@ -95,6 +101,7 @@ class TorrentWebSearch(Static):
             ("O", "Open Link"),
             ("Enter", "Details"),
             ("V", "Toggle View"),
+            ("S", "Sort"),
             ("X", "Close"),
         )
         self.create_table_columns()
@@ -124,6 +131,7 @@ class TorrentWebSearch(Static):
         """Update the table when results change."""
         table = self.query_one("#websearch-results", DataTable)
         prev_cursor_row = table.cursor_row
+        previous_result = self.selected_result()
 
         # Re-create columns after each search to force them to fit to the new
         # content. See: https://github.com/Textualize/textual/issues/6247
@@ -136,6 +144,13 @@ class TorrentWebSearch(Static):
         if self._hide_zero_seeders:
             results = [r for r in results if r.seeders is None or r.seeders > 0]
 
+        self._display_results = sort_search_results(
+            results,
+            self._sort_key,
+            self._sort_ascending,
+            compact=self._view_compact,
+        )
+
         filtered_count = total_count - len(results)
 
         if filtered_count:
@@ -146,13 +161,18 @@ class TorrentWebSearch(Static):
         else:
             detail = ""
 
-        if not results:
+        if not self._display_results:
             self.r_search_status = f"No results found{detail}"
             return
         else:
-            self.r_search_status = f"Found {total_count} results{detail}"
+            direction = "↑" if self._sort_ascending else "↓"
+            sort_name = get_search_sort_option(self._sort_key).name
+            self.r_search_status = (
+                f"Found {total_count} results{detail}"
+                f" · Sort: {sort_name} {direction}"
+            )
 
-        for r in results:
+        for r in self._display_results:
             if r.upload_date:
                 if self._view_compact:
                     up_date = r.upload_date.strftime("%Y-%m")
@@ -186,9 +206,9 @@ class TorrentWebSearch(Static):
                     up_date,
                     r.seeders,
                     r.leechers,
-                    r.downloads or "-",
+                    r.downloads if r.downloads is not None else "-",
                     print_size(r.size),
-                    r.files_count or "-",
+                    r.files_count if r.files_count is not None else "-",
                     category_display,
                     title,
                     key=r.info_hash,
@@ -196,8 +216,16 @@ class TorrentWebSearch(Static):
 
         table.focus()
 
-        # select previously selected row - handle view mode switch
-        table.move_cursor(row=prev_cursor_row)
+        # Preserve the selected torrent when the view mode or sort changes.
+        selected_row = next(
+            (
+                i
+                for i, result in enumerate(self._display_results)
+                if result is previous_result
+            ),
+            min(prev_cursor_row or 0, len(self._display_results) - 1),
+        )
+        table.move_cursor(row=selected_row)
 
     @log_time
     def watch_r_results(self, results: list[SearchResult]) -> None:
@@ -207,17 +235,22 @@ class TorrentWebSearch(Static):
     def create_table_columns(self) -> None:
         table = self.query_one("#websearch-results", DataTable)
 
-        table.add_column("Source", key="source")
-        table.add_column("Uploaded", key="uploaded")
-        table.add_column("S ↓", key="seeders")
+        def add_column(label: str, key: str) -> None:
+            if key == self._sort_key:
+                label += " ↑" if self._sort_ascending else " ↓"
+            table.add_column(label, key=key)
+
+        add_column("Source", "source")
+        add_column("Uploaded", "uploaded")
+        add_column("S", "seeders")
         if not self._view_compact:
-            table.add_column("L", key="leechers")
-            table.add_column("D", key="downloads")
-        table.add_column("Size", key="size")
+            add_column("L", "leechers")
+            add_column("D", "downloads")
+        add_column("Size", "size")
         if not self._view_compact:
-            table.add_column("Files", key="files")
-        table.add_column("Category", key="category")
-        table.add_column("Name", key="name")
+            add_column("Files", "files")
+        add_column("Category", "category")
+        add_column("Name", "name")
 
     # Actions
 
@@ -227,23 +260,30 @@ class TorrentWebSearch(Static):
         self.post_message(OpenTorrentListCommand())
 
     @log_time
+    def action_sort_results(self) -> None:
+        self.app.push_screen(SearchSortDialog(), self.update_sort_order)
+
+    @log_time
+    def update_sort_order(self, selection: tuple[str, bool] | None) -> None:
+        if selection is None:
+            return
+        self._sort_key, self._sort_ascending = selection
+        self.draw_table(self.r_results)
+
+    def selected_result(self) -> SearchResult | None:
+        """Return the result at the visible cursor position."""
+        row = self.query_one("#websearch-results", DataTable).cursor_row
+        if row is None or row < 0 or row >= len(self._display_results):
+            return None
+        return self._display_results[row]
+
+    @log_time
     def action_show_details(self) -> None:
         """Show detailed information for the selected torrent."""
-        table = self.query_one("#websearch-results", DataTable)
-
-        if not self.r_results:
-            return
-
-        # Get selected row
-        if table.cursor_row is None or table.cursor_row < 0:
+        result = self.selected_result()
+        if result is None:
             self.post_message(Notification("No torrent selected", "warning"))
             return
-
-        # Find the corresponding result
-        if table.cursor_row >= len(self.r_results):
-            return
-
-        result = self.r_results[table.cursor_row]
 
         # Find the provider instance using provider_id
         provider = None
@@ -281,21 +321,10 @@ class TorrentWebSearch(Static):
     @log_time
     def action_add_torrent(self) -> None:
         """Add the selected torrent to the client."""
-        table = self.query_one("#websearch-results", DataTable)
-
-        if not self.r_results:
-            return
-
-        # Get selected row
-        if table.cursor_row is None or table.cursor_row < 0:
+        result = self.selected_result()
+        if result is None:
             self.post_message(Notification("No torrent selected", "warning"))
             return
-
-        # Find the corresponding result
-        if table.cursor_row >= len(self.r_results):
-            return
-
-        result = self.r_results[table.cursor_row]
 
         # Post command to add torrent
         if result.magnet_link:
@@ -316,21 +345,10 @@ class TorrentWebSearch(Static):
 
     @log_time
     def action_open_link(self) -> None:
-        table = self.query_one("#websearch-results", DataTable)
-
-        if not self.r_results:
-            return
-
-        # Get selected row
-        if table.cursor_row is None or table.cursor_row < 0:
+        result = self.selected_result()
+        if result is None:
             self.post_message(Notification("No torrent selected", "warning"))
             return
-
-        # Find the corresponding result
-        if table.cursor_row >= len(self.r_results):
-            return
-
-        result = self.r_results[table.cursor_row]
 
         if result.page_url:
             open_path(result.page_url)
