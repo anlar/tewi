@@ -223,7 +223,7 @@ class TorrentWebSearch(Static):
                 for i, result in enumerate(self._display_results)
                 if result is previous_result
             ),
-            min(prev_cursor_row or 0, len(self._display_results) - 1),
+            min(prev_cursor_row, len(self._display_results) - 1),
         )
         table.move_cursor(row=selected_row)
 
