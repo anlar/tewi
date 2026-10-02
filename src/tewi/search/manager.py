@@ -280,9 +280,9 @@ class SearchClient:
         """Search for torrents across multiple providers in parallel.
 
         Executes searches across all selected providers concurrently,
-        deduplicates results by info_hash, filters by category, and
-        sorts by seeders. When deduplicating, results from providers
-        earlier in the configuration take priority.
+        deduplicates results by info_hash, and filters by category.
+        When deduplicating, results from providers earlier in the
+        configuration take priority.
 
         Args:
             query: Search term to query providers with
@@ -292,9 +292,8 @@ class SearchClient:
 
         Returns:
             Tuple of (results, errors) where:
-            - results: List of SearchResult objects, deduplicated,
-                      filtered by category, and sorted by seeders
-                      (highest first)
+            - results: List of SearchResult objects, deduplicated and
+                      filtered by category
             - errors: List of error messages from failed providers
         """
         all_results: list[SearchResult] = []
@@ -356,9 +355,6 @@ class SearchClient:
             all_results = self._filter_by_categories(
                 all_results, selected_categories
             )
-
-        # Sort by seeders for relevance
-        all_results.sort(key=lambda r: r.seeders or 0, reverse=True)
 
         return all_results, errors
 

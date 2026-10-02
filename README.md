@@ -166,4 +166,3 @@ Feel free to open bug reports and send pull requests.
 ## License
 
 Distributed under the GPL3+ license. See `LICENSE.txt` for more information.
-
