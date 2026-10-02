@@ -154,9 +154,6 @@ $ tewi --help
 
 View available hot-keys in Tewi by pressing `?` key.
 
-In web search results, press `s` to choose a column to sort by. Use the
-lowercase key shown for ascending order or uppercase for descending order.
-
 ## Roadmap
 
 See the [open issues](https://github.com/anlar/tewi/issues) for a full list of

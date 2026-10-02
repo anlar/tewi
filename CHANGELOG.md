@@ -10,6 +10,10 @@ handle multi-line list body as single line.
 
 ## [Unreleased]
 
+### Added
+
+- Add sorting for web search results (`s` hotkey) [#180](https://github.com/anlar/tewi/pull/180)
+
 ## [2.6.0] - 2026-09-24 - Hop Collector
 
 ### Added
