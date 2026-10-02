@@ -10,6 +10,8 @@ handle multi-line list body as single line.
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-09-24 - Hop Collector
+
 ### Added
 
 - Add `--print-completion` CLI flag to generate shell completion script for bash, zsh, or tcsh
@@ -32,8 +34,6 @@ handle multi-line list body as single line.
 - Align uploaded size and hide if it is empty in torrents list
 - Fix search preset `indexers` option so a bare `prowlarr` or `jackett` entry enables all sub-indexers of that provider
 - Right-align numeric columns in torrent details files, peers, and trackers tabs
-
-### Removed
 
 ## [2.5.0] - 2026-07-27 - Carrot Magnet
 

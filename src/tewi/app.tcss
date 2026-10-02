@@ -708,6 +708,7 @@ TorrentWebSearch {
 
 TorrentWebSearch #search-query-label {
     height: auto;
+    width: 100%;
     text-style: bold;
     color: $accent;
     margin: 1;
@@ -715,7 +716,7 @@ TorrentWebSearch #search-query-label {
 
 TorrentWebSearch #search-status {
     height: auto;
-    text-align: center;
+    width: 100%;
     text-opacity: 75%;
     margin: 1;
 }
