@@ -57,6 +57,7 @@ Features:
 * [Textual](https://textual.textualize.io/)
 * [transmission-rpc](https://github.com/Trim21/transmission-rpc)
 * [qbittorrent-api](https://github.com/rmartin16/qbittorrent-api)
+* [requests](https://github.com/psf/requests)
 * [platformdirs](https://github.com/tox-dev/platformdirs)
 * [shtab](https://github.com/iterative/shtab)
 * [geoip2fast](https://github.com/rabuchaim/geoip2fast) (optional, used for

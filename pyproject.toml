@@ -20,7 +20,8 @@ dependencies = [
   "pyperclip >= 1.9.0",
   "qbittorrent-api >= 2025.7.0",
   "platformdirs >= 4.2.0",
-  "shtab >= 1.12.1"
+  "shtab >= 1.12.1",
+  "requests >= 2.32.0"
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",

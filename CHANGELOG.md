@@ -14,6 +14,10 @@ handle multi-line list body as single line.
 
 - Add sorting for web search results (`s` hotkey) [#180](https://github.com/anlar/tewi/pull/180)
 
+### Changed
+
+- Declare `requests` as an explicit dependency (used by Deluge client, previously installed only transitively via `qbittorrent-api`)
+
 ## [2.6.0] - 2026-09-24 - Hop Collector
 
 ### Added
