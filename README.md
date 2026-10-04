@@ -33,23 +33,31 @@ Transmission, qBittorrent and Deluge daemons.
 Features:
 
 - Connect to Transmission/qBittorrent/Deluge daemon by credentials
-- Browse torrents list
+- Browse torrents list with sorting, filtering by state or name and
+  in-list search
 - Different view modes: card, compact, oneline
 - Display torrent details: overview, files, trackers, peers
+- Manage torrent files: toggle download, change priority, multi-select,
+  open downloaded files
 - View and edit torrent categories and labels
-- Add new torrents
-- Torrent actions: start/pause, remove/trash, verify, reannounce, change
-  priority
-- View and toggle alternative speed limits
+- Edit torrent name and location
+- Add new torrents from file, magnet link, URL, info hash or clipboard
+- Torrent actions: start/pause, start/stop all, remove/trash, verify,
+  reannounce, change priority
+- View general speed limits and toggle alternative speed limits
 - View session statistics
 - View torrent client preferences
-- Dark and light color themes
 - Search torrents on popular trackers (built-in search providers,
   [Jackett](https://github.com/Jackett/Jackett),
   [Prowlarr](https://github.com/Prowlarr/Prowlarr) and
   [bitmagnet](https://github.com/bitmagnet-io/bitmagnet)
-  integrations)
-- Support for configuration files and different configuration profiles
+  integrations) with indexer and category selection, search presets and
+  results sorting
+- Support for configuration files and different configuration profiles,
+  with environment variable references for secrets
+- Color themes selection
+- Vim-style keybindings
+- Shell completion for bash, zsh, tcsh, fish and powershell
 
 ### Built With
 
@@ -95,10 +103,10 @@ file (`share/bash-completion/completions/tewi`).
 If you install Tewi with `pipx` or `pip` into a prefix your shell already scans
 for completions (e.g. a system-wide install), it's picked up automatically.
 
-For any other install method, or for `zsh`/`tcsh`, generate the script manually
-with `--print-completion` and install it into your user data directory (XDG
-`$XDG_DATA_HOME`, `~/.local/share` by default). Tewi supports `bash`, `zsh`,
-and `tcsh`.
+For any other install method, or for other shells, generate the script
+manually with `--print-completion` and install it into a directory your shell
+loads completions from. Tewi supports `bash`, `zsh`, `tcsh`, `fish`, and
+`powershell`.
 
 For `bash` (loaded automatically by `bash-completion` in new shells):
 
@@ -145,6 +153,27 @@ To connect to qBittorrent instead of Transmission:
 
 ```
 $ tewi --client-type qbittorrent --port 8080
+```
+
+Or to Deluge (via Web UI):
+
+```
+$ tewi --client-type deluge --port 8112 --password XXXX
+```
+
+Connection and other settings could be stored in configuration file. To
+create default configuration file use:
+
+```
+$ tewi --create-config
+```
+
+Multiple configuration profiles could be defined (e.g. for different
+daemons) in `tewi-NAME.conf` files, which are loaded on top of the main
+configuration file. To load one of them use:
+
+```
+$ tewi --profile NAME
 ```
 
 Check other command line options using help command:
