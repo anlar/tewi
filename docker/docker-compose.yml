@@ -65,6 +65,23 @@ services:
     volumes:
       - downloads:/downloads
 
+  rtorrent:
+    image: crazymax/rtorrent-rutorrent:latest
+    container_name: tewi-rtorrent-dev
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Etc/UTC
+    ports:
+      - "9073:8000"       # XML-RPC over HTTP (/RPC2, no authentication)
+      - "9074:8080"       # ruTorrent Web UI
+      - "9083:50000"      # Peer connections
+      - "9083:6881/udp"   # DHT
+    restart: "no"
+    # Healthcheck is provided by the image
+    volumes:
+      - downloads:/downloads
+
   jackett:
     image: lscr.io/linuxserver/jackett:latest
     container_name: tewi-jackett-dev

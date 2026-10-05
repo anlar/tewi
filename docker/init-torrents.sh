@@ -8,6 +8,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TRANSMISSION_PORT=9070
 QBITTORRENT_PORT=9071
 DELUGE_PORT=9072
+RTORRENT_PORT=9073
 
 # Transmission
 
@@ -54,3 +55,30 @@ head -n $LIMIT "$SCRIPT_DIR/magnets.txt" | xargs -I }{ curl -X POST http://local
 
 curl -X POST http://localhost:$DELUGE_PORT/json -H "Content-Type: application/json" -d '{"method": "core.set_config", "params": [{"max_download_speed": 100, "max_upload_speed": 100}], "id": 4}' --cookie "_session_id=$deluge_session"
 
+# rTorrent
+
+# Call rTorrent XML-RPC method: rtorrent_call METHOD [STRING_PARAM...]
+rtorrent_call() {
+  method=$1
+  shift
+
+  params=""
+  for p in "$@"; do
+    # Escape XML special characters (magnet links contain '&')
+    p=$(printf '%s' "$p" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g')
+    params="$params<param><value><string>$p</string></value></param>"
+  done
+
+  curl -s -X POST http://localhost:$RTORRENT_PORT/RPC2 -H "Content-Type: text/xml" \
+    -d "<?xml version=\"1.0\"?><methodCall><methodName>$method</methodName><params>$params</params></methodCall>"
+  echo
+}
+
+# Empty first param is the target required by rTorrent 0.9.7+ commands
+head -n $LIMIT "$SCRIPT_DIR/magnets.txt" | while read -r magnet; do
+  rtorrent_call load.start "" "$magnet"
+done
+
+# Speed limits in KiB/s
+rtorrent_call throttle.global_down.max_rate.set_kb "" 100
+rtorrent_call throttle.global_up.max_rate.set_kb "" 100
