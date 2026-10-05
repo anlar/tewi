@@ -4,6 +4,7 @@ from ..util.log import log_time
 from .base import BaseClient, ClientCapability
 from .clients.deluge import DelugeClient
 from .clients.qbittorrent import QBittorrentClient
+from .clients.rtorrent import RTorrentClient
 from .clients.transmission import TransmissionClient
 from .models import ClientError
 
@@ -23,16 +24,18 @@ def create_client(
     """Create a torrent client instance based on the specified type.
 
     Args:
-        client_type: Type of client ('transmission', 'qbittorrent', 'deluge')
+        client_type: Type of client ('transmission', 'qbittorrent',
+            'deluge', 'rtorrent')
         host: The hostname or IP address of the daemon
         port: The port number as a string
         username: Optional authentication username
         password: Optional authentication password
-        path: Optional RPC path for Transmission or base JSON path for Deluge
+        path: Optional RPC path for Transmission, base JSON path for Deluge
+            or XML-RPC path for rTorrent over HTTP (SCGI is used if not set)
 
     Returns:
         BaseClient instance (TransmissionClient, QBittorrentClient,
-        or DelugeClient)
+        DelugeClient or RTorrentClient)
 
     Raises:
         ClientError: If client_type is invalid or connection fails
@@ -59,8 +62,17 @@ def create_client(
             username=username,
             password=password,
         )
+    elif client_type == "rtorrent":
+        return RTorrentClient(
+            host=host,
+            port=port,
+            path=path,
+            username=username,
+            password=password,
+        )
     else:
         raise ClientError(
             f"Invalid client type: '{client_type}'. "
-            f"Supported types: 'transmission', 'qbittorrent', 'deluge'"
+            f"Supported types: 'transmission', 'qbittorrent', 'deluge', "
+            f"'rtorrent'"
         )

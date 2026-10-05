@@ -12,6 +12,7 @@ handle multi-line list body as single line.
 
 ### Added
 
+- Add rTorrent support, connecting directly via SCGI or via XML-RPC over HTTP when `--path` is set [#109](https://github.com/anlar/tewi/pull/109)
 - Add sorting for web search results (`s` hotkey) [#180](https://github.com/anlar/tewi/pull/180)
 
 ### Changed

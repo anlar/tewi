@@ -406,7 +406,7 @@ def create_default_config(path: Path) -> None:
 # variable is not set, the ${VAR_NAME} text is left as-is.
 
 [client]
-# BitTorrent client type: transmission, qbittorrent, or deluge
+# BitTorrent client type: transmission, qbittorrent, deluge, or rtorrent
 type =
 
 # Daemon connection settings
@@ -417,8 +417,9 @@ port =
 username =
 password =
 
-# RPC path for Transmission or base JSON path for Deluge
-# (leave empty for defaults)
+# RPC path for Transmission, base JSON path for Deluge or XML-RPC path
+# for rTorrent over HTTP, e.g. /RPC2 (leave empty for defaults; rTorrent
+# connects directly via SCGI by default)
 path =
 
 [ui]
