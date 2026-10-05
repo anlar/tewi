@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import http.server
 import socket
 import threading
 import xmlrpc.client
@@ -24,7 +25,7 @@ from datetime import timedelta
 import pytest
 
 from src.tewi.torrent.base import ClientCapability
-from src.tewi.torrent.clients.rtorrent import RTorrentClient
+from src.tewi.torrent.clients.rtorrent import RPCFaultError, RTorrentClient
 from src.tewi.torrent.models import (
     ClientError,
     TorrentFilePriority,
@@ -155,6 +156,7 @@ class FakeRTorrent:
         self.torrents = {HASH: make_torrent()}
         self.calls = []
         self.loaded = []
+        self.fail_methods = set()
 
     def _get(self, hash: str) -> dict:
         try:
@@ -164,6 +166,9 @@ class FakeRTorrent:
 
     def dispatch(self, method: str, params: tuple):
         self.calls.append((method, params))
+
+        if method in self.fail_methods:
+            raise xmlrpc.client.Fault(-503, f"{method} failed")
 
         if method in self.GLOBALS:
             return self.GLOBALS[method]
@@ -215,6 +220,9 @@ class FakeRTorrent:
         return 0
 
     def _execute_throw(self, *args: str) -> int:
+        return 0
+
+    def _execute_throw_bg(self, *args: str) -> int:
         return 0
 
     def _f_priority_set(self, target: str, value: int) -> int:
@@ -317,6 +325,45 @@ class FakeSCGIServer:
         self.sock.close()
 
 
+class FakeHTTPServer:
+    """Keep-alive HTTP server forwarding XML-RPC calls to FakeRTorrent."""
+
+    def __init__(self, backend: FakeRTorrent) -> None:
+        class Handler(http.server.BaseHTTPRequestHandler):
+            protocol_version = "HTTP/1.1"  # keep connection alive
+            # Headers and body are written separately, avoid delayed ACK
+            disable_nagle_algorithm = True
+
+            def do_POST(self) -> None:
+                body = self.rfile.read(int(self.headers["Content-Length"]))
+                params, method = xmlrpc.client.loads(body)
+                try:
+                    result = xmlrpc.client.dumps(
+                        (backend.dispatch(method, params),),
+                        methodresponse=True,
+                    )
+                except xmlrpc.client.Fault as e:
+                    result = xmlrpc.client.dumps(e)
+
+                data = result.encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/xml")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+
+            def log_message(self, *args) -> None:
+                pass
+
+        self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+        self.port = self.server.server_address[1]
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    def close(self) -> None:
+        self.server.shutdown()
+        self.server.server_close()
+
+
 @pytest.fixture
 def backend():
     return FakeRTorrent()
@@ -362,8 +409,73 @@ class TestRTorrentClientLifecycle:
             RTorrentClient(host="127.0.0.1", port=str(port))
 
     def test_unknown_method(self, client):
-        with pytest.raises(ClientError, match="not defined"):
+        with pytest.raises(RPCFaultError, match="not defined"):
             client._call("d.unknown", HASH)
+
+    def test_empty_response(self):
+        """Closed connection without response is reported as ClientError."""
+        sock = socket.create_server(("127.0.0.1", 0))
+
+        def serve() -> None:
+            conn, _ = sock.accept()
+            conn.recv(65536)
+            conn.close()
+
+        threading.Thread(target=serve, daemon=True).start()
+
+        with pytest.raises(ClientError, match="without response"):
+            RTorrentClient(host="127.0.0.1", port=str(sock.getsockname()[1]))
+        sock.close()
+
+    def test_timeout(self, monkeypatch):
+        """Hanging daemon is reported as timeout ClientError."""
+        monkeypatch.setattr("src.tewi.torrent.clients.rtorrent.TIMEOUT", 0.2)
+        sock = socket.create_server(("127.0.0.1", 0))
+
+        with pytest.raises(ClientError, match="Timed out"):
+            RTorrentClient(host="127.0.0.1", port=str(sock.getsockname()[1]))
+        sock.close()
+
+
+class TestRTorrentClientHTTP:
+    """Test RTorrentClient over HTTP (web server proxy)."""
+
+    @pytest.fixture
+    def http_client(self, backend):
+        server = FakeHTTPServer(backend)
+        yield RTorrentClient(
+            host="127.0.0.1", port=str(server.port), path="/RPC2"
+        )
+        server.close()
+
+    def test_torrents(self, http_client):
+        assert [t.name for t in http_client.torrents()] == ["ubuntu"]
+
+    def test_concurrent_calls(self, http_client):
+        """Shared HTTP connection is safe to use from several threads."""
+        errors = []
+
+        def worker(fn) -> None:
+            for _ in range(50):
+                try:
+                    fn()
+                except Exception as e:
+                    errors.append(e)
+
+        threads = [
+            threading.Thread(target=worker, args=(fn,))
+            for fn in (
+                http_client.torrents,
+                lambda: http_client.session([]),
+                http_client.preferences,
+            )
+        ]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        assert errors == []
 
 
 class TestRTorrentClientSession:
@@ -518,7 +630,9 @@ class TestRTorrentClientOperations:
     def test_remove_with_data(self, client, backend):
         client.remove_torrent(HASH, delete_data=True)
         assert client.torrents() == []
-        assert called(backend, "execute.throw") == [
+        # Data is deleted in background to not block rTorrent
+        assert called(backend, "execute.throw") == []
+        assert called(backend, "execute.throw.bg") == [
             ("", "rm", "-rf", "--", "/data/download/ubuntu")
         ]
 
@@ -531,6 +645,41 @@ class TestRTorrentClientOperations:
         t = client.torrents()[0]
         assert t.download_dir == "/data/moved"
         assert t.status == "downloading"
+
+    def test_edit_location_command_failed(self, client, backend):
+        """Failed move restarts torrent in previous location."""
+        backend.fail_methods.add("execute.throw")
+
+        with pytest.raises(RPCFaultError, match="execute.throw failed"):
+            client.edit_torrent(HASH, "ubuntu", "/data/moved")
+
+        t = client.torrents()[0]
+        assert t.download_dir == "/data/download"
+        assert t.status == "downloading"
+
+    def test_edit_location_unknown_result(self, client, monkeypatch):
+        """Move with unknown result (e.g. timeout) leaves torrent stopped."""
+
+        def timeout(*args):
+            raise ClientError("Timed out waiting for rTorrent response")
+
+        monkeypatch.setattr(client, "_call_long", timeout)
+
+        with pytest.raises(ClientError, match="left stopped"):
+            client.edit_torrent(HASH, "ubuntu", "/data/moved")
+
+        t = client.torrents()[0]
+        assert t.download_dir == "/data/download"
+        assert t.status == "stopped"
+
+    def test_edit_location_set_directory_failed(self, client, backend):
+        """Moved data with old location leaves torrent stopped."""
+        backend.fail_methods.add("d.directory.set")
+
+        with pytest.raises(ClientError, match="left stopped"):
+            client.edit_torrent(HASH, "ubuntu", "/data/moved")
+
+        assert client.torrents()[0].status == "stopped"
 
     def test_edit_same_location(self, client, backend):
         client.edit_torrent(HASH, "ubuntu", "/data/download")

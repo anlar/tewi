@@ -1,13 +1,16 @@
 """rTorrent torrent client implementation."""
 
+import http.client
 import os
 import socket
+import threading
 import urllib.parse
 import xmlrpc.client
 from dataclasses import asdict
 from datetime import datetime, timedelta
 from http.client import HTTPConnection
 from typing import Any
+from xml.parsers.expat import ExpatError
 
 from ...util.log import log_time
 from ...util.misc import is_torrent_hash, is_torrent_link
@@ -29,6 +32,19 @@ from ..models import (
 from ..util import count_torrents_by_status, download_torrent_from_url
 
 TIMEOUT = 10  # seconds
+
+# Timeout for long blocking operations (e.g. moving data between disks)
+LONG_TIMEOUT = 3600  # seconds
+
+
+class RPCFaultError(ClientError):
+    """rTorrent returned an error for a method call.
+
+    Unlike other client errors it guarantees that request was processed
+    by rTorrent, so the outcome of the call is known.
+    """
+
+    pass
 
 
 class SCGITransport(xmlrpc.client.Transport):
@@ -57,6 +73,14 @@ class SCGITransport(xmlrpc.client.Transport):
         ) as sock:
             sock.sendall(payload)
             response = b"".join(iter(lambda: sock.recv(65536), b""))
+
+        # rTorrent closes connection without response when request
+        # can't be processed (e.g. it exceeds network.xmlrpc.size_limit)
+        if not response:
+            raise ConnectionError(
+                "rTorrent closed connection without response "
+                "(request may exceed network.xmlrpc.size_limit)"
+            )
 
         # Response starts with CGI-style headers, separated from body
         # by an empty line
@@ -271,18 +295,20 @@ class RTorrentClient(BaseClient):
                     auth += ":" + urllib.parse.quote(password, safe="")
                 auth += "@"
 
-            transport = (
-                HTTPSTransport() if scheme == "https" else HTTPTransport()
-            )
-            self.proxy = xmlrpc.client.ServerProxy(
-                f"{scheme}://{auth}{host}:{port}{path}",
-                transport=transport,
+            self._url = f"{scheme}://{auth}{host}:{port}{path}"
+            self._transport_class = (
+                HTTPSTransport if scheme == "https" else HTTPTransport
             )
         else:
-            self.proxy = xmlrpc.client.ServerProxy(
-                f"http://{host}:{port}/",
-                transport=SCGITransport(),
-            )
+            self._url = f"http://{host}:{port}/"
+            self._transport_class = SCGITransport
+
+        self.proxy = self._make_proxy(TIMEOUT)
+
+        # HTTP transport reuses single connection which can't be shared
+        # between threads (UI refresh runs in worker thread, while
+        # actions run in main thread)
+        self._lock = threading.Lock()
 
         # Check connection
         self.version = self._call("system.client_version")
@@ -545,7 +571,9 @@ class RTorrentClient(BaseClient):
             default_dir = self._call("directory.default")
             for path in paths:
                 if self._is_safe_to_delete(path, default_dir):
-                    self._call("execute.throw", "", "rm", "-rf", "--", path)
+                    # Run in background: rTorrent is blocked while
+                    # foreground command is executed
+                    self._call("execute.throw.bg", "", "rm", "-rf", "--", path)
 
     @log_time
     def verify_torrent(self, hashes: str | list[str]) -> None:
@@ -569,6 +597,9 @@ class RTorrentClient(BaseClient):
 
         Data is moved by rTorrent itself, torrent is stopped during move
         and restarted afterwards if it was running.
+
+        Note: rTorrent is blocked until data is moved, which can take
+        long time when moving between disks.
         """
         current_name, directory, multi_file, state = self._multicall(
             [
@@ -593,8 +624,11 @@ class RTorrentClient(BaseClient):
         source = self._data_path(directory, current_name, multi_file)
 
         self.stop_torrent(hash)
+
         try:
-            self._call(
+            # Use separate connection with long timeout, as moving
+            # between disks may take a lot of time
+            self._call_long(
                 "execute.throw",
                 "",
                 "sh",
@@ -604,12 +638,31 @@ class RTorrentClient(BaseClient):
                 source,
                 location,
             )
+        except RPCFaultError:
+            # Command failed, data is left in previous location
+            if state:
+                self.start_torrent(hash)
+            raise
+        except ClientError as e:
+            # Move result is unknown, starting torrent could make
+            # rTorrent re-download data that is still being moved
+            raise ClientError(
+                f"{e}. Torrent was left stopped, check its data location "
+                "before starting it"
+            )
+
+        try:
             # For multi-file torrents rTorrent appends torrent name
             # to the directory
             self._call("d.directory.set", hash, location)
-        finally:
-            if state:
-                self.start_torrent(hash)
+        except ClientError as e:
+            raise ClientError(
+                f"{e}. Data was moved to {location}, but torrent location "
+                "wasn't updated, torrent was left stopped"
+            )
+
+        if state:
+            self.start_torrent(hash)
 
     @log_time
     def get_categories(self) -> list[TorrentCategory]:
@@ -680,15 +733,43 @@ class RTorrentClient(BaseClient):
     # Internal Helpers
     # ========================================================================
 
+    def _make_proxy(self, timeout: float) -> xmlrpc.client.ServerProxy:
+        return xmlrpc.client.ServerProxy(
+            self._url, transport=self._transport_class(timeout)
+        )
+
     def _call(self, method: str, *params: Any) -> Any:
         """Call rTorrent RPC method and wrap errors into ClientError."""
+        with self._lock:
+            return self._invoke(self.proxy, method, params)
+
+    def _call_long(self, method: str, *params: Any) -> Any:
+        """Call long-running rTorrent RPC method.
+
+        Uses dedicated connection with long timeout, so shared connection
+        isn't locked while waiting for the result.
+        """
+        proxy = self._make_proxy(LONG_TIMEOUT)
         try:
-            return getattr(self.proxy, method)(*params)
+            return self._invoke(proxy, method, params)
+        finally:
+            proxy("close")()
+
+    @staticmethod
+    def _invoke(
+        proxy: xmlrpc.client.ServerProxy, method: str, params: tuple
+    ) -> Any:
+        try:
+            return getattr(proxy, method)(*params)
         except xmlrpc.client.Fault as e:
-            raise ClientError(f"RPC error: {e.faultString}")
+            raise RPCFaultError(f"RPC error: {e.faultString}")
         except xmlrpc.client.ProtocolError as e:
             raise ClientError(f"HTTP error: {e.errcode} {e.errmsg}")
-        except (OSError, xmlrpc.client.Error) as e:
+        except TimeoutError:
+            raise ClientError("Timed out waiting for rTorrent response")
+        except (ExpatError, xmlrpc.client.ResponseError) as e:
+            raise ClientError(f"Invalid response from rTorrent: {e}")
+        except (OSError, http.client.HTTPException, xmlrpc.client.Error) as e:
             raise ClientError(f"Failed to connect to rTorrent: {e}")
 
     def _multicall(self, calls: list[tuple[Any, ...]]) -> list[Any]:
@@ -711,7 +792,7 @@ class RTorrentClient(BaseClient):
         values = []
         for result in results:
             if isinstance(result, dict):
-                raise ClientError(f"RPC error: {result.get('faultString')}")
+                raise RPCFaultError(f"RPC error: {result.get('faultString')}")
             values.append(result[0])
         return values
 
