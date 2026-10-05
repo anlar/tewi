@@ -18,6 +18,7 @@
 
 import http.server
 import socket
+import subprocess
 import threading
 import xmlrpc.client
 from datetime import timedelta
@@ -25,7 +26,13 @@ from datetime import timedelta
 import pytest
 
 from src.tewi.torrent.base import ClientCapability
-from src.tewi.torrent.clients.rtorrent import RPCFaultError, RTorrentClient
+from src.tewi.torrent.clients.rtorrent import (
+    DELETE_SCRIPT,
+    MOVE_CONFLICT_SCRIPT,
+    MOVE_SCRIPT,
+    RPCFaultError,
+    RTorrentClient,
+)
 from src.tewi.torrent.models import (
     ClientError,
     TorrentFilePriority,
@@ -161,6 +168,7 @@ class FakeRTorrent:
         self.calls = []
         self.loaded = []
         self.fail_methods = set()
+        self.capture_output = ""
 
     def _get(self, hash: str) -> dict:
         try:
@@ -228,6 +236,9 @@ class FakeRTorrent:
 
     def _execute_throw_bg(self, *args: str) -> int:
         return 0
+
+    def _execute_capture(self, *args: str) -> str:
+        return self.capture_output
 
     def _f_priority_set(self, target: str, value: int) -> int:
         hash, _, idx = target.partition(":f")
@@ -709,6 +720,23 @@ class TestRTorrentClientOperations:
         client.edit_torrent(HASH, "ubuntu", "/data/download")
         assert called(backend, "execute.throw") == []
 
+    def test_edit_location_conflict(self, client, backend):
+        """Existing item with the same name in target is never overwritten."""
+        backend.capture_output = "conflict\n"
+
+        with pytest.raises(ClientError, match="already exists"):
+            client.edit_torrent(HASH, "ubuntu", "/data/moved")
+
+        # Torrent is untouched: not stopped and not moved
+        assert called(backend, "execute.throw") == []
+        assert called(backend, "d.stop") == []
+        assert client.torrents()[0].download_dir == "/data/download"
+
+    def test_edit_location_relative(self, client, backend):
+        with pytest.raises(ClientError, match="absolute path"):
+            client.edit_torrent(HASH, "ubuntu", "data/moved")
+        assert called(backend, "execute.throw") == []
+
     def test_edit_rename(self, client):
         with pytest.raises(ClientError, match="renaming"):
             client.edit_torrent(HASH, "new name", "/data/download")
@@ -776,9 +804,17 @@ class TestRTorrentDeletionPlan:
 
     SESSION = "/data/session/"
 
+    DEFAULT = "/data/dl/"
+
     def plan(self, directory, multi_file, files, is_meta=0):
         return RTorrentClient._deletion_plan(
-            HASH, is_meta, directory, multi_file, files, self.SESSION
+            HASH,
+            is_meta,
+            directory,
+            multi_file,
+            files,
+            self.SESSION,
+            self.DEFAULT,
         )
 
     def test_single_file(self):
@@ -798,6 +834,14 @@ class TestRTorrentDeletionPlan:
         assert self.plan("/data/dl/t", 1, files) == (
             ["/data/dl/t/x/y/a.bin", "/data/dl/t/b.bin", "/data/dl/t/x/c.bin"],
             ["/data/dl/t/x/y", "/data/dl/t/x", "/data/dl/t"],
+        )
+
+    def test_multi_file_in_download_dir(self):
+        """Download directory is kept even if it's torrent directory."""
+        files = [["x/a.bin", ""], ["b.bin", ""]]
+        assert self.plan("/data/dl", 1, files) == (
+            ["/data/dl/x/a.bin", "/data/dl/b.bin"],
+            ["/data/dl/x"],
         )
 
     def test_meta(self):
@@ -824,3 +868,93 @@ class TestRTorrentDeletionPlan:
     )
     def test_unsafe(self, directory, multi_file, files):
         assert self.plan(directory, multi_file, files) is None
+
+
+class TestRTorrentShellScripts:
+    """Test shell scripts executed on rTorrent host with real shell."""
+
+    @staticmethod
+    def run(script: str, *args) -> subprocess.CompletedProcess:
+        return subprocess.run(
+            ["sh", "-c", script, "sh", *[str(a) for a in args]],
+            capture_output=True,
+            text=True,
+        )
+
+    def test_move_file(self, tmp_path):
+        (tmp_path / "a.iso").write_text("torrent")
+        target = tmp_path / "new" / "dir"
+
+        assert self.run(MOVE_SCRIPT, tmp_path / "a.iso", target).returncode == 0
+        assert (target / "a.iso").read_text() == "torrent"
+        assert not (tmp_path / "a.iso").exists()
+
+    def test_move_does_not_overwrite_file(self, tmp_path):
+        (tmp_path / "a.iso").write_text("torrent")
+        (tmp_path / "dst").mkdir()
+        (tmp_path / "dst" / "a.iso").write_text("mine")
+
+        result = self.run(MOVE_SCRIPT, tmp_path / "a.iso", tmp_path / "dst")
+        assert result.returncode != 0
+        assert (tmp_path / "dst" / "a.iso").read_text() == "mine"
+        assert (tmp_path / "a.iso").read_text() == "torrent"
+
+    def test_move_does_not_replace_empty_dir(self, tmp_path):
+        (tmp_path / "T").mkdir()
+        (tmp_path / "T" / "x").write_text("torrent")
+        (tmp_path / "dst" / "T").mkdir(parents=True)
+
+        result = self.run(MOVE_SCRIPT, tmp_path / "T", tmp_path / "dst")
+        assert result.returncode != 0
+        assert (tmp_path / "T" / "x").exists()
+
+    def test_move_missing_source(self, tmp_path):
+        """Missing data is skipped, so torrent can be re-pointed."""
+        result = self.run(MOVE_SCRIPT, tmp_path / "gone", tmp_path / "dst")
+        assert result.returncode == 0
+        assert (tmp_path / "dst").is_dir()
+
+    @pytest.mark.parametrize(
+        "source, target, expected",
+        [
+            (True, True, "conflict"),
+            (True, False, ""),
+            (False, True, ""),
+            (False, False, ""),
+        ],
+    )
+    def test_move_conflict(self, tmp_path, source, target, expected):
+        if source:
+            (tmp_path / "a.iso").write_text("torrent")
+        (tmp_path / "dst").mkdir()
+        if target:
+            (tmp_path / "dst" / "a.iso").write_text("mine")
+
+        result = self.run(
+            MOVE_CONFLICT_SCRIPT, tmp_path / "a.iso", tmp_path / "dst" / "a.iso"
+        )
+        assert result.stdout.strip() == expected
+
+    def test_delete(self, tmp_path):
+        root = tmp_path / "T"
+        (root / "x" / "y").mkdir(parents=True)
+        (root / "x" / "y" / "a.bin").write_text("a")
+        (root / "b.bin").write_text("b")
+        (root / "x" / "mine.txt").write_text("mine")
+
+        result = self.run(
+            DELETE_SCRIPT,
+            root / "x" / "y" / "a.bin",
+            root / "b.bin",
+            "--",
+            root / "x" / "y",
+            root / "x",
+            root,
+        )
+        assert result.returncode == 0
+
+        # Torrent files and empty directories are removed, others are kept
+        remaining = sorted(
+            str(p.relative_to(tmp_path)) for p in tmp_path.rglob("*")
+        )
+        assert remaining == ["T", "T/x", "T/x/mine.txt"]

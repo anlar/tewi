@@ -54,6 +54,25 @@ DELETE_SCRIPT = (
     "exit 0"
 )
 
+# Shell script moving torrent data ($1) into directory ($2) on rTorrent
+# host. Fails instead of overwriting existing item with the same name.
+# Missing source is skipped (data may be already moved or not created yet).
+MOVE_SCRIPT = (
+    'mkdir -p -- "$2" || exit 1; '
+    'if [ -e "$1" ] || [ -L "$1" ]; then '
+    't="$2/${1##*/}"; '
+    'if [ -e "$t" ] || [ -L "$t" ]; then exit 1; fi; '
+    'mv -- "$1" "$2"/; '
+    "fi"
+)
+
+# Shell script printing "conflict" if data ($1) exists and moving it
+# would overwrite existing item ($2)
+MOVE_CONFLICT_SCRIPT = (
+    'if { [ -e "$1" ] || [ -L "$1" ]; } && { [ -e "$2" ] || [ -L "$2" ]; }; '
+    "then echo conflict; fi"
+)
+
 
 class RPCFaultError(ClientError):
     """rTorrent returned an error for a method call.
@@ -648,15 +667,35 @@ class RTorrentClient(BaseClient):
         if name != current_name:
             raise ClientError("rTorrent doesn't support renaming torrents")
 
-        # Path is resolved on rTorrent host, so ~ isn't expanded here
-        location = os.path.normpath(location)
+        # Path is resolved on rTorrent host, so POSIX rules are used
+        # and ~ isn't expanded
+        location = posixpath.normpath(location)
+        if not posixpath.isabs(location):
+            raise ClientError(f"Location must be an absolute path: {location}")
+
         current_location = (
-            os.path.dirname(directory) if multi_file else directory
+            posixpath.dirname(directory) if multi_file else directory
         )
-        if location == os.path.normpath(current_location):
+        if location == posixpath.normpath(current_location):
             return
 
         source = self._data_path(directory, current_name, multi_file)
+        target = posixpath.join(location, posixpath.basename(source))
+
+        # Check before stopping torrent to report clear error,
+        # move script also refuses to overwrite as a safety net
+        conflict = self._call(
+            "execute.capture",
+            "",
+            "sh",
+            "-c",
+            MOVE_CONFLICT_SCRIPT,
+            "sh",
+            source,
+            target,
+        )
+        if conflict.strip():
+            raise ClientError(f"Can't move data, {target} already exists")
 
         self.stop_torrent(hash)
 
@@ -668,16 +707,19 @@ class RTorrentClient(BaseClient):
                 "",
                 "sh",
                 "-c",
-                'mkdir -p -- "$2" && if [ -e "$1" ]; then mv -- "$1" "$2"/; fi',
+                MOVE_SCRIPT,
                 "sh",
                 source,
                 location,
             )
-        except RPCFaultError:
+        except RPCFaultError as e:
             # Command failed, data is left in previous location
             if state:
                 self.start_torrent(hash)
-            raise
+            raise RPCFaultError(
+                f"{e}. Failed to move data to {location} (target may "
+                "already exist or be not writable)"
+            )
         except ClientError as e:
             # Move result is unknown, starting torrent could make
             # rTorrent re-download data that is still being moved
@@ -846,7 +888,10 @@ class RTorrentClient(BaseClient):
         Returns:
             List of (files, dirs) tuples for torrents safe to delete
         """
-        calls: list[tuple[Any, ...]] = [("session.path", "")]
+        calls: list[tuple[Any, ...]] = [
+            ("session.path", ""),
+            ("directory.default", ""),
+        ]
         for h in hashes:
             calls += [
                 ("d.is_meta", h),
@@ -855,13 +900,19 @@ class RTorrentClient(BaseClient):
                 ("f.multicall", h, "", "f.path=", "f.frozen_path="),
             ]
 
-        session_dir, *values = self._multicall(calls)
+        session_dir, default_dir, *values = self._multicall(calls)
 
         plans = []
         for i, h in enumerate(hashes):
             is_meta, directory, multi_file, files = values[i * 4 : i * 4 + 4]
             plan = self._deletion_plan(
-                h, is_meta, directory, multi_file, files, session_dir
+                h,
+                is_meta,
+                directory,
+                multi_file,
+                files,
+                session_dir,
+                default_dir,
             )
             if plan:
                 plans.append(plan)
@@ -875,6 +926,7 @@ class RTorrentClient(BaseClient):
         multi_file: int,
         files: list[list[str]],
         session_dir: str,
+        default_dir: str,
     ) -> tuple[list[str], list[str]] | None:
         """Build list of files and directories to delete for torrent.
 
@@ -889,6 +941,8 @@ class RTorrentClient(BaseClient):
             files: Pairs of f.path and f.frozen_path (absolute path,
                 empty for closed torrents)
             session_dir: rTorrent session directory
+            default_dir: rTorrent default download directory (never
+                removed, even if it's left empty)
 
         Returns:
             Tuple (files, dirs) with directories ordered from the deepest,
@@ -935,6 +989,9 @@ class RTorrentClient(BaseClient):
                     dirs.add(parent)
                     parent = posixpath.dirname(parent)
             dirs.add(root)
+
+        if default_dir:
+            dirs.discard(posixpath.normpath(default_dir))
 
         return paths, sorted(dirs, key=lambda d: d.count("/"), reverse=True)
 
@@ -1000,7 +1057,7 @@ class RTorrentClient(BaseClient):
         """
         if multi_file:
             return directory
-        return os.path.join(directory, name)
+        return posixpath.join(directory, name)
 
     @staticmethod
     def _normalize_status(t: dict[str, Any]) -> str:
@@ -1039,7 +1096,7 @@ class RTorrentClient(BaseClient):
         # for multi-file torrents
         download_dir = t["d.directory="]
         if t["d.is_multi_file="]:
-            download_dir = os.path.dirname(download_dir)
+            download_dir = posixpath.dirname(download_dir)
 
         labels = t[f"d.custom={self.LABELS_KEY}"]
 
