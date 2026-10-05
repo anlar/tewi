@@ -67,6 +67,7 @@ def make_torrent() -> dict:
         "d.down.total": 250,
         "d.message": "",
         "d.free_diskspace": 5000,
+        "d.is_meta": 0,
         "custom": {
             "tewi_labels": "one,two",
             "comment": "VRS24mrker" + "hello%20world",
@@ -78,6 +79,7 @@ def make_torrent() -> dict:
                 "f.completed_chunks": 1,
                 "f.size_chunks": 3,
                 "f.priority": 1,
+                "f.frozen_path": "",  # closed torrent
             },
             {
                 "f.path": "sub/b.bin",
@@ -85,6 +87,7 @@ def make_torrent() -> dict:
                 "f.completed_chunks": 2,
                 "f.size_chunks": 2,
                 "f.priority": 0,
+                "f.frozen_path": "",
             },
         ],
         "peers": [
@@ -150,6 +153,7 @@ class FakeRTorrent:
         "throttle.global_down.total": 400,
         "network.port_range": "50000-50000",
         "dht.port": 6881,
+        "session.path": "/data/session/",
     }
 
     def __init__(self) -> None:
@@ -630,11 +634,31 @@ class TestRTorrentClientOperations:
     def test_remove_with_data(self, client, backend):
         client.remove_torrent(HASH, delete_data=True)
         assert client.torrents() == []
+
         # Data is deleted in background to not block rTorrent
         assert called(backend, "execute.throw") == []
-        assert called(backend, "execute.throw.bg") == [
-            ("", "rm", "-rf", "--", "/data/download/ubuntu")
+        ((target, shell, flag, script, name, *args),) = called(
+            backend, "execute.throw.bg"
+        )
+        assert (target, shell, flag, name) == ("", "sh", "-c", "sh")
+        assert "rm -rf" not in script
+
+        # Only torrent's files, then its directories (deepest first)
+        assert args == [
+            "/data/download/ubuntu/a.bin",
+            "/data/download/ubuntu/sub/b.bin",
+            "--",
+            "/data/download/ubuntu/sub",
+            "/data/download/ubuntu",
         ]
+
+    def test_remove_with_data_unsafe(self, client, backend):
+        """Torrent is removed, but unsafe data is kept."""
+        backend.torrents[HASH]["files"][1]["f.path"] = "../../etc/passwd"
+
+        client.remove_torrent(HASH, delete_data=True)
+        assert client.torrents() == []
+        assert called(backend, "execute.throw.bg") == []
 
     def test_edit_location(self, client, backend):
         client.edit_torrent(HASH, "ubuntu", "/data/moved/")
@@ -746,19 +770,57 @@ class TestRTorrentClientHelpers:
         } | overrides
         assert RTorrentClient._normalize_status(row) == expected
 
+
+class TestRTorrentDeletionPlan:
+    """Test selection of files and directories to delete."""
+
+    SESSION = "/data/session/"
+
+    def plan(self, directory, multi_file, files, is_meta=0):
+        return RTorrentClient._deletion_plan(
+            HASH, is_meta, directory, multi_file, files, self.SESSION
+        )
+
+    def test_single_file(self):
+        """Download directory of single-file torrent is kept."""
+        assert self.plan("/data/dl", 0, [["a.iso", ""]]) == (
+            ["/data/dl/a.iso"],
+            [],
+        )
+
+    def test_frozen_path(self):
+        """Absolute path of open torrent is preferred."""
+        files = [["a.iso", "/data/dl/a.iso"]]
+        assert self.plan("/data/dl/", 0, files) == (["/data/dl/a.iso"], [])
+
+    def test_multi_file(self):
+        files = [["x/y/a.bin", ""], ["b.bin", ""], ["x/c.bin", ""]]
+        assert self.plan("/data/dl/t", 1, files) == (
+            ["/data/dl/t/x/y/a.bin", "/data/dl/t/b.bin", "/data/dl/t/x/c.bin"],
+            ["/data/dl/t/x/y", "/data/dl/t/x", "/data/dl/t"],
+        )
+
+    def test_meta(self):
+        """Magnet placeholder waiting for metadata is kept."""
+        assert self.plan("/data/dl", 0, [["H.meta", ""]], is_meta=1) is None
+
     @pytest.mark.parametrize(
-        "path, expected",
+        "directory, multi_file, files",
         [
-            ("/data/download/file.iso", True),
-            ("/data/download/dir/", True),
-            ("/data/download", False),
-            ("/data/download/", False),
-            ("/data/download/..", False),
-            ("/data", False),
-            ("/", False),
-            ("relative/path", False),
+            # Path traversal
+            ("/data/dl/t", 1, [["../other.bin", ""]]),
+            ("/data/dl", 0, [["../a.iso", ""]]),
+            # Single-file outside of download directory
+            ("/data/dl", 0, [["a.iso", "/data/other/a.iso"]]),
+            # Frozen path outside of torrent directory
+            ("/data/dl/t", 1, [["a.bin", "/data/dl/a.bin"]]),
+            # Root and relative directories
+            ("/", 1, [["a.bin", ""]]),
+            ("relative", 1, [["a.bin", ""]]),
+            # Session directory
+            ("/data/session", 0, [["H.torrent", ""]]),
+            ("/data", 1, [["session/H.torrent", ""]]),
         ],
     )
-    def test_is_safe_to_delete(self, path, expected):
-        result = RTorrentClient._is_safe_to_delete(path, "/data/download/")
-        assert result is expected
+    def test_unsafe(self, directory, multi_file, files):
+        assert self.plan(directory, multi_file, files) is None

@@ -2,6 +2,7 @@
 
 import http.client
 import os
+import posixpath
 import re
 import socket
 import threading
@@ -13,7 +14,7 @@ from http.client import HTTPConnection
 from typing import Any
 from xml.parsers.expat import ExpatError
 
-from ...util.log import log_time
+from ...util.log import get_logger, log_time
 from ...util.misc import is_torrent_hash, is_torrent_link
 from ..base import BaseClient, ClientCapability
 from ..models import (
@@ -32,6 +33,8 @@ from ..models import (
 )
 from ..util import count_torrents_by_status, download_torrent_from_url
 
+logger = get_logger()
+
 TIMEOUT = 10  # seconds
 
 # Timeout for long blocking operations (e.g. moving data between disks)
@@ -40,6 +43,16 @@ LONG_TIMEOUT = 3600  # seconds
 # Minimal supported version: 0.9.7 introduced command API used by client
 # (d.multicall2, load.start, explicit target as first parameter)
 MIN_VERSION = (0, 9, 7)
+
+# Shell script deleting torrent data on rTorrent host. Arguments are file
+# paths, then "--" separator, then directories to remove if they are empty
+# (ordered from the deepest). Directories with other content are kept.
+DELETE_SCRIPT = (
+    'while [ $# -gt 0 ] && [ "$1" != "--" ]; do rm -f -- "$1"; shift; done; '
+    "shift; "
+    'for d; do rmdir -- "$d" 2>/dev/null; done; '
+    "exit 0"
+)
 
 
 class RPCFaultError(ClientError):
@@ -566,20 +579,36 @@ class RTorrentClient(BaseClient):
         hashes: str | list[str],
         delete_data: bool = False,
     ) -> None:
+        """Remove one or more torrents.
+
+        rTorrent can't delete data itself (d.erase only removes torrent
+        from session), so data is deleted by shell command executed on
+        rTorrent host. Only torrent's own files are deleted, followed by
+        directories left empty, so unrelated files are never touched.
+        Torrents with data that doesn't look safe to delete are removed
+        without deleting data (reason is logged).
+        """
         hashes = self._to_list(hashes)
 
-        # Data paths should be resolved before torrent is erased
-        paths = self._data_paths(hashes) if delete_data else []
+        # File list should be resolved before torrent is erased
+        plans = self._deletion_plans(hashes) if delete_data else []
 
         self._multicall([("d.erase", h) for h in hashes])
 
-        if paths:
-            default_dir = self._call("directory.default")
-            for path in paths:
-                if self._is_safe_to_delete(path, default_dir):
-                    # Run in background: rTorrent is blocked while
-                    # foreground command is executed
-                    self._call("execute.throw.bg", "", "rm", "-rf", "--", path)
+        for files, dirs in plans:
+            # Run in background: rTorrent is blocked while
+            # foreground command is executed
+            self._call(
+                "execute.throw.bg",
+                "",
+                "sh",
+                "-c",
+                DELETE_SCRIPT,
+                "sh",
+                *files,
+                "--",
+                *dirs,
+            )
 
     @log_time
     def verify_torrent(self, hashes: str | list[str]) -> None:
@@ -809,22 +838,131 @@ class RTorrentClient(BaseClient):
     def _all_hashes(self) -> list[str]:
         return self._call("download_list", "")
 
-    def _data_paths(self, hashes: list[str]) -> list[str]:
-        """Get paths to downloaded data for torrents."""
-        calls = [
-            call
-            for h in hashes
-            for call in (
+    def _deletion_plans(
+        self, hashes: list[str]
+    ) -> list[tuple[list[str], list[str]]]:
+        """Get files and directories to delete for torrents.
+
+        Returns:
+            List of (files, dirs) tuples for torrents safe to delete
+        """
+        calls: list[tuple[Any, ...]] = [("session.path", "")]
+        for h in hashes:
+            calls += [
+                ("d.is_meta", h),
                 ("d.directory", h),
-                ("d.name", h),
                 ("d.is_multi_file", h),
+                ("f.multicall", h, "", "f.path=", "f.frozen_path="),
+            ]
+
+        session_dir, *values = self._multicall(calls)
+
+        plans = []
+        for i, h in enumerate(hashes):
+            is_meta, directory, multi_file, files = values[i * 4 : i * 4 + 4]
+            plan = self._deletion_plan(
+                h, is_meta, directory, multi_file, files, session_dir
             )
-        ]
-        values = self._multicall(calls)
-        return [
-            self._data_path(*values[i : i + 3])
-            for i in range(0, len(values), 3)
-        ]
+            if plan:
+                plans.append(plan)
+        return plans
+
+    @staticmethod
+    def _deletion_plan(
+        hash: str,
+        is_meta: int,
+        directory: str,
+        multi_file: int,
+        files: list[list[str]],
+        session_dir: str,
+    ) -> tuple[list[str], list[str]] | None:
+        """Build list of files and directories to delete for torrent.
+
+        Paths are on rTorrent host, so POSIX path rules are used.
+
+        Args:
+            hash: Torrent hash (for logging)
+            is_meta: Torrent is magnet placeholder waiting for metadata
+            directory: d.directory (content directory for multi-file
+                torrents, download directory for single-file ones)
+            multi_file: Torrent has multiple files
+            files: Pairs of f.path and f.frozen_path (absolute path,
+                empty for closed torrents)
+            session_dir: rTorrent session directory
+
+        Returns:
+            Tuple (files, dirs) with directories ordered from the deepest,
+            or None if data shouldn't be deleted
+        """
+
+        def skip(reason: str) -> None:
+            logger.warning(f"rTorrent: keep data of torrent {hash}: {reason}")
+
+        if is_meta:
+            # Placeholder file belongs to rTorrent, there is no data yet
+            skip("torrent is waiting for metadata")
+            return None
+
+        root = posixpath.normpath(directory)
+        if not posixpath.isabs(root) or root == "/":
+            skip(f"unexpected data directory: {directory!r}")
+            return None
+
+        session = posixpath.normpath(session_dir) if session_dir else None
+
+        paths = []
+        for path, frozen_path in files:
+            full_path = posixpath.normpath(
+                frozen_path or posixpath.join(directory, path)
+            )
+
+            reason = RTorrentClient._unsafe_file_reason(
+                full_path, root, multi_file, session
+            )
+            if reason:
+                skip(f"{reason}: {full_path!r}")
+                return None
+
+            paths.append(full_path)
+
+        # Single-file torrents are stored directly in download directory,
+        # which must be kept
+        dirs = set()
+        if multi_file:
+            for full_path in paths:
+                parent = posixpath.dirname(full_path)
+                while parent != root:
+                    dirs.add(parent)
+                    parent = posixpath.dirname(parent)
+            dirs.add(root)
+
+        return paths, sorted(dirs, key=lambda d: d.count("/"), reverse=True)
+
+    @staticmethod
+    def _unsafe_file_reason(
+        path: str, root: str, multi_file: int, session: str | None
+    ) -> str | None:
+        """Check that torrent file path is safe to delete.
+
+        Returns:
+            Reason why file is unsafe to delete, or None if it's safe
+        """
+        if multi_file:
+            inside = path.startswith(root + "/")
+        else:
+            inside = posixpath.dirname(path) == root
+
+        if not inside:
+            return "file is outside of data directory"
+
+        # Protect rTorrent session (file is inside it or contains it)
+        if session and posixpath.commonpath([path, session]) in (
+            session,
+            path,
+        ):
+            return "file is in session directory"
+
+        return None
 
     @staticmethod
     def _check_version(version: str) -> None:
@@ -863,19 +1001,6 @@ class RTorrentClient(BaseClient):
         if multi_file:
             return directory
         return os.path.join(directory, name)
-
-    @staticmethod
-    def _is_safe_to_delete(path: str, default_dir: str) -> bool:
-        """Check that path looks like torrent data and not a top directory."""
-        if os.path.basename(path.rstrip(os.sep)) in ("", ".", ".."):
-            return False
-
-        path = os.path.normpath(path)
-        return (
-            os.path.isabs(path)
-            and path.count(os.sep) > 1
-            and path != os.path.normpath(default_dir)
-        )
 
     @staticmethod
     def _normalize_status(t: dict[str, Any]) -> str:
