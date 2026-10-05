@@ -856,7 +856,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="tewi",
         description="Text-based interface for BitTorrent clients "
-        "(Transmission, qBittorrent, and Deluge)",
+        "(Transmission, qBittorrent, Deluge, and rTorrent)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
 
@@ -889,7 +889,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         "--client-type",
         type=str,
         default="transmission",
-        choices=["transmission", "qbittorrent", "deluge"],
+        choices=["transmission", "qbittorrent", "deluge", "rtorrent"],
         action=TrackSetAction,
         help="Type of BitTorrent client to connect to",
     )
@@ -911,8 +911,10 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         "--path",
         type=str,
         action=TrackSetAction,
-        help="RPC path for Transmission (default: /transmission/rpc) "
-        "or base JSON path for Deluge (default: /json)",
+        help="RPC path for Transmission (default: /transmission/rpc), "
+        "base JSON path for Deluge (default: /json) "
+        "or XML-RPC path for rTorrent over HTTP, e.g. /RPC2 "
+        "(default: connect directly via SCGI)",
     )
     p.add_argument(
         "--username",

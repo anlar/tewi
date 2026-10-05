@@ -5,7 +5,7 @@
 
   <h1>Tewi</h1>
 
-  <p>Text-based interface for BitTorrent clients (Transmission, qBittorrent, Deluge)</p>
+  <p>Text-based interface for BitTorrent clients (Transmission, qBittorrent, Deluge, rTorrent)</p>
 </div>
 
 ## About
@@ -28,11 +28,11 @@
 </p>
 
 Tewi is a TUI (text user interface) for BitTorrent clients, supporting
-Transmission, qBittorrent and Deluge daemons.
+Transmission, qBittorrent, Deluge and rTorrent daemons.
 
 Features:
 
-- Connect to Transmission/qBittorrent/Deluge daemon by credentials
+- Connect to Transmission/qBittorrent/Deluge/rTorrent daemon by credentials
 - Browse torrents list with sorting, filtering by state or name and
   in-list search
 - Different view modes: card, compact, oneline
@@ -159,6 +159,19 @@ Or to Deluge (via Web UI):
 
 ```
 $ tewi --client-type deluge --port 8112 --password XXXX
+```
+
+Or to rTorrent (0.9.7 or newer), directly via SCGI port
+(`network.scgi.open_port` in `.rtorrent.rc`):
+
+```
+$ tewi --client-type rtorrent --port 5000
+```
+
+Or to rTorrent via web server exposing XML-RPC (e.g. nginx or ruTorrent):
+
+```
+$ tewi --client-type rtorrent --host XXXX --port 443 --path /RPC2 --username XXXX --password XXXX
 ```
 
 Connection and other settings could be stored in configuration file. To

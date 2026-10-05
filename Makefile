@@ -64,7 +64,11 @@ run-qbittorrent:
 run-deluge:
 	PYTHONPATH=src textual run --dev tewi.app:create_app -- --client-type deluge --port 9072 --password deluge
 
+run-rtorrent:
+	PYTHONPATH=src textual run --dev tewi.app:create_app -- --client-type rtorrent --port 9073 --path /RPC2
+
 auto-test: docker-up docker-init check test-all
 	@timeout 5 $(MAKE) run-transmission; status=$$?; [ $$status -eq 124 ] || exit $$status
 	@timeout 5 $(MAKE) run-qbittorrent; status=$$?; [ $$status -eq 124 ] || exit $$status
 	@timeout 5 $(MAKE) run-deluge; status=$$?; [ $$status -eq 124 ] || exit $$status
+	@timeout 5 $(MAKE) run-rtorrent; status=$$?; [ $$status -eq 124 ] || exit $$status
