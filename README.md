@@ -161,8 +161,8 @@ Or to Deluge (via Web UI):
 $ tewi --client-type deluge --port 8112 --password XXXX
 ```
 
-Or to rTorrent, directly via SCGI port (`network.scgi.open_port` in
-`.rtorrent.rc`):
+Or to rTorrent (0.9.7 or newer), directly via SCGI port
+(`network.scgi.open_port` in `.rtorrent.rc`):
 
 ```
 $ tewi --client-type rtorrent --port 5000

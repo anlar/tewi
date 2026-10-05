@@ -2,6 +2,7 @@
 
 import http.client
 import os
+import re
 import socket
 import threading
 import urllib.parse
@@ -35,6 +36,10 @@ TIMEOUT = 10  # seconds
 
 # Timeout for long blocking operations (e.g. moving data between disks)
 LONG_TIMEOUT = 3600  # seconds
+
+# Minimal supported version: 0.9.7 introduced command API used by client
+# (d.multicall2, load.start, explicit target as first parameter)
+MIN_VERSION = (0, 9, 7)
 
 
 class RPCFaultError(ClientError):
@@ -312,6 +317,7 @@ class RTorrentClient(BaseClient):
 
         # Check connection
         self.version = self._call("system.client_version")
+        self._check_version(self.version)
 
     @log_time
     def capable(self, capability: ClientCapability) -> bool:
@@ -819,6 +825,24 @@ class RTorrentClient(BaseClient):
             self._data_path(*values[i : i + 3])
             for i in range(0, len(values), 3)
         ]
+
+    @staticmethod
+    def _check_version(version: str) -> None:
+        """Raise ClientError if rTorrent version is not supported.
+
+        Unknown version formats are allowed, as custom builds may report
+        non-standard versions.
+        """
+        match = re.match(r"(\d+)\.(\d+)\.(\d+)", version)
+        if match is None:
+            return
+
+        if tuple(int(x) for x in match.groups()) < MIN_VERSION:
+            minimal = ".".join(str(x) for x in MIN_VERSION)
+            raise ClientError(
+                f"rTorrent {version} is not supported, "
+                f"minimal supported version is {minimal}"
+            )
 
     @staticmethod
     def _to_list(hashes: str | list[str]) -> list[str]:
