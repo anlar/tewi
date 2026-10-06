@@ -21,6 +21,7 @@ handle multi-line list body as single line.
 - Declare `requests` as an explicit dependency (used by Deluge client, previously installed only transitively via `qbittorrent-api`)
 - Default torrent list view mode changed from `card` to `compact`
 - `PgUp`/`PgDown` in torrent list now scroll by page instead of jumping to first/last item
+- Ask for confirmation before starting or stopping all torrents
 
 ## [2.6.0] - 2026-09-24 - Hop Collector
 

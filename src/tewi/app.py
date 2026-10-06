@@ -796,16 +796,42 @@ class MainApp(App):
     def handle_start_all_torrents_command(
         self, event: StartAllTorrentsCommand
     ) -> None:
-        self.client.start_all_torrents()
-        self.post_message(Notification("All torrents started"))
+        def check_quit(confirmed: bool | None) -> None:
+            if confirmed:
+                self.client.start_all_torrents()
+                self.post_message(Notification("All torrents started"))
+
+        message = "Start all torrents?"
+        description = (
+            "All torrents will be started. Are you sure you want to start them?"
+        )
+
+        self.post_message(
+            Confirm(
+                message=message, description=description, check_quit=check_quit
+            )
+        )
 
     @log_time
     @on(StopAllTorrentsCommand)
     def handle_stop_all_torrents_command(
         self, event: StopAllTorrentsCommand
     ) -> None:
-        self.client.stop_all_torrents()
-        self.post_message(Notification("All torrents stopped"))
+        def check_quit(confirmed: bool | None) -> None:
+            if confirmed:
+                self.client.stop_all_torrents()
+                self.post_message(Notification("All torrents stopped"))
+
+        message = "Stop all torrents?"
+        description = (
+            "All torrents will be stopped. Are you sure you want to stop them?"
+        )
+
+        self.post_message(
+            Confirm(
+                message=message, description=description, check_quit=check_quit
+            )
+        )
 
     @log_time
     @on(WebSearchQuerySubmitted)
