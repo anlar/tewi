@@ -84,6 +84,11 @@ class TorrentListViewPanel(ListView):
         Binding("N", "search_previous", "[Search] Previous result"),
     ]
 
+    # Redeclared from ListView to disable repaint: by default changing index
+    # repaints the whole list, while only highlighted items need it and they
+    # are repainted on their own by "-highlight" class change.
+    index = reactive[Optional[int]](None, init=False, repaint=False)
+
     r_torrents: list[Torrent] | None = reactive(None)
 
     # Search state

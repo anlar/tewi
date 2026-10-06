@@ -24,6 +24,7 @@ handle multi-line list body as single line.
 - Ask for confirmation before starting or stopping all torrents
 - Torrent list shows and sorts by size of selected files
 - Torrent details show selected size and files count next to totals when some files are skipped
+- Faster cursor movement in torrent list: only highlighted items are repainted instead of the whole list
 
 ## [2.6.0] - 2026-09-24 - Hop Collector
 
