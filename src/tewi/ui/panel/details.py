@@ -896,7 +896,7 @@ class TorrentInfoPanel(ScrollableContainer):
 
                 if subtree.get("__is_file__", False):
                     f = subtree["file"]
-                    completion = (f.completed / f.size) * 100
+                    completion = (f.completed / f.size) * 100 if f.size else 100
                     is_selected = f.id in selected_ids
                     items_list.append(
                         {
