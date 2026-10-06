@@ -14,11 +14,13 @@ handle multi-line list body as single line.
 
 - Add rTorrent support (0.9.7 or newer), connecting directly via SCGI or via XML-RPC over HTTP when `--path` is set [#109](https://github.com/anlar/tewi/pull/109)
 - Add sorting for web search results (`s` hotkey) [#180](https://github.com/anlar/tewi/pull/180)
+- Add `Ctrl+F`/`Ctrl+B` (page down/up) and `Ctrl+D`/`Ctrl+U` (half page down/up) hotkeys to torrent list
 
 ### Changed
 
 - Declare `requests` as an explicit dependency (used by Deluge client, previously installed only transitively via `qbittorrent-api`)
 - Default torrent list view mode changed from `card` to `compact`
+- `PgUp`/`PgDown` in torrent list now scroll by page instead of jumping to first/last item
 
 ## [2.6.0] - 2026-09-24 - Hop Collector
 

@@ -55,10 +55,12 @@ class TorrentListViewPanel(ListView):
     BINDINGS: ClassVar[list[BindingType]] = [
         Binding("k", "cursor_up", "[Navigation] Move up"),
         Binding("j", "cursor_down", "[Navigation] Move down"),
-        Binding("g,pageup", "move_top", "[Navigation] Go to first item"),
-        Binding("home", "move_top", "[Navigation] Go to first item"),
-        Binding("G,pagedown", "move_bottom", "[Navigation] Go to last item"),
-        Binding("end", "move_bottom", "[Navigation] Go to last item"),
+        Binding("g,home", "move_top", "[Navigation] Go to first item"),
+        Binding("G,end", "move_bottom", "[Navigation] Go to last item"),
+        Binding("ctrl+f,pagedown", "page_down", "[Navigation] Page down"),
+        Binding("ctrl+b,pageup", "page_up", "[Navigation] Page up"),
+        Binding("ctrl+d", "half_page_down", "[Navigation] Half page down"),
+        Binding("ctrl+u", "half_page_up", "[Navigation] Half page up"),
         Binding("enter,l,right", "select_cursor", "[Navigation] Open"),
         Binding("a", "add_torrent", "[Torrent] Add"),
         Binding("e", "edit_torrent", "[Torrent] Edit"),
@@ -300,6 +302,54 @@ class TorrentListViewPanel(ListView):
     def action_move_bottom(self) -> None:
         if len(self.children) > 0:
             self.index = len(self.children) - 1
+
+    @log_time
+    def action_page_down(self) -> None:
+        self.move_cursor_by(self.visible_items_count())
+
+    @log_time
+    def action_page_up(self) -> None:
+        self.move_cursor_by(-self.visible_items_count())
+
+    @log_time
+    def action_half_page_down(self) -> None:
+        self.move_cursor_by(max(1, self.visible_items_count() // 2))
+
+    @log_time
+    def action_half_page_up(self) -> None:
+        self.move_cursor_by(-max(1, self.visible_items_count() // 2))
+
+    @log_time
+    def visible_items_count(self) -> int:
+        """Return number of items that fit into the displayed list area."""
+        if len(self.children) == 0:
+            return 1
+
+        item_height = self.children[0].outer_size.height
+        view_height = self.scrollable_content_region.height
+
+        if item_height <= 0:
+            return 1
+
+        return max(1, view_height // item_height)
+
+    @log_time
+    def move_cursor_by(self, offset: int) -> None:
+        """Move cursor by offset across the whole torrent list, switching
+        pages when needed. Target position is clamped to list bounds."""
+        if not self.r_torrents:
+            return
+
+        hl_torrent = self.get_hl_torrent()
+        current = self.torrent_idx(hl_torrent) if hl_torrent else None
+
+        if current is None:
+            current = 0
+
+        target = min(max(current + offset, 0), len(self.r_torrents) - 1)
+
+        if target != current:
+            self.update_page(self.r_torrents, self.r_torrents[target].hash)
 
     @log_time
     def action_cursor_down(self) -> None:
