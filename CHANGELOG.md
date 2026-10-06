@@ -18,6 +18,7 @@ handle multi-line list body as single line.
 ### Changed
 
 - Declare `requests` as an explicit dependency (used by Deluge client, previously installed only transitively via `qbittorrent-api`)
+- Default torrent list view mode changed from `card` to `compact`
 
 ## [2.6.0] - 2026-09-24 - Hop Collector
 

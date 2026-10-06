@@ -933,7 +933,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     p.add_argument(
         "--view-mode",
         type=str,
-        default="card",
+        default="compact",
         choices=["card", "compact", "oneline"],
         action=TrackSetAction,
         help="View mode for torrents in list",
