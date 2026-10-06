@@ -1,5 +1,6 @@
 """Utility functions for torrent operations."""
 
+import hashlib
 import math
 import urllib.error
 import urllib.request
@@ -17,6 +18,10 @@ def torrents_test(torrents: list[Torrent], target_count: int) -> list[Torrent]:
 
     Returns:
         List of duplicated Torrent objects (~target_count items)
+
+    First copy of each torrent keeps its original hash, so it can still be
+    used for client operations. Other copies get unique generated hashes,
+    as UI tracks torrents by hash.
     """
     if not torrents:
         return []
@@ -29,7 +34,14 @@ def torrents_test(torrents: list[Torrent], target_count: int) -> list[Torrent]:
 
     for i in range(multiplier):
         for t in torrents:
-            t_copy = replace(t, id=idx, name=t.name + "-" + str(idx))
+            if i == 0:
+                t_hash = t.hash
+            else:
+                t_hash = hashlib.sha1(f"{t.hash}-{idx}".encode()).hexdigest()
+
+            t_copy = replace(
+                t, id=idx, name=t.name + "-" + str(idx), hash=t_hash
+            )
             result.append(t_copy)
             idx = idx + 1
 

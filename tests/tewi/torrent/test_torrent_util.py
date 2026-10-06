@@ -289,14 +289,36 @@ class TestTorrentsTest:
 
         result = torrents_test(torrents, 2)
 
-        # Check that fields other than id and name are preserved
-        assert result[0].hash == "abc123"
+        # Check that fields other than id, name and hash are preserved
         assert result[0].status == "seeding"
         assert result[0].size_when_done == 5000
 
-        assert result[1].hash == "abc123"
         assert result[1].status == "seeding"
         assert result[1].size_when_done == 5000
+
+    def test_first_copy_keeps_original_hash(self):
+        """Test that first copy of each torrent keeps its original hash."""
+        torrents = [
+            create_torrent(id=1, name="torrent1", hash="hash1"),
+            create_torrent(id=2, name="torrent2", hash="hash2"),
+        ]
+
+        result = torrents_test(torrents, 6)
+
+        assert result[0].hash == "hash1"
+        assert result[1].hash == "hash2"
+
+    def test_assigns_unique_hashes(self):
+        """Test that each duplicated torrent gets a unique hash."""
+        torrents = [
+            create_torrent(id=1, name="torrent1", hash="hash1"),
+            create_torrent(id=2, name="torrent2", hash="hash2"),
+        ]
+
+        result = torrents_test(torrents, 100)
+
+        hashes = [t.hash for t in result]
+        assert len(set(hashes)) == len(hashes)
 
     def test_single_torrent_multiplied(self):
         """Test multiplying a single torrent."""
