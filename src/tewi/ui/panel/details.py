@@ -380,7 +380,18 @@ class TorrentInfoPanel(ScrollableContainer):
             self.t_hash = torrent.hash_string
             self.t_name = torrent.name
             self.t_size = print_size(torrent.total_size)
+            if torrent.size_when_done != torrent.total_size:
+                selected_size = print_size(torrent.size_when_done)
+                self.t_size = f"{self.t_size} ({selected_size} selected)"
+
             self.t_files = str(len(torrent.files))
+            selected_files = sum(
+                1
+                for f in torrent.files
+                if f.priority != TorrentFilePriority.NOT_DOWNLOADING
+            )
+            if selected_files != len(torrent.files):
+                self.t_files = f"{self.t_files} ({selected_files} selected)"
             piece_size = print_size(torrent.piece_size, size_bytes=1024)
             self.t_pieces = f"{torrent.piece_count} @ {piece_size}"
 

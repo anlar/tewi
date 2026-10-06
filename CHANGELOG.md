@@ -22,6 +22,8 @@ handle multi-line list body as single line.
 - Default torrent list view mode changed from `card` to `compact`
 - `PgUp`/`PgDown` in torrent list now scroll by page instead of jumping to first/last item
 - Ask for confirmation before starting or stopping all torrents
+- Torrent list shows and sorts by size of selected files
+- Torrent details show selected size and files count next to totals when some files are skipped
 
 ## [2.6.0] - 2026-09-24 - Hop Collector
 

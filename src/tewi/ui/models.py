@@ -17,7 +17,7 @@ class SortOrder(NamedTuple):
 sort_orders = [
     SortOrder("age", "Age", "a", "A", lambda t: t.added_date),
     SortOrder("name", "Name", "n", "N", lambda t: t.name.lower()),
-    SortOrder("size", "Size", "z", "Z", lambda t: t.total_size),
+    SortOrder("size", "Size", "z", "Z", lambda t: t.size_when_done),
     SortOrder("status", "Status", "t", "T", lambda t: t.status),
     SortOrder("priority", "Priority", "i", "I", lambda t: t.priority),
     SortOrder(

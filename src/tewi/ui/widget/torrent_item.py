@@ -121,7 +121,7 @@ class TorrentItem(Static):
             self.t_queue_position = torrent.queue_position
             self.t_priority = torrent.priority
 
-            self.t_size_total = torrent.total_size
+            self.t_size_total = torrent.size_when_done
             self.t_size_left = torrent.left_until_done
             self.t_progress = torrent.percent_done
             self.t_eta = torrent.eta
