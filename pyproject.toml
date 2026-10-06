@@ -14,7 +14,7 @@ license = "GPL-3.0-or-later"
 license-files = ["LICENSE.txt"]
 requires-python = ">=3.10"
 dependencies = [
-  "textual >= 0.85.0",
+  "textual >= 2.0.0",
   "transmission-rpc >= 7.0.11",
   "geoip2fast >= 1.2.2",
   "pyperclip >= 1.9.0",

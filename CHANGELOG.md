@@ -25,6 +25,7 @@ handle multi-line list body as single line.
 - Torrent list shows and sorts by size of selected files
 - Torrent details show selected size and files count next to totals when some files are skipped
 - Faster cursor movement in torrent list: only highlighted items are repainted instead of the whole list
+- Raise minimum required Textual version to 2.0.0 (older versions fail to render torrent category and label badges)
 
 ## [2.6.0] - 2026-09-24 - Hop Collector
 
