@@ -50,6 +50,13 @@ class TorrentListItem(ListItem):
         super().__init__(*args, **kwargs)
         self.torrent_id = torrent_id  # Cache for fast is_equal_to_page checks
 
+    def on_resize(self, event: events.Resize) -> None:
+        # ListView scrolls to highlighted item before newly mounted items
+        # are laid out (e.g. on page change), so scroll again when item
+        # gets its actual size
+        if self.highlighted and self.parent is not None:
+            self.parent.scroll_to_widget(self, animate=False)
+
 
 class TorrentListViewPanel(ListView):
     BINDINGS: ClassVar[list[BindingType]] = [
