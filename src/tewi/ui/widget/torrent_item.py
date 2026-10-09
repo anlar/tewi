@@ -30,35 +30,25 @@ from .common import ReactiveLabel, SpeedIndicator
 
 
 class TorrentItem(Static):
-    selected = reactive(False)
-    marked = reactive(False)
     torrent: Torrent | None = reactive(None)
 
-    t_id = reactive(None)
     t_name = reactive(None)
     t_status = reactive(None)
     p_status = reactive(None)
 
     t_size_total = reactive(None)
     p_size_total = reactive(None)
-    t_size_left = reactive(None)
     t_ratio = reactive(0)
     p_ratio = reactive(None)
     t_progress = reactive(0)
     p_progress = reactive(None)
-    t_eta = reactive(None)
 
     t_upload_speed = reactive(0)
     t_download_speed = reactive(0)
 
-    t_size_stats = reactive("")
     t_queue_position = reactive(None)
     t_priority = reactive(None)
-    t_queue_indicator = reactive("")
-    t_priority_indicator = reactive("")
-
-    w_next = None
-    w_prev = None
+    p_queue = reactive(None)
 
     @log_time
     def __init__(self, torrent: Torrent):
@@ -162,22 +152,30 @@ class TorrentItem(Static):
         with self.app.batch_update():
             self.torrent = torrent
 
-            self.t_id = torrent.hash
             self.t_name = torrent.name
             self.t_status = torrent.status
             self.t_queue_position = torrent.queue_position
             self.t_priority = torrent.priority
 
             self.t_size_total = torrent.size_when_done
-            self.t_size_left = torrent.left_until_done
             self.t_progress = torrent.percent_done
-            self.t_eta = torrent.eta
 
             self.t_upload_speed = torrent.rate_upload
             self.t_download_speed = torrent.rate_download
             self.t_ratio = torrent.ratio
 
-            # self.t_size_stats = self.print_size_stats()
+            self.p_queue = self.print_queue(torrent.queue_position, torrent.priority)
+
+    def print_queue(self, position, priority) -> None:
+        if priority:
+            if priority > 0:
+                s = "[yellow]⇡[/]"
+            elif priority < 0:
+                s = "[dim]⇣[/]"
+        else:
+            s = " "
+
+        return f"[dim]#{position}[/]{s}"
 
     # @log_time
     # def print_size_stats(self, full_ratio=True) -> str:
@@ -207,8 +205,8 @@ class TorrentItemOneline(TorrentItem):
                     name=TorrentItem.p_status
                 )
                 yield ReactiveLabel(
-                    classes="item-queue", fmt="#{value}"
-                ).data_bind(name=TorrentItem.t_queue_position)
+                    classes="item-queue", markup=True
+                ).data_bind(name=TorrentItem.p_queue)
             with Horizontal(classes="item-info hgap-2"):
                 yield ReactiveLabel(classes="item-name").data_bind(
                     name=TorrentItem.t_name
