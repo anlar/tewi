@@ -146,11 +146,11 @@ def print_speed(
 
 @log_time
 @cache
-def print_ratio(ratio: float) -> str:
+def print_ratio(ratio: float, ndigits: int = 2) -> str:
     if math.isinf(ratio):
         return "∞"
     else:
-        return f"{ratio:.2f}"
+        return f"{ratio:.{ndigits}f}"
 
 
 @log_time

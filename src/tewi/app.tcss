@@ -93,49 +93,6 @@ StatePanel > .search {
     background: $secondary;
 }
 
-/* TORRENT LIST PANEL */
-
-/* TORRENT LIST PANEL: TORRENT ITEM COMMON */
-
-.torrent-bar-stop > ProgressBar > Bar > .bar--bar {
-    color: $background-lighten-3;
-}
-
-.torrent-bar-stop > ProgressBar > Bar > .bar--complete {
-    color: $primary-background-lighten-3;
-}
-
-.torrent-bar-check > ProgressBar > Bar > .bar--bar {
-    color: $error-darken-1;
-}
-
-.torrent-bar-check > ProgressBar > Bar > .bar--complete {
-    color: $error-darken-1;
-}
-
-.position-none > #name-container > #queue {
-    display: none;
-}
-
-.position-present > #name-container > #queue {
-    padding-right: 1;
-    color: $text-muted;
-}
-
-.priority-none > #name-container > #priority {
-    display: none;
-}
-
-.priority-low > #name-container > #priority {
-    padding-right: 1;
-    color: $accent;
-}
-
-.priority-high > #name-container > #priority {
-    padding-right: 1;
-    color: $success-lighten-3;
-}
-
 /* SPEED INDICATORS */
 
 SpeedIndicator {
@@ -157,149 +114,6 @@ SpeedIndicator.non-zero {
 
 ReactiveLinkLabel > ReactiveLabel, ReactiveLinkLabel > Link {
     width: 100%;
-}
-
-/* TORRENT LIST PANEL: COMMON */
-
-TorrentItem > #name-container {
-    width: 1fr;
-    height: auto;
-}
-
-TorrentItem > #name-container > #name {
-    width: 1fr;
-}
-
-/* TORRENT LIST PANEL: TORRENT ITEM ONELINE */
-
-TorrentItemOneline {
-    padding: 0 1;
-    layout: vertical;
-}
-
-ListItem.-highlight > TorrentItemOneline {
-    background: $primary-darken-1 !important;
-}
-
-TorrentItemOneline > #name-container > #name {
-    text-style: bold;
-}
-
-TorrentItemOneline > #speed {
-    dock: right;
-    layer: above;
-    grid-size: 5;
-    grid-columns: auto auto 9 auto 11;
-    width: auto;
-    height: auto;
-    padding-left: 1;
-}
-
-TorrentItemOneline > #speed > #stats {
-    text-opacity: 75%;
-    padding-right: 1;
-}
-
-.torrent-complete {
-    background: $success-darken-3;
-}
-
-.torrent-incomplete {
-    background: $warning-darken-3;
-}
-
-.torrent-stop {
-    background: $background-lighten-3;
-}
-
-.torrent-check {
-    background: $error-darken-1;
-}
-
-
-/* TORRENT LIST PANEL: TORRENT ITEM COMPACT */
-
-TorrentItemCompact {
-    padding: 0 1;
-    layout: vertical;
-}
-
-ListItem.-highlight > TorrentItemCompact {
-    background: $primary-darken-1 !important;
-}
-
-ListItem.-highlight > TorrentItemCompact > #stats {
-    background: $primary-darken-1;
-}
-
-TorrentItemCompact > #name-container > #name {
-    text-style: bold;
-}
-
-TorrentItemCompact > #speed {
-    dock: right;
-    layer: above;
-    grid-size: 5;
-    grid-columns: auto auto 9 auto 11;
-    width: auto;
-    height: auto;
-    padding-left: 1;
-}
-
-TorrentItemCompact > #stats {
-    grid-size: 4;
-    grid-columns: 25 25 40 100%;
-    height: auto;
-    background: $primary-background-darken-1;
-}
-
-TorrentItemCompact > #stats > .stat {
-    text-opacity: 75%;
-    width: 1fr;
-}
-
-TorrentItemCompact > ProgressBar > Bar {
-    width: 1fr;
-}
-
-/* TORRENT LIST PANEL: TORRENT ITEM CARD */
-
-TorrentItemCard {
-    padding: 0 1;
-    layout: vertical;
-    border: round $primary 75%;
-}
-
-ListItem.-highlight > TorrentItemCard {
-    background: $primary-darken-1 !important;
-}
-
-TorrentItemCard > #speed {
-    dock: right;
-    layer: above;
-    grid-size: 5;
-    grid-columns: auto auto 9 auto 9;
-    width: auto;
-    height: auto;
-}
-
-TorrentItemCard > #name-container > #name {
-    text-style: bold;
-}
-
-TorrentItemCard > #stats {
-    grid-size: 4;
-    grid-columns: 25 25 40 100%;
-    height: auto;
-}
-
-TorrentItemCard > #stats > .stat {
-    text-opacity: 75%;
-    width: 1fr;
-}
-
-TorrentItemCard > ProgressBar > Bar {
-    width: 1fr;
 }
 
 /* TORRENT INFO PANEL */
@@ -723,6 +537,70 @@ TorrentWebSearch #search-status {
 
 TorrentWebSearch #websearch-results {
     height: 1fr;
+}
+
+/* TORRENT ITEM */
+
+TorrentItem > .item-grid {
+    height: auto;
+    grid-size: 3;
+    grid-rows: 1;
+    grid-columns: auto 1fr 26;
+    grid-gutter: 2;
+    padding-left: 1;
+}
+
+TorrentItem > .item-grid > Horizontal {
+    height: auto;
+}
+
+TorrentItem .item-queue {
+    width: 4;
+    text-align: right;
+    text-opacity: 75%;
+}
+
+TorrentItem .item-speed {
+    grid-size: 4;
+    grid-columns: 1 1fr 1 1fr;
+    grid-gutter: 1;
+    height: auto;
+}
+
+TorrentItem .item-name {
+    width: 1fr;
+}
+
+TorrentItem .item-progress {
+    width: 4;
+    text-align: right;
+}
+
+TorrentItem .item-size     {
+    width: 8;
+    text-align: right;
+}
+
+TorrentItem .item-ratio    {
+    width: 8;
+    text-align: right;
+}
+
+/* Horizontal gap between direct children */
+.hgap > * {
+    margin-right: 1;
+}
+
+.hgap > *:last-child {
+    margin-right: 0;
+}
+
+.hgap-2 > * {
+  margin-right: 2;
+}
+
+.hgap-2 > *:last-child {
+  margin-right: 0;
 }
 
 /* vim: set filetype=css: */

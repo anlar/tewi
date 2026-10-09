@@ -117,14 +117,15 @@ class ReactiveLabel(Label):
     name = reactive(None, layout=False)
 
     @log_time
-    def __init__(self, *args, markup=False, **kwargs):
+    def __init__(self, *args, markup=False, fmt="{value}", **kwargs):
         super().__init__(*args, markup=markup, **kwargs)
         self.markup = False
+        self.fmt = fmt
 
     @log_time
     def render(self):
-        if self.name:
-            return self.name
+        if self.name is not None:
+            return self.fmt.format(value=self.name)
         else:
             return ""
 
