@@ -395,7 +395,7 @@ class CompactRenderer(OnelineRenderer):
 class CardRenderer(CompactRenderer):
     """Oneline item with progress bar across info column and stats line."""
 
-    height = 3
+    height = 4
 
     def render(
         self, torrent: Torrent, width: int, style: StyleGetter
@@ -404,6 +404,7 @@ class CardRenderer(CompactRenderer):
             self.main_line(torrent, width, style),
             self.bar_line(torrent, width, style),
             self.stats_line(torrent, width, style),
+            [],  # spacing between cards
         ]
 
     def bar_line(
