@@ -38,7 +38,11 @@ from ..messages import (
     VerifyTorrentCommand,
 )
 from ..models import PageState
-from ..widget.torrent_item import TorrentItemRenderer, create_renderer
+from ..widget.torrent_item import (
+    TorrentItemRenderer,
+    create_renderer,
+    queue_width,
+)
 
 
 class TorrentListViewPanel(ScrollView, can_focus=True):
@@ -236,6 +240,7 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
 
         self.badge_max_count = badge_max_count
         self.badge_max_length = badge_max_length
+        self.queue_width = 0
 
         self.renderer = self.create_renderer()
         self.page_torrents: list[Torrent] = []
@@ -250,6 +255,8 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
 
     @log_time
     def watch_r_torrents(self, new_r_torrents):
+        self.update_queue_width(new_r_torrents or [])
+
         if new_r_torrents:
             self.update_page(torrents=new_r_torrents)
         else:
@@ -346,9 +353,20 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
             return math.ceil(len(torrents) / self.page_size)
 
     def create_renderer(self) -> TorrentItemRenderer:
-        return create_renderer(
+        renderer = create_renderer(
             self.view_mode, self.badge_max_count, self.badge_max_length
         )
+        renderer.queue_width = self.queue_width
+        return renderer
+
+    def update_queue_width(self, torrents: list[Torrent]) -> None:
+        """Fit queue column to the largest queue position in the list."""
+        width = queue_width(torrents)
+
+        if width != self.queue_width:
+            self.queue_width = width
+            self.renderer.queue_width = width
+            self._item_cache.clear()
 
     def validate_index(self, index: Optional[int]) -> Optional[int]:
         """Clamp index to current page; highlight first item by default."""

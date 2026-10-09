@@ -59,9 +59,7 @@ STATUS_ICON = {
 # Column widths in cells
 PAD = 1
 GAP = 2
-STATE_WIDTH = 7  # icon, space, queue position (4), priority
-INFO_START = PAD + STATE_WIDTH + GAP  # where info column (name) starts
-QUEUE_WIDTH = 4
+QUEUE_GAP = 2  # between status icon and queue position
 PROGRESS_WIDTH = 4
 SIZE_WIDTH = 8
 RATIO_WIDTH = 5
@@ -97,8 +95,20 @@ def percent(progress: float) -> int:
     return math.floor(round(progress * 100, 6))
 
 
+def queue_width(torrents: list[Torrent]) -> int:
+    """Return width of the largest queue position, 0 if there are none."""
+    return max(
+        (
+            len(print_queue(t.queue_position))
+            for t in torrents
+            if t.queue_position is not None
+        ),
+        default=0,
+    )
+
+
 def print_queue(position: int | None) -> str:
-    return f"#{position}" if position is not None else ""
+    return str(position) if position is not None else ""
 
 
 def print_item_ratio(ratio: float | None) -> str:
@@ -143,6 +153,9 @@ class TorrentItemRenderer:
         self.badge_max_count = badge_max_count
         self.badge_max_length = badge_max_length
 
+        self.queue_width = 0
+        """Width of queue position column, see queue_width()."""
+
     def render(
         self, torrent: Torrent, width: int, style: StyleGetter
     ) -> list[Line]:
@@ -186,7 +199,6 @@ class OnelineRenderer(TorrentItemRenderer):
 
     def state_segments(self, torrent: Torrent, style: StyleGetter) -> Line:
         kind = status_kind(torrent.status)
-        queue = print_queue(torrent.queue_position).rjust(QUEUE_WIDTH)
 
         priority = torrent.priority
         if priority and priority > 0:
@@ -199,11 +211,25 @@ class OnelineRenderer(TorrentItemRenderer):
         return [
             Segment(" " * PAD),
             Segment(STATUS_ICON[kind], style(f"status-{kind}")),
-            Segment(" "),
-            Segment(queue, style("muted")),
+            self.queue_segment(torrent, style),
             prio,
             Segment(" " * GAP),
         ]
+
+    def queue_segment(self, torrent: Torrent, style: StyleGetter) -> Segment:
+        """Queue position, aligned by the largest position in the list."""
+        if not self.queue_width:
+            return Segment(" ")
+
+        queue = print_queue(torrent.queue_position).rjust(self.queue_width)
+        return Segment(" " * QUEUE_GAP + queue, style("muted"))
+
+    @property
+    def info_start(self) -> int:
+        """Return position where info column (name) starts."""
+        queue = QUEUE_GAP + self.queue_width if self.queue_width else 1
+        # padding, status icon, queue, priority, gap
+        return PAD + 1 + queue + 1 + GAP
 
     def info_segments(self, torrent: Torrent, style: StyleGetter) -> Line:
         pct = percent(torrent.percent_done)
@@ -273,7 +299,7 @@ class CompactRenderer(OnelineRenderer):
         kind = status_kind(torrent.status)
 
         left = [
-            Segment(" " * INFO_START),
+            Segment(" " * self.info_start),
             *self.stats_prefix(torrent, style),
             Segment(torrent.status, style(f"status-{kind}")),
             Segment(" " * GAP),
@@ -378,10 +404,10 @@ class CardRenderer(CompactRenderer):
     def bar_line(
         self, torrent: Torrent, width: int, style: StyleGetter
     ) -> Line:
-        bar_width = self.info_end(torrent, width, style) - INFO_START
+        bar_width = self.info_end(torrent, width, style) - self.info_start
 
         return [
-            Segment(" " * INFO_START),
+            Segment(" " * self.info_start),
             *self.bar_segments(torrent.percent_done, bar_width, style),
             *self.transferred_segments(torrent, style),
         ]
