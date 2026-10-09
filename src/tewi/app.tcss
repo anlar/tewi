@@ -546,7 +546,7 @@ TorrentItem > .item-grid {
     grid-size: 3;
     grid-rows: 1;
     grid-columns: auto 1fr 26;
-    grid-gutter: 2;
+    grid-gutter: 0 2;
     padding-left: 1;
 }
 

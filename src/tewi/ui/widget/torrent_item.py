@@ -21,11 +21,11 @@ import math
 from textual.app import ComposeResult
 from textual.containers import Grid, Horizontal
 from textual.reactive import reactive
-from textual.widgets import Static
+from textual.widgets import ProgressBar, Static
 
 from ...torrent.models import Torrent
 from ...util.log import log_time
-from ..util import print_ratio, print_size
+from ..util import print_ratio, print_size, print_time
 from .common import ReactiveLabel, SpeedIndicator
 
 
@@ -34,7 +34,7 @@ class TorrentItem(Static):
 
     t_name = reactive(None)
     t_status = reactive(None)
-    p_status = reactive(None)
+    p_status_icon = reactive(None)
 
     t_size_total = reactive(None)
     p_size_total = reactive(None)
@@ -57,7 +57,7 @@ class TorrentItem(Static):
 
     @log_time
     def watch_t_status(self, new_t_status):
-        self.p_status = self.print_status(new_t_status)
+        self.p_status_icon = self.print_status_icon(new_t_status)
 
     @log_time
     def watch_t_progress(self, new_t_progress):
@@ -83,7 +83,7 @@ class TorrentItem(Static):
         else:
             self.p_ratio = print_ratio(new_t_ratio, ndigits=1)
 
-    def print_status(self, status):
+    def print_status_icon(self, status):
         match status:
             case "download pending" | "downloading":
                 return "[yellow]▼[/]"
@@ -164,7 +164,9 @@ class TorrentItem(Static):
             self.t_download_speed = torrent.rate_download
             self.t_ratio = torrent.ratio
 
-            self.p_queue = self.print_queue(torrent.queue_position, torrent.priority)
+            self.p_queue = self.print_queue(
+                torrent.queue_position, torrent.priority
+            )
 
     def print_queue(self, position, priority) -> None:
         if priority:
@@ -202,7 +204,7 @@ class TorrentItemOneline(TorrentItem):
         with Grid(classes="item-grid"):
             with Horizontal(classes="item-state hgap"):
                 yield ReactiveLabel(markup=True).data_bind(
-                    name=TorrentItem.p_status
+                    name=TorrentItem.p_status_icon
                 )
                 yield ReactiveLabel(
                     classes="item-queue", markup=True
@@ -231,6 +233,12 @@ class TorrentItemOneline(TorrentItem):
                 yield SpeedIndicator().data_bind(
                     speed=TorrentItem.t_download_speed
                 )
+            # extra rows, defined by subclasses
+            yield from self.compose_rows()
+
+    def compose_rows(self) -> ComposeResult:
+        """Yield additional grid rows; none for oneline."""
+        yield from ()
 
     # @log_time
     # def compose(self) -> ComposeResult:
@@ -278,8 +286,76 @@ class TorrentItemOneline(TorrentItem):
     #             self.add_class("torrent-complete")
 
 
-class TorrentItemCompact(TorrentItem):
-    pass
+class TorrentItemCompact(TorrentItemOneline):
+    p_status = reactive(None)
+
+    t_eta = reactive(None)
+    t_peers = reactive(0)
+    t_leechers = reactive(0)
+    t_seeders = reactive(0)
+
+    p_stats = reactive(None)
+
+    def compose_rows(self) -> ComposeResult:
+        yield Static()
+        with Horizontal(classes="item-stats hgap-2"):
+            yield ProgressBar(
+                total=1.0, show_percentage=False, show_eta=False
+            ).data_bind(progress=TorrentItem.t_progress)
+            yield ReactiveLabel(markup=True).data_bind(
+                name=TorrentItemCompact.p_status
+            )
+            yield ReactiveLabel(markup=True).data_bind(
+                name=TorrentItemCompact.p_stats
+            )
+
+    @log_time
+    def update_torrent(self, t: Torrent) -> None:
+        super().update_torrent(t)
+
+        with self.app.batch_update():
+            self.t_eta = t.eta
+            self.t_peers = t.peers_connected
+            self.t_leechers = t.peers_getting_from_us
+            self.t_seeders = t.peers_sending_to_us
+
+            self.p_stats = self.print_stats(
+                t.eta,
+                t.peers_connected,
+                t.peers_getting_from_us,
+                t.peers_sending_to_us,
+            )
+
+    @log_time
+    def watch_t_status(self, new_t_status):
+        super().watch_t_status(new_t_status)
+        self.p_status = self.print_status(new_t_status)
+
+    def print_status(self, status):
+        match status:
+            case "download pending" | "downloading":
+                return f"[yellow]{status}[/]"
+            case "seed pending" | "seeding":
+                return f"[green]{status}[/]"
+            case "check pending" | "checking":
+                return f"[magenta]{status}[/]"
+            case "stopped":
+                return f"[dim]{status}[/]"
+            case _:
+                return f"[bold red]{status}[/]"
+
+    def print_stats(self, eta, peers, seeders, leechers):
+        parts = [
+            f"{peers} {'peer' if peers == 1 else 'peers'}",
+            f"{seeders} seed",
+            f"{leechers} leech",
+        ]
+
+        if eta:
+            parts.insert(0, f"ETA: {print_time(eta.total_seconds(), units=2)}")
+
+        return f"[dim]{' • '.join(parts)}[/]"
+
     # t_status_markup = reactive(None)
     #
     # t_badges_markup = reactive(None)
@@ -446,7 +522,9 @@ class TorrentItemCompact(TorrentItem):
 
 
 class TorrentItemCard(TorrentItemCompact):
-    pass
+    def compose(self) -> ComposeResult:
+        yield from super().compose()
+
     # @log_time
     # def compose(self) -> ComposeResult:
     #     with Horizontal(id="name-container"):
