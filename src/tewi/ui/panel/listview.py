@@ -124,6 +124,9 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
     TorrentListViewPanel {
         background: $surface;
         overflow-x: hidden;
+        /* keep columns in place (and aligned with state panel) whether
+           scrollbar is shown or not */
+        scrollbar-gutter: stable;
 
         & > .torrent-list--even-row {
             background: $surface-lighten-1 50%;

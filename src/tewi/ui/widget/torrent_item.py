@@ -64,6 +64,7 @@ PROGRESS_WIDTH = 4
 SIZE_WIDTH = 8
 RATIO_WIDTH = 5
 SPEED_WIDTH = 9
+SPEED_GAP = 3  # between ratio and speeds
 NAME_MIN_WIDTH = 10
 BAR_WIDTH = 40
 
@@ -258,16 +259,16 @@ class OnelineRenderer(TorrentItemRenderer):
         self, arrow: str, speed: int, name: str, style: StyleGetter
     ) -> Line:
         """Arrow and speed; active speed is highlighted with background."""
-        text = print_speed(speed, dash_for_zero=True).rjust(SPEED_WIDTH)
+        text = print_speed(speed, dash_for_zero=True).ljust(SPEED_WIDTH)
 
         if not speed:
-            return [Segment(f" {arrow} {text} ")]
+            return [Segment(f" {arrow} {text}")]
 
         block = style(name)
         return [
             Segment(" ", block),
             Segment(arrow, block + style(f"{name}-arrow")),
-            Segment(f" {text} ", block + style("speed-active")),
+            Segment(f" {text}", block + style("speed-active")),
         ]
 
     def transfer_column(self, upload: Line, download: Line) -> Line:
@@ -276,8 +277,12 @@ class OnelineRenderer(TorrentItemRenderer):
         Each block is padded value of SPEED_WIDTH with arrow before it, so
         values in different lines (speeds, transferred sizes) are aligned.
         """
-        gap = Segment(" " * (GAP - 1))
-        return [gap, *upload, gap, *download, Segment(" " * PAD)]
+        return [
+            Segment(" " * SPEED_GAP),
+            *upload,
+            *download,
+            Segment(" " * PAD),
+        ]
 
 
 class CompactRenderer(OnelineRenderer):
@@ -420,7 +425,7 @@ class CardRenderer(CompactRenderer):
         def size(value: int | None) -> Line:
             text = print_size(value, ndigits=1) if value else ""
             # same layout as speed block, without arrow
-            return [Segment(f"   {text.rjust(SPEED_WIDTH)} ", style("muted"))]
+            return [Segment(f"   {text.ljust(SPEED_WIDTH)}", style("muted"))]
 
         downloaded = None
         if torrent.size_when_done is not None:

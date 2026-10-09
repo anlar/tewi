@@ -46,7 +46,8 @@
 
 #state-panel {
     grid-size: 12;
-    grid-columns: auto auto auto auto 1fr auto auto auto 10 auto 13;
+    /* last 4 columns: arrow, upload speed, arrow, download speed */
+    grid-columns: auto auto auto auto 1fr auto auto 2 10 2 12;
     height: 1;
     background: $secondary;
 }
@@ -75,6 +76,17 @@ StatePanel > .search {
 
 #state-panel > .arrow {
     padding: 0 0 0 1;
+}
+
+/* Speeds are aligned with speed column of torrent list: space and arrow,
+   space and value of 9 cells (fits "999.99 KB"), then list padding and
+   scrollbar gutter after download speed */
+#state-panel > #upload-speed {
+    padding: 0 0 0 1;
+}
+
+#state-panel > #download-speed {
+    padding: 0 2 0 1;
 }
 
 #state-panel > .delimiter {
