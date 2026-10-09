@@ -269,6 +269,8 @@ class MainApp(App):
                     capability_category=self.client.capable(
                         ClientCapability.CATEGORY
                     ),
+                    badge_max_count=self.badge_max_count,
+                    badge_max_length=self.badge_max_length,
                 ).data_bind(r_torrents=MainApp.r_torrents)
                 yield TorrentInfoPanel(
                     capability_torrent_id=self.client.capable(
