@@ -62,7 +62,7 @@ GAP = 2
 QUEUE_GAP = 2  # between status icon and queue position
 PROGRESS_WIDTH = 4
 SIZE_WIDTH = 8
-RATIO_WIDTH = 5
+RATIO_WIDTH = 5  # without multiplier sign
 SPEED_WIDTH = 9
 SPEED_GAP = 3  # between ratio and speeds
 NAME_MIN_WIDTH = 10
@@ -115,7 +115,7 @@ def print_queue(position: int | None) -> str:
 def print_item_ratio(ratio: float | None) -> str:
     if ratio is None or ratio < 0:
         return "-"
-    elif ratio >= 100 and not math.isinf(ratio):
+    elif round(ratio, 1) >= 100 and not math.isinf(ratio):
         return print_ratio(ratio, ndigits=0)
     else:
         return print_ratio(ratio, ndigits=1)
@@ -245,9 +245,20 @@ class OnelineRenderer(TorrentItemRenderer):
             Segment(" " * GAP),
             Segment(size.rjust(SIZE_WIDTH)),
             Segment(" " * GAP),
-            Segment("R: ", style("muted")),
-            Segment(print_item_ratio(torrent.ratio).rjust(RATIO_WIDTH)),
+            *self.ratio_segments(torrent.ratio, style),
         ]
+
+    def ratio_segments(self, ratio: float | None, style: StyleGetter) -> Line:
+        """Ratio as multiplier (e.g. 1.5×), right-aligned by digits."""
+        value = print_item_ratio(ratio)
+
+        # no multiplier sign for missing and infinite ratio
+        if value in ("-", "∞"):
+            suffix = Segment(" ")
+        else:
+            suffix = Segment("×", style("muted"))
+
+        return [Segment(value.rjust(RATIO_WIDTH)), suffix]
 
     def speed_segments(self, torrent: Torrent, style: StyleGetter) -> Line:
         return self.transfer_column(
