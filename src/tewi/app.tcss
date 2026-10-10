@@ -46,7 +46,8 @@
 
 #state-panel {
     grid-size: 12;
-    grid-columns: auto auto auto auto 1fr auto auto auto 10 auto 13;
+    /* last 4 columns: arrow, upload speed, arrow, download speed */
+    grid-columns: auto auto auto auto 1fr auto auto 2 10 2 12;
     height: 1;
     background: $secondary;
 }
@@ -77,6 +78,17 @@ StatePanel > .search {
     padding: 0 0 0 1;
 }
 
+/* Speeds are aligned with speed column of torrent list: space and arrow,
+   space and value of 9 cells (fits "999.99 KB"), then list padding and
+   scrollbar gutter after download speed */
+#state-panel > #upload-speed {
+    padding: 0 0 0 1;
+}
+
+#state-panel > #download-speed {
+    padding: 0 2 0 1;
+}
+
 #state-panel > .delimiter {
     text-opacity: 75%;
 }
@@ -91,49 +103,6 @@ StatePanel > .search {
 
 .filter-none > #state-panel > #filter {
     background: $secondary;
-}
-
-/* TORRENT LIST PANEL */
-
-/* TORRENT LIST PANEL: TORRENT ITEM COMMON */
-
-.torrent-bar-stop > ProgressBar > Bar > .bar--bar {
-    color: $background-lighten-3;
-}
-
-.torrent-bar-stop > ProgressBar > Bar > .bar--complete {
-    color: $primary-background-lighten-3;
-}
-
-.torrent-bar-check > ProgressBar > Bar > .bar--bar {
-    color: $error-darken-1;
-}
-
-.torrent-bar-check > ProgressBar > Bar > .bar--complete {
-    color: $error-darken-1;
-}
-
-.position-none > #name-container > #queue {
-    display: none;
-}
-
-.position-present > #name-container > #queue {
-    padding-right: 1;
-    color: $text-muted;
-}
-
-.priority-none > #name-container > #priority {
-    display: none;
-}
-
-.priority-low > #name-container > #priority {
-    padding-right: 1;
-    color: $accent;
-}
-
-.priority-high > #name-container > #priority {
-    padding-right: 1;
-    color: $success-lighten-3;
 }
 
 /* SPEED INDICATORS */
@@ -157,149 +126,6 @@ SpeedIndicator.non-zero {
 
 ReactiveLinkLabel > ReactiveLabel, ReactiveLinkLabel > Link {
     width: 100%;
-}
-
-/* TORRENT LIST PANEL: COMMON */
-
-TorrentItem > #name-container {
-    width: 1fr;
-    height: auto;
-}
-
-TorrentItem > #name-container > #name {
-    width: 1fr;
-}
-
-/* TORRENT LIST PANEL: TORRENT ITEM ONELINE */
-
-TorrentItemOneline {
-    padding: 0 1;
-    layout: vertical;
-}
-
-ListItem.-highlight > TorrentItemOneline {
-    background: $primary-darken-1 !important;
-}
-
-TorrentItemOneline > #name-container > #name {
-    text-style: bold;
-}
-
-TorrentItemOneline > #speed {
-    dock: right;
-    layer: above;
-    grid-size: 5;
-    grid-columns: auto auto 9 auto 11;
-    width: auto;
-    height: auto;
-    padding-left: 1;
-}
-
-TorrentItemOneline > #speed > #stats {
-    text-opacity: 75%;
-    padding-right: 1;
-}
-
-.torrent-complete {
-    background: $success-darken-3;
-}
-
-.torrent-incomplete {
-    background: $warning-darken-3;
-}
-
-.torrent-stop {
-    background: $background-lighten-3;
-}
-
-.torrent-check {
-    background: $error-darken-1;
-}
-
-
-/* TORRENT LIST PANEL: TORRENT ITEM COMPACT */
-
-TorrentItemCompact {
-    padding: 0 1;
-    layout: vertical;
-}
-
-ListItem.-highlight > TorrentItemCompact {
-    background: $primary-darken-1 !important;
-}
-
-ListItem.-highlight > TorrentItemCompact > #stats {
-    background: $primary-darken-1;
-}
-
-TorrentItemCompact > #name-container > #name {
-    text-style: bold;
-}
-
-TorrentItemCompact > #speed {
-    dock: right;
-    layer: above;
-    grid-size: 5;
-    grid-columns: auto auto 9 auto 11;
-    width: auto;
-    height: auto;
-    padding-left: 1;
-}
-
-TorrentItemCompact > #stats {
-    grid-size: 4;
-    grid-columns: 25 25 40 100%;
-    height: auto;
-    background: $primary-background-darken-1;
-}
-
-TorrentItemCompact > #stats > .stat {
-    text-opacity: 75%;
-    width: 1fr;
-}
-
-TorrentItemCompact > ProgressBar > Bar {
-    width: 1fr;
-}
-
-/* TORRENT LIST PANEL: TORRENT ITEM CARD */
-
-TorrentItemCard {
-    padding: 0 1;
-    layout: vertical;
-    border: round $primary 75%;
-}
-
-ListItem.-highlight > TorrentItemCard {
-    background: $primary-darken-1 !important;
-}
-
-TorrentItemCard > #speed {
-    dock: right;
-    layer: above;
-    grid-size: 5;
-    grid-columns: auto auto 9 auto 9;
-    width: auto;
-    height: auto;
-}
-
-TorrentItemCard > #name-container > #name {
-    text-style: bold;
-}
-
-TorrentItemCard > #stats {
-    grid-size: 4;
-    grid-columns: 25 25 40 100%;
-    height: auto;
-}
-
-TorrentItemCard > #stats > .stat {
-    text-opacity: 75%;
-    width: 1fr;
-}
-
-TorrentItemCard > ProgressBar > Bar {
-    width: 1fr;
 }
 
 /* TORRENT INFO PANEL */

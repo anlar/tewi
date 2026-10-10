@@ -269,6 +269,8 @@ class MainApp(App):
                     capability_category=self.client.capable(
                         ClientCapability.CATEGORY
                     ),
+                    badge_max_count=self.badge_max_count,
+                    badge_max_length=self.badge_max_length,
                 ).data_bind(r_torrents=MainApp.r_torrents)
                 yield TorrentInfoPanel(
                     capability_torrent_id=self.client.capable(
@@ -959,7 +961,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     p.add_argument(
         "--view-mode",
         type=str,
-        default="compact",
+        default="card",
         choices=["card", "compact", "oneline"],
         action=TrackSetAction,
         help="View mode for torrents in list",
@@ -981,7 +983,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     p.add_argument(
         "--page-size",
         type=int,
-        default=30,
+        default=1000,
         action=TrackSetAction,
         help="Number of torrents displayed per page",
     )

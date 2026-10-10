@@ -16,398 +16,460 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from textual.app import ComposeResult
-from textual.containers import Grid, Horizontal
-from textual.reactive import reactive
-from textual.widgets import ProgressBar, Static
+"""Renderers of torrent list items.
+
+Torrent list draws items line by line (see TorrentListViewPanel), so items
+are not widgets: renderer converts torrent into fixed number of lines made
+of Rich segments. Styles are resolved by name through callback provided by
+the list, which maps them to its component classes.
+"""
+
+import math
+from collections.abc import Callable
+from typing import ClassVar
+
+from rich.cells import cell_len, set_cell_size
+from rich.segment import Segment
+from rich.style import Style
 
 from ...torrent.models import Torrent
-from ...util.log import log_time
-from ..util import esc_trunk, print_size, print_time
-from .common import ReactiveLabel, ReactiveLayoutLabel, SpeedIndicator
+from ..util import print_ratio, print_size, print_speed, print_time
+
+StyleGetter = Callable[[str], Style]
+Line = list[Segment]
+
+STATUS_KIND = {
+    "download pending": "download",
+    "downloading": "download",
+    "seed pending": "seed",
+    "seeding": "seed",
+    "check pending": "check",
+    "checking": "check",
+    "stopped": "stop",
+}
+
+STATUS_ICON = {
+    "download": "▼",
+    "seed": "▲",
+    "check": "◐",
+    "stop": "■",
+    "unknown": "?",
+}
+
+# Column widths in cells
+PAD = 1
+GAP = 2
+QUEUE_GAP = 2  # between status icon and queue position
+PROGRESS_WIDTH = 4
+SIZE_WIDTH = 8
+RATIO_WIDTH = 5  # without multiplier sign
+SPEED_WIDTH = 9
+SPEED_GAP = 3  # between ratio and speeds
+NAME_MIN_WIDTH = 10
+BAR_WIDTH = 40
 
 
-class TorrentItem(Static):
-    selected = reactive(False)
-    marked = reactive(False)
-    torrent: Torrent | None = reactive(None)
+def fit(text: str, width: int) -> str:
+    """Pad or truncate text to exact cell width, marking cut with ellipsis."""
+    if width <= 0:
+        return ""
 
-    t_id = reactive(None)
-    t_name = reactive(None)
-    t_status = reactive(None)
+    if cell_len(text) <= width:
+        return set_cell_size(text, width)
 
-    t_size_total = reactive(None)
-    t_size_left = reactive(None)
-    t_ratio = reactive(0)
-    t_progress = reactive(0)
-    t_eta = reactive(None)
+    return set_cell_size(text, width - 1) + "…"
 
-    t_upload_speed = reactive(0)
-    t_download_speed = reactive(0)
 
-    t_size_stats = reactive("")
-    t_queue_position = reactive(None)
-    t_priority = reactive(None)
-    t_queue_indicator = reactive("")
-    t_priority_indicator = reactive("")
+def line_width(line: Line) -> int:
+    """Return width of line in cells."""
+    return sum(segment.cell_length for segment in line)
 
-    w_next = None
-    w_prev = None
 
-    @log_time
-    def __init__(self, torrent: Torrent):
-        super().__init__()
-        self.update_torrent(torrent)
+def status_kind(status: str) -> str:
+    """Return status group used to select icon and style."""
+    return STATUS_KIND.get(status, "unknown")
 
-    @log_time
-    def watch_t_status(self, new_t_status):
-        # For all other statuses using default colors:
-        # - yellow - in progress
-        # - green - complete
-        self.remove_class("torrent-bar-stop", "torrent-bar-check")
 
-        match new_t_status:
-            case "stopped":
-                self.add_class("torrent-bar-stop")
-            case "check pending" | "checking":
-                self.add_class("torrent-bar-check")
+def percent(progress: float) -> int:
+    """Convert progress (0..1) to percent, rounding down."""
+    # round() removes float error, e.g. 0.29 * 100 = 28.999999999999996
+    return math.floor(round(progress * 100, 6))
 
-    @log_time
-    def watch_selected(self, new_selected):
-        if new_selected:
-            self.add_class("selected")
+
+def queue_width(torrents: list[Torrent]) -> int:
+    """Return width of the largest queue position, 0 if there are none."""
+    return max(
+        (
+            len(print_queue(t.queue_position))
+            for t in torrents
+            if t.queue_position is not None
+        ),
+        default=0,
+    )
+
+
+def print_queue(position: int | None) -> str:
+    return str(position) if position is not None else ""
+
+
+def print_item_ratio(ratio: float | None) -> str:
+    if ratio is None or ratio < 0:
+        return "-"
+    elif round(ratio, 1) >= 100 and not math.isinf(ratio):
+        return print_ratio(ratio, ndigits=0)
+    else:
+        return print_ratio(ratio, ndigits=1)
+
+
+def print_stats(torrent: Torrent) -> str:
+    peers = torrent.peers_connected
+
+    parts = [
+        f"{peers} {'peer' if peers == 1 else 'peers'}",
+        f"{torrent.peers_sending_to_us} seed",
+        f"{torrent.peers_getting_from_us} leech",
+    ]
+
+    eta = torrent.eta
+    if eta and eta.total_seconds() > 0:
+        eta_str = print_time(eta.total_seconds(), abbr=True, units=2)
+        parts.insert(0, f"ETA: {eta_str}")
+
+    return " • ".join(parts)
+
+
+class TorrentItemRenderer:
+    """Base class for torrent list item renderers."""
+
+    height: ClassVar[int] = 1
+    """Number of lines in rendered item."""
+
+    def __init__(self, badge_max_count: int = 3, badge_max_length: int = 10):
+        """
+        Args:
+            badge_max_count: Maximum number of category and label badges
+                (-1: unlimited, 0: none).
+            badge_max_length: Maximum length of badge text (0: unlimited).
+        """
+        self.badge_max_count = badge_max_count
+        self.badge_max_length = badge_max_length
+
+        self.queue_width = 0
+        """Width of queue position column, see queue_width()."""
+
+    def render(
+        self, torrent: Torrent, width: int, style: StyleGetter
+    ) -> list[Line]:
+        """Render torrent into list of `height` lines.
+
+        Lines may be shorter or longer than width: list pads or crops them.
+        """
+        raise NotImplementedError
+
+
+class OnelineRenderer(TorrentItemRenderer):
+    """Single line: state, name, progress, size, ratio and speeds."""
+
+    height = 1
+
+    def render(
+        self, torrent: Torrent, width: int, style: StyleGetter
+    ) -> list[Line]:
+        return [self.main_line(torrent, width, style)]
+
+    def main_line(
+        self, torrent: Torrent, width: int, style: StyleGetter
+    ) -> Line:
+        left = self.state_segments(torrent, style)
+        right = self.info_segments(torrent, style)
+        right += self.speed_segments(torrent, style)
+
+        fixed = line_width(left + right)
+        name_width = max(NAME_MIN_WIDTH, width - fixed - GAP)
+
+        name = [
+            Segment(fit(torrent.name, name_width), style("name")),
+            Segment(" " * GAP),
+        ]
+
+        return left + name + right
+
+    def info_end(self, torrent: Torrent, width: int, style: StyleGetter) -> int:
+        """Return position where info column (name to ratio) ends."""
+        return width - line_width(self.speed_segments(torrent, style))
+
+    def state_segments(self, torrent: Torrent, style: StyleGetter) -> Line:
+        kind = status_kind(torrent.status)
+
+        priority = torrent.priority
+        if priority and priority > 0:
+            prio = Segment("⇡", style("priority-high"))
+        elif priority and priority < 0:
+            prio = Segment("⇣", style("priority-low"))
         else:
-            self.remove_class("selected")
+            prio = Segment(" ")
 
-    @log_time
-    def watch_marked(self, new_marked):
-        if new_marked:
-            self.add_class("marked")
+        return [
+            Segment(" " * PAD),
+            Segment(STATUS_ICON[kind], style(f"status-{kind}")),
+            self.queue_segment(torrent, style),
+            prio,
+            Segment(" " * GAP),
+        ]
+
+    def queue_segment(self, torrent: Torrent, style: StyleGetter) -> Segment:
+        """Queue position, aligned by the largest position in the list."""
+        if not self.queue_width:
+            return Segment(" ")
+
+        queue = print_queue(torrent.queue_position).rjust(self.queue_width)
+        return Segment(" " * QUEUE_GAP + queue, style("muted"))
+
+    @property
+    def info_start(self) -> int:
+        """Return position where info column (name) starts."""
+        queue = QUEUE_GAP + self.queue_width if self.queue_width else 1
+        # padding, status icon, queue, priority, gap
+        return PAD + 1 + queue + 1 + GAP
+
+    def info_segments(self, torrent: Torrent, style: StyleGetter) -> Line:
+        pct = percent(torrent.percent_done)
+        progress = f"{pct}%".rjust(PROGRESS_WIDTH)
+
+        size = ""
+        if torrent.size_when_done is not None:
+            size = print_size(torrent.size_when_done, ndigits=1)
+
+        return [
+            Segment(progress, style("muted") if pct >= 100 else None),
+            Segment(" " * GAP),
+            Segment(size.rjust(SIZE_WIDTH)),
+            Segment(" " * GAP),
+            *self.ratio_segments(torrent.ratio, style),
+        ]
+
+    def ratio_segments(self, ratio: float | None, style: StyleGetter) -> Line:
+        """Ratio as multiplier (e.g. 1.5×), right-aligned by digits."""
+        value = print_item_ratio(ratio)
+
+        # no multiplier sign for missing and infinite ratio
+        if value in ("-", "∞"):
+            suffix = Segment(" ")
         else:
-            self.remove_class("marked")
+            suffix = Segment("×", style("muted"))
 
-    @log_time
-    def watch_t_queue_position(self, new_value):
-        self.remove_class("position-none", "position-present")
-        if new_value is not None:
-            self.t_queue_indicator = f"#{new_value}"
-            self.add_class("position-present")
-        else:
-            self.t_queue_indicator = ""
-            self.add_class("position-none")
+        return [Segment(value.rjust(RATIO_WIDTH)), suffix]
 
-    @log_time
-    def watch_t_priority(self, new_value):
-        self.remove_class("priority-none", "priority-low", "priority-high")
-        if new_value is not None and new_value != 0:
-            if new_value > 0:
-                self.t_priority_indicator = "⬆"
-                self.add_class("priority-high")
-            elif new_value < 0:
-                self.t_priority_indicator = "⬇"
-                self.add_class("priority-low")
-        else:
-            self.t_priority_indicator = ""
-            self.add_class("priority-none")
-
-    @log_time
-    def update_torrent(self, torrent: Torrent) -> None:
-        with self.app.batch_update():
-            self.torrent = torrent
-
-            self.t_id = torrent.hash
-            self.t_name = torrent.name
-            self.t_status = torrent.status
-            self.t_queue_position = torrent.queue_position
-            self.t_priority = torrent.priority
-
-            self.t_size_total = torrent.size_when_done
-            self.t_size_left = torrent.left_until_done
-            self.t_progress = torrent.percent_done
-            self.t_eta = torrent.eta
-
-            self.t_upload_speed = torrent.rate_upload
-            self.t_download_speed = torrent.rate_download
-            self.t_ratio = torrent.ratio
-
-            self.t_size_stats = self.print_size_stats()
-
-    @log_time
-    def print_size_stats(self, full_ratio=True) -> str:
-        result = None
-
-        size_total = print_size(self.t_size_total)
-
-        if self.t_size_left > 0:
-            size_current = print_size(self.t_size_total - self.t_size_left)
-            progress = self.t_progress * 100
-            result = f"{size_current} / {size_total} | {progress:.1f}%"
-
-            if self.t_eta:
-                eta = print_time(self.t_eta.total_seconds(), True, 1)
-                result = f"{result} | {eta}"
-        else:
-            result = f"{size_total} | R: {self.t_ratio:.2f}"
-
-        return result
-
-
-class TorrentItemOneline(TorrentItem):
-    @log_time
-    def compose(self) -> ComposeResult:
-        with Horizontal(id="name-container"):
-            yield ReactiveLabel(id="queue", markup=False).data_bind(
-                name=TorrentItemOneline.t_queue_indicator
-            )
-            yield ReactiveLabel(id="priority", markup=False).data_bind(
-                name=TorrentItemOneline.t_priority_indicator
-            )
-            yield ReactiveLabel(id="name", markup=False).data_bind(
-                name=TorrentItemOneline.t_name
-            )
-
-        with Grid(id="speed"):
-            yield ReactiveLabel(id="stats").data_bind(
-                name=TorrentItemOneline.t_size_stats
-            )
-            yield Static(" ↑ ")
-            yield SpeedIndicator().data_bind(
-                speed=TorrentItemOneline.t_upload_speed
-            )
-            yield Static(" ↓ ")
-            yield SpeedIndicator().data_bind(
-                speed=TorrentItemOneline.t_download_speed
-            )
-
-    @log_time
-    def watch_t_status(self, new_t_status):
-        self.remove_class(
-            "torrent-complete",
-            "torrent-incomplete",
-            "torrent-stop",
-            "torrent-check",
+    def speed_segments(self, torrent: Torrent, style: StyleGetter) -> Line:
+        return self.transfer_column(
+            self.speed_block("↑", torrent.rate_upload, "speed-up", style),
+            self.speed_block("↓", torrent.rate_download, "speed-down", style),
         )
 
-        match new_t_status:
-            case "stopped":
-                self.add_class("torrent-stop")
-            case "check pending" | "checking":
-                self.add_class("torrent-check")
-            case "download pending" | "downloading":
-                self.add_class("torrent-incomplete")
-            case "seed pending" | "seeding":
-                self.add_class("torrent-complete")
+    def speed_block(
+        self, arrow: str, speed: int, name: str, style: StyleGetter
+    ) -> Line:
+        """Arrow and speed: active speed is highlighted with background,
+        zero speed is dimmed."""
+        text = print_speed(speed, dash_for_zero=True).ljust(SPEED_WIDTH)
+
+        if not speed:
+            return [Segment(f" {arrow} {text}", style("muted"))]
+
+        block = style(name)
+        return [
+            Segment(" ", block),
+            Segment(arrow, block + style(f"{name}-arrow")),
+            Segment(f" {text}", block + style("speed-active")),
+        ]
+
+    def transfer_column(self, upload: Line, download: Line) -> Line:
+        """Last column: upload and download blocks.
+
+        Each block is padded value of SPEED_WIDTH with arrow before it, so
+        values in different lines (speeds, transferred sizes) are aligned.
+        """
+        return [
+            Segment(" " * SPEED_GAP),
+            *upload,
+            *download,
+            Segment(" " * PAD),
+        ]
 
 
-class TorrentItemCompact(TorrentItem):
-    t_status_markup = reactive(None)
+class CompactRenderer(OnelineRenderer):
+    """Oneline item with second line: progress bar, status, peers, badges
+    and transferred sizes."""
 
-    t_badges_markup = reactive(None)
+    height = 2
 
-    t_stats_uploaded = reactive("")
-    t_stats_peer = reactive("")
-    t_stats_seed = reactive("")
-    t_stats_leech = reactive("")
+    def render(
+        self, torrent: Torrent, width: int, style: StyleGetter
+    ) -> list[Line]:
+        return [
+            self.main_line(torrent, width, style),
+            self.stats_line(torrent, width, style),
+        ]
 
-    @log_time
-    def compose(self) -> ComposeResult:
-        with Horizontal(id="name-container"):
-            yield ReactiveLabel(id="queue", markup=False).data_bind(
-                name=TorrentItemCompact.t_queue_indicator
-            )
-            yield ReactiveLabel(id="priority", markup=False).data_bind(
-                name=TorrentItemCompact.t_priority_indicator
-            )
-            yield ReactiveLabel(id="name", markup=False).data_bind(
-                name=TorrentItemCompact.t_name
-            )
+    def stats_line(
+        self, torrent: Torrent, width: int, style: StyleGetter
+    ) -> Line:
+        kind = status_kind(torrent.status)
 
-        with Grid(id="speed"):
-            yield ReactiveLayoutLabel(markup=True).data_bind(
-                name=TorrentItemCompact.t_badges_markup
-            )
-            yield Static(" ↑ ")
-            yield SpeedIndicator().data_bind(
-                speed=TorrentItemCompact.t_upload_speed
-            )
-            yield Static(" ↓ ")
-            yield SpeedIndicator().data_bind(
-                speed=TorrentItemCompact.t_download_speed
-            )
+        left = [
+            Segment(" " * self.info_start),
+            *self.stats_prefix(torrent, style),
+            Segment(torrent.status, style(f"status-{kind}")),
+            Segment(" " * GAP),
+        ]
 
-        with Grid(id="stats"):
-            yield ReactiveLabel(classes="stat", markup=True).data_bind(
-                name=TorrentItemCompact.t_status_markup
-            )
-            yield ReactiveLabel(classes="stat").data_bind(
-                name=TorrentItemCompact.t_stats_uploaded
-            )
-            yield ReactiveLabel(classes="stat", markup=True).data_bind(
-                name=TorrentItemCompact.t_stats_peer
-            )
-            yield ReactiveLabel(classes="stat", markup=True).data_bind(
-                name=TorrentItemCompact.t_size_stats
-            )
+        stats = print_stats(torrent)
+        badges = self.badge_segments(torrent, style)
 
-        yield (
-            ProgressBar(
-                total=1.0, show_percentage=False, show_eta=False
-            ).data_bind(progress=TorrentItemCompact.t_progress)
+        # Stats fill info column up to its right edge (above it is ratio),
+        # badges are aligned to that edge, stats are truncated if needed
+        info_end = self.info_end(torrent, width, style)
+        stats_width = info_end - line_width(left)
+        if badges:
+            stats_width -= line_width(badges) + GAP
+            badges = [Segment(" " * GAP), *badges]
+
+        return [
+            *left,
+            Segment(fit(stats, stats_width), style("muted")),
+            *badges,
+            *self.stats_suffix(torrent, style),
+        ]
+
+    def stats_prefix(self, torrent: Torrent, style: StyleGetter) -> Line:
+        """Segments drawn in stats line before torrent status."""
+        return [
+            *self.bar_segments(torrent.percent_done, BAR_WIDTH, style),
+            Segment(" " * GAP),
+        ]
+
+    def stats_suffix(self, torrent: Torrent, style: StyleGetter) -> Line:
+        """Segments drawn in stats line after info column (under speeds)."""
+        return self.transferred_segments(torrent, style)
+
+    def transferred_segments(
+        self, torrent: Torrent, style: StyleGetter
+    ) -> Line:
+        """Uploaded and downloaded sizes, placed under speeds."""
+
+        def size(value: int | None) -> Line:
+            text = print_size(value, ndigits=1) if value else ""
+            # same layout as speed block, without arrow
+            return [Segment(f"   {text.ljust(SPEED_WIDTH)}", style("muted"))]
+
+        downloaded = None
+        if torrent.size_when_done is not None:
+            downloaded = torrent.size_when_done - torrent.left_until_done
+
+        return self.transfer_column(
+            size(torrent.uploaded_ever), size(downloaded)
         )
 
-    @log_time
-    def update_torrent(self, torrent: Torrent) -> None:
-        super().update_torrent(torrent)
-
-        with self.app.batch_update():
-            self.t_badges_markup = self.print_badges(
-                torrent.category, torrent.labels
-            )
-
-            self.t_status_markup = self.print_status(torrent.status)
-
-            self.t_eta = torrent.eta
-            self.t_peers_connected = torrent.peers_connected
-            self.t_leechers = torrent.peers_getting_from_us
-            self.t_seeders = torrent.peers_sending_to_us
-            self.t_ratio = torrent.ratio
-            self.t_priority = torrent.priority
-
-            if torrent.uploaded_ever:
-                self.t_stats_uploaded = (
-                    print_size(torrent.uploaded_ever, int_width=3, unit_width=1)
-                    + " uploaded"
-                )
-            else:
-                self.t_stats_uploaded = ""
-
-            peer_label = "peer" if self.t_peers_connected == 1 else "peers"
-
-            self.t_stats_peer = (
-                f"{self.t_peers_connected} {peer_label} [dim]•[/] "
-                f"{self.t_seeders} seed [dim]•[/] "
-                f"{self.t_leechers} leech"
-            )
-
-    @log_time
-    def print_size_stats(self, full_ratio=True) -> str:
-        result = None
-
-        if self.t_size_left > 0:
-            size_current = print_size(
-                self.t_size_total - self.t_size_left, int_width=3, unit_width=1
-            )
-            size_total = print_size(self.t_size_total)
-            progress = self.t_progress * 100
-            result = f"{size_current} / {size_total} [dim]|[/] {progress:.1f}%"
-
-            if self.t_eta:
-                result = (
-                    f"{result} [dim]|[/] "
-                    f"{print_time(self.t_eta.total_seconds(), 2)}"
-                )
-        else:
-            size_total = print_size(self.t_size_total, int_width=3)
-            result = f"{size_total} [dim]|[/] Ratio: {self.t_ratio:.2f}"
-
-        return result
-
-    @log_time
-    def print_status(self, status: str) -> str:
-        match status:
-            case "stopped":
-                return "[bold $background-lighten-3]" + status + "[/]"
-            case "check pending" | "checking":
-                return "[bold $error-darken-1]" + status + "[/]"
-            case "download pending" | "downloading":
-                return "[bold $primary]" + status + "[/]"
-            case "seed pending" | "seeding":
-                return "[bold $success]" + status + "[/]"
-            case _:
-                return "[bold]" + status + "[/]"
-
-    @log_time
-    def print_badges(self, category: str | None, labels: list | None) -> str:
+    def badge_segments(self, torrent: Torrent, style: StyleGetter) -> Line:
+        """Category and label badges, limited by count and text length."""
         badges = []
 
-        font = "$accent"
-        back_c = "$secondary-lighten-3"
-        back_l = "$secondary-lighten-2"
+        if torrent.category:
+            badges.append((torrent.category, "badge-category"))
 
-        max_length = self.app.badge_max_length
+        if torrent.labels:
+            badges.extend((label, "badge-label") for label in torrent.labels)
 
-        if category:
-            badges.append((esc_trunk(category, max_length), font, back_c))
-
-        if labels:
-            badges.extend(
-                (esc_trunk(label, max_length), font, back_l) for label in labels
-            )
-
-        # Don't draw badges if there are 0 of them or they are disabled
-        max_count = self.app.badge_max_count
+        max_count = self.badge_max_count
         if max_count == 0 or not badges:
-            return None
+            return []
 
-        # Trim number of badges to max limit
-        original_count = len(badges)
-        if max_count > 0:
+        if max_count > 0 and len(badges) > max_count:
+            remaining = len(badges) - max_count
             badges = badges[:max_count]
+        else:
+            remaining = 0
 
-        result = " ".join(f"[{f} on {b}] {s} [/]" for s, f, b in badges)
+        badges = [(f" {self.trim_badge(text)} ", name) for text, name in badges]
 
-        # Draw others counter (only if badge count was limited)
-        if max_count > 0:
-            remaining = original_count - max_count
-            if remaining > 0:
-                result += f" [{font} on {back_l}] +{remaining} [/]"
+        if remaining:
+            badges.append((f" +{remaining} ", "badge-label"))
+
+        result = []
+        for i, (text, name) in enumerate(badges):
+            if i > 0:
+                result.append(Segment(" "))
+            result.append(Segment(text, style(name)))
 
         return result
 
+    def trim_badge(self, text: str) -> str:
+        max_length = self.badge_max_length
+        if max_length > 0 and cell_len(text) > max_length:
+            return set_cell_size(text, max_length) + "…"
 
-class TorrentItemCard(TorrentItemCompact):
-    @log_time
-    def compose(self) -> ComposeResult:
-        with Horizontal(id="name-container"):
-            yield ReactiveLabel(id="queue", markup=False).data_bind(
-                name=TorrentItemCard.t_queue_indicator
-            )
-            yield ReactiveLabel(id="priority", markup=False).data_bind(
-                name=TorrentItemCard.t_priority_indicator
-            )
-            yield ReactiveLabel(id="name", markup=False).data_bind(
-                name=TorrentItemCard.t_name
-            )
+        return text
 
-        with Grid(id="speed"):
-            yield ReactiveLayoutLabel(markup=True).data_bind(
-                name=TorrentItemCard.t_badges_markup
-            )
-            yield Static(" ↑ ")
-            yield SpeedIndicator().data_bind(
-                speed=TorrentItemCard.t_upload_speed
-            )
-            yield Static(" ↓ ")
-            yield SpeedIndicator().data_bind(
-                speed=TorrentItemCard.t_download_speed
-            )
+    def bar_segments(
+        self, progress: float, width: int, style: StyleGetter
+    ) -> Line:
+        # Bar is drawn with half-cell precision: last complete cell may be
+        # filled only by its left half
+        width = max(0, width)
+        halves = min(width * 2, max(0, round(progress * width * 2)))
+        full, half = divmod(halves, 2)
 
-        yield (
-            ProgressBar(
-                total=1.0, show_percentage=False, show_eta=False
-            ).data_bind(progress=TorrentItemCard.t_progress)
-        )
+        bar_style = "bar-finished" if progress >= 1 else "bar-complete"
 
-        with Grid(id="stats"):
-            yield ReactiveLabel(classes="stat", markup=True).data_bind(
-                name=TorrentItemCard.t_status_markup
-            )
-            yield ReactiveLabel(classes="stat").data_bind(
-                name=TorrentItemCard.t_stats_uploaded
-            )
-            yield ReactiveLabel(classes="stat", markup=True).data_bind(
-                name=TorrentItemCard.t_stats_peer
-            )
-            yield ReactiveLabel(classes="stat", markup=True).data_bind(
-                name=TorrentItemCard.t_size_stats
-            )
+        return [
+            Segment("━" * full + "╸" * half, style(bar_style)),
+            Segment("━" * (width - full - half), style("bar-remaining")),
+        ]
+
+
+class CardRenderer(CompactRenderer):
+    """Oneline item with progress bar across info column and stats line."""
+
+    height = 4
+
+    def render(
+        self, torrent: Torrent, width: int, style: StyleGetter
+    ) -> list[Line]:
+        return [
+            self.main_line(torrent, width, style),
+            self.bar_line(torrent, width, style),
+            self.stats_line(torrent, width, style),
+            [],  # spacing between cards
+        ]
+
+    def bar_line(
+        self, torrent: Torrent, width: int, style: StyleGetter
+    ) -> Line:
+        bar_width = self.info_end(torrent, width, style) - self.info_start
+
+        return [
+            Segment(" " * self.info_start),
+            *self.bar_segments(torrent.percent_done, bar_width, style),
+            *self.transferred_segments(torrent, style),
+        ]
+
+    def stats_prefix(self, torrent: Torrent, style: StyleGetter) -> Line:
+        # progress bar has its own line
+        return []
+
+    def stats_suffix(self, torrent: Torrent, style: StyleGetter) -> Line:
+        # transferred sizes are in progress bar line
+        return []
+
+
+RENDERERS: dict[str, type[TorrentItemRenderer]] = {
+    "oneline": OnelineRenderer,
+    "compact": CompactRenderer,
+    "card": CardRenderer,
+}
+
+
+def create_renderer(
+    view_mode: str, badge_max_count: int = 3, badge_max_length: int = 10
+) -> TorrentItemRenderer:
+    return RENDERERS[view_mode](badge_max_count, badge_max_length)

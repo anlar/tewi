@@ -1,10 +1,14 @@
 import math
 from typing import ClassVar, Optional
 
+from rich.style import Style
 from textual import events, on
 from textual.binding import Binding, BindingType
+from textual.color import Color
+from textual.geometry import Region, Size
 from textual.reactive import reactive
-from textual.widgets import ListItem, ListView
+from textual.scroll_view import ScrollView
+from textual.strip import Strip
 
 from ...torrent.models import Torrent
 from ...util.log import log_time
@@ -35,31 +39,24 @@ from ..messages import (
 )
 from ..models import PageState
 from ..widget.torrent_item import (
-    TorrentItem,
-    TorrentItemCard,
-    TorrentItemCompact,
-    TorrentItemOneline,
+    TorrentItemRenderer,
+    create_renderer,
+    queue_width,
 )
 
 
-class TorrentListItem(ListItem):
-    """List item wrapper for TorrentItem with cached torrent ID for fast
-    comparison."""
+class TorrentListViewPanel(ScrollView, can_focus=True):
+    """Paged torrent list.
 
-    def __init__(self, *args, torrent_id=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.torrent_id = torrent_id  # Cache for fast is_equal_to_page checks
+    Items are not widgets: list draws only visible lines with Line API
+    (render_line), using renderer for current view mode. Rendered items are
+    cached and redrawn only when torrent data, width or highlight changes,
+    so cost of updates and cursor movement doesn't depend on page size.
+    """
 
-    def on_resize(self, event: events.Resize) -> None:
-        # ListView scrolls to highlighted item before newly mounted items
-        # are laid out (e.g. on page change), so scroll again when item
-        # gets its actual size
-        if self.highlighted and self.parent is not None:
-            self.parent.scroll_to_widget(self, animate=False)
-
-
-class TorrentListViewPanel(ListView):
     BINDINGS: ClassVar[list[BindingType]] = [
+        Binding("up", "cursor_up", show=False),
+        Binding("down", "cursor_down", show=False),
         Binding("k", "cursor_up", "[Navigation] Move up"),
         Binding("j", "cursor_down", "[Navigation] Move down"),
         Binding("g,home", "move_top", "[Navigation] Go to first item"),
@@ -91,10 +88,120 @@ class TorrentListViewPanel(ListView):
         Binding("N", "search_previous", "[Search] Previous result"),
     ]
 
-    # Redeclared from ListView to disable repaint: by default changing index
-    # repaints the whole list, while only highlighted items need it and they
-    # are repainted on their own by "-highlight" class change.
+    COMPONENT_CLASSES: ClassVar[set[str]] = {
+        "torrent-list--cursor",
+        "torrent-list--hover",
+        "torrent-list--even-row",
+        "torrent-list--odd-row",
+        "torrent-list--name",
+        "torrent-list--muted",
+        "torrent-list--status-download",
+        "torrent-list--status-seed",
+        "torrent-list--status-check",
+        "torrent-list--status-stop",
+        "torrent-list--status-unknown",
+        "torrent-list--priority-high",
+        "torrent-list--priority-low",
+        "torrent-list--speed-active",
+        "torrent-list--speed-up",
+        "torrent-list--speed-up-arrow",
+        "torrent-list--speed-down",
+        "torrent-list--speed-down-arrow",
+        "torrent-list--bar-complete",
+        "torrent-list--bar-finished",
+        "torrent-list--bar-remaining",
+        "torrent-list--badge-category",
+        "torrent-list--badge-label",
+        "torrent-list--cursor-badge-category",
+        "torrent-list--cursor-badge-label",
+    }
+
+    DEFAULT_CSS = """
+    TorrentListViewPanel {
+        background: $surface;
+        overflow-x: hidden;
+        /* keep columns in place (and aligned with state panel) whether
+           scrollbar is shown or not */
+        scrollbar-gutter: stable;
+
+        & > .torrent-list--even-row {
+            background: $surface-lighten-1 50%;
+        }
+        &:dark > .torrent-list--even-row {
+            background: $surface-darken-1 40%;
+        }
+        & > .torrent-list--hover {
+            background: $block-hover-background;
+        }
+        & > .torrent-list--cursor {
+            color: $block-cursor-blurred-foreground;
+            background: $block-cursor-blurred-background;
+            text-style: $block-cursor-blurred-text-style;
+        }
+        & > .torrent-list--cursor-badge-category {
+            color: auto 87%;
+            background: $accent 70%;
+        }
+        & > .torrent-list--cursor-badge-label {
+            color: auto 87%;
+            background: white 20%;
+        }
+        &:focus {
+            background-tint: $foreground 5%;
+            & > .torrent-list--cursor {
+                color: $block-cursor-foreground;
+                background: $block-cursor-background;
+                text-style: $block-cursor-text-style;
+            }
+        }
+
+        & > .torrent-list--name { text-style: bold; }
+        & > .torrent-list--muted { color: $text-muted; }
+        & > .torrent-list--status-download { color: $text-warning; }
+        & > .torrent-list--status-seed { color: $text-success; }
+        & > .torrent-list--status-check { color: $text-accent; }
+        & > .torrent-list--status-stop { color: $text-muted; }
+        & > .torrent-list--status-unknown {
+            color: $text-error;
+            text-style: bold;
+        }
+        & > .torrent-list--priority-high { color: $text-warning; }
+        & > .torrent-list--priority-low { color: $text-muted; }
+        & > .torrent-list--speed-active { text-style: bold; }
+        /* active speeds: solid blocks, readable on any row */
+        & > .torrent-list--speed-up {
+            color: auto 87%;
+            background: $success;
+        }
+        & > .torrent-list--speed-up-arrow { text-style: bold; }
+        & > .torrent-list--speed-down {
+            color: auto 87%;
+            background: $warning;
+        }
+        & > .torrent-list--speed-down-arrow { text-style: bold; }
+        /* ANSI colors can't be blended with white tint */
+        &:ansi > .torrent-list--cursor-badge-label {
+            color: auto 87%;
+            background: $secondary;
+        }
+        & > .torrent-list--bar-complete { color: $warning; }
+        & > .torrent-list--bar-finished { color: $success; }
+        & > .torrent-list--bar-remaining { color: $foreground 15%; }
+        & > .torrent-list--badge-category {
+            color: auto 87%;
+            background: $accent;
+        }
+        & > .torrent-list--badge-label {
+            color: auto 87%;
+            background: $secondary;
+        }
+    }
+    """
+
+    # Highlighted item index on current page. Changes repaint only lines of
+    # old and new highlighted items (see watch_index).
     index = reactive[Optional[int]](None, init=False, repaint=False)
+    hover_index = reactive[Optional[int]](None, init=False, repaint=False)
 
     r_torrents: list[Torrent] | None = reactive(None)
 
@@ -112,6 +219,8 @@ class TorrentListViewPanel(ListView):
         capability_set_priority: bool,
         capability_label: bool,
         capability_category: bool,
+        badge_max_count: int = 3,
+        badge_max_length: int = 10,
     ) -> None:
         self.page_size = page_size
         self.view_mode = view_mode
@@ -119,35 +228,34 @@ class TorrentListViewPanel(ListView):
         self.capability_label = capability_label
         self.capability_category = capability_category
 
+        self.badge_max_count = badge_max_count
+        self.badge_max_length = badge_max_length
+        self.queue_width = 0
+
+        self.renderer = self.create_renderer()
+        self.page_torrents: list[Torrent] = []
+        self.page_state: PageState | None = None
+
+        # item index -> (torrent, width, highlight kind, rendered lines)
+        self._item_cache: dict[int, tuple] = {}
+        # (component name, item base style) -> resolved style
+        self._style_cache: dict[tuple[str, Style], Style] = {}
+
         super().__init__(id=id)
 
     @log_time
     def watch_r_torrents(self, new_r_torrents):
+        self.update_queue_width(new_r_torrents or [])
+
         if new_r_torrents:
             self.update_page(torrents=new_r_torrents)
         else:
             self.update_page(torrents=[])
 
     @log_time
-    def is_equal_to_page(self, torrents) -> bool:
-        """Check if current page displays the same torrents (optimized with
-        cached IDs)."""
-        items = self.children
-
-        if len(torrents) != len(items):
-            return False
-
-        for i, torrent in enumerate(torrents):
-            # Use cached torrent_id for fast comparison instead of
-            # accessing widget internals
-            if torrent.hash != items[i].torrent_id:
-                return False
-
-        return True
-
-    @log_time
     def next_page(self, forward: bool) -> None:
         hl_torrent_id = self.get_hl_torrent_id()
+        next_torrent_id = None
 
         if hl_torrent_id:
             for i, item in enumerate(self.r_torrents):
@@ -155,13 +263,9 @@ class TorrentListViewPanel(ListView):
                     if forward is True:
                         if i + 1 < len(self.r_torrents):
                             next_torrent_id = self.r_torrents[i + 1].hash
-                        else:
-                            next_torrent_id = None
                     else:
                         if i > 0:
                             next_torrent_id = self.r_torrents[i - 1].hash
-                        else:
-                            next_torrent_id = None
 
         if next_torrent_id:
             self.update_page(self.r_torrents, next_torrent_id)
@@ -197,75 +301,38 @@ class TorrentListViewPanel(ListView):
 
     @log_time
     def draw_page(self, torrents, page, torrent_id, force) -> None:
-        """Draw a page of torrents with optimized widget recycling.
+        """Show page of torrents.
 
-        Performance optimization: Reuse existing widgets when possible
-        instead of recreating them, which is expensive (100+ ms for 50
-        items).
+        Only visible lines are repainted, and each of them is taken from
+        cache unless its torrent has changed.
         """
+        start = page * self.page_size
+        self.page_torrents = torrents[start : start + self.page_size]
 
-        page_torrents = torrents[
-            page * self.page_size : (page * self.page_size + self.page_size)
-        ]
-        existing_widgets = list(self.children)
-
-        # Fast path 1: Same page, same torrents - just update data
-        if not force and self.is_equal_to_page(page_torrents):
-            with self.app.batch_update():
-                for i, torrent in enumerate(page_torrents):
-                    existing_widgets[i]._nodes[0].update_torrent(torrent)
-
-                    if torrent_id == torrent.hash:
-                        self.index = self.validate_index(i)
-
-        # Fast path 2: Different page but same widget count - RECYCLE widgets
-        elif not force and len(existing_widgets) == len(page_torrents):
-            hl_idx = None
-
-            with self.app.batch_update():
-                for i, torrent in enumerate(page_torrents):
-                    # Reuse existing widget, update its data and cached ID
-                    widget = existing_widgets[i]
-                    widget.torrent_id = torrent.hash  # Update cached ID
-                    widget._nodes[0].update_torrent(
-                        torrent
-                    )  # Update torrent data
-
-                    if torrent.hash == torrent_id:
-                        hl_idx = i
-
-            # Update highlight
-            self.index = self.validate_index(hl_idx)
-
-            # Update page state
-            state = PageState(current=page, total=self.total_pages(torrents))
-            self.post_message(PageChangedEvent(state))
-
-        # Slow path: Different widget count or forced - recreate everything
+        if force:
+            self._item_cache.clear()
         else:
-            torrent_widgets = []
-            hl_idx = None
+            self._prune_cache()
 
-            for i, t in enumerate(page_torrents):
-                item = self.create_item(t)
-                list_item = TorrentListItem(
-                    item, torrent_id=t.hash
-                )  # Pass cached ID
+        hl_idx = next(
+            (
+                i
+                for i, t in enumerate(self.page_torrents)
+                if t.hash == torrent_id
+            ),
+            None,
+        )
 
-                if t.hash == torrent_id:
-                    hl_idx = i
-                    list_item.highlighted = True
+        self._update_virtual_size()
+        self.index = self.validate_index(hl_idx)
+        self.refresh()
 
-                torrent_widgets.append(list_item)
+        # page change resets scroll, so scroll to cursor after layout
+        self.call_after_refresh(self._scroll_to_cursor)
 
-            self.clear()
-            self.insert(0, torrent_widgets)
-
-            # select
-            self.index = self.validate_index(hl_idx)
-
-            state = PageState(current=page, total=self.total_pages(torrents))
-
+        state = PageState(current=page, total=self.total_pages(torrents))
+        if force or state != self.page_state:
+            self.page_state = state
             self.post_message(PageChangedEvent(state))
 
     @log_time
@@ -275,16 +342,179 @@ class TorrentListViewPanel(ListView):
         else:
             return math.ceil(len(torrents) / self.page_size)
 
-    @log_time
-    def create_item(self, torrent) -> TorrentItem:
-        if self.view_mode == "card":
-            item = TorrentItemCard(torrent)
-        elif self.view_mode == "compact":
-            item = TorrentItemCompact(torrent)
-        elif self.view_mode == "oneline":
-            item = TorrentItemOneline(torrent)
+    def create_renderer(self) -> TorrentItemRenderer:
+        renderer = create_renderer(
+            self.view_mode, self.badge_max_count, self.badge_max_length
+        )
+        renderer.queue_width = self.queue_width
+        return renderer
 
-        return item
+    def update_queue_width(self, torrents: list[Torrent]) -> None:
+        """Fit queue column to the largest queue position in the list."""
+        width = queue_width(torrents)
+
+        if width != self.queue_width:
+            self.queue_width = width
+            self.renderer.queue_width = width
+            self._item_cache.clear()
+
+    def validate_index(self, index: Optional[int]) -> Optional[int]:
+        """Clamp index to current page; highlight first item by default."""
+        if not self.page_torrents:
+            return None
+
+        if index is None:
+            return 0
+
+        return min(max(index, 0), len(self.page_torrents) - 1)
+
+    # Rendering
+
+    def render_line(self, y: int) -> Strip:
+        height = self.renderer.height
+        width = self.scrollable_content_region.width
+
+        idx, line = divmod(self.scroll_offset.y + y, height)
+
+        if idx >= len(self.page_torrents):
+            return Strip.blank(width, self.rich_style)
+
+        return self._render_item(idx, width)[line]
+
+    def _render_item(self, idx: int, width: int) -> list[Strip]:
+        torrent = self.page_torrents[idx]
+
+        if idx == self.index:
+            kind = "cursor"
+        elif idx == self.hover_index:
+            kind = "hover"
+        elif idx % 2:
+            kind = "odd-row"
+        else:
+            kind = "even-row"
+
+        cached = self._item_cache.get(idx)
+        if cached is not None:
+            c_torrent, c_width, c_kind, strips = cached
+            if c_width == width and c_kind == kind and c_torrent == torrent:
+                return strips
+
+        base = self.get_component_rich_style(f"torrent-list--{kind}")
+
+        def style(name: str) -> Style:
+            # Item may override component style for itself, e.g. use
+            # "cursor-badge-label" instead of "badge-label" for cursor
+            override = f"{kind}-{name}"
+            if f"torrent-list--{override}" in self.COMPONENT_CLASSES:
+                name = override
+            return self._component_style(name, base)
+
+        lines = self.renderer.render(torrent, width, style)
+        strips = [
+            Strip(line).apply_style(base).adjust_cell_length(width, base)
+            for line in lines
+        ]
+
+        self._item_cache[idx] = (torrent, width, kind, strips)
+        return strips
+
+    def _component_style(self, name: str, base: Style) -> Style:
+        """Return component style with colors blended over item background.
+
+        Theme colors may be semi-transparent (e.g. $text-muted), while Rich
+        styles can't express transparency, so blend them explicitly.
+        """
+        key = (name, base)
+        if (style := self._style_cache.get(key)) is not None:
+            return style
+
+        styles = self.get_component_styles(f"torrent-list--{name}")
+        style = styles.text_style
+
+        background = Color.from_rich_color(base.bgcolor)
+
+        if styles.has_rule("background"):
+            background += styles.background
+            style += Style(bgcolor=background.rich_color)
+
+        if styles.has_rule("color"):
+            if styles.auto_color:
+                contrast = background.get_contrast_text(styles.color.a)
+                color = background + contrast
+            else:
+                color = background + styles.color
+            style += Style(color=color.rich_color)
+
+        self._style_cache[key] = style
+        return style
+
+    def _prune_cache(self) -> None:
+        count = len(self.page_torrents)
+        for idx in [i for i in self._item_cache if i >= count]:
+            del self._item_cache[idx]
+
+    def _update_virtual_size(self) -> None:
+        height = len(self.page_torrents) * self.renderer.height
+        self.virtual_size = Size(self.scrollable_content_region.width, height)
+
+    def _refresh_item(self, idx: Optional[int]) -> None:
+        if idx is not None:
+            height = self.renderer.height
+            self.refresh_lines(idx * height, height)
+
+    def _scroll_to_cursor(self) -> None:
+        if self.index is not None:
+            height = self.renderer.height
+            self.scroll_to_region(
+                Region(0, self.index * height, 1, height),
+                animate=False,
+                force=True,
+            )
+
+    def watch_index(
+        self, old_index: Optional[int], new_index: Optional[int]
+    ) -> None:
+        self._refresh_item(old_index)
+        self._refresh_item(new_index)
+        self._scroll_to_cursor()
+
+    def watch_hover_index(
+        self, old_index: Optional[int], new_index: Optional[int]
+    ) -> None:
+        self._refresh_item(old_index)
+        self._refresh_item(new_index)
+
+    def notify_style_update(self) -> None:
+        # theme or focus changed: cached items have outdated styles
+        self._item_cache.clear()
+        self._style_cache.clear()
+        super().notify_style_update()
+
+    def on_resize(self, event: events.Resize) -> None:
+        self._item_cache.clear()
+        self._update_virtual_size()
+        self._scroll_to_cursor()
+
+    # Mouse
+
+    def _item_at(self, event: events.MouseEvent) -> Optional[int]:
+        offset = event.get_content_offset(self)
+        if offset is None:
+            return None
+
+        idx = (offset.y + self.scroll_offset.y) // self.renderer.height
+        return idx if idx < len(self.page_torrents) else None
+
+    def on_click(self, event: events.Click) -> None:
+        if (idx := self._item_at(event)) is not None:
+            self.index = idx
+            self.action_select_cursor()
+
+    def on_mouse_move(self, event: events.MouseMove) -> None:
+        self.hover_index = self._item_at(event)
+
+    def on_leave(self, event: events.Leave) -> None:
+        self.hover_index = None
 
     # Actions
 
@@ -307,13 +537,13 @@ class TorrentListViewPanel(ListView):
 
     @log_time
     def action_move_top(self) -> None:
-        if len(self.children) > 0:
+        if self.page_torrents:
             self.index = 0
 
     @log_time
     def action_move_bottom(self) -> None:
-        if len(self.children) > 0:
-            self.index = len(self.children) - 1
+        if self.page_torrents:
+            self.index = len(self.page_torrents) - 1
 
     @log_time
     def action_page_down(self) -> None:
@@ -334,16 +564,8 @@ class TorrentListViewPanel(ListView):
     @log_time
     def visible_items_count(self) -> int:
         """Return number of items that fit into the displayed list area."""
-        if len(self.children) == 0:
-            return 1
-
-        item_height = self.children[0].outer_size.height
         view_height = self.scrollable_content_region.height
-
-        if item_height <= 0:
-            return 1
-
-        return max(1, view_height // item_height)
+        return max(1, view_height // self.renderer.height)
 
     @log_time
     def move_cursor_by(self, offset: int) -> None:
@@ -365,17 +587,26 @@ class TorrentListViewPanel(ListView):
 
     @log_time
     def action_cursor_down(self) -> None:
-        if self.index == len(self.children) - 1:
+        if self.index is None:
+            self.index = self.validate_index(None)
+        elif self.index == len(self.page_torrents) - 1:
             self.next_page(True)
         else:
-            super().action_cursor_down()
+            self.index += 1
 
     @log_time
     def action_cursor_up(self) -> None:
-        if self.index == 0:
+        if self.index is None:
+            self.index = self.validate_index(None)
+        elif self.index == 0:
             self.next_page(False)
         else:
-            super().action_cursor_up()
+            self.index -= 1
+
+    @log_time
+    def action_select_cursor(self) -> None:
+        if (torrent_id := self.get_hl_torrent_id()) is not None:
+            self.post_message(OpenTorrentInfoCommand(torrent_id))
 
     # Actions: torrent
 
@@ -465,7 +696,8 @@ class TorrentListViewPanel(ListView):
         elif self.view_mode == "oneline":
             self.view_mode = "card"
 
-        self.update_page(self.r_torrents, force=True)
+        self.renderer = self.create_renderer()
+        self.update_page(self.r_torrents or [], force=True)
 
     # Actions: Search
 
@@ -579,26 +811,26 @@ class TorrentListViewPanel(ListView):
     # Handlers
 
     @log_time
-    @on(ListView.Selected)
-    def handle_selected(self, event: ListView.Selected) -> None:
-        torrent_id = event.item._nodes[0].torrent.hash
-        self.post_message(OpenTorrentInfoCommand(torrent_id))
-
-    @log_time
     @on(TorrentRemovedEvent)
     def handle_torrent_removed_event(self, event: TorrentRemovedEvent) -> None:
-        self._remove_child(event.torrent_hash)
+        self._remove_item(event.torrent_hash)
 
     @log_time
     @on(TorrentTrashedEvent)
     def handle_torrent_trashed_event(self, event: TorrentRemovedEvent) -> None:
-        self._remove_child(event.torrent_hash)
+        self._remove_item(event.torrent_hash)
 
     @log_time
-    def _remove_child(self, torrent_hash: str) -> None:
-        for i, child in enumerate(self.children):
-            if torrent_hash == child._nodes[0].torrent.hash:
-                self.remove_items([i])
+    def _remove_item(self, torrent_hash: str) -> None:
+        """Remove torrent from page until next torrent list update."""
+        self.page_torrents = [
+            t for t in self.page_torrents if t.hash != torrent_hash
+        ]
+
+        self._item_cache.clear()
+        self._update_virtual_size()
+        self.index = self.validate_index(self.index)
+        self.refresh()
 
     # Common helpers
 
@@ -614,11 +846,11 @@ class TorrentListViewPanel(ListView):
         )
 
     @log_time
-    def get_hl_torrent(self) -> Optional[int]:
-        if (hl_item := self.highlighted_child) is not None:
-            return hl_item._nodes[0].torrent
+    def get_hl_torrent(self) -> Optional[Torrent]:
+        if self.index is not None and self.index < len(self.page_torrents):
+            return self.page_torrents[self.index]
 
     @log_time
-    def get_hl_torrent_id(self) -> Optional[int]:
+    def get_hl_torrent_id(self) -> Optional[str]:
         if (hl_torrent := self.get_hl_torrent()) is not None:
             return hl_torrent.hash
