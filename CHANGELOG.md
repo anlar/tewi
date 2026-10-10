@@ -19,14 +19,14 @@ handle multi-line list body as single line.
 ### Changed
 
 - Declare `requests` as an explicit dependency (used by Deluge client, previously installed only transitively via `qbittorrent-api`)
-- Default torrent list view mode changed from `card` to `compact`
 - `PgUp`/`PgDown` in torrent list now scroll by page instead of jumping to first/last item
 - Ask for confirmation before starting or stopping all torrents
 - Torrent list shows and sorts by size of selected files
 - Torrent details show selected size and files count next to totals when some files are skipped
-- Faster cursor movement in torrent list: only highlighted items are repainted instead of the whole list
-- Raise minimum required Textual version to 2.0.0 (older versions fail to render torrent category and label badges)
+- Raise minimum required Textual version to 0.86.0 (themes support: theme selector and theme colors in torrent list)
 - Fix torrent list scroll to highlighted item when switching to page with different number of torrents (e.g. moving up from last page left list scrolled to top)
+- Rewrite torrent list with Textual line API (only visible lines are drawn) for much faster loading, updates and scrolling, and redesign it
+- Default torrent list page size increased from 30 to 1000
 
 ## [2.6.0] - 2026-09-24 - Hop Collector
 
