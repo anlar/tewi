@@ -269,11 +269,12 @@ class OnelineRenderer(TorrentItemRenderer):
     def speed_block(
         self, arrow: str, speed: int, name: str, style: StyleGetter
     ) -> Line:
-        """Arrow and speed; active speed is highlighted with background."""
+        """Arrow and speed: active speed is highlighted with background,
+        zero speed is dimmed."""
         text = print_speed(speed, dash_for_zero=True).ljust(SPEED_WIDTH)
 
         if not speed:
-            return [Segment(f" {arrow} {text}")]
+            return [Segment(f" {arrow} {text}", style("muted"))]
 
         block = style(name)
         return [

@@ -107,10 +107,6 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         "torrent-list--speed-up-arrow",
         "torrent-list--speed-down",
         "torrent-list--speed-down-arrow",
-        "torrent-list--cursor-speed-up",
-        "torrent-list--cursor-speed-up-arrow",
-        "torrent-list--cursor-speed-down",
-        "torrent-list--cursor-speed-down-arrow",
         "torrent-list--bar-complete",
         "torrent-list--bar-finished",
         "torrent-list--bar-remaining",
@@ -172,35 +168,21 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         & > .torrent-list--priority-high { color: $text-warning; }
         & > .torrent-list--priority-low { color: $text-muted; }
         & > .torrent-list--speed-active { text-style: bold; }
-        & > .torrent-list--speed-up { background: $success-muted; }
-        & > .torrent-list--speed-up-arrow {
-            color: $text-success;
-            text-style: bold;
-        }
-        & > .torrent-list--speed-down { background: $warning-muted; }
-        & > .torrent-list--speed-down-arrow {
-            color: $text-warning;
-            text-style: bold;
-        }
-        /* on cursor row arrows use contrast color of the block (classes
-           cursor-speed-*-arrow are intentionally left empty) */
-        & > .torrent-list--cursor-speed-up {
+        /* active speeds: solid blocks, readable on any row */
+        & > .torrent-list--speed-up {
             color: auto 87%;
-            background: $success 70%;
+            background: $success;
         }
-        & > .torrent-list--cursor-speed-down {
+        & > .torrent-list--speed-up-arrow { text-style: bold; }
+        & > .torrent-list--speed-down {
             color: auto 87%;
-            background: $warning 70%;
+            background: $warning;
         }
+        & > .torrent-list--speed-down-arrow { text-style: bold; }
         /* ANSI colors can't be blended with white tint */
         &:ansi > .torrent-list--cursor-badge-label {
             color: auto 87%;
             background: $secondary;
-        }
-        /* ANSI themes have no muted colors: arrow color equals background */
-        &:ansi > .torrent-list--speed-up,
-        &:ansi > .torrent-list--speed-down {
-            background: ansi_default;
         }
         & > .torrent-list--bar-complete { color: $warning; }
         & > .torrent-list--bar-finished { color: $success; }
