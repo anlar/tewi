@@ -192,6 +192,11 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
             color: auto 87%;
             background: $warning 70%;
         }
+        /* ANSI colors can't be blended with white tint */
+        &:ansi > .torrent-list--cursor-badge-label {
+            color: auto 87%;
+            background: $secondary;
+        }
         /* ANSI themes have no muted colors: arrow color equals background */
         &:ansi > .torrent-list--speed-up,
         &:ansi > .torrent-list--speed-down {
@@ -201,12 +206,12 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         & > .torrent-list--bar-finished { color: $success; }
         & > .torrent-list--bar-remaining { color: $foreground 15%; }
         & > .torrent-list--badge-category {
-            color: $text-accent;
-            background: $accent-muted;
+            color: auto 87%;
+            background: $accent;
         }
         & > .torrent-list--badge-label {
-            color: $text-primary;
-            background: $primary-muted;
+            color: auto 87%;
+            background: $secondary;
         }
     }
     """
