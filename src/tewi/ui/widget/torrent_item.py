@@ -286,7 +286,8 @@ class OnelineRenderer(TorrentItemRenderer):
 
 
 class CompactRenderer(OnelineRenderer):
-    """Oneline item with second line: progress bar, status and peers."""
+    """Oneline item with second line: progress bar, status, peers, badges
+    and transferred sizes."""
 
     height = 2
 
@@ -313,19 +314,19 @@ class CompactRenderer(OnelineRenderer):
         stats = print_stats(torrent)
         badges = self.badge_segments(torrent, style)
 
-        if not badges:
-            return [*left, Segment(stats, style("muted"))]
-
-        # Align badges to the right edge of info column (above it is ratio),
-        # stats take the space left between and are truncated if needed
+        # Stats fill info column up to its right edge (above it is ratio),
+        # badges are aligned to that edge, stats are truncated if needed
         info_end = self.info_end(torrent, width, style)
-        stats_width = info_end - line_width(left) - line_width(badges) - GAP
+        stats_width = info_end - line_width(left)
+        if badges:
+            stats_width -= line_width(badges) + GAP
+            badges = [Segment(" " * GAP), *badges]
 
         return [
             *left,
             Segment(fit(stats, stats_width), style("muted")),
-            Segment(" " * GAP),
             *badges,
+            *self.stats_suffix(torrent, style),
         ]
 
     def stats_prefix(self, torrent: Torrent, style: StyleGetter) -> Line:
@@ -334,6 +335,28 @@ class CompactRenderer(OnelineRenderer):
             *self.bar_segments(torrent.percent_done, BAR_WIDTH, style),
             Segment(" " * GAP),
         ]
+
+    def stats_suffix(self, torrent: Torrent, style: StyleGetter) -> Line:
+        """Segments drawn in stats line after info column (under speeds)."""
+        return self.transferred_segments(torrent, style)
+
+    def transferred_segments(
+        self, torrent: Torrent, style: StyleGetter
+    ) -> Line:
+        """Uploaded and downloaded sizes, placed under speeds."""
+
+        def size(value: int | None) -> Line:
+            text = print_size(value, ndigits=1) if value else ""
+            # same layout as speed block, without arrow
+            return [Segment(f"   {text.ljust(SPEED_WIDTH)}", style("muted"))]
+
+        downloaded = None
+        if torrent.size_when_done is not None:
+            downloaded = torrent.size_when_done - torrent.left_until_done
+
+        return self.transfer_column(
+            size(torrent.uploaded_ever), size(downloaded)
+        )
 
     def badge_segments(self, torrent: Torrent, style: StyleGetter) -> Line:
         """Category and label badges, limited by count and text length."""
@@ -418,26 +441,12 @@ class CardRenderer(CompactRenderer):
             *self.transferred_segments(torrent, style),
         ]
 
-    def transferred_segments(
-        self, torrent: Torrent, style: StyleGetter
-    ) -> Line:
-        """Uploaded and downloaded sizes, placed under speeds."""
-
-        def size(value: int | None) -> Line:
-            text = print_size(value, ndigits=1) if value else ""
-            # same layout as speed block, without arrow
-            return [Segment(f"   {text.ljust(SPEED_WIDTH)}", style("muted"))]
-
-        downloaded = None
-        if torrent.size_when_done is not None:
-            downloaded = torrent.size_when_done - torrent.left_until_done
-
-        return self.transfer_column(
-            size(torrent.uploaded_ever), size(downloaded)
-        )
-
     def stats_prefix(self, torrent: Torrent, style: StyleGetter) -> Line:
         # progress bar has its own line
+        return []
+
+    def stats_suffix(self, torrent: Torrent, style: StyleGetter) -> Line:
+        # transferred sizes are in progress bar line
         return []
 
 
