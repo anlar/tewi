@@ -961,7 +961,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     p.add_argument(
         "--view-mode",
         type=str,
-        default="compact",
+        default="card",
         choices=["card", "compact", "oneline"],
         action=TrackSetAction,
         help="View mode for torrents in list",
@@ -983,7 +983,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     p.add_argument(
         "--page-size",
         type=int,
-        default=30,
+        default=1000,
         action=TrackSetAction,
         help="Number of torrents displayed per page",
     )
