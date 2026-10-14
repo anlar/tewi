@@ -1,4 +1,4 @@
-magnet:?xt=urn:btih:d4487f489d4ee786f99bcdeeb8d3f226694ea27f&dn=archlinux-2025.11.01-x86_64.iso
+magnet:?xt=urn:btih:9b521219bc48550140a666f74a29048ed78e933b&dn=archlinux-2026.10.01-x86_64.iso
 magnet:?xt=urn:btih:dd8255ecdc7ca55fb0bbf81323d87062db1f6d1c&dn=Big%2BBuck%2BBunny
 magnet:?xt=urn:btih:026c3f93dca05a69d228191f085442d936803b39&dn=Fedora-i3-Live-x86_64-41
 magnet:?xt=urn:btih:40995979359c73e1ec88146697ba0346b3423afc&dn=debian-mac-13.1.0-amd64-netinst.iso
