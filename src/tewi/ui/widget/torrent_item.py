@@ -121,7 +121,7 @@ def print_item_ratio(ratio: float | None) -> str:
         return print_ratio(ratio, ndigits=1)
 
 
-def print_stats(torrent: Torrent) -> str:
+def print_stats(torrent: Torrent, eta_abbr: bool = True) -> str:
     peers = torrent.peers_connected
 
     parts = [
@@ -132,7 +132,7 @@ def print_stats(torrent: Torrent) -> str:
 
     eta = torrent.eta
     if eta and eta.total_seconds() > 0:
-        eta_str = print_time(eta.total_seconds(), abbr=True, units=2)
+        eta_str = print_time(eta.total_seconds(), abbr=eta_abbr, units=2)
         parts.insert(0, f"ETA: {eta_str}")
 
     return " • ".join(parts)
@@ -303,6 +303,9 @@ class CompactRenderer(OnelineRenderer):
 
     height = 2
 
+    eta_abbr: ClassVar[bool] = True
+    """Use abbreviated time units in ETA (e.g. 1h, 5m)."""
+
     def render(
         self, torrent: Torrent, width: int, style: StyleGetter
     ) -> list[Line]:
@@ -323,7 +326,7 @@ class CompactRenderer(OnelineRenderer):
             Segment(" " * GAP),
         ]
 
-        stats = print_stats(torrent)
+        stats = print_stats(torrent, self.eta_abbr)
         badges = self.badge_segments(torrent, style)
 
         # Stats fill info column up to its right edge (above it is ratio),
@@ -431,6 +434,7 @@ class CardRenderer(CompactRenderer):
     """Oneline item with progress bar across info column and stats line."""
 
     height = 4
+    eta_abbr = False
 
     def render(
         self, torrent: Torrent, width: int, style: StyleGetter
