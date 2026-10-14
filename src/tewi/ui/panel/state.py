@@ -53,13 +53,13 @@ class StatePanel(Static):
                 name=StatePanel.r_speed_limit_delimiter
             )
             yield Static("↑", classes="column arrow")
-            yield SpeedIndicator(classes="column").data_bind(
+            yield SpeedIndicator(id="upload-speed", classes="column").data_bind(
                 speed=StatePanel.r_upload_speed
             )
             yield Static("↓", classes="column arrow")
-            yield SpeedIndicator(classes="column").data_bind(
-                speed=StatePanel.r_download_speed
-            )
+            yield SpeedIndicator(
+                id="download-speed", classes="column"
+            ).data_bind(speed=StatePanel.r_download_speed)
 
     @log_time
     def watch_r_sort_order(self, new_r_sort_order: SortOrder) -> None:

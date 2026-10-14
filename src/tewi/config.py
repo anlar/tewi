@@ -423,7 +423,7 @@ password =
 path =
 
 [ui]
-# View mode for torrent list: card, compact, or oneline
+# View mode for torrent list: card, compact, or oneline (default: card)
 view_mode =
 
 # Color theme (default: textual-dark)
@@ -431,7 +431,7 @@ view_mode =
 # gruvbox, dracula, monokai, solarized-dark
 theme =
 
-# Number of torrents displayed per page
+# Number of torrents displayed per page (default: 1000)
 page_size =
 
 # Filter torrents by status: all, active, downloading, seeding, paused, finished
