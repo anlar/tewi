@@ -439,7 +439,14 @@ class CardRenderer(CompactRenderer):
             self.main_line(torrent, width, style),
             self.bar_line(torrent, width, style),
             self.stats_line(torrent, width, style),
-            [],  # spacing between cards
+            self.separator_line(width, style),
+        ]
+
+    def separator_line(self, width: int, style: StyleGetter) -> Line:
+        """Thin line separating cards."""
+        return [
+            Segment(" " * PAD),
+            Segment("─" * max(0, width - PAD * 2), style("separator")),
         ]
 
     def bar_line(

@@ -110,6 +110,7 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         "torrent-list--bar-complete",
         "torrent-list--bar-finished",
         "torrent-list--bar-remaining",
+        "torrent-list--separator",
         "torrent-list--badge-category",
         "torrent-list--badge-label",
         "torrent-list--cursor-badge-category",
@@ -187,6 +188,7 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         & > .torrent-list--bar-complete { color: $warning; }
         & > .torrent-list--bar-finished { color: $success; }
         & > .torrent-list--bar-remaining { color: $foreground 15%; }
+        & > .torrent-list--separator { color: $foreground 25%; }
         & > .torrent-list--badge-category {
             color: auto 87%;
             background: $accent;
