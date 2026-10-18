@@ -10,6 +10,8 @@ handle multi-line list body as single line.
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-10-18 - Hypersonic Paws
+
 ### Added
 
 - Add rTorrent support (0.9.7 or newer), connecting directly via SCGI or via XML-RPC over HTTP when `--path` is set [#109](https://github.com/anlar/tewi/pull/109)
