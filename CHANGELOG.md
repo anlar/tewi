@@ -10,6 +10,10 @@ handle multi-line list body as single line.
 
 ## [Unreleased]
 
+### Changed
+
+- Fix crash when opening torrent details on older Textual caused by unsupported column keys in files table
+
 ## [3.0.0] - 2026-10-18 - Hypersonic Paws
 
 ### Added

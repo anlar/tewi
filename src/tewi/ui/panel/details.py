@@ -325,14 +325,12 @@ class TorrentInfoPanel(ScrollableContainer):
     @log_time
     def create_table_files_columns(self) -> None:
         table = self.query_one("#files")
-        table.add_columns(
-            ("", "Sel"),
-            (Text("ID", justify="right"), "ID"),
-            (Text("Size", justify="right"), "Size"),
-            (Text("Done", justify="right"), "Done"),
-            ("P", "P"),
-            ("Name", "Name"),
-        )
+        table.add_column("", key="Sel")
+        table.add_column(Text("ID", justify="right"), key="ID")
+        table.add_column(Text("Size", justify="right"), key="Size")
+        table.add_column(Text("Done", justify="right"), key="Done")
+        table.add_column("P", key="P")
+        table.add_column("Name", key="Name")
 
     @log_time
     def create_table_peers_columns(self) -> None:
