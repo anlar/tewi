@@ -132,6 +132,9 @@ class ReactiveLabel(Label):
 class ReactiveLayoutLabel(ReactiveLabel):
     name = reactive(None, layout=True)
 
+    def __init__(self, *args, markup=False, **kwargs):
+        super().__init__(*args, markup=markup, **kwargs)
+
 
 class ReactiveLinkLabel(Static):
     """Label showing its value as clickable link when it is a single URL.

@@ -42,6 +42,17 @@
     width: 1fr;
 }
 
+/* connection status: hidden when connected, badge when disconnected */
+#info-panel > #connection {
+    display: none;
+}
+
+#info-panel > #connection.disconnected {
+    display: block;
+    color: $text;
+    background: $error;
+}
+
 /* STATE PANEL */
 
 #state-panel {

@@ -13,6 +13,7 @@ handle multi-line list body as single line.
 ### Changed
 
 - Fix crash when opening torrent details on older Textual caused by unsupported column keys in files table
+- Show connection status in top panel only when disconnected, as readable badge after host (connection dot colors were unreadable in some themes)
 
 ## [3.0.0] - 2026-10-18 - Hypersonic Paws
 
