@@ -73,9 +73,9 @@ class TorrentWebSearch(Static):
         self._display_results: list[SearchResult] = []
 
         # Workaround to get color from theme, because DataTable doesn't
-        # support CSS variables lik $success.
+        # support CSS variables like $text-success.
         # See: https://github.com/Textualize/textual/issues/6273
-        self.color_success = self.app.current_theme.success
+        self.color_success = self.app.get_css_variables()["text-success"]
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -105,6 +105,12 @@ class TorrentWebSearch(Static):
             ("X", "Close"),
         )
         self.create_table_columns()
+        self.app.theme_changed_signal.subscribe(self, self.on_theme_changed)
+
+    @log_time
+    def on_theme_changed(self, _theme) -> None:
+        self.color_success = self.app.get_css_variables()["text-success"]
+        self.draw_table(self.r_results)
 
     @log_time
     def execute_search(

@@ -26,6 +26,7 @@
 
 #info-panel {
     height: auto;
+    color: $text;
     background: $secondary;
 }
 
@@ -64,16 +65,18 @@
 }
 
 #state-panel > .column {
+    color: $text;
     padding: 0 1;
 }
 
 StatePanel > .search {
     dock: left;
+    color: $text;
     background: $primary;
 }
 
 #state-panel > .page {
-    color: $warning;
+    text-style: bold;
     padding: 0;
 }
 
@@ -151,7 +154,7 @@ TorrentInfoPanel .overview-bottom {
 }
 
 TorrentInfoPanel .overview-block {
-    border: round white 75%;
+    border: round $foreground 75%;
 
     height: auto;
 
@@ -509,7 +512,7 @@ TorrentDetailsWidget {
 TorrentDetailsWidget > .details-title {
     text-style: bold;
     text-align: center;
-    color: $accent;
+    color: $text-accent;
     height: auto;
 }
 
@@ -547,7 +550,7 @@ TorrentWebSearch #search-query-label {
     height: auto;
     width: 100%;
     text-style: bold;
-    color: $accent;
+    color: $text-accent;
     margin: 1;
 }
 

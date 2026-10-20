@@ -113,16 +113,32 @@ class TorrentInfoPanel(ScrollableContainer):
         self.file_list = []
         self.selected_file_ids: set[int] = set()
 
-        self.color_priority_low = self.app.current_theme.accent
-        self.color_priority_high = self.app.current_theme.error
+        self.priority_display = self.build_priority_display()
 
-        # Build priority display mapping
-        self.priority_display = {
+    @log_time
+    def build_priority_display(self) -> dict[TorrentFilePriority, str]:
+        """Build file priority markup using current theme colors.
+
+        DataTable cells don't support CSS variables like $text-error,
+        so colors are resolved from theme and rebuilt on theme change.
+        See: https://github.com/Textualize/textual/issues/6273
+        """
+        variables = self.app.get_css_variables()
+        color_low = variables["text-accent"]
+        color_high = variables["text-error"]
+
+        return {
             TorrentFilePriority.NOT_DOWNLOADING: "[dim]-[/]",
-            TorrentFilePriority.LOW: f"[dim {self.color_priority_low}]↓[/]",
+            TorrentFilePriority.LOW: f"[dim {color_low}]↓[/]",
             TorrentFilePriority.MEDIUM: "→",
-            TorrentFilePriority.HIGH: f"[bold {self.color_priority_high}]↑[/]",
+            TorrentFilePriority.HIGH: f"[bold {color_high}]↑[/]",
         }
+
+    @log_time
+    def on_theme_changed(self, _theme) -> None:
+        self.priority_display = self.build_priority_display()
+        if self.r_torrent and self.file_list:
+            self.refresh_file_table_selection()
 
     r_torrent = reactive(None)
 
@@ -318,6 +334,7 @@ class TorrentInfoPanel(ScrollableContainer):
 
     @log_time
     def on_mount(self):
+        self.app.theme_changed_signal.subscribe(self, self.on_theme_changed)
         self.create_table_files_columns()
         self.create_table_peers_columns()
         self.create_table_trackers_columns()

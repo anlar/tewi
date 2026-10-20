@@ -14,6 +14,7 @@ handle multi-line list body as single line.
 
 - Fix crash when opening torrent details on older Textual caused by unsupported column keys in files table
 - Show connection status in top panel only when disconnected, as readable badge after host (connection dot colors were unreadable in some themes)
+- Fix unreadable text in non-default themes: top and bottom panels use auto contrast text color, and other text uses `$text-*` theme colors updated on theme change
 
 ## [3.0.0] - 2026-10-18 - Hypersonic Paws
 
