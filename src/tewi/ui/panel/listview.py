@@ -241,14 +241,16 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         &:ansi > .torrent-list--speed-down {
             color: ansi_black;
         }
-        & > .torrent-list--bar-complete { color: $warning; }
-        & > .torrent-list--bar-finished { color: $success; }
+        /* $text-* variants are adjusted to be visible on list background
+           (e.g. darker yellow in light themes) */
+        & > .torrent-list--bar-complete { color: $text-warning; }
+        & > .torrent-list--bar-finished { color: $text-success; }
         & > .torrent-list--bar-remaining { color: $foreground 15%; }
         /* bar colors may be close to cursor color, so draw bar on cursor
            with cursor text color */
         & > .torrent-list--cursor-bar-complete,
         & > .torrent-list--cursor-bar-finished { color: auto 87%; }
-        & > .torrent-list--cursor-bar-remaining { color: auto 25%; }
+        & > .torrent-list--cursor-bar-remaining { color: auto 45%; }
         &:ansi > .torrent-list--cursor-bar-complete,
         &:ansi > .torrent-list--cursor-bar-finished {
             color: $block-cursor-foreground;
