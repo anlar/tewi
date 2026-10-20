@@ -20,6 +20,7 @@ handle multi-line list body as single line.
 - Fix barely visible progress bar on highlighted row in non-default themes: it's drawn in cursor text color
 - Fix unreadable top and bottom panels, torrent badges and speeds, and invisible secondary details (peers, speeds, sizes) on highlighted row in ANSI themes
 - Fix faint progress bars in light themes and on highlighted row
+- Fix missing colors of file priorities and freeleech tag in ANSI themes
 
 ## [3.0.0] - 2026-10-18 - Hypersonic Paws
 

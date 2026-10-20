@@ -23,6 +23,7 @@ from ..util import (
     escape_markup,
     print_size,
     subtitle_keys,
+    theme_markup_color,
 )
 from ..util import (
     open as open_path,
@@ -75,7 +76,7 @@ class TorrentWebSearch(Static):
         # Workaround to get color from theme, because DataTable doesn't
         # support CSS variables like $text-success.
         # See: https://github.com/Textualize/textual/issues/6273
-        self.color_success = self.app.get_css_variables()["text-success"]
+        self.color_success = theme_markup_color(self.app, "text-success")
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -109,7 +110,7 @@ class TorrentWebSearch(Static):
 
     @log_time
     def on_theme_changed(self, _theme) -> None:
-        self.color_success = self.app.get_css_variables()["text-success"]
+        self.color_success = theme_markup_color(self.app, "text-success")
         self.draw_table(self.r_results)
 
     @log_time

@@ -16,7 +16,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from src.tewi.ui.util import subtitle_keys
+from rich.style import Style
+from rich.text import Text
+
+from src.tewi.ui.util import subtitle_keys, theme_markup_color
 
 
 class TestSubtitleKeys:
@@ -89,3 +92,31 @@ class TestSubtitleKeys:
             "<3/P> [dim]Peers[/]"
         )
         assert result == expected
+
+
+class _App:
+    """Minimal app stub providing theme CSS variables."""
+
+    def __init__(self, variables: dict[str, str]):
+        self.variables = variables
+
+    def get_css_variables(self) -> dict[str, str]:
+        return self.variables
+
+
+class TestThemeMarkupColor:
+    """Test cases for theme_markup_color function."""
+
+    def test_hex_color(self):
+        app = _App({"text-success": "#8AD4A1"})
+        assert theme_markup_color(app, "text-success") == "#8ad4a1"
+
+    def test_ansi_color(self):
+        app = _App({"text-success": "ansi_green"})
+        assert theme_markup_color(app, "text-success") == "color(2)"
+
+    def test_usable_in_markup(self):
+        for value in ("#8AD4A1", "ansi_green", "ansi_bright_red"):
+            color = theme_markup_color(_App({"c": value}), "c")
+            text = Text.from_markup(f"[bold {color}]x[/]")
+            assert Style.parse(str(text.spans[0].style)).color is not None

@@ -30,6 +30,7 @@ from ..util import (
     print_speed,
     print_time_ago,
     subtitle_keys,
+    theme_markup_color,
 )
 from ..widget.common import ReactiveLabel, ReactiveLinkLabel, VimDataTable
 
@@ -123,9 +124,8 @@ class TorrentInfoPanel(ScrollableContainer):
         so colors are resolved from theme and rebuilt on theme change.
         See: https://github.com/Textualize/textual/issues/6273
         """
-        variables = self.app.get_css_variables()
-        color_low = variables["text-accent"]
-        color_high = variables["text-error"]
+        color_low = theme_markup_color(self.app, "text-accent")
+        color_high = theme_markup_color(self.app, "text-error")
 
         return {
             TorrentFilePriority.NOT_DOWNLOADING: "[dim]-[/]",

@@ -7,6 +7,8 @@ import subprocess
 from datetime import datetime
 from functools import cache
 
+from textual.color import Color
+
 from ..util.log import log_time
 
 
@@ -212,6 +214,25 @@ def print_time_ago(dt: datetime) -> str:
     else:
         years = int(seconds / 31536000)
         return f"{years} year{'s' if years > 1 else ''} ago"
+
+
+def theme_markup_color(app, variable: str) -> str:
+    """Get theme color variable as color name usable in Rich markup.
+
+    Widgets like DataTable don't support CSS variables in markup, so colors
+    are resolved from theme. Theme values may be ANSI colors (e.g.
+    "ansi_green" in ANSI themes) which Rich markup doesn't accept, so they
+    are converted to Rich color names (e.g. "color(2)").
+
+    Args:
+        app: Textual application
+        variable: Theme CSS variable name without "$", e.g. "text-success"
+
+    Returns:
+        Color name, e.g. "#8ad4a1" or "color(2)"
+    """
+    value = app.get_css_variables()[variable]
+    return Color.parse(value).rich_color.name
 
 
 @cache
