@@ -119,6 +119,34 @@ StatePanel > .search {
     background: $secondary;
 }
 
+/* ANSI THEMES: colors are terminal-defined, so they can't be lightened or
+   blended, and auto contrast text resolves to terminal default color:
+   use fixed palette pairs */
+
+#info-panel > .column:ansi,
+#state-panel > .column:ansi {
+    color: ansi_black;
+}
+
+#info-panel > .delimiter:ansi,
+#state-panel > .delimiter:ansi {
+    text-opacity: 100%;
+}
+
+#info-panel > #connection.disconnected:ansi,
+StatePanel > .search:ansi {
+    color: ansi_bright_white;
+}
+
+#state-panel > .sort:ansi,
+#state-panel > .speed-limit:ansi {
+    background: ansi_white;
+}
+
+#state-panel > .filter:ansi {
+    background: ansi_yellow;
+}
+
 /* SPEED INDICATORS */
 
 SpeedIndicator {

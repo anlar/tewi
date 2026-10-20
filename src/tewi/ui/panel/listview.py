@@ -123,6 +123,9 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         "torrent-list--cursor-bar-complete",
         "torrent-list--cursor-bar-finished",
         "torrent-list--cursor-bar-remaining",
+        "torrent-list--cursor-muted",
+        "torrent-list--cursor-status-stop",
+        "torrent-list--cursor-priority-low",
     }
 
     DEFAULT_CSS = """
@@ -198,6 +201,17 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
             color: $block-cursor-foreground;
         }
         & > .torrent-list--priority-low { color: $text-muted; }
+        & > .torrent-list--cursor-muted,
+        & > .torrent-list--cursor-status-stop,
+        & > .torrent-list--cursor-priority-low { color: $text-muted; }
+        /* ANSI muted color is terminal default one, which may be invisible
+           on cursor: use cursor text color dimmed by terminal instead */
+        &:ansi > .torrent-list--cursor-muted,
+        &:ansi > .torrent-list--cursor-status-stop,
+        &:ansi > .torrent-list--cursor-priority-low {
+            color: $block-cursor-foreground;
+            text-style: dim;
+        }
         & > .torrent-list--speed-active { text-style: bold; }
         /* active speeds: solid blocks, readable on any row */
         & > .torrent-list--speed-up {
@@ -210,14 +224,22 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
             background: $warning;
         }
         & > .torrent-list--speed-down-arrow { text-style: bold; }
-        /* ANSI colors can't be blended */
+        /* ANSI colors are terminal-defined: they can't be blended, and auto
+           contrast is computed for guessed palette, which may give text of
+           the same lightness as background in actual terminal */
         &:ansi > .torrent-list--cursor-badge-category {
-            color: auto 87%;
             background: $accent;
         }
         &:ansi > .torrent-list--cursor-badge-label {
-            color: auto 87%;
             background: $secondary;
+        }
+        &:ansi > .torrent-list--badge-category,
+        &:ansi > .torrent-list--badge-label,
+        &:ansi > .torrent-list--cursor-badge-category,
+        &:ansi > .torrent-list--cursor-badge-label,
+        &:ansi > .torrent-list--speed-up,
+        &:ansi > .torrent-list--speed-down {
+            color: ansi_black;
         }
         & > .torrent-list--bar-complete { color: $warning; }
         & > .torrent-list--bar-finished { color: $success; }
@@ -230,6 +252,10 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         &:ansi > .torrent-list--cursor-bar-complete,
         &:ansi > .torrent-list--cursor-bar-finished {
             color: $block-cursor-foreground;
+        }
+        &:ansi > .torrent-list--cursor-bar-remaining {
+            color: $block-cursor-foreground;
+            text-style: dim;
         }
         & > .torrent-list--separator { color: $foreground 25%; }
         & > .torrent-list--badge-category {
