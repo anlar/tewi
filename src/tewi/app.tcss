@@ -180,6 +180,18 @@ TorrentInfoPanel {
     height: 1fr;
 }
 
+/* inactive tabs: Textual default ($foreground 50%) is too faint in some
+   themes; active tab stays distinct by full color, bold and underline bar */
+TorrentInfoPanel Tab {
+    color: $foreground 80%;
+}
+
+TorrentInfoPanel Tab.-active,
+TorrentInfoPanel Tab:hover {
+    color: $foreground;
+    text-style: bold;
+}
+
 TorrentInfoPanel .overview-bottom {
     height: auto;
 }

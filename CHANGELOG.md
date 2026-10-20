@@ -23,6 +23,7 @@ handle multi-line list body as single line.
 - Fix missing colors of file priorities and freeleech tag in ANSI themes
 - Fix faint titles and key hints on torrent details and web search panel borders in non-default themes
 - Make dialogs readable in all themes and stand out more: primary color borders, solid background and stronger dimming behind them
+- Fix faint inactive tabs in torrent details in some themes
 
 ## [3.0.0] - 2026-10-18 - Hypersonic Paws
 
