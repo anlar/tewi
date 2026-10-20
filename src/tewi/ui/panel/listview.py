@@ -115,6 +115,11 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         "torrent-list--badge-label",
         "torrent-list--cursor-badge-category",
         "torrent-list--cursor-badge-label",
+        "torrent-list--cursor-status-download",
+        "torrent-list--cursor-status-seed",
+        "torrent-list--cursor-status-check",
+        "torrent-list--cursor-status-unknown",
+        "torrent-list--cursor-priority-high",
     }
 
     DEFAULT_CSS = """
@@ -167,6 +172,25 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
             text-style: bold;
         }
         & > .torrent-list--priority-high { color: $text-warning; }
+        /* $text-* colors are readable on list background, but not on
+           cursor, so highlight with bold instead */
+        & > .torrent-list--cursor-status-download,
+        & > .torrent-list--cursor-status-seed,
+        & > .torrent-list--cursor-status-check,
+        & > .torrent-list--cursor-status-unknown,
+        & > .torrent-list--cursor-priority-high {
+            color: auto 87%;
+            text-style: bold;
+        }
+        /* ANSI colors are terminal-defined, so auto contrast can't be
+           computed reliably: use theme cursor text color */
+        &:ansi > .torrent-list--cursor-status-download,
+        &:ansi > .torrent-list--cursor-status-seed,
+        &:ansi > .torrent-list--cursor-status-check,
+        &:ansi > .torrent-list--cursor-status-unknown,
+        &:ansi > .torrent-list--cursor-priority-high {
+            color: $block-cursor-foreground;
+        }
         & > .torrent-list--priority-low { color: $text-muted; }
         & > .torrent-list--speed-active { text-style: bold; }
         /* active speeds: solid blocks, readable on any row */
