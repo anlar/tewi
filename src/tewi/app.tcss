@@ -219,6 +219,18 @@ TorrentInfoPanel .value {
     width: 100%;
 }
 
+/* DIALOGS */
+
+/* dim content behind dialogs more than Textual default (60%), so dialogs
+   stand out; ANSI colors can't be blended, so keep Textual default there */
+ModalScreen {
+    background: $background 80%;
+}
+
+ModalScreen:ansi {
+    background: transparent;
+}
+
 /* NOTIFICATIONS */
 
 Toast {
@@ -233,7 +245,11 @@ ConfirmDialog {
 
 ConfirmWidget {
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     height: auto;
     width: 60;
     padding: 1;
@@ -254,7 +270,11 @@ StatisticsWidget {
     grid-columns: 3fr 2fr;
 
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     padding: 1;
 }
 
@@ -273,7 +293,11 @@ HelpWidget {
     width: auto;
 
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     padding: 1;
 }
 
@@ -292,7 +316,11 @@ AddTorrentWidget {
     height: auto;
 
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     padding: 1;
 }
 
@@ -315,7 +343,11 @@ UpdateTorrentLabelsWidget {
     height: auto;
 
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     padding: 1;
 }
 
@@ -337,7 +369,11 @@ EditTorrentWidget {
     height: auto;
 
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     padding: 1;
 }
 
@@ -356,7 +392,11 @@ UpdateTorrentCategoryDialog {
 UpdateTorrentCategoryWidget {
     width: auto;
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     padding: 1;
 }
 
@@ -373,7 +413,11 @@ SearchDialog {
 SearchWidget {
     height: auto;
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     padding: 1;
 }
 
@@ -394,7 +438,11 @@ FilterNameDialog {
 FilterNameWidget {
     height: auto;
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     padding: 1;
 }
 
@@ -417,7 +465,11 @@ WebSearchQueryWidget {
     height: 60%;
 
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
 }
 
 WebSearchQueryWidget > #websearch-query-row {
@@ -425,12 +477,16 @@ WebSearchQueryWidget > #websearch-query-row {
 }
 
 WebSearchQueryWidget > #websearch-query-row > Input {
-    border: round $warning;
+    border: round $primary 75%;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     width: 1fr;
 }
 
 WebSearchQueryWidget > #websearch-query-row > CycleSelect {
-    border: round $warning;
+    border: round $primary 75%;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     background: $surface;
     width: 25%;
     padding: 0 1;
@@ -447,7 +503,9 @@ WebSearchQueryWidget > Horizontal {
 
 WebSearchQueryWidget > Horizontal > VimSelectionList {
     height: 100%;
-    border: round $warning;
+    border: round $primary 75%;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     margin: 0 0 3 0;
 }
 
@@ -461,7 +519,11 @@ SortOrderWidget {
     width: auto;
     height: auto;
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     padding: 1;
 }
 
@@ -478,7 +540,11 @@ SearchSortWidget {
     width: auto;
     height: auto;
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     padding: 1;
 }
 
@@ -497,7 +563,11 @@ FilterWidget {
     width: auto;
     height: auto;
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     padding: 1;
 }
 
@@ -516,7 +586,11 @@ PreferencesWidget {
     width: auto;
     height: auto;
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     padding: 1;
 }
 
@@ -536,7 +610,11 @@ TorrentDetailsWidget {
     width: 90%;
     height: 90%;
     border-title-align: center;
-    border: round $warning;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     padding: 1;
 }
 
