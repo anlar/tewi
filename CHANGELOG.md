@@ -16,6 +16,7 @@ handle multi-line list body as single line.
 - Show connection status in top panel only when disconnected, as readable badge after host (connection dot colors were unreadable in some themes)
 - Fix unreadable text in non-default themes: top and bottom panels use auto contrast text color, and other text uses `$text-*` theme colors updated on theme change
 - Fix unreadable torrent status on highlighted row in non-default themes: it's shown bold in cursor text color instead of status color
+- Fix barely visible label badges on highlighted row in light themes (use theme foreground tint instead of hardcoded white)
 
 ## [3.0.0] - 2026-10-18 - Hypersonic Paws
 

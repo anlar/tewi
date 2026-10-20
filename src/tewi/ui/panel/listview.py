@@ -150,7 +150,9 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         }
         & > .torrent-list--cursor-badge-label {
             color: auto 87%;
-            background: white 20%;
+            /* tint cursor with foreground: lighter in dark themes, darker
+               in light ones */
+            background: $foreground 20%;
         }
         &:focus {
             background-tint: $foreground 5%;
@@ -204,7 +206,7 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
             background: $warning;
         }
         & > .torrent-list--speed-down-arrow { text-style: bold; }
-        /* ANSI colors can't be blended with white tint */
+        /* ANSI colors can't be blended with foreground tint */
         &:ansi > .torrent-list--cursor-badge-label {
             color: auto 87%;
             background: $secondary;
