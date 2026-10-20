@@ -144,15 +144,16 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
             background: $block-cursor-blurred-background;
             text-style: $block-cursor-blurred-text-style;
         }
+        /* badges on cursor are tinted toward background: cursor always
+           contrasts with it, while foreground or accent may be close to
+           cursor color */
         & > .torrent-list--cursor-badge-category {
             color: auto 87%;
-            background: $accent 70%;
+            background: $accent-muted;
         }
         & > .torrent-list--cursor-badge-label {
             color: auto 87%;
-            /* tint cursor with foreground: lighter in dark themes, darker
-               in light ones */
-            background: $foreground 20%;
+            background: $background 50%;
         }
         &:focus {
             background-tint: $foreground 5%;
@@ -206,7 +207,11 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
             background: $warning;
         }
         & > .torrent-list--speed-down-arrow { text-style: bold; }
-        /* ANSI colors can't be blended with foreground tint */
+        /* ANSI colors can't be blended */
+        &:ansi > .torrent-list--cursor-badge-category {
+            color: auto 87%;
+            background: $accent;
+        }
         &:ansi > .torrent-list--cursor-badge-label {
             color: auto 87%;
             background: $secondary;
