@@ -120,6 +120,9 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         "torrent-list--cursor-status-check",
         "torrent-list--cursor-status-unknown",
         "torrent-list--cursor-priority-high",
+        "torrent-list--cursor-bar-complete",
+        "torrent-list--cursor-bar-finished",
+        "torrent-list--cursor-bar-remaining",
     }
 
     DEFAULT_CSS = """
@@ -219,6 +222,15 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         & > .torrent-list--bar-complete { color: $warning; }
         & > .torrent-list--bar-finished { color: $success; }
         & > .torrent-list--bar-remaining { color: $foreground 15%; }
+        /* bar colors may be close to cursor color, so draw bar on cursor
+           with cursor text color */
+        & > .torrent-list--cursor-bar-complete,
+        & > .torrent-list--cursor-bar-finished { color: auto 87%; }
+        & > .torrent-list--cursor-bar-remaining { color: auto 25%; }
+        &:ansi > .torrent-list--cursor-bar-complete,
+        &:ansi > .torrent-list--cursor-bar-finished {
+            color: $block-cursor-foreground;
+        }
         & > .torrent-list--separator { color: $foreground 25%; }
         & > .torrent-list--badge-category {
             color: auto 87%;

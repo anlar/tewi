@@ -17,6 +17,7 @@ handle multi-line list body as single line.
 - Fix unreadable text in non-default themes: top and bottom panels use auto contrast text color, and other text uses `$text-*` theme colors updated on theme change
 - Fix unreadable torrent status on highlighted row in non-default themes: it's shown bold in cursor text color instead of status color
 - Fix category and label badges on highlighted row merging with highlight color in non-default themes
+- Fix barely visible progress bar on highlighted row in non-default themes: it's drawn in cursor text color
 
 ## [3.0.0] - 2026-10-18 - Hypersonic Paws
 
