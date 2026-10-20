@@ -21,6 +21,7 @@ handle multi-line list body as single line.
 - Fix unreadable top and bottom panels, torrent badges and speeds, and invisible secondary details (peers, speeds, sizes) on highlighted row in ANSI themes
 - Fix faint progress bars in light themes and on highlighted row
 - Fix missing colors of file priorities and freeleech tag in ANSI themes
+- Fix faint titles and key hints on torrent details and web search panel borders in non-default themes
 
 ## [3.0.0] - 2026-10-18 - Hypersonic Paws
 

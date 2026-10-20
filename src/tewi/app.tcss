@@ -174,6 +174,9 @@ ReactiveLinkLabel > ReactiveLabel, ReactiveLinkLabel > Link {
 
 TorrentInfoPanel {
     border: round $primary 75%;
+    /* title and key hints use readable variant of border color */
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
     height: 1fr;
 }
 
@@ -572,6 +575,8 @@ TorrentDetailsWidget .details-link-right {
 TorrentWebSearch {
     height: 1fr;
     border: round $primary 75%;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
 }
 
 TorrentWebSearch #search-query-label {
