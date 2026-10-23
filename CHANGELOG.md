@@ -10,6 +10,10 @@ handle multi-line list body as single line.
 
 ## [Unreleased]
 
+### Added
+
+- Complete available profile names for `--profile` in shell completion
+
 ### Changed
 
 - Fix crash when opening torrent details on older Textual caused by unsupported column keys in files table
@@ -24,6 +28,7 @@ handle multi-line list body as single line.
 - Fix faint titles and key hints on torrent details and web search panel borders in non-default themes
 - Make dialogs readable in all themes and stand out more: primary color borders, solid background and stronger dimming behind them
 - Fix faint inactive tabs in torrent details in some themes
+- `--profiles` prints a machine-readable list of profile names, one per line (nothing when no profiles exist)
 
 ## [3.0.0] - 2026-10-18 - Hypersonic Paws
 

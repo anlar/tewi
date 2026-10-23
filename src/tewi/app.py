@@ -1129,16 +1129,19 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     )
 
     # Profiles
-    p.add_argument(
+    profile_arg = p.add_argument(
         "--profile",
         type=str,
         action=TrackSetAction,
         help="Load configuration profile from tewi-PROFILE.conf",
     )
+    # Profiles are resolved at completion time, so the generated
+    # completion script stays valid when profiles are added or removed
+    profile_arg.complete = shtab.cmd("tewi --profiles")
     p.add_argument(
         "--profiles",
         action="store_true",
-        help="List available configuration profiles and exit",
+        help="List available configuration profiles (one per line) and exit",
     )
 
     # Other
@@ -1215,14 +1218,9 @@ def _handle_add_torrent_mode(args) -> None:
 
 
 def _handle_profiles_command():
-    """Handle --profiles command to list available profiles."""
-    profiles = get_available_profiles()
-    if profiles:
-        print("Available profiles:")
-        for profile in profiles:
-            print(f"  - {profile}")
-    else:
-        print("No profiles found")
+    """Handle --profiles command to print profile names, one per line."""
+    for profile in get_available_profiles():
+        print(profile)
     sys.exit(0)
 
 
