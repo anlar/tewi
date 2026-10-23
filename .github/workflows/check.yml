@@ -15,6 +15,11 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    env:
+      # Ubuntu AppArmor profile for transmission-daemon allows access only
+      # to its default locations, so use them instead of home directory
+      TR_CONFIG_DIR: /var/lib/transmission-daemon/.config/transmission-daemon
+      TR_DOWNLOAD_DIR: /var/lib/transmission-daemon/downloads
     strategy:
       fail-fast: false
       matrix:
@@ -49,18 +54,20 @@ jobs:
 
     - name: Configure Transmission
       run: |
-        mkdir -p ~/transmission-config
-        mkdir -p ~/transmission-downloads
+        # AppArmor rules for these directories require them to be owned
+        # by the user running the daemon
+        sudo mkdir -p "$TR_CONFIG_DIR" "$TR_DOWNLOAD_DIR"
+        sudo chown -R "$USER" /var/lib/transmission-daemon
 
         # Create settings file
-        cat > ~/transmission-config/settings.json <<EOF
+        cat > "$TR_CONFIG_DIR/settings.json" <<EOF
         {
           "rpc-enabled": true,
           "rpc-port": 9092,
           "rpc-bind-address": "127.0.0.1",
           "rpc-whitelist-enabled": false,
           "rpc-authentication-required": false,
-          "download-dir": "$HOME/transmission-downloads",
+          "download-dir": "$TR_DOWNLOAD_DIR",
           "incomplete-dir-enabled": false,
           "peer-port": 51413
         }
@@ -68,13 +75,31 @@ jobs:
 
     - name: Start Transmission
       run: |
-        transmission-daemon --config-dir ~/transmission-config --log-level=info &
-        sleep 3
+        transmission-daemon --version || true
+        # Run in foreground as background job to capture all daemon output
+        nohup transmission-daemon --foreground \
+          --config-dir "$TR_CONFIG_DIR" \
+          --log-level=info > ~/transmission.log 2>&1 &
 
     - name: Verify Transmission is running
       run: |
-        transmission-remote 9092 --list
-        curl -s http://localhost:9092/transmission/rpc || true
+        # Wait for RPC port instead of fixed sleep: daemon startup time
+        # varies on CI runners
+        for i in $(seq 1 30); do
+          if transmission-remote 9092 --list; then
+            exit 0
+          fi
+          sleep 1
+        done
+        echo "Transmission RPC is not available after 30 seconds"
+        pgrep -a transmission || echo "transmission-daemon is not running"
+        echo "--- Listening sockets"
+        ss -ltnp || true
+        echo "--- Daemon settings"
+        cat "$TR_CONFIG_DIR/settings.json" || true
+        echo "--- Daemon log"
+        cat ~/transmission.log || true
+        exit 1
 
     - name: Lint source code
       run: |
