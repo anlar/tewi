@@ -18,16 +18,8 @@ handle multi-line list body as single line.
 
 - Fix crash when opening torrent details on older Textual caused by unsupported column keys in files table
 - Show connection status in top panel only when disconnected, as readable badge after host (connection dot colors were unreadable in some themes)
-- Fix unreadable text in non-default themes: top and bottom panels use auto contrast text color, and other text uses `$text-*` theme colors updated on theme change
-- Fix unreadable torrent status on highlighted row in non-default themes: it's shown bold in cursor text color instead of status color
-- Fix category and label badges on highlighted row merging with highlight color in non-default themes
-- Fix barely visible progress bar on highlighted row in non-default themes: it's drawn in cursor text color
-- Fix unreadable top and bottom panels, torrent badges and speeds, and invisible secondary details (peers, speeds, sizes) on highlighted row in ANSI themes
-- Fix faint progress bars in light themes and on highlighted row
-- Fix missing colors of file priorities and freeleech tag in ANSI themes
-- Fix faint titles and key hints on torrent details and web search panel borders in non-default themes
+- Fix unreadable, faint or missing colors in non-default, light and ANSI themes: top and bottom panels, torrent status, badges, speeds, progress bar and secondary details (peers, speeds, sizes) on highlighted row, file priorities, freeleech tag, titles and key hints on panel borders, and inactive tabs in torrent details
 - Make dialogs readable in all themes and stand out more: primary color borders, solid background and stronger dimming behind them
-- Fix faint inactive tabs in torrent details in some themes
 - `--profiles` prints a machine-readable list of profile names, one per line (nothing when no profiles exist)
 
 ## [3.0.0] - 2026-10-18 - Hypersonic Paws
