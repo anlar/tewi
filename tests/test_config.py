@@ -18,13 +18,17 @@
 
 import configparser
 
+import pytest
+
 from src.tewi.config import (
     _expand_env_vars,
     _load_client_section,
     _load_debug_section,
     _load_search_section,
+    _load_theme_sections,
     _load_ui_section,
 )
+from src.tewi.theme import ThemeConfigError
 
 
 class TestExpandEnvVars:
@@ -818,3 +822,58 @@ timeout = 60
         _load_search_section(parser, config)
 
         assert config["search_timeout"] == 60
+
+
+class TestLoadThemeSections:
+    """Test cases for _load_theme_sections function."""
+
+    def _load(self, config_text: str) -> dict:
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+        _load_theme_sections(parser, config)
+        return config
+
+    def test_no_sections(self):
+        """Test that config without theme sections is unchanged."""
+        assert self._load("[ui]\ntheme = nord\n") == {}
+
+    def test_theme_sections(self):
+        """Test loading theme sections in config order."""
+        config = self._load("""
+[theme.mine]
+base = nord
+primary = #88C0D0
+error =
+
+[theme.gruvbox]
+background = darkslategray
+""")
+
+        assert config == {
+            "custom_themes": {
+                "mine": {"base": "nord", "primary": "#88C0D0"},
+                "gruvbox": {"background": "darkslategray"},
+            }
+        }
+        assert list(config["custom_themes"]) == ["mine", "gruvbox"]
+
+    def test_overlay_replaces_section(self):
+        """Test that later config replaces theme section with same name."""
+        config = {"custom_themes": {"mine": {"primary": "red"}}}
+        parser = configparser.ConfigParser()
+        parser.read_string("[theme.mine]\naccent = blue\n")
+
+        _load_theme_sections(parser, config)
+
+        assert config == {"custom_themes": {"mine": {"accent": "blue"}}}
+
+    def test_invalid_color(self):
+        """Test that invalid color raises error."""
+        with pytest.raises(ThemeConfigError, match="primary"):
+            self._load("[theme.mine]\nprimary = rgb(1, 2, 3)\n")
+
+    def test_unknown_option(self):
+        """Test that unknown option raises error."""
+        with pytest.raises(ThemeConfigError, match="unknown option"):
+            self._load("[theme.mine]\nprimary = red\ncolor = blue\n")

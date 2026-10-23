@@ -13,6 +13,8 @@ handle multi-line list body as single line.
 ### Added
 
 - Complete available profile names for `--profile` in shell completion
+- Add custom color themes via `[theme.NAME]` config sections: define new theme (optionally based on existing one with `base` option) or override colors of built-in theme, using Textual color names or hex codes
+- Add `--themes` CLI flag to print available themes (built-in and custom), one per line
 
 ### Changed
 
@@ -21,6 +23,11 @@ handle multi-line list body as single line.
 - Fix unreadable, faint or missing colors in non-default, light and ANSI themes: top and bottom panels, torrent status, badges, speeds, progress bar and secondary details (peers, speeds, sizes) on highlighted row, file priorities, freeleech tag, titles and key hints on panel borders, and inactive tabs in torrent details
 - Make dialogs readable in all themes and stand out more: primary color borders, solid background and stronger dimming behind them
 - `--profiles` prints a machine-readable list of profile names, one per line (nothing when no profiles exist)
+- Unknown theme from `--theme` or config stops the app with error instead of falling back to default theme
+
+### Removed
+
+- Remove `--list-themes` CLI flag, replaced by `--themes`
 
 ## [3.0.0] - 2026-10-18 - Hypersonic Paws
 

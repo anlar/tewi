@@ -27,7 +27,7 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.reactive import reactive
-from textual.theme import BUILTIN_THEMES
+from textual.theme import BUILTIN_THEMES, Theme
 from textual.widgets import ContentSwitcher
 
 from .config import (
@@ -39,6 +39,7 @@ from .config import (
     merge_config_with_args,
 )
 from .search.manager import SearchClient, print_available_providers
+from .theme import ThemeConfigError, build_custom_themes
 from .torrent.factory import ClientCapability, create_client
 from .torrent.models import ClientError, Torrent
 from .ui.dialog.confirm import ConfirmDialog
@@ -178,6 +179,7 @@ class MainApp(App):
         search_presets: list | None = None,
         search_default_preset: str | None = None,
         theme: str = DEFAULT_THEME,
+        custom_themes: list[Theme] | None = None,
     ):
         super().__init__()
 
@@ -185,6 +187,8 @@ class MainApp(App):
         logger.info(f"Client configuration: {client_type} at {host}:{port}")
 
         self.title = "Tewi"
+        for custom_theme in custom_themes or []:
+            self.register_theme(custom_theme)
         self.theme = theme
 
         self.view_mode = view_mode
@@ -966,19 +970,21 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         action=TrackSetAction,
         help="View mode for torrents in list",
     )
-    p.add_argument(
+    theme_arg = p.add_argument(
         "--theme",
         type=str,
         default=DEFAULT_THEME,
-        choices=sorted(BUILTIN_THEMES),
         metavar="THEME",
         action=TrackSetAction,
-        help="Color theme (see --list-themes for available values)",
+        help="Color theme (see --themes for available values)",
     )
+    # Themes are resolved at completion time to include custom themes
+    # from config file
+    theme_arg.complete = shtab.cmd("tewi --themes")
     p.add_argument(
-        "--list-themes",
+        "--themes",
         action="store_true",
-        help="List available themes and exit",
+        help="List available themes (one per line) and exit",
     )
     p.add_argument(
         "--page-size",
@@ -1230,13 +1236,25 @@ def _handle_list_search_providers_command():
     sys.exit(0)
 
 
-def _handle_list_themes_command():
-    """Handle --list-themes command."""
-    print("Available themes:")
-    for name in sorted(BUILTIN_THEMES):
-        mode = "dark" if BUILTIN_THEMES[name].dark else "light"
-        default = " [default]" if name == DEFAULT_THEME else ""
-        print(f"  - {name} ({mode}){default}")
+def _load_custom_themes(config: dict) -> list[Theme]:
+    """Build custom themes from config, exit on invalid theme."""
+    try:
+        return build_custom_themes(config.get("custom_themes", {}))
+    except ThemeConfigError as e:
+        print(f"Error: Invalid theme in config: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def _available_themes(custom_themes: list[Theme]) -> dict[str, Theme]:
+    """Get built-in and custom themes by name."""
+    return {**BUILTIN_THEMES, **{t.name: t for t in custom_themes}}
+
+
+def _handle_themes_command(profile: str | None):
+    """Handle --themes command to print theme names, one per line."""
+    custom_themes = _load_custom_themes(load_config(profile))
+    for name in sorted(_available_themes(custom_themes)):
+        print(name)
     sys.exit(0)
 
 
@@ -1258,10 +1276,10 @@ def _handle_commands(args) -> None:
         logger.info("Listing available search providers")
         _handle_list_search_providers_command()
 
-    # Handle --list-themes (list themes and exit)
-    if args.list_themes:
+    # Handle --themes (list available themes and exit)
+    if args.themes:
         logger.info("Listing available themes")
-        _handle_list_themes_command()
+        _handle_themes_command(getattr(args, "profile", None))
 
     # Handle --profiles (list available profiles and exit)
     if args.profiles:
@@ -1301,14 +1319,15 @@ def create_app():
         logger.info(f"Using configuration profile: {profile}")
     logger.info(f"Loaded CLI options: {args}")
 
-    # Validate theme (values from config file bypass argparse checks)
-    if args.theme not in BUILTIN_THEMES:
+    # Validate theme
+    custom_themes = _load_custom_themes(config)
+    if args.theme not in _available_themes(custom_themes):
         print(
-            f"Warning: Unknown theme '{args.theme}', "
-            f"using default: {DEFAULT_THEME}",
+            f"Error: Unknown theme '{args.theme}' "
+            "(see --themes for available values)",
             file=sys.stderr,
         )
-        args.theme = DEFAULT_THEME
+        sys.exit(1)
 
     # Validate search query if provided
     if args.search:
@@ -1334,6 +1353,7 @@ def create_app():
             password=args.password,
             view_mode=args.view_mode,
             theme=args.theme,
+            custom_themes=custom_themes,
             refresh_interval=args.refresh_interval,
             page_size=args.page_size,
             limit_torrents=args.limit_torrents,

@@ -26,6 +26,11 @@ from pathlib import Path
 from platformdirs import user_config_dir
 
 from .search.models import SearchPreset
+from .theme import (
+    THEME_SECTION_PREFIX,
+    ThemeConfigError,
+    validate_theme_options,
+)
 
 _ENV_VAR_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
@@ -322,6 +327,30 @@ def _load_preset_sections(
         config["search_presets"] = presets
 
 
+def _load_theme_sections(
+    parser: configparser.ConfigParser, config: dict
+) -> None:
+    """Load [theme.NAME] sections into config dict.
+
+    Theme sections from later config files (profiles) replace sections
+    with the same name from earlier ones.
+
+    Raises:
+        ThemeConfigError: If theme section is invalid
+    """
+    for section in parser.sections():
+        if not section.startswith(THEME_SECTION_PREFIX):
+            continue
+        name = section[len(THEME_SECTION_PREFIX) :].strip()
+        options = {}
+        for key in parser.options(section):
+            val = _get_string_option(parser, section, key)
+            if val:
+                options[key] = val
+        validate_theme_options(name, options)
+        config.setdefault("custom_themes", {})[name] = options
+
+
 def _load_config_file(config_path: Path, config: dict) -> None:
     """
     Load configuration from a single INI file and merge into config dict.
@@ -349,6 +378,12 @@ def _load_config_file(config_path: Path, config: dict) -> None:
     _load_debug_section(parser, config)
     _load_search_section(parser, config)
     _load_preset_sections(parser, config)
+
+    try:
+        _load_theme_sections(parser, config)
+    except ThemeConfigError as e:
+        print(f"Error: Invalid theme in {config_path}: {e}", file=sys.stderr)
+        sys.exit(1)
 
 
 def load_config(profile: str | None = None) -> dict:
@@ -445,6 +480,43 @@ badge_max_length =
 
 # Refresh interval in seconds for loading data from daemon
 refresh_interval =
+
+# Custom themes: add one [theme.NAME] section per theme and select it with
+# theme option in [ui] section. Themes also appear in the theme selector.
+# If NAME matches a built-in theme (see tewi --themes), the section
+# overrides colors of that theme.
+#
+# Colors are Textual color names (e.g. crimson, darkslateblue,
+# ansi_bright_blue) or hex codes (#RGB, #RGBA, #RRGGBB, #RRGGBBAA).
+# Omitted colors are taken from base theme or derived from primary color.
+#
+# Available options:
+#   base       - theme to take omitted values from: built-in theme or custom
+#                theme defined above (not allowed when overriding built-in
+#                theme)
+#   dark       - true for dark theme, false for light theme (default: true,
+#                or value of base theme)
+#   primary    - main accent color (required when base is not set)
+#   secondary  - secondary accent color
+#   accent     - color for highlights and contrast
+#   warning    - color for warnings
+#   error      - color for errors
+#   success    - color for successful states
+#   foreground - default text color
+#   background - screen background color
+#   surface    - widget background color
+#   panel      - color to differentiate panels from surface
+#   boost      - color with alpha used to boost widget contrast
+#
+# Example:
+# [theme.my-theme]
+# base = nord
+# primary = #88C0D0
+# accent = gold
+# error = crimson
+#
+# [theme.gruvbox]
+# background = #1d2021
 
 [search]
 # Jackett server configuration for torrent search
