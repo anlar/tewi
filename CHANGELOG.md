@@ -15,6 +15,7 @@ handle multi-line list body as single line.
 - Complete available profile names for `--profile` in shell completion
 - Add custom color themes via `[theme.NAME]` config sections: define new theme (optionally based on existing one with `base` option) or override colors of built-in theme, using Textual color names or hex codes
 - Add `--themes` CLI flag to print available themes (built-in and custom), one per line
+- Add multiple sort orders for torrent list: press `m` in sort dialog to chain orders, where following orders break ties of previous ones (e.g. progress, then age)
 
 ### Changed
 
