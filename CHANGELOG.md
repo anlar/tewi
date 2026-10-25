@@ -24,6 +24,7 @@ handle multi-line list body as single line.
 - Make dialogs readable in all themes and stand out more: primary color borders, solid background and stronger dimming behind them
 - `--profiles` prints a machine-readable list of profile names, one per line (nothing when no profiles exist)
 - Unknown theme from `--theme` or config stops the app with error instead of falling back to default theme
+- Config file created by `--create-config` ends with vim modeline for INI syntax highlighting
 
 ### Removed
 

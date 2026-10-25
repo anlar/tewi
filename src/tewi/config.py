@@ -602,6 +602,7 @@ log_level =
 # Max size per log file in MB (default: 10, up to 3 backups kept)
 log_size =
 
+# vim: ft=dosini
 """
 
     try:
