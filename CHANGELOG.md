@@ -10,6 +10,8 @@ handle multi-line list body as single line.
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-10-31 - Spectrum Rabbit
+
 ### Added
 
 - Complete available profile names for `--profile` in shell completion
