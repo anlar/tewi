@@ -88,6 +88,10 @@ def is_multi(app: App) -> bool:
     return app.screen.query_one(SortOrderWidget).multi
 
 
+def title(app: App) -> str:
+    return app.screen.query_one(SortOrderWidget).border_title
+
+
 def layout(app: App) -> tuple[int, ...]:
     """Dialog width followed by widths of table columns."""
     table = app.screen.query_one(DataTable)
@@ -125,10 +129,14 @@ def test_multi_mode_builds_chain_of_sort_keys():
         app = SortApp((SortKey(order("age"), True),))
         async with app.run_test() as pilot:
             single_layout = layout(app)
+            assert title(app) == "Sort order"
             assert order_cell(app, "age") == "Age"
 
             await pilot.press("m")
             assert is_multi(app)
+            assert title(app) == "Sort order: multiple"
+            # title fits between border corners without truncation
+            assert len(title(app)) + 4 <= layout(app)[0]
             assert order_cell(app, "age") == "   Age"
             # toggling mode only shifts order names, dialog and columns
             # keep their size
@@ -136,6 +144,7 @@ def test_multi_mode_builds_chain_of_sort_keys():
 
             await pilot.press("m")
             assert not is_multi(app)
+            assert title(app) == "Sort order"
             assert layout(app) == single_layout
 
             await pilot.press("m")

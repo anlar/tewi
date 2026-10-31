@@ -34,7 +34,7 @@ class SortOrderWidget(Static):
     """
 
     BINDINGS = [
-        Binding("m", "toggle_multi", "[Sort] Toggle multiple"),
+        Binding("m", "toggle_multi", "[Sort] Toggle multi-sort"),
         Binding("escape,x", "close", "[Navigation] Close"),
     ]
 
@@ -50,9 +50,8 @@ class SortOrderWidget(Static):
 
     @log_time
     def on_mount(self) -> None:
-        self.border_title = "Sort order"
         self.border_subtitle = subtitle_keys(
-            ("M", "Toggle multiple"), ("X", "Close")
+            ("M", "Toggle multi-sort"), ("X", "Close")
         )
 
         for o in sort_orders:
@@ -66,6 +65,10 @@ class SortOrderWidget(Static):
 
     @log_time
     def draw_table(self) -> None:
+        self.border_title = (
+            "Sort order: multiple" if self.multi else "Sort order"
+        )
+
         table = self.query_one(DataTable)
         table.clear(columns=True)
 
