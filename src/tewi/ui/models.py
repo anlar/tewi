@@ -48,6 +48,9 @@ class SortKey(NamedTuple):
     is_asc: bool
 
 
+default_sort_keys = (SortKey(sort_orders[0], True),)
+
+
 def sort_torrents(torrents: list, sort_keys: tuple[SortKey, ...]) -> None:
     """Sort torrents in place by multiple keys.
 

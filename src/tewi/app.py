@@ -95,9 +95,8 @@ from .ui.messages import (
 )
 from .ui.models import (
     FilterState,
-    SortKey,
+    default_sort_keys,
     get_filter_by_id,
-    sort_orders,
     sort_torrents,
 )
 from .ui.panel.details import TorrentInfoPanel
@@ -143,7 +142,7 @@ class MainApp(App):
     r_connected_ts = reactive(time)
     r_connected_error_ts = reactive(None)
 
-    r_sort_keys = reactive((SortKey(sort_orders[0], True),))
+    r_sort_keys = reactive(default_sort_keys)
     r_filter_state = reactive(None)
 
     last_search_query = None

@@ -6,7 +6,7 @@ from textual.widgets import DataTable, Static
 
 from ....util.log import log_time
 from ...messages import SortOrderUpdatedEvent
-from ...models import SortKey, sort_orders
+from ...models import SortKey, default_sort_keys, sort_orders
 from ...util import subtitle_keys
 
 # fits longest position label, e.g. "13↑"
@@ -126,11 +126,13 @@ class SortOrderWidget(Static):
 
         self.draw_table()
 
-        # keep current sorting if chain was emptied
-        if self.sort_keys:
-            self.post_message(
-                SortOrderUpdatedEvent(tuple(self.sort_keys), notify=False)
+        # fall back to default sorting if chain was emptied, chain itself
+        # stays empty, so next selected order replaces default one
+        self.post_message(
+            SortOrderUpdatedEvent(
+                tuple(self.sort_keys) or default_sort_keys, notify=False
             )
+        )
 
     @log_time
     def action_close(self) -> None:

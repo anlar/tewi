@@ -8,7 +8,12 @@ from textual.widgets import DataTable
 
 from src.tewi.ui.dialog.torrent.sort import SortOrderDialog, SortOrderWidget
 from src.tewi.ui.messages import SortOrderUpdatedEvent
-from src.tewi.ui.models import SortKey, sort_orders, sort_torrents
+from src.tewi.ui.models import (
+    SortKey,
+    default_sort_keys,
+    sort_orders,
+    sort_torrents,
+)
 from src.tewi.ui.panel.state import StatePanel
 
 
@@ -182,5 +187,24 @@ def test_multi_mode_toggle_off_resets_to_single_mode():
             await pilot.press("n")
             assert app.events[-1].sort_keys == (SortKey(order("name"), True),)
             assert not isinstance(app.screen, SortOrderDialog)
+
+    asyncio.run(run())
+
+
+def test_multi_mode_emptied_chain_falls_back_to_default_sort():
+    async def run() -> None:
+        app = SortApp((SortKey(order("age"), True),))
+        async with app.run_test() as pilot:
+            await pilot.press("m", "N", "N")
+
+            assert app.events[-1].sort_keys == default_sort_keys
+            assert not app.events[-1].notify
+            assert order_cell(app, "name") == "   Name"
+            assert order_cell(app, "age") == "   Age"
+
+            # next selected order starts new chain instead of default one
+            await pilot.press("z")
+            assert app.events[-1].sort_keys == (SortKey(order("size"), True),)
+            assert order_cell(app, "size") == "1  Size"
 
     asyncio.run(run())
