@@ -4,15 +4,14 @@ from textual.reactive import reactive
 from textual.widgets import Static
 
 from ...util.log import log_time
-from ..models import FilterState, SortOrder
+from ..models import FilterState, SortKey
 from ..util import esc_trunk, print_size, print_speed
 from ..widget.common import PageIndicator, ReactiveLabel, SpeedIndicator
 
 
 class StatePanel(Static):
     r_session = reactive(None)
-    r_sort_order = reactive(None)
-    r_sort_order_asc = reactive(None)
+    r_sort_keys = reactive(None)
     r_filter_state = reactive(None)
 
     # recompose whole line to update blocks width
@@ -62,14 +61,9 @@ class StatePanel(Static):
             ).data_bind(speed=StatePanel.r_download_speed)
 
     @log_time
-    def watch_r_sort_order(self, new_r_sort_order: SortOrder) -> None:
-        if new_r_sort_order:
-            self.update_sort(new_r_sort_order, self.r_sort_order_asc)
-
-    @log_time
-    def watch_r_sort_order_asc(self, new_r_sort_order_asc: bool) -> None:
-        if new_r_sort_order_asc is not None:
-            self.update_sort(self.r_sort_order, new_r_sort_order_asc)
+    def watch_r_sort_keys(self, new_r_sort_keys: tuple[SortKey, ...]) -> None:
+        if new_r_sort_keys:
+            self.update_sort(new_r_sort_keys)
 
     @log_time
     def watch_r_filter_state(self, new_r_filter_state: FilterState) -> None:
@@ -93,9 +87,13 @@ class StatePanel(Static):
         self.r_filter = ""
 
     @log_time
-    def update_sort(self, sort_order: SortOrder, sort_order_asc: bool) -> None:
-        sort_arrow = "" if sort_order_asc else " ↑"
-        self.r_sort = f"Sort: {sort_order.name}{sort_arrow}"
+    def update_sort(self, sort_keys: tuple[SortKey, ...]) -> None:
+        # show only primary sort order and count of following ones to keep
+        # status line short
+        sort_key = sort_keys[0]
+        sort_arrow = "" if sort_key.is_asc else " ↑"
+        sort_more = f" +{len(sort_keys) - 1}" if len(sort_keys) > 1 else ""
+        self.r_sort = f"Sort: {sort_key.order.name}{sort_arrow}{sort_more}"
 
     @log_time
     def watch_r_session(self, new_r_session):

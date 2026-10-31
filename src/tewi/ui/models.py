@@ -41,6 +41,30 @@ sort_orders = [
 ]
 
 
+class SortKey(NamedTuple):
+    """Single sort order with its direction."""
+
+    order: SortOrder
+    is_asc: bool
+
+
+default_sort_keys = (SortKey(sort_orders[0], True),)
+
+
+def sort_torrents(torrents: list, sort_keys: tuple[SortKey, ...]) -> None:
+    """Sort torrents in place by multiple keys.
+
+    First key has highest priority, following keys break ties. Relies on
+    sort stability: sorts by least significant key first.
+
+    Args:
+        torrents: List of torrents to sort
+        sort_keys: Sort keys ordered by priority
+    """
+    for key in reversed(sort_keys):
+        torrents.sort(key=key.order.sort_func, reverse=not key.is_asc)
+
+
 class FilterOption(NamedTuple):
     id: str
     name: str

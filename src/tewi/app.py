@@ -93,7 +93,12 @@ from .ui.messages import (
     VerifyTorrentCommand,
     WebSearchQuerySubmitted,
 )
-from .ui.models import FilterState, get_filter_by_id, sort_orders
+from .ui.models import (
+    FilterState,
+    default_sort_keys,
+    get_filter_by_id,
+    sort_torrents,
+)
 from .ui.panel.details import TorrentInfoPanel
 from .ui.panel.info import InfoPanel
 from .ui.panel.listview import TorrentListViewPanel
@@ -137,8 +142,7 @@ class MainApp(App):
     r_connected_ts = reactive(time)
     r_connected_error_ts = reactive(None)
 
-    r_sort_order = reactive(sort_orders[0])
-    r_sort_order_asc = reactive(True)
+    r_sort_keys = reactive(default_sort_keys)
     r_filter_state = reactive(None)
 
     last_search_query = None
@@ -290,8 +294,7 @@ class MainApp(App):
 
         yield StatePanel().data_bind(
             r_session=MainApp.r_session,
-            r_sort_order=MainApp.r_sort_order,
-            r_sort_order_asc=MainApp.r_sort_order_asc,
+            r_sort_keys=MainApp.r_sort_keys,
             r_filter_state=MainApp.r_filter_state,
             r_page=MainApp.r_page,
             r_search=MainApp.r_search,
@@ -352,10 +355,7 @@ class MainApp(App):
                     self.filter_option, len(torrents), self.filter_name
                 )
 
-                torrents.sort(
-                    key=self.r_sort_order.sort_func,
-                    reverse=not self.r_sort_order_asc,
-                )
+                sort_torrents(torrents, self.r_sort_keys)
 
                 logger.info(f"Loaded {len(torrents)} torrents from client")
 
@@ -462,7 +462,7 @@ class MainApp(App):
     def handle_open_sort_order_command(
         self, event: OpenSortOrderCommand
     ) -> None:
-        self.push_screen(SortOrderDialog())
+        self.push_screen(SortOrderDialog(self.r_sort_keys))
 
     @log_time
     @on(OpenFilterCommand)
@@ -637,13 +637,14 @@ class MainApp(App):
     def handle_sort_order_updated_event(
         self, event: SortOrderUpdatedEvent
     ) -> None:
-        self.r_sort_order = event.order
-        self.r_sort_order_asc = event.is_asc
+        self.r_sort_keys = event.sort_keys
 
-        direction = "ASC" if event.is_asc else "DESC"
-        self.post_message(
-            Notification(f"Selected sort order: {event.order.name} {direction}")
-        )
+        if event.notify:
+            orders = ", ".join(
+                f"{k.order.name} {'ASC' if k.is_asc else 'DESC'}"
+                for k in event.sort_keys
+            )
+            self.post_message(Notification(f"Selected sort order: {orders}"))
 
     @log_time
     @on(FilterUpdatedEvent)

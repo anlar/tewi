@@ -4,7 +4,7 @@ from textual.message import Message
 
 from ..search.models import Category, SearchResult
 from ..torrent.models import Torrent, TorrentFilePriority
-from .models import FilterOption, PageState
+from .models import FilterOption, PageState, SortKey
 
 # Commands
 
@@ -181,8 +181,8 @@ class TorrentCategoryUpdatedEvent(Message):
 
 @dataclass
 class SortOrderUpdatedEvent(Message):
-    order: str
-    is_asc: bool
+    sort_keys: tuple[SortKey, ...]
+    notify: bool = True
 
 
 @dataclass
