@@ -12,10 +12,15 @@ handle multi-line list body as single line.
 
 ### Added
 
+- Add multiple sort orders for torrent list: press `m` in sort dialog to chain orders, where following orders break ties of previous ones (e.g. progress, then age)
+
+## [3.1.0] - 2026-10-31 - Spectrum Rabbit
+
+### Added
+
 - Complete available profile names for `--profile` in shell completion
 - Add custom color themes via `[theme.NAME]` config sections: define new theme (optionally based on existing one with `base` option) or override colors of built-in theme, using Textual color names or hex codes
 - Add `--themes` CLI flag to print available themes (built-in and custom), one per line
-- Add multiple sort orders for torrent list: press `m` in sort dialog to chain orders, where following orders break ties of previous ones (e.g. progress, then age)
 
 ### Changed
 
@@ -25,6 +30,7 @@ handle multi-line list body as single line.
 - Make dialogs readable in all themes and stand out more: primary color borders, solid background and stronger dimming behind them
 - `--profiles` prints a machine-readable list of profile names, one per line (nothing when no profiles exist)
 - Unknown theme from `--theme` or config stops the app with error instead of falling back to default theme
+- Config file created by `--create-config` ends with vim modeline for INI syntax highlighting
 
 ### Removed
 
