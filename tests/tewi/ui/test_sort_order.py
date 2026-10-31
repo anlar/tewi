@@ -85,10 +85,7 @@ class SortApp(App):
 
 
 def is_multi(app: App) -> bool:
-    table = app.screen.query_one(DataTable)
-    first = next(iter(table.columns.values()))
-    # order names are indented to make room for position prefix
-    return str(first.label).startswith(" ")
+    return app.screen.query_one(SortOrderWidget).multi
 
 
 def layout(app: App) -> tuple[int, ...]:
