@@ -3,6 +3,7 @@
 import json
 import urllib.error
 import urllib.parse
+import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from typing import Any
@@ -215,36 +216,31 @@ class JackettProvider(BaseSearchProvider):
         return time_elapsed < self._cache_duration
 
     def _build_indexers_url(self) -> str:
-        """Build Jackett API indexers URL.
-
-        Uses search results endpoint with empty query to get indexer list.
-        This endpoint returns JSON with indexer information.
-
-        Returns:
-            Complete URL to fetch indexers list
-        """
+        """List configured indexers without querying any tracker sites."""
         base_url = self.jackett_url.rstrip("/")
-        endpoint = f"{base_url}/api/v2.0/indexers/all/results"
-        # Use non-existent category to prevent Jackett from actual search
-        # and return empty search list and all indexers
-        params = {"apikey": self.api_key, "cat": 123456}
+        endpoint = f"{base_url}/api/v2.0/indexers/all/results/torznab/api"
+        params = {
+            "apikey": self.api_key,
+            "t": "indexers",
+            "configured": "true",
+        }
         return f"{endpoint}?{urllib.parse.urlencode(params)}"
 
-    def _fetch_indexers(self, url: str) -> dict:
-        """Fetch and parse JSON indexers list from Jackett API.
+    def _fetch_indexers(self, url: str) -> ET.Element:
+        """Fetch and parse the Torznab indexer metadata from Jackett.
 
         Args:
             url: Complete API URL
 
         Returns:
-            Parsed JSON data as dictionary
+            Parsed XML indexers element
 
         Raises:
             Exception: If request fails or response invalid
         """
         try:
             with self.urlopen(url, timeout=10) as response:
-                return json.loads(response.read().decode("utf-8"))
+                return ET.fromstring(response.read())
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
                 raise Exception("Invalid Jackett API key")
@@ -253,28 +249,27 @@ class JackettProvider(BaseSearchProvider):
             raise Exception(
                 f"Cannot connect to Jackett at {self.jackett_url}: {e.reason}"
             )
-        except json.JSONDecodeError as e:
-            raise Exception(f"Failed to parse Jackett JSON response: {e}")
+        except ET.ParseError as e:
+            raise Exception(f"Failed to parse Jackett indexers XML: {e}")
 
-    def _process_indexers(self, data: dict) -> list[Indexer]:
-        """Process indexers JSON response.
+    def _process_indexers(self, data: ET.Element) -> list[Indexer]:
+        """Process configured indexers from the metadata response.
 
         Args:
-            data: Parsed JSON data from search endpoint
+            data: Parsed XML data from the indexer-list command
 
         Returns:
             List of Indexer objects
         """
+        if data.tag != "indexers":
+            raise ValueError("Unexpected Jackett indexer metadata response")
+
         indexers = []
-
-        # Get indexers list from response
-        indexers_data = sorted(
-            data.get("Indexers", []), key=lambda x: x["Name"]
-        )
-
-        for indexer in indexers_data:
-            indexer_id = indexer.get("ID")
-            indexer_name = indexer.get("Name")
+        for indexer in data.findall("indexer"):
+            if indexer.get("configured") != "true":
+                continue
+            indexer_id = indexer.get("id")
+            indexer_name = (indexer.findtext("title") or "").strip()
             # Only include indexers with valid ID and Name
             if indexer_id and indexer_name:
                 # Prefix with jackett: to distinguish from other providers
@@ -286,7 +281,7 @@ class JackettProvider(BaseSearchProvider):
                         f"{indexer_name} [dim](Jackett)[/]",
                     )
                 )
-        return indexers
+        return sorted(indexers, key=lambda indexer: indexer.name.lower())
 
     def _should_search_multiple_indexers(
         self, indexers: list[str] | None
