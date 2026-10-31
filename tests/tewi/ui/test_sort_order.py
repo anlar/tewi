@@ -9,6 +9,7 @@ from textual.widgets import DataTable
 from src.tewi.ui.dialog.torrent.sort import SortOrderDialog, SortOrderWidget
 from src.tewi.ui.messages import SortOrderUpdatedEvent
 from src.tewi.ui.models import SortKey, sort_orders, sort_torrents
+from src.tewi.ui.panel.state import StatePanel
 
 
 def order(order_id: str):
@@ -43,6 +44,22 @@ def test_sort_torrents_single_key():
     sort_torrents(torrents, (SortKey(order("name"), False),))
 
     assert [t.name for t in torrents] == ["c", "b", "a"]
+
+
+def test_status_shows_primary_order_and_count_of_following():
+    panel = StatePanel()
+
+    panel.update_sort((SortKey(order("age"), True),))
+    assert panel.r_sort == "Sort: Age"
+
+    panel.update_sort(
+        (
+            SortKey(order("progress"), False),
+            SortKey(order("age"), True),
+            SortKey(order("name"), False),
+        )
+    )
+    assert panel.r_sort == "Sort: Progress ↑ +2"
 
 
 class SortApp(App):

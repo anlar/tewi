@@ -63,8 +63,7 @@ class StatePanel(Static):
     @log_time
     def watch_r_sort_keys(self, new_r_sort_keys: tuple[SortKey, ...]) -> None:
         if new_r_sort_keys:
-            # show only primary sort order to keep status line short
-            self.update_sort(new_r_sort_keys[0])
+            self.update_sort(new_r_sort_keys)
 
     @log_time
     def watch_r_filter_state(self, new_r_filter_state: FilterState) -> None:
@@ -88,9 +87,13 @@ class StatePanel(Static):
         self.r_filter = ""
 
     @log_time
-    def update_sort(self, sort_key: SortKey) -> None:
+    def update_sort(self, sort_keys: tuple[SortKey, ...]) -> None:
+        # show only primary sort order and count of following ones to keep
+        # status line short
+        sort_key = sort_keys[0]
         sort_arrow = "" if sort_key.is_asc else " ↑"
-        self.r_sort = f"Sort: {sort_key.order.name}{sort_arrow}"
+        sort_more = f" +{len(sort_keys) - 1}" if len(sort_keys) > 1 else ""
+        self.r_sort = f"Sort: {sort_key.order.name}{sort_arrow}{sort_more}"
 
     @log_time
     def watch_r_session(self, new_r_session):
