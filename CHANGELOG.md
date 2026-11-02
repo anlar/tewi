@@ -14,6 +14,10 @@ handle multi-line list body as single line.
 
 - Add multiple sort orders for torrent list: press `m` in sort dialog to chain orders, where following orders break ties of previous ones (e.g. progress, then age)
 
+### Changed
+
+- Load Jackett indexers without searching trackers [#188](https://github.com/anlar/tewi/pull/188)
+
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 
 ### Added
