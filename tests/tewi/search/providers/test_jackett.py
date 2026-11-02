@@ -74,6 +74,18 @@ def test_invalid_metadata_is_not_cached(monkeypatch, caplog, response):
     assert urlopen.call_count == 2
 
 
+def test_discovery_reports_torznab_error_description(monkeypatch, caplog):
+    provider = JackettProvider("http://localhost:9117", "key", True)
+    response = b'<error code="100" description="Invalid API Key" />'
+    monkeypatch.setattr(
+        provider, "urlopen", Mock(return_value=BytesIO(response))
+    )
+
+    assert provider.indexers() == []
+    assert "Failed to load Jackett indexers: Invalid API Key" in caplog.text
+    assert provider._cached_indexers is None
+
+
 @pytest.mark.parametrize("status", [401, 403])
 def test_discovery_reports_invalid_api_key(monkeypatch, caplog, status):
     provider = JackettProvider("http://localhost:9117", "key", True)

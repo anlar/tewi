@@ -261,6 +261,11 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             List of Indexer objects
         """
+        # Jackett reports Torznab errors (e.g. invalid API key) with HTTP 200
+        if data.tag == "error":
+            raise ValueError(
+                data.get("description") or "Jackett returned an error"
+            )
         if data.tag != "indexers":
             raise ValueError("Unexpected Jackett indexer metadata response")
 
