@@ -4,6 +4,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from ..util.log import get_logger
+from ..util.misc import is_torrent_hash
 from .base import BaseSearchProvider
 from .models import Category, Indexer, SearchResult
 from .providers import (
@@ -330,6 +331,14 @@ class SearchClient:
             # Process results in provider order
             for idx in sorted(results_by_provider.keys()):
                 all_results.extend(results_by_provider[idx])
+
+        # Skip results with malformed info hash (it's used to build magnet
+        # links and as result key)
+        all_results = [
+            r
+            for r in all_results
+            if not r.info_hash or is_torrent_hash(r.info_hash)
+        ]
 
         # Deduplicate by info_hash, keeping first occurrence (by provider
         # order)

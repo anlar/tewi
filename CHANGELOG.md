@@ -20,6 +20,8 @@ handle multi-line list body as single line.
 - Fix showing square brackets in torrent list name filter without extra backslash
 - Show text from torrents, peers, trackers, search providers and torrent client literally, without parsing it as markup (prevent action injection on mouse click)
 - Restrict profile and theme names to safe characters
+- Accept only magnet and HTTP(S) links from web search and open only HTTP(S) links, skip search results with malformed info hash
+- Limit torrent file download from URL: follow up to 5 redirects to magnet or HTTP(S) links only, download files up to 100 MiB, add torrents in background without blocking UI
 
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 

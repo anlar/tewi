@@ -16,10 +16,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import threading
+import urllib.parse
 from datetime import datetime, timedelta
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
-from src.tewi.torrent.models import Torrent
-from src.tewi.torrent.util import count_torrents_by_status, torrents_test
+import pytest
+
+from src.tewi.torrent import util as torrent_util
+from src.tewi.torrent.models import ClientError, Torrent
+from src.tewi.torrent.util import (
+    count_torrents_by_status,
+    download_torrent_from_url,
+    torrents_test,
+)
 
 
 def create_torrent(
@@ -331,3 +341,140 @@ class TestTorrentsTest:
         # All should have different names
         names = [t.name for t in result]
         assert len(set(names)) == 10
+
+
+class _TorrentHandler(BaseHTTPRequestHandler):
+    """Serve torrent files and redirects for download tests.
+
+    Paths:
+        /file          - valid torrent data
+        /notorrent     - non-torrent content
+        /big           - torrent data over size limit (see fixture)
+        /loop          - redirect to itself
+        /redirect?to=X - redirect to X (Location header as is)
+    """
+
+    TORRENT = b"d8:announce0:4:infod4:name4:testee"
+
+    def do_GET(self):
+        path, _, query = self.path.partition("?")
+        if path == "/file":
+            self._send(200, self.TORRENT)
+        elif path == "/notorrent":
+            self._send(200, b"<html>login</html>")
+        elif path == "/big":
+            self._send(200, b"d" + b"x" * 2048)
+        elif path == "/loop":
+            self._redirect("/loop")
+        elif path == "/redirect":
+            self._redirect(urllib.parse.parse_qs(query)["to"][0])
+        else:
+            self._send(404, b"")
+
+    def _send(self, code, body):
+        self.send_response(code)
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _redirect(self, location):
+        self.send_response(302)
+        self.send_header("Location", location)
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def log_message(self, *args):
+        pass
+
+
+@pytest.fixture
+def server():
+    """Run local HTTP server, yield its base URL."""
+    httpd = ThreadingHTTPServer(("127.0.0.1", 0), _TorrentHandler)
+    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread.start()
+    yield f"http://127.0.0.1:{httpd.server_address[1]}"
+    httpd.shutdown()
+    httpd.server_close()
+
+
+def redirect(server: str, to: str) -> str:
+    return f"{server}/redirect?{urllib.parse.urlencode({'to': to})}"
+
+
+class TestDownloadTorrentFromUrl:
+    """Test cases for download_torrent_from_url function."""
+
+    MAGNET = "magnet:?xt=urn:btih:" + "a" * 40
+
+    @pytest.mark.parametrize(
+        "url", [MAGNET, f"  {MAGNET}\n", MAGNET.replace("magnet", "MAGNET")]
+    )
+    def test_magnet_link_returned_as_is(self, url):
+        assert download_torrent_from_url(url) == (url.strip(), None)
+
+    def test_download_file(self, server):
+        result = download_torrent_from_url(f"{server}/file")
+
+        assert result == (None, _TorrentHandler.TORRENT)
+
+    def test_follow_redirect_to_file(self, server):
+        result = download_torrent_from_url(redirect(server, "/file"))
+
+        assert result == (None, _TorrentHandler.TORRENT)
+
+    def test_follow_redirect_to_absolute_url(self, server):
+        url = redirect(server, f"{server}/file")
+
+        assert download_torrent_from_url(url) == (None, _TorrentHandler.TORRENT)
+
+    def test_redirect_to_magnet(self, server):
+        url = redirect(server, self.MAGNET)
+
+        assert download_torrent_from_url(url) == (self.MAGNET, None)
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "file:///etc/passwd",
+            "ftp://example.com/x.torrent",
+            "data:application/x-bittorrent,d4:infoe",
+            "/etc/passwd",
+            "",
+        ],
+    )
+    def test_unsupported_scheme_rejected(self, url):
+        with pytest.raises(ClientError, match="Unsupported"):
+            download_torrent_from_url(url)
+
+    @pytest.mark.parametrize(
+        "target", ["file:///etc/passwd", "FILE:///etc/passwd", "ftp://x/y"]
+    )
+    def test_redirect_to_unsupported_scheme_rejected(self, server, target):
+        with pytest.raises(ClientError, match="Unsupported"):
+            download_torrent_from_url(redirect(server, target))
+
+    def test_redirect_to_local_torrent_file_rejected(self, server, tmp_path):
+        local = tmp_path / "secret.torrent"
+        local.write_bytes(b"d6:secret4:datae")
+
+        with pytest.raises(ClientError, match="Unsupported"):
+            download_torrent_from_url(redirect(server, local.as_uri()))
+
+    def test_redirect_loop_limited(self, server):
+        with pytest.raises(ClientError, match="redirects"):
+            download_torrent_from_url(f"{server}/loop")
+
+    def test_too_large_file_rejected(self, server, monkeypatch):
+        monkeypatch.setattr(torrent_util, "MAX_TORRENT_SIZE", 1024)
+
+        with pytest.raises(ClientError, match="too large"):
+            download_torrent_from_url(f"{server}/big")
+
+    def test_not_torrent_rejected(self, server):
+        with pytest.raises(ClientError, match="not a valid torrent"):
+            download_torrent_from_url(f"{server}/notorrent")
+
+    def test_http_error(self, server):
+        with pytest.raises(ClientError, match="404"):
+            download_torrent_from_url(f"{server}/missing")

@@ -3,6 +3,7 @@
 import hashlib
 import math
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import replace
 
@@ -97,30 +98,77 @@ def count_torrents_by_status(torrents: list[Torrent]) -> dict[str, int]:
     }
 
 
-def _handle_redirect(
-    error: urllib.error.HTTPError,
-) -> tuple[str | None, bytes | None]:
-    """Handle HTTP redirect responses, checking for magnet links.
+# Redirect statuses followed when downloading torrent file
+REDIRECT_CODES = (301, 302, 303, 307, 308)
 
-    Args:
-        error: HTTPError containing redirect information
+# Max number of redirects followed when downloading torrent file
+MAX_REDIRECTS = 5
+
+# Max size of downloaded torrent file (qBittorrent default limit)
+MAX_TORRENT_SIZE = 100 * 1024 * 1024  # bytes
+
+DOWNLOAD_TIMEOUT = 30  # seconds
+
+
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Don't follow redirects automatically.
+
+    Redirects are followed by `download_torrent_from_url` itself, so
+    target scheme is checked on each step and magnet links are detected.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
+def _fetch_torrent(
+    opener: urllib.request.OpenerDirector, url: str
+) -> tuple[str | None, bytes | None]:
+    """Make single request for torrent file without following redirects.
 
     Returns:
-        Tuple of (magnet_link, torrent_data) from following redirect
+        Tuple of (redirect_url, torrent_data), one of them is non-None
 
     Raises:
-        ClientError: If redirect location is missing or download fails
+        ClientError: If request fails or response isn't a torrent file
     """
-    location = error.headers.get("Location")
-    if not location:
-        raise ClientError(f"Redirect {error.code} missing Location header")
+    try:
+        with opener.open(url, timeout=DOWNLOAD_TIMEOUT) as response:
+            if response.status != 200:
+                raise ClientError(
+                    f"Failed to download torrent: HTTP {response.status}"
+                )
+            torrent_data = response.read(MAX_TORRENT_SIZE + 1)
+    except urllib.error.HTTPError as e:
+        e.close()
+        if e.code in REDIRECT_CODES:
+            location = e.headers.get("Location")
+            if not location:
+                raise ClientError(f"Redirect {e.code} missing Location header")
+            # Location may be relative to requested URL
+            return (urllib.parse.urljoin(url, location.strip()), None)
 
-    # Check if redirect is to a magnet link
-    if location.startswith("magnet:"):
-        return (location, None)
+        raise ClientError(
+            f"HTTP error downloading torrent: {e.code} {e.reason}"
+        )
+    except urllib.error.URLError as e:
+        raise ClientError(f"Failed to download torrent from {url}: {e.reason}")
+    except ClientError:
+        raise
+    except Exception as e:
+        raise ClientError(f"Error downloading torrent from URL: {str(e)}")
 
-    # Otherwise, follow the redirect by calling recursively
-    return download_torrent_from_url(location)
+    if len(torrent_data) > MAX_TORRENT_SIZE:
+        raise ClientError(
+            "Downloaded torrent file is too large "
+            f"(over {MAX_TORRENT_SIZE // (1024 * 1024)} MiB)"
+        )
+
+    # Validate it's actually a torrent file (bencoded format starts with 'd')
+    if not torrent_data or torrent_data[0:1] != b"d":
+        raise ClientError("Downloaded content is not a valid torrent file")
+
+    return (None, torrent_data)
 
 
 def download_torrent_from_url(url: str) -> tuple[str | None, bytes | None]:
@@ -131,6 +179,11 @@ def download_torrent_from_url(url: str) -> tuple[str | None, bytes | None]:
     2. HTTP/HTTPS URLs that may redirect to either:
        - Magnet links (returns the magnet link)
        - Torrent files (downloads and returns the file data)
+
+    URL may come from search provider, so only magnet and HTTP(S) URLs
+    are accepted, including redirect targets (e.g. redirect to file://
+    would read local file), and number of redirects and size of
+    downloaded file are limited.
 
     Args:
         url: Magnet link, or HTTP/HTTPS URL to .torrent file
@@ -145,51 +198,23 @@ def download_torrent_from_url(url: str) -> tuple[str | None, bytes | None]:
         ClientError: If download fails, URL is invalid, or downloaded
                     content is neither a valid magnet link nor torrent file
     """
-    # Handle direct magnet links
-    if url.startswith("magnet:"):
-        return (url, None)
+    url = url.strip()
+    opener = urllib.request.build_opener(_NoRedirectHandler())
 
-    # Create custom opener that doesn't automatically follow redirects
-    # This allows us to check if redirect target is a magnet link
-    class NoRedirectHandler(urllib.request.HTTPRedirectHandler):
-        def redirect_request(self, req, fp, code, msg, headers, newurl):
-            # Don't follow redirects automatically
-            return None
-
-    opener = urllib.request.build_opener(NoRedirectHandler())
-
-    try:
-        # Make request without following redirects
-        response = opener.open(url, timeout=30)
-
-        # If we got here, no redirect occurred - download the content
-        if response.status != 200:
+    for _ in range(MAX_REDIRECTS + 1):
+        scheme = urllib.parse.urlsplit(url).scheme.lower()
+        if scheme == "magnet":
+            return (url, None)
+        if scheme not in ("http", "https"):
             raise ClientError(
-                f"Failed to download torrent: HTTP {response.status}"
+                f"Unsupported torrent link scheme: {scheme or '(none)'}"
             )
 
-        torrent_data = response.read()
-        response.close()
+        redirect_url, torrent_data = _fetch_torrent(opener, url)
+        if redirect_url is None:
+            return (None, torrent_data)
+        url = redirect_url
 
-        # Validate it's actually a torrent file
-        # (bencoded format starts with 'd')
-        if not torrent_data or torrent_data[0:1] != b"d":
-            raise ClientError("Downloaded content is not a valid torrent file")
-
-        return (None, torrent_data)
-
-    except urllib.error.HTTPError as e:
-        # Check if this is a redirect (3xx status codes)
-        if e.code in (301, 302, 303, 307, 308):
-            return _handle_redirect(e)
-
-        raise ClientError(
-            f"HTTP error downloading torrent: {e.code} {e.reason}"
-        )
-    except urllib.error.URLError as e:
-        raise ClientError(f"Failed to download torrent from {url}: {e.reason}")
-    except ClientError:
-        # Re-raise ClientError as-is
-        raise
-    except Exception as e:
-        raise ClientError(f"Error downloading torrent from URL: {str(e)}")
+    raise ClientError(
+        f"Failed to download torrent: more than {MAX_REDIRECTS} redirects"
+    )

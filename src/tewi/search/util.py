@@ -5,6 +5,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
+from ..util.misc import is_torrent_hash
 from .models import Category, StandardCategories
 
 # User-Agent string to imitate a popular browser
@@ -66,15 +67,23 @@ def build_magnet_link(
     """Build a magnet link from info hash, name, and optional trackers.
 
     Args:
-        info_hash: 40-character hex string torrent info hash
+        info_hash: Torrent info hash (40-char hex or 32-char Base32)
         name: Torrent name to encode in magnet link
         trackers: Optional list of tracker URLs to append
 
     Returns:
         Complete magnet link string
+
+    Raises:
+        ValueError: If info hash is not valid (it comes from search
+                    provider and could inject extra magnet parameters,
+                    e.g. trackers or download sources)
     """
+    if not is_torrent_hash(info_hash or ""):
+        raise ValueError(f"Invalid info hash: {info_hash!r}")
+
     encoded_name = urllib.parse.quote(name)
-    magnet = f"magnet:?xt=urn:btih:{info_hash}&dn={encoded_name}"
+    magnet = f"magnet:?xt=urn:btih:{info_hash.strip()}&dn={encoded_name}"
 
     if trackers:
         for tracker in trackers:

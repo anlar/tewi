@@ -2,6 +2,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import pytest
+
 from src.tewi.search.models import StandardCategories
 from src.tewi.search.util import (
     build_magnet_link,
@@ -212,25 +214,26 @@ class TestDetectCategoryFromName:
         )
 
 
+HASH = "abc123def456" + "0" * 28
+
+
 class TestBuildMagnetLink:
     """Test building magnet links."""
 
     def test_build_magnet_link_basic(self):
         """Test building a basic magnet link without trackers."""
-        magnet = build_magnet_link(
-            "abc123def456", "Test Torrent", trackers=None
-        )
+        magnet = build_magnet_link(HASH, "Test Torrent", trackers=None)
 
-        assert magnet.startswith("magnet:?xt=urn:btih:abc123def456")
+        assert magnet.startswith(f"magnet:?xt=urn:btih:{HASH}")
         assert "dn=Test%20Torrent" in magnet
 
     def test_build_magnet_link_with_special_chars(self):
         """Test building magnet link with special characters in name."""
         magnet = build_magnet_link(
-            "abc123", "Test [2024] (1080p) & More!", trackers=None
+            HASH, "Test [2024] (1080p) & More!", trackers=None
         )
 
-        assert "magnet:?xt=urn:btih:abc123" in magnet
+        assert f"magnet:?xt=urn:btih:{HASH}" in magnet
         # Check that special characters are URL-encoded
         assert "Test%20" in magnet or "Test+" in magnet
         assert "%5B" in magnet or "[" not in magnet.split("&")[0]
@@ -242,18 +245,48 @@ class TestBuildMagnetLink:
             "udp://tracker2.example.com:6969/announce",
         ]
 
-        magnet = build_magnet_link("abc123", "Test", trackers=trackers)
+        magnet = build_magnet_link(HASH, "Test", trackers=trackers)
 
-        assert "magnet:?xt=urn:btih:abc123" in magnet
+        assert f"magnet:?xt=urn:btih:{HASH}" in magnet
         assert "dn=Test" in magnet
         assert "tr=http://tracker1.example.com:80/announce" in magnet
         assert "tr=udp://tracker2.example.com:6969/announce" in magnet
 
     def test_build_magnet_link_empty_trackers(self):
         """Test building magnet link with empty tracker list."""
-        magnet = build_magnet_link("abc123", "Test", trackers=[])
+        magnet = build_magnet_link(HASH, "Test", trackers=[])
 
-        assert magnet == "magnet:?xt=urn:btih:abc123&dn=Test"
+        assert magnet == f"magnet:?xt=urn:btih:{HASH}&dn=Test"
+
+    def test_build_magnet_link_base32_hash(self):
+        """Test building magnet link with Base32 info hash."""
+        base32 = "A" * 32
+
+        magnet = build_magnet_link(base32, "Test")
+
+        assert magnet == f"magnet:?xt=urn:btih:{base32}&dn=Test"
+
+    def test_build_magnet_link_strips_hash(self):
+        """Test that whitespace around info hash is removed."""
+        magnet = build_magnet_link(f" {HASH}\n", "Test")
+
+        assert magnet == f"magnet:?xt=urn:btih:{HASH}&dn=Test"
+
+    @pytest.mark.parametrize(
+        "info_hash",
+        [
+            "",
+            None,
+            "abc123",
+            HASH + "&tr=udp://attacker.example:6969",
+            HASH[:-1] + "&",
+            "z" * 40,
+        ],
+    )
+    def test_build_magnet_link_invalid_hash(self, info_hash):
+        """Test that hash able to inject magnet parameters is rejected."""
+        with pytest.raises(ValueError, match="Invalid info hash"):
+            build_magnet_link(info_hash, "Test")
 
 
 class TestUrlopen:

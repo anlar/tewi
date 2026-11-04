@@ -107,6 +107,7 @@ from .ui.panel.state import StatePanel
 from .ui.panel.websearch import TorrentWebSearch
 from .util.debug import start_debugpy
 from .util.log import get_logger, init_logger, log_time
+from .util.misc import is_http_url, is_torrent_link
 from .version import __version__
 
 logger = get_logger()
@@ -499,9 +500,18 @@ class MainApp(App):
     @log_time
     @on(AddTorrentCommand)
     def handle_add_torrent_command(self, event: AddTorrentCommand) -> None:
+        self.add_torrent(event.value, "New torrent was added")
+
+    @work(thread=True, group="add_torrent")
+    def add_torrent(self, value: str, success_message: str) -> None:
+        """Add torrent in background thread.
+
+        Adding may download torrent file from URL (with redirects), which
+        would block UI if done in message handler.
+        """
         try:
-            self.client.add_torrent(event.value)
-            self.post_message(Notification("New torrent was added"))
+            self.client.add_torrent(value)
+            self.post_message(Notification(success_message))
         except ClientError as e:
             self.post_message(
                 Notification(f"Failed to add torrent:\n{e}", "warning")
@@ -509,7 +519,7 @@ class MainApp(App):
         except FileNotFoundError:
             self.post_message(
                 Notification(
-                    f"Failed to add torrent:\nFile not found {event.value}",
+                    f"Failed to add torrent:\nFile not found {value}",
                     "warning",
                 )
             )
@@ -879,15 +889,41 @@ class MainApp(App):
     def handle_add_torrent_from_websearch_command(
         self, event: AddTorrentFromWebSearchCommand
     ) -> None:
-        try:
-            self.client.add_torrent(event.magnet_link)
-            self.post_message(
-                Notification("New torrent was added from web search")
+        # Link comes from search provider, so only magnet and HTTP(S)
+        # links are accepted: anything else would be read as local file
+        # path and uploaded to torrent client
+        if not is_torrent_link(event.magnet_link):
+            logger.warning(
+                f"Rejected link from web search: {event.magnet_link!r}"
             )
-        except ClientError as e:
             self.post_message(
-                Notification(f"Failed to add torrent:\n{e}", "warning")
+                Notification(
+                    "Failed to add torrent:\n"
+                    "Search provider returned unsupported link",
+                    "warning",
+                )
             )
+            return
+
+        self.add_torrent(
+            event.magnet_link, "New torrent was added from web search"
+        )
+
+    def open_url(self, url: str, *, new_tab: bool = True) -> None:
+        """Open URL in web browser, only HTTP(S) URLs are allowed.
+
+        Used by Link and Markdown widgets, which may show links from
+        remote data (e.g. torrent details from search providers): other
+        schemes could open local files or custom URL handlers.
+        """
+        if not is_http_url(url):
+            logger.warning(f"Rejected opening non-HTTP(S) URL: {url!r}")
+            self.post_message(
+                Notification("Only HTTP(S) links can be opened", "warning")
+            )
+            return
+
+        super().open_url(url, new_tab=new_tab)
 
     def check_action(
         self, action: str, parameters: tuple[object, ...]
