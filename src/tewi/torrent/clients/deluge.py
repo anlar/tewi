@@ -805,7 +805,10 @@ class DelugeClient(BaseClient):
     def _peer_to_dto(self, peer: dict[str, Any]) -> TorrentPeer:
         """Convert Deluge peer data to TorrentPeer."""
 
-        address, port_str = peer.get("ip").split(":", 1)
+        # Deluge formats address as "ip:port", IPv6 without brackets
+        # (e.g. "2001:db8::1:51413"), so port is after the last colon
+        address, _, port_str = peer.get("ip").rpartition(":")
+        address = address.strip("[]")
         port: int = int(port_str)
 
         return TorrentPeer(
