@@ -33,6 +33,8 @@ from ..util import (
     download_torrent_from_url,
 )
 
+TIMEOUT = 30  # seconds
+
 
 class DelugeClient(BaseClient):
     """Deluge client implementation using Web API.
@@ -645,7 +647,9 @@ class DelugeClient(BaseClient):
         }
 
         try:
-            response = self._session.post(self.base_url, json=data)
+            response = self._session.post(
+                self.base_url, json=data, timeout=TIMEOUT
+            )
             response.raise_for_status()
             result = response.json()
 
