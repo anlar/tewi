@@ -114,12 +114,18 @@ class CycleSelect(Static):
 
 
 class ReactiveLabel(Label):
+    """Label showing value of reactive `name` attribute.
+
+    Value is shown literally by default. Enable `markup` only for values
+    built by Tewi itself: markup from remote data (e.g. torrent names)
+    may contain "[@click=...]" actions run on mouse click.
+    """
+
     name = reactive(None, layout=False)
 
     @log_time
     def __init__(self, *args, markup=False, **kwargs):
         super().__init__(*args, markup=markup, **kwargs)
-        self.markup = False
 
     @log_time
     def render(self):

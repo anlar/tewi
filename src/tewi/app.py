@@ -112,6 +112,15 @@ logger = get_logger()
 
 DEFAULT_THEME = "textual-dark"
 
+# Built-in Textual actions that are never used by Tewi itself, but could
+# harm user if triggered by markup injected in remote data
+UNSAFE_ACTIONS = {"simulate_key", "suspend_process"}
+
+# Built-in Textual actions that are bound to keys without parameters, but
+# could harm user if called with parameters (e.g. screenshot overwriting
+# arbitrary file)
+UNSAFE_ACTIONS_WITH_PARAMS = {"screenshot"}
+
 
 # Core UI panels
 
@@ -445,8 +454,13 @@ class MainApp(App):
     def handle_notification(self, event: Notification) -> None:
         timeout = 3 if event.severity == "information" else 5
 
+        # Messages may include remote text (e.g. errors returned by
+        # torrent client or search provider), so they are shown literally
         self.notify(
-            message=event.message, severity=event.severity, timeout=timeout
+            message=event.message,
+            severity=event.severity,
+            timeout=timeout,
+            markup=False,
         )
 
     @log_time
@@ -880,6 +894,15 @@ class MainApp(App):
         """Check if an action may run."""
         if action == "toggle_alt_speed":
             return self.client.capable(ClientCapability.TOGGLE_ALT_SPEED)
+
+        # Defense in depth against markup injected in remote data, like
+        # "[@click=app.screenshot('../.bashrc')]", which runs action
+        # on mouse click (remote data must never be parsed as markup)
+        if action in UNSAFE_ACTIONS or (
+            action in UNSAFE_ACTIONS_WITH_PARAMS and parameters
+        ):
+            logger.warning(f"Blocked unsafe action: {action}{parameters}")
+            return False
 
         return True
 

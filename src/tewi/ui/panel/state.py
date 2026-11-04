@@ -5,7 +5,7 @@ from textual.widgets import Static
 
 from ...util.log import log_time
 from ..models import FilterState, SortKey
-from ..util import esc_trunk, print_size, print_speed
+from ..util import print_size, print_speed, truncate
 from ..widget.common import PageIndicator, ReactiveLabel, SpeedIndicator
 
 
@@ -74,7 +74,7 @@ class StatePanel(Static):
                 parts.append(new_r_filter_state.option.name)
 
             if new_r_filter_state.name:
-                name = esc_trunk(new_r_filter_state.name, 10)
+                name = truncate(new_r_filter_state.name, 10)
                 parts.append(f'"{name}"')
 
             if parts:

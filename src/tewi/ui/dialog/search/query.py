@@ -13,7 +13,7 @@ from textual.widgets.selection_list import Selection
 from ....search.models import SearchPreset, StandardCategories
 from ....util.log import log_time
 from ...messages import Notification, WebSearchQuerySubmitted
-from ...util import subtitle_keys
+from ...util import plain_text, subtitle_keys
 from ...widget.common import CycleSelect, VimSelectionList
 
 
@@ -132,7 +132,8 @@ class WebSearchQueryWidget(Static):
             self._indexer_order.append(indexer.id)
             selections.append(
                 Selection(
-                    indexer.display_name or indexer.name,
+                    # Indexer names come from Jackett/Prowlarr
+                    plain_text(indexer.display_name or indexer.name),
                     indexer.id,
                     is_selected,
                 )

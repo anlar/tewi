@@ -7,6 +7,7 @@ import subprocess
 from datetime import datetime
 from functools import cache
 
+from rich.text import Text
 from textual.color import Color
 
 from ..util.log import log_time
@@ -235,16 +236,28 @@ def theme_markup_color(app, variable: str) -> str:
     return Color.parse(value).rich_color.name
 
 
-@cache
-def escape_markup(value: str) -> str:
-    return value.replace("[", r"\[")
+def plain_text(value: object, style: str = "", **kwargs) -> Text:
+    """Wrap value as Text, so widgets don't parse it as markup.
+
+    DataTable and other widgets parse str values as Rich markup, which
+    lets text from remote sources (torrent and file names, peer clients,
+    tracker messages, search results) inject styles, links or
+    "[@click=...]" actions triggered by a mouse click. Use this for all
+    such values instead of passing them as str.
+
+    Args:
+        value: Value to show (None is shown as empty string)
+        style: Optional Rich style for the whole text
+        **kwargs: Extra arguments for Text (e.g. justify)
+    """
+    return Text("" if value is None else str(value), style=style, **kwargs)
 
 
 @cache
-def esc_trunk(value: str, max_len: int) -> str:
-    result = (
+def truncate(value: str, max_len: int) -> str:
+    """Truncate value to `max_len` chars (plus ellipsis), 0 means no limit."""
+    return (
         value[:max_len] + "…"
         if (max_len > 0 and len(value) > max_len)
         else value
     )
-    return escape_markup(result)

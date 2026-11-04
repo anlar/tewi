@@ -6,7 +6,7 @@ from textual.widgets import DataTable, Static
 from ....torrent.models import TorrentCategory
 from ....util.log import log_time
 from ...messages import UpdateTorrentCategoryCommand
-from ...util import subtitle_keys
+from ...util import plain_text, subtitle_keys
 
 
 class UpdateTorrentCategoryDialog(ModalScreen):
@@ -67,7 +67,11 @@ class UpdateTorrentCategoryWidget(Static):
         cursor_row = 0
 
         for idx, cat in enumerate(self.categories):
-            table.add_row(cat.name, cat.save_path or "", key=cat.name)
+            table.add_row(
+                plain_text(cat.name),
+                plain_text(cat.save_path),
+                key=cat.name,
+            )
             # Track which row has the current category
             if current_category == cat.name:
                 cursor_row = idx + 1  # +1 because "No category" is first row

@@ -17,6 +17,8 @@ handle multi-line list body as single line.
 ### Changed
 
 - Load Jackett indexers without searching trackers [#188](https://github.com/anlar/tewi/pull/188)
+- Fix showing square brackets in torrent list name filter without extra backslash
+- Show text from torrents, peers, trackers, search providers and torrent client literally, without parsing it as markup (prevent action injection on mouse click)
 
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 

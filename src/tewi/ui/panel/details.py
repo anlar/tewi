@@ -26,6 +26,7 @@ from ..util import (
     open as open_path,
 )
 from ..util import (
+    plain_text,
     print_size,
     print_speed,
     print_time_ago,
@@ -58,20 +59,25 @@ NONE = "-"
 
 
 def _style_cell(
-    value: Any, style: str, justify: JustifyMethod | None = None
-) -> Any:
-    """Wrap a cell value in Rich markup for `style`, if any is set.
+    value: Any,
+    style: str,
+    justify: JustifyMethod | None = None,
+    markup: bool = False,
+) -> Text:
+    """Render a cell value as `Text` with `style` applied.
 
-    `justify` renders the cell as a `Text` object aligned accordingly
-    (e.g. `"right"`), since `DataTable` columns don't support a
-    per-column justify option directly.
+    Value is shown literally, unless `markup` is set: only trusted values
+    built by Tewi itself (e.g. priority icons) may be parsed as markup,
+    as file names come from torrent metadata.
+
+    `justify` aligns the cell (e.g. `"right"`), since `DataTable`
+    columns don't support a per-column justify option directly.
     """
     if value is None:
         value = ""
-    markup = f"[{style}]{value}[/{style}]" if style else str(value)
-    if justify:
-        return Text.from_markup(markup, justify=justify)
-    return markup
+    if markup:
+        return Text.from_markup(str(value), style=style, justify=justify)
+    return plain_text(value, style, justify=justify)
 
 
 class TorrentInfoPanel(ScrollableContainer):
@@ -491,13 +497,13 @@ class TorrentInfoPanel(ScrollableContainer):
                     p.ul_state.value,
                     p.dl_state.value,
                     Text(f"{progress:.0f}%", justify="right"),
-                    p.connection_type or NONE,
-                    p.direction or NONE,
-                    p.flag_str or NONE,
-                    p.country or (get_country(p.address) or NONE),
-                    p.address,
+                    plain_text(p.connection_type or NONE),
+                    plain_text(p.direction or NONE),
+                    plain_text(p.flag_str or NONE),
+                    plain_text(p.country or (get_country(p.address) or NONE)),
+                    plain_text(p.address),
                     Text(str(self.print_count(p.port)), justify="right"),
-                    p.client_name,
+                    plain_text(p.client_name),
                     key=f"peer_{idx}",
                 )
 
@@ -511,8 +517,8 @@ class TorrentInfoPanel(ScrollableContainer):
             for idx, t in enumerate(self.r_torrent.trackers):
                 table.add_row(
                     Text(str(self.print_count(t.tier)), justify="right"),
-                    t.host,
-                    t.status or NONE,
+                    plain_text(t.host),
+                    plain_text(t.status or NONE),
                     Text(str(self.print_count(t.peer_count)), justify="right"),
                     Text(
                         str(self.print_count(t.seeder_count)), justify="right"
@@ -534,7 +540,7 @@ class TorrentInfoPanel(ScrollableContainer):
                         self.print_tracker_next_time(t.next_scrape),
                         justify="right",
                     ),
-                    t.message or NONE,
+                    plain_text(t.message or NONE),
                     key=f"tracker_{idx}",
                 )
 
@@ -582,7 +588,7 @@ class TorrentInfoPanel(ScrollableContainer):
             _style_cell(item["id"], style, justify="right"),
             _style_cell(item["size"], style, justify="right"),
             _style_cell(item["done"], style, justify="right"),
-            _style_cell(item["priority"], style),
+            _style_cell(item["priority"], style, markup=True),
             _style_cell(item["display_name"], style),
         )
 

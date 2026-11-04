@@ -4,7 +4,7 @@ from textual.screen import ModalScreen
 from textual.widgets import DataTable, Static
 
 from ...util.log import log_time
-from ..util import subtitle_keys
+from ..util import plain_text, subtitle_keys
 
 
 class PreferencesDialog(ModalScreen[None]):
@@ -65,4 +65,4 @@ class PreferencesWidget(Static):
         table.add_columns("Name", "Value")
 
         for key in self.preferences:
-            table.add_row(key, self.preferences[key])
+            table.add_row(plain_text(key), plain_text(self.preferences[key]))

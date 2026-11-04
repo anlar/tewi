@@ -18,12 +18,12 @@ import math
 from datetime import datetime, timedelta
 
 from src.tewi.ui.util import (
-    escape_markup,
     print_ratio,
     print_size,
     print_speed,
     print_time,
     print_time_ago,
+    truncate,
 )
 
 
@@ -444,22 +444,20 @@ class TestPrintTimeAgo:
         assert "2 years ago" == print_time_ago(now - timedelta(days=730))
 
 
-class TestEscapeMarkup:
-    """Test cases for escape_markup function."""
+class TestTruncate:
+    """Test cases for truncate function."""
 
-    def test_no_special_characters(self):
-        """Test strings without special characters."""
-        assert escape_markup("hello") == "hello"
-        assert escape_markup("test123") == "test123"
-        assert escape_markup("") == ""
+    def test_short_value_is_kept(self):
+        assert truncate("hello", 10) == "hello"
+        assert truncate("hello", 5) == "hello"
+        assert truncate("", 5) == ""
 
-    def test_escape_brackets(self):
-        """Test escaping of opening square brackets."""
-        assert escape_markup("[") == r"\["
-        assert escape_markup("]") == "]"
-        assert escape_markup("[]") == r"\[]"
+    def test_long_value_is_truncated(self):
+        assert truncate("hello world", 5) == "hello…"
 
-    def test_mixed_content(self):
-        """Test strings with mixed content."""
-        assert escape_markup("text[with]brackets") == r"text\[with]brackets"
-        assert escape_markup("[bold]text[/bold]") == r"\[bold]text\[/bold]"
+    def test_zero_means_no_limit(self):
+        assert truncate("hello world", 0) == "hello world"
+
+    def test_markup_is_kept_as_is(self):
+        """Test that value isn't escaped, as it's shown literally."""
+        assert truncate("[b]bold", 10) == "[b]bold"

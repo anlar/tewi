@@ -2,6 +2,7 @@
 
 from typing import ClassVar
 
+from rich.text import Text
 from textual import on, work
 from textual.app import ComposeResult
 from textual.binding import Binding, BindingType
@@ -20,13 +21,13 @@ from ..messages import (
     OpenTorrentListCommand,
 )
 from ..util import (
-    escape_markup,
+    open as open_path,
+)
+from ..util import (
+    plain_text,
     print_size,
     subtitle_keys,
     theme_markup_color,
-)
-from ..util import (
-    open as open_path,
 )
 from ..widget.common import ReactiveLabel
 
@@ -189,17 +190,22 @@ class TorrentWebSearch(Static):
                 up_date = "-"
 
             # Display category full_name (first category if multiple)
-            category_display = (
+            category_display = plain_text(
                 r.categories[0].full_name if r.categories else "-"
             )
 
-            title = escape_markup(r.title)
+            # Values from search providers (titles, Jackett/Prowlarr
+            # indexer names) are wrapped as Text to never parse them
+            # as markup
+            title = plain_text(r.title)
             if r.freeleech:
-                title = f"[bold {self.color_success}]\\[F][/] {title}"
+                title = Text.assemble(
+                    ("[F]", f"bold {self.color_success}"), " ", title
+                )
 
             if self._view_compact:
                 table.add_row(
-                    r.provider_short or r.provider,
+                    plain_text(r.provider_short or r.provider),
                     up_date,
                     r.seeders,
                     print_size(r.size, ndigits=0),
@@ -209,7 +215,7 @@ class TorrentWebSearch(Static):
                 )
             else:
                 table.add_row(
-                    r.provider,
+                    plain_text(r.provider),
                     up_date,
                     r.seeders,
                     r.leechers,
