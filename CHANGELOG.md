@@ -32,6 +32,7 @@ handle multi-line list body as single line.
 - Add 30 seconds timeout to Deluge requests, so not responding daemon doesn't block refresh forever
 - Limit search provider responses to 20 MiB
 - Pass search term to Bitmagnet as GraphQL variable instead of inserting it into query
+- Fix crash of web search when provider returns several results with empty info hash
 
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 
