@@ -1,8 +1,10 @@
-from functools import cache
+from functools import lru_cache
 
 from .log import get_logger, log_time
 
 logger = get_logger()
+
+GEOIP_CACHE_SIZE = 5000
 
 # Try to import geoip module, set flag if not available
 try:
@@ -19,7 +21,7 @@ except ImportError:
 
 
 @log_time
-@cache
+@lru_cache(maxsize=GEOIP_CACHE_SIZE)
 def get_country(address: str) -> str | None:
     if geoip is None:
         return None

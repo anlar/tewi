@@ -26,6 +26,7 @@ handle multi-line list body as single line.
 - Limit torrent file download from URL: follow up to 5 redirects to magnet or HTTP(S) links only, download files up to 100 MiB, add torrents in background without blocking UI
 - Log warning when password is sent to torrent client on another machine without TLS
 - Warn in `--password` help that the value is visible in process list and shell history, suggest config file instead
+- Limit size of caches for formatted values and peer countries, which grew during whole session
 
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 

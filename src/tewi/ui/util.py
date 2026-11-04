@@ -5,7 +5,7 @@ import os
 import platform
 import subprocess
 from datetime import datetime
-from functools import cache
+from functools import lru_cache
 
 from rich.text import Text
 from textual.color import Color
@@ -93,9 +93,11 @@ def open_url(url: str) -> bool:
 
 # Functions from util/print.py
 
+FORMAT_CACHE_SIZE = 20000
+
 
 @log_time
-@cache
+@lru_cache(maxsize=FORMAT_CACHE_SIZE)
 def print_size(
     num: int,
     suffix: str = "B",
@@ -125,7 +127,7 @@ def print_size(
 
 
 @log_time
-@cache
+@lru_cache(maxsize=FORMAT_CACHE_SIZE)
 def print_speed(
     num: int,
     print_secs: bool = False,
@@ -177,7 +179,7 @@ def print_speed(
 
 
 @log_time
-@cache
+@lru_cache(maxsize=FORMAT_CACHE_SIZE)
 def print_ratio(ratio: float, ndigits: int = 2) -> str:
     if math.isinf(ratio):
         return "∞"
@@ -186,7 +188,7 @@ def print_ratio(ratio: float, ndigits: int = 2) -> str:
 
 
 @log_time
-@cache
+@lru_cache(maxsize=FORMAT_CACHE_SIZE)
 def print_time(seconds, abbr: bool = False, units: int = 1) -> str:
     """Format a number of seconds as a human-readable time string."""
     intervals = (
@@ -282,7 +284,7 @@ def plain_text(value: object, style: str = "", **kwargs) -> Text:
     return Text("" if value is None else str(value), style=style, **kwargs)
 
 
-@cache
+@lru_cache(maxsize=FORMAT_CACHE_SIZE)
 def truncate(value: str, max_len: int) -> str:
     """Truncate value to `max_len` chars (plus ellipsis), 0 means no limit."""
     return (
