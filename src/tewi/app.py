@@ -1029,7 +1029,9 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         "--password",
         type=str,
         action=TrackSetAction,
-        help="BitTorrent daemon password for connection",
+        help="BitTorrent daemon password for connection (visible to other "
+        "users in process list and saved in shell history, prefer password "
+        "option in config file)",
     )
     p.add_argument(
         "--tls",

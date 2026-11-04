@@ -25,6 +25,7 @@ handle multi-line list body as single line.
 - Accept only magnet and HTTP(S) links from web search and open only HTTP(S) links, skip search results with malformed info hash, allow only HTTP(S) search provider URLs
 - Limit torrent file download from URL: follow up to 5 redirects to magnet or HTTP(S) links only, download files up to 100 MiB, add torrents in background without blocking UI
 - Log warning when password is sent to torrent client on another machine without TLS
+- Warn in `--password` help that the value is visible in process list and shell history, suggest config file instead
 
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 
