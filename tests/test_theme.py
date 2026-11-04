@@ -156,6 +156,10 @@ class TestBuildCustomThemes:
         # Built-in theme itself is unchanged
         assert BUILTIN_THEMES["nord"].background != "black"
 
+    @pytest.mark.skipif(
+        "ansi-dark" not in BUILTIN_THEMES,
+        reason="ANSI themes require Textual 8.2.5 or newer",
+    )
     def test_override_keeps_ansi(self):
         """Test that ANSI flag of built-in theme is kept."""
         (theme,) = build_custom_themes({"ansi-dark": {"primary": "ansi_red"}})

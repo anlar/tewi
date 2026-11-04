@@ -40,6 +40,7 @@ handle multi-line list body as single line.
 - Require requests 2.33.0 or newer, as older versions have known vulnerabilities (CVE-2024-47081, CVE-2026-25645)
 - Don't show GeoIP error text like `<invalid ip address>` as peer country
 - Fix Deluge torrent details failing to load and showing client as offline when torrent has IPv6 peers
+- Require Textual 3.1.0 or newer: older versions crash on notifications and, before 2.0, parse markup in labels which must show text literally (ANSI themes need Textual 8.2.5 or newer)
 
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 
