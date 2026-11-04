@@ -285,7 +285,7 @@ class JackettProvider(BaseSearchProvider):
                     Indexer(
                         full_id,
                         indexer_name,
-                        f"{indexer_name} [dim](Jackett)[/]",
+                        "Jackett",
                     )
                 )
         return sorted(indexers, key=lambda indexer: indexer.name.lower())
@@ -476,6 +476,7 @@ class JackettProvider(BaseSearchProvider):
                 torrent_link=torrent_link,
                 provider=self._build_provider_name(result),
                 provider_short=self._build_provider_name(result, short=True),
+                provider_source="J",
                 provider_id=self.id,
                 categories=self._map_jackett_category(result),
                 seeders=result.get("Seeders"),
@@ -536,20 +537,18 @@ class JackettProvider(BaseSearchProvider):
     def _build_provider_name(
         self, result: dict[str, Any], short: bool = False
     ) -> str:
-        """Build provider name in format 'IndexerName (J)'.
+        """Build provider name from tracker name.
 
         Args:
             result: Result dict from Jackett API
+            short: Truncate name for compact view
 
         Returns:
-            Provider name string
+            Provider name string (plain text)
         """
         tracker_id = result.get("TrackerId", "Unknown")
         tracker = result.get("Tracker", tracker_id)
-        if short:
-            return f"{tracker[:5]}[dim]|J[/]"
-        else:
-            return f"{tracker} [dim](J)[/]"
+        return tracker[:5] if short else tracker
 
     def _build_fields(self, result: dict[str, Any]) -> dict[str, str]:
         """Build provider-specific fields dict.

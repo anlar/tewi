@@ -24,6 +24,7 @@ from ..util import (
     open_url,
     plain_text,
     print_size,
+    source_text,
     subtitle_keys,
     theme_markup_color,
 )
@@ -203,7 +204,11 @@ class TorrentWebSearch(Static):
 
             if self._view_compact:
                 table.add_row(
-                    plain_text(r.provider_short or r.provider),
+                    source_text(
+                        r.provider_short or r.provider,
+                        r.provider_source,
+                        short=True,
+                    ),
                     up_date,
                     r.seeders,
                     print_size(r.size, ndigits=0),
@@ -213,7 +218,7 @@ class TorrentWebSearch(Static):
                 )
             else:
                 table.add_row(
-                    plain_text(r.provider),
+                    source_text(r.provider, r.provider_source),
                     up_date,
                     r.seeders,
                     r.leechers,

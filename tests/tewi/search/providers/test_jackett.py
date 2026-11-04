@@ -43,7 +43,7 @@ def test_discovery_uses_metadata_command_not_search(monkeypatch):
         ("jackett:alpha", "Alpha & Omega"),
         ("jackett:zeta", "Zeta"),
     ]
-    assert indexers[0].display_name == "Alpha & Omega [dim](Jackett)[/]"
+    assert indexers[0].source == "Jackett"
 
     # Reopening the search dialog reuses metadata, not another HTTP request.
     assert provider.indexers() == indexers

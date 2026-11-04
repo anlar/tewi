@@ -170,7 +170,8 @@ class StandardCategories:
 class Indexer:
     id: str
     name: str
-    display_name: str = ""
+    # Plain text name of aggregator (e.g. "Jackett"), shown after name
+    source: str = ""
 
 
 @dataclass(frozen=True)
@@ -204,6 +205,8 @@ class SearchResult:
     provider: str
     provider_id: str
     provider_short: str
+    # Plain text short tag of aggregator (e.g. "J"), shown after provider
+    provider_source: str = ""
 
     # Optional fields - can be None if not available
     categories: list[Category] | None = None

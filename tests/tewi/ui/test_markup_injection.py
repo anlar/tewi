@@ -33,7 +33,7 @@ from src.tewi.app import MainApp
 from src.tewi.search.models import SearchResult
 from src.tewi.ui.panel.details import _style_cell
 from src.tewi.ui.panel.websearch import TorrentWebSearch
-from src.tewi.ui.util import plain_text
+from src.tewi.ui.util import plain_text, source_text
 from src.tewi.ui.widget.common import ReactiveLabel
 
 PAYLOADS = [
@@ -69,6 +69,32 @@ class TestPlainText:
 
         assert text.style == "bold"
         assert text.justify == "right"
+
+
+class TestSourceText:
+    @pytest.mark.parametrize("payload", PAYLOADS)
+    def test_payload_is_not_parsed(self, payload):
+        text = source_text(payload, "Prowlarr")
+
+        assert text.plain == f"{payload} (Prowlarr)"
+        assert not has_markup_style(text)
+
+    def test_source_is_dimmed(self):
+        text = source_text("1337x", "Prowlarr")
+
+        assert text.plain == "1337x (Prowlarr)"
+        assert [
+            (text.plain[s.start : s.end], str(s.style)) for s in text.spans
+        ] == [(" (Prowlarr)", "dim")]
+
+    def test_short_format(self):
+        assert source_text("1337x", "P", short=True).plain == "1337x|P"
+
+    def test_without_source(self):
+        text = source_text("YTS", "")
+
+        assert text.plain == "YTS"
+        assert not text.spans
 
 
 class TestStyleCell:

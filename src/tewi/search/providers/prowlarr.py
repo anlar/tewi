@@ -262,7 +262,7 @@ class ProwlarrProvider(BaseSearchProvider):
                     Indexer(
                         full_id,
                         indexer_name,
-                        f"{indexer_name} [dim](Prowlarr)[/]",
+                        "Prowlarr",
                     )
                 )
         return indexers
@@ -395,6 +395,7 @@ class ProwlarrProvider(BaseSearchProvider):
                 torrent_link=torrent_link,
                 provider=self._build_provider_name(result),
                 provider_short=self._build_provider_name(result, short=True),
+                provider_source="P",
                 provider_id=self.id,
                 categories=self._map_prowlarr_category(result),
                 seeders=result.get("seeders"),
@@ -485,19 +486,17 @@ class ProwlarrProvider(BaseSearchProvider):
     def _build_provider_name(
         self, result: dict[str, Any], short: bool = False
     ) -> str:
-        """Build provider name in format 'IndexerName (Prowlarr)'.
+        """Build provider name from indexer name.
 
         Args:
             result: Result dict from Prowlarr API
+            short: Truncate name for compact view
 
         Returns:
-            Provider name string
+            Provider name string (plain text)
         """
         indexer = result.get("indexer", "Unknown")
-        if short:
-            return f"{indexer[:5]}[dim]|P[/]"
-        else:
-            return f"{indexer} [dim](P)[/]"
+        return indexer[:5] if short else indexer
 
     def _build_fields(self, result: dict[str, Any]) -> dict[str, str]:
         """Build provider-specific fields dict.

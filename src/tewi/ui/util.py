@@ -284,6 +284,21 @@ def plain_text(value: object, style: str = "", **kwargs) -> Text:
     return Text("" if value is None else str(value), style=style, **kwargs)
 
 
+def source_text(name: str, source: str, short: bool = False) -> Text:
+    """Build name with dimmed aggregator source as Text (never markup).
+
+    Args:
+        name: Indexer or provider name (from remote source)
+        source: Aggregator name or tag (e.g. "Jackett", "J"), may be empty
+        short: Use compact format "name|J" instead of "name (J)"
+    """
+    text = plain_text(name)
+    if source:
+        suffix = f"|{source}" if short else f" ({source})"
+        text.append(suffix, style="dim")
+    return text
+
+
 @lru_cache(maxsize=FORMAT_CACHE_SIZE)
 def truncate(value: str, max_len: int) -> str:
     """Truncate value to `max_len` chars (plus ellipsis), 0 means no limit."""
