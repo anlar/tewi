@@ -1,3 +1,7 @@
+# Control ports (RPC, web UI, search APIs) have no or default authentication,
+# so they are published on localhost only: Docker port publishing bypasses
+# host firewall (ufw, firewalld). BitTorrent peer ports are public by design.
+
 services:
   transmission:
     image: linuxserver/transmission:latest
@@ -9,7 +13,7 @@ services:
       - USER=  # No authentication
       - PASS=  # No authentication
     ports:
-      - "9070:9091"     # Web UI / RPC
+      - "127.0.0.1:9070:9091" # Web UI / RPC
       - "9080:51413"   # Peer connections
     restart: "no"
     healthcheck:
@@ -30,7 +34,7 @@ services:
       - TZ=UTC
       - WEBUI_PORT=9071
     ports:
-      - "9071:9071"     # Web UI (no authentication required)
+      - "127.0.0.1:9071:9071" # Web UI (temporary password in logs)
       - "9081:6881"     # Peer connections (TCP)
       - "9081:6881/udp" # Peer connections (UDP)
     restart: "no"
@@ -52,7 +56,7 @@ services:
       - TZ=Etc/UTC
       - DELUGE_LOGLEVEL=error #optional
     ports:
-      - 9072:8112
+      - "127.0.0.1:9072:8112" # Web UI (password: deluge)
       - 9082:6881
       - 9082:6881/udp
     restart: "no"
@@ -73,8 +77,8 @@ services:
       - PGID=1000
       - TZ=Etc/UTC
     ports:
-      - "9073:8000"       # XML-RPC over HTTP (/RPC2, no authentication)
-      - "9074:8080"       # ruTorrent Web UI
+      - "127.0.0.1:9073:8000" # XML-RPC over HTTP (/RPC2, no authentication)
+      - "127.0.0.1:9074:8080" # ruTorrent Web UI
       - "9083:50000"      # Peer connections
       - "9083:6881/udp"   # DHT
     restart: "no"
@@ -92,7 +96,7 @@ services:
       - PGID=1000
       - TZ=Etc/UTC
     ports:
-      - 9075:9117
+      - "127.0.0.1:9075:9117" # Web UI / API
     restart: "no"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9117/UI/Dashboard"]
@@ -111,7 +115,7 @@ services:
       - PGID=1000
       - TZ=Etc/UTC
     ports:
-      - 9076:9696
+      - "127.0.0.1:9076:9696" # Web UI / API
     restart: no
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9696/"]
@@ -130,7 +134,7 @@ services:
       - POSTGRES_PASSWORD=postgres
     ports:
       # API and WebUI port:
-      - "9077:3333"
+      - "127.0.0.1:9077:3333"
       # BitTorrent ports:
       - "9087:3334/tcp"
       - "9087:3334/udp"
