@@ -17,6 +17,8 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import re
+import textwrap
 import time
 from functools import wraps
 from logging.handlers import RotatingFileHandler
@@ -29,6 +31,30 @@ P = ParamSpec("P")
 T = TypeVar("T")
 
 _BACKUP_COUNT = 3
+
+# Control characters except tab (line breaks included)
+_CONTROL_CHARS_RE = re.compile(r"[\x00-\x08\x0a-\x1f\x7f-\x9f]")
+_ESCAPES = {"\n": "\\n", "\r": "\\r"}
+
+
+class _EscapingFormatter(logging.Formatter):
+    """Formatter escaping line breaks and control characters in messages.
+
+    Messages may contain text from torrent clients and search providers
+    (e.g. error messages), which could otherwise forge log entries.
+    Tracebacks keep their line breaks, but are indented, so text from
+    exception messages can't look like separate log entries.
+    """
+
+    def formatMessage(self, record: logging.LogRecord) -> str:  # noqa: N802
+        record.message = _CONTROL_CHARS_RE.sub(
+            lambda m: _ESCAPES.get(m[0], f"\\x{ord(m[0]):02x}"),
+            record.message,
+        )
+        return super().formatMessage(record)
+
+    def formatException(self, ei) -> str:  # noqa: N802
+        return textwrap.indent(super().formatException(ei), "  ")
 
 
 def get_logger() -> logging.Logger:
@@ -72,7 +98,7 @@ def init_logger(log_level: str, log_size_mb: int = 10) -> None:
         encoding="utf-8",
     )
     handler.setFormatter(
-        logging.Formatter(
+        _EscapingFormatter(
             fmt=(
                 "%(asctime)s.%(msecs)03d"
                 " %(module)-15s %(levelname)-8s %(message)s"
