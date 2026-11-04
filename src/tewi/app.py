@@ -129,6 +129,9 @@ UNSAFE_ACTIONS = {"simulate_key", "suspend_process"}
 # arbitrary file)
 UNSAFE_ACTIONS_WITH_PARAMS = {"screenshot"}
 
+# CLI options holding secrets, masked when options are logged
+SECRET_OPTIONS = {"password", "jackett_api_key", "prowlarr_api_key"}
+
 
 # Core UI panels
 
@@ -1287,6 +1290,16 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     return p
 
 
+def _loggable_args(args: argparse.Namespace) -> argparse.Namespace:
+    """Copy of CLI options with secrets masked, safe to write to log."""
+    return argparse.Namespace(
+        **{
+            key: "***" if key in SECRET_OPTIONS and value else value
+            for key, value in vars(args).items()
+        }
+    )
+
+
 def _tls_options(args) -> TlsOptions:
     """Build TLS settings for torrent client from CLI/config options."""
     return TlsOptions(
@@ -1420,7 +1433,7 @@ def create_app():
     logger.info(f"Start Tewi {tewi_version}...")
     if profile:
         logger.info(f"Using configuration profile: {profile}")
-    logger.info(f"Loaded CLI options: {args}")
+    logger.info(f"Loaded CLI options: {_loggable_args(args)}")
 
     # Validate theme
     custom_themes = _load_custom_themes(config)

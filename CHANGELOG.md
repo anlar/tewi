@@ -34,6 +34,7 @@ handle multi-line list body as single line.
 - Pass search term to Bitmagnet as GraphQL variable instead of inserting it into query
 - Fix crash of web search when provider returns several results with empty info hash
 - Escape line breaks and control characters in log messages and indent tracebacks, so text from torrent clients and search providers can't forge log entries
+- Don't write password and API keys to log on startup
 
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 
