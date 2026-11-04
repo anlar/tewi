@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0"]
+requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,7 @@ dynamic = ["version"]
 authors = [
   { name="Anton Larionov", email="anton.larionov.dev@gmail.com" },
 ]
-description = "Text-based interface for BitTorrent clients (Transmission, qBittorrent, Deluge)"
+description = "Text-based interface for BitTorrent clients (Transmission, qBittorrent, Deluge, rTorrent)"
 readme = "README.md"
 license = "GPL-3.0-or-later"
 license-files = ["LICENSE.txt"]
@@ -24,17 +24,17 @@ dependencies = [
   "requests >= 2.33.0"
 ]
 classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "Environment :: Console",
-    "Intended Audience :: End Users/Desktop",
-    "Natural Language :: English",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python :: 3",
-    "Topic :: Communications :: File Sharing",
-    "Topic :: Internet",
-    "Topic :: Utilities"
+  "Development Status :: 5 - Production/Stable",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "Natural Language :: English",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Topic :: Communications :: File Sharing",
+  "Topic :: Internet",
+  "Topic :: Utilities"
 ]
-keywords = ["transmission", "qbittorrent", "deluge", "torrent", "bittorrent", "tui"]
+keywords = ["transmission", "qbittorrent", "deluge", "rtorrent", "torrent", "bittorrent", "tui"]
 
 [tool.setuptools.dynamic]
 version = {attr = "tewi.version.__version__"}
@@ -53,10 +53,13 @@ tewi = "tewi.app:cli"
 
 [tool.pytest.ini_options]
 markers = [
-    "integration: marks tests as integration tests that make real API calls (deselect with '-m \"not integration\"')",
+  "integration: marks tests as integration tests that make real API calls (deselect with '-m \"not integration\"')",
 ]
 filterwarnings = [
-    "error::DeprecationWarning",
+  "error::DeprecationWarning",
+  # geoip2fast has invalid escape sequences (warns on old Python versions)
+  # https://github.com/rabuchaim/geoip2fast/issues/16#issuecomment-5677708133
+  "ignore:invalid escape sequence:DeprecationWarning",
 ]
 
 [tool.basedpyright]
