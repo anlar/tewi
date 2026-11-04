@@ -7,5 +7,14 @@ lint.select = [
     "F",  # pyflakes
     "I",  # isort (import sorting)
     "N",  # pep8-naming
-    "C90" # McCabe complexity (default: 10)
+    "C90", # McCabe complexity (default: 10)
+    "S",  # flake8-bandit (security)
 ]
+
+lint.ignore = [
+    "S110", # try-except-pass: used for optional data, not a security issue
+]
+
+[lint.per-file-ignores]
+# asserts, test passwords, temp paths and subprocess calls in tests
+"tests/**" = ["S"]

@@ -22,7 +22,7 @@ handle multi-line list body as single line.
 - Fix showing square brackets in torrent list name filter without extra backslash
 - Show text from torrents, peers, trackers, search providers and torrent client literally, without parsing it as markup (prevent action injection on mouse click)
 - Restrict profile and theme names to safe characters
-- Accept only magnet and HTTP(S) links from web search and open only HTTP(S) links, skip search results with malformed info hash
+- Accept only magnet and HTTP(S) links from web search and open only HTTP(S) links, skip search results with malformed info hash, allow only HTTP(S) search provider URLs
 - Limit torrent file download from URL: follow up to 5 redirects to magnet or HTTP(S) links only, download files up to 100 MiB, add torrents in background without blocking UI
 - Log warning when password is sent to torrent client on another machine without TLS
 

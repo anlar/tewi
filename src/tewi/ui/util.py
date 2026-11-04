@@ -46,21 +46,23 @@ def open(path: str) -> None:
     Raises:
         Exception: If opening fails on the current platform
     """
+    # Platform opener is found in PATH, and path is passed as single
+    # argument without shell
     system = platform.system()
     if system == "Linux":
-        subprocess.Popen(
-            ["xdg-open", path],
+        subprocess.Popen(  # noqa: S603
+            ["xdg-open", path],  # noqa: S607
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
     elif system == "Darwin":  # macOS
-        subprocess.Popen(
-            ["open", path],
+        subprocess.Popen(  # noqa: S603
+            ["open", path],  # noqa: S607
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
         )
     elif system == "Windows":
-        os.startfile(path)
+        os.startfile(path)  # noqa: S606
     else:
         raise Exception(f"Unsupported platform: {system}")
 

@@ -39,7 +39,9 @@ def torrents_test(torrents: list[Torrent], target_count: int) -> list[Torrent]:
             if i == 0:
                 t_hash = t.hash
             else:
-                t_hash = hashlib.sha1(f"{t.hash}-{idx}".encode()).hexdigest()
+                t_hash = hashlib.sha1(
+                    f"{t.hash}-{idx}".encode(), usedforsecurity=False
+                ).hexdigest()
 
             t_copy = replace(
                 t, id=idx, name=t.name + "-" + str(idx), hash=t_hash

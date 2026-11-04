@@ -1,6 +1,7 @@
 """Utility functions for torrent search operations."""
 
 import re
+import urllib.error
 import urllib.parse
 import urllib.request
 from typing import Any
@@ -14,6 +15,17 @@ USER_AGENT = (
     "AppleWebKit/537.36 (KHTML, like Gecko) "
     "Chrome/131.0.0.0 Safari/537.36"
 )
+
+
+def _check_scheme(url: str) -> None:
+    """Allow only HTTP(S) URLs (urllib also opens file:// and ftp://).
+
+    Raises:
+        urllib.error.URLError: If URL has other scheme
+    """
+    scheme = urllib.parse.urlsplit(url).scheme.lower()
+    if scheme not in ("http", "https"):
+        raise urllib.error.URLError(f"unsupported URL scheme: {scheme!r}")
 
 
 def urlopen(url: str, timeout: int = 30) -> Any:
@@ -30,11 +42,12 @@ def urlopen(url: str, timeout: int = 30) -> Any:
         HTTP response context manager
 
     Raises:
-        urllib.error.URLError: If network request fails
+        urllib.error.URLError: If network request fails or URL isn't HTTP(S)
     """
-    request = urllib.request.Request(url)
+    _check_scheme(url)
+    request = urllib.request.Request(url)  # noqa: S310 (scheme checked)
     request.add_header("User-Agent", USER_AGENT)
-    return urllib.request.urlopen(request, timeout=timeout)
+    return urllib.request.urlopen(request, timeout=timeout)  # noqa: S310
 
 
 def urlopen_post(url: str, data: bytes, timeout: int = 30) -> Any:
@@ -53,12 +66,13 @@ def urlopen_post(url: str, data: bytes, timeout: int = 30) -> Any:
         HTTP response context manager
 
     Raises:
-        urllib.error.URLError: If network request fails
+        urllib.error.URLError: If network request fails or URL isn't HTTP(S)
     """
-    request = urllib.request.Request(url, data=data)
+    _check_scheme(url)
+    request = urllib.request.Request(url, data=data)  # noqa: S310
     request.add_header("User-Agent", USER_AGENT)
     request.add_header("Content-Type", "application/json")
-    return urllib.request.urlopen(request, timeout=timeout)
+    return urllib.request.urlopen(request, timeout=timeout)  # noqa: S310
 
 
 def build_magnet_link(

@@ -130,8 +130,9 @@ class NyaaProvider(BaseSearchProvider):
             with self.urlopen(url) as response:
                 data = response.read().decode("utf-8")
 
-            # Parse RSS XML
-            root = ET.fromstring(data)
+            # Parse RSS XML. ElementTree doesn't load external entities or
+            # DTDs, and expat (>= 2.4.1) limits entity expansion
+            root = ET.fromstring(data)  # noqa: S314
 
             # Register Nyaa namespace
             ns = {"nyaa": "https://nyaa.si/xmlns/nyaa"}

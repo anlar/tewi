@@ -240,7 +240,9 @@ class JackettProvider(BaseSearchProvider):
         """
         try:
             with self.urlopen(url, timeout=10) as response:
-                return ET.fromstring(response.read())
+                # ElementTree doesn't load external entities or DTDs, and
+                # expat (>= 2.4.1) limits entity expansion
+                return ET.fromstring(response.read())  # noqa: S314
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
                 raise Exception("Invalid Jackett API key")

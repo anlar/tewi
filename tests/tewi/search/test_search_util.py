@@ -1,5 +1,6 @@
 """Unit tests for search utility functions."""
 
+import urllib.error
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -9,6 +10,7 @@ from src.tewi.search.util import (
     build_magnet_link,
     detect_category_from_name,
     urlopen,
+    urlopen_post,
 )
 
 
@@ -291,6 +293,32 @@ class TestBuildMagnetLink:
 
 class TestUrlopen:
     """Test URL opening with User-Agent header."""
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "file:///etc/passwd",
+            "ftp://example.com/x",
+            "data:text/plain,x",
+            "/etc/passwd",
+        ],
+    )
+    @patch("src.tewi.search.util.urllib.request.urlopen")
+    def test_non_http_url_rejected(self, mock_urlopen, url):
+        """Test that only HTTP(S) URLs are opened (GET and POST)."""
+        with pytest.raises(urllib.error.URLError, match="unsupported"):
+            urlopen(url)
+        with pytest.raises(urllib.error.URLError, match="unsupported"):
+            urlopen_post(url, b"{}")
+
+        mock_urlopen.assert_not_called()
+
+    @patch("src.tewi.search.util.urllib.request.urlopen")
+    def test_https_url_uppercase_scheme(self, mock_urlopen):
+        """Test that scheme check is case-insensitive."""
+        urlopen("HTTPS://example.com")
+
+        mock_urlopen.assert_called_once()
 
     @patch("src.tewi.search.util.urllib.request.urlopen")
     @patch("src.tewi.search.util.urllib.request.Request")
