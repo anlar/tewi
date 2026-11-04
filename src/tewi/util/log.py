@@ -59,8 +59,10 @@ def init_logger(log_level: str, log_size_mb: int = 10) -> None:
 
     level = level_map.get(log_level.lower(), logging.WARNING)
 
+    # Logs may contain sensitive data, so directory is accessible only by
+    # owner
     log_dir = Path(user_log_dir("tewi", appauthor=False))
-    log_dir.mkdir(parents=True, exist_ok=True)
+    log_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
     log_file = log_dir / "tewi.log"
 
     handler = RotatingFileHandler(

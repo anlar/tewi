@@ -475,8 +475,9 @@ def create_default_config(path: Path) -> None:
     Args:
         path: Path where the config file should be created
     """
-    # Ensure parent directory exists
-    path.parent.mkdir(parents=True, exist_ok=True)
+    # Ensure parent directory exists, readable only by owner, as config
+    # holds passwords and API keys
+    path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
 
     config_content = """\
 # Tewi Configuration File
@@ -670,6 +671,7 @@ log_size =
 
     try:
         path.write_text(config_content)
+        path.chmod(0o600)
     except OSError as e:
         print(
             f"Error: Failed to create config file {path}: {e}", file=sys.stderr

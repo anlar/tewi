@@ -27,6 +27,7 @@ handle multi-line list body as single line.
 - Log warning when password is sent to torrent client on another machine without TLS
 - Warn in `--password` help that the value is visible in process list and shell history, suggest config file instead
 - Limit size of caches for formatted values and peer countries, which grew during whole session
+- Create config file and log directory accessible only by owner
 
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 

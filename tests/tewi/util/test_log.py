@@ -75,7 +75,9 @@ class TestInitLogger:
         mock_user_log_dir.assert_called_once_with("tewi", appauthor=False)
 
         # Verify directory creation was called
-        mock_mkdir.assert_called_once_with(parents=True, exist_ok=True)
+        mock_mkdir.assert_called_once_with(
+            parents=True, exist_ok=True, mode=0o700
+        )
 
         # Verify handler was created with correct parameters
         mock_handler_cls.assert_called_once()
