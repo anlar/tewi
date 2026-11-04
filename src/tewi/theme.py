@@ -25,6 +25,8 @@ import re
 from textual.color import Color, ColorParseError
 from textual.theme import BUILTIN_THEMES, Theme
 
+from .util.misc import SAFE_NAME_RULE, is_safe_name
+
 THEME_SECTION_PREFIX = "theme."
 
 # Theme colors, in the order of textual.theme.Theme fields
@@ -105,6 +107,11 @@ def validate_theme_options(name: str, options: dict[str, str]) -> None:
     """
     if not name:
         raise ThemeConfigError("theme name must not be empty")
+    if not is_safe_name(name):
+        raise ThemeConfigError(
+            f"[{THEME_SECTION_PREFIX}{name}]: invalid theme name "
+            f"(use {SAFE_NAME_RULE})"
+        )
     for key, value in options.items():
         if key not in THEME_OPTION_KEYS:
             raise ThemeConfigError(

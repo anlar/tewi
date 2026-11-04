@@ -184,7 +184,8 @@ $ tewi --create-config
 
 Multiple configuration profiles could be defined (e.g. for different
 daemons) in `tewi-NAME.conf` files, which are loaded on top of the main
-configuration file. To load one of them use:
+configuration file. Profile name may contain letters, digits, `.`, `_`
+and `-`. To load one of them use:
 
 ```
 $ tewi --profile NAME

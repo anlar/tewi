@@ -16,10 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import argparse
 import configparser
 
 import pytest
 
+from src.tewi import config
 from src.tewi.config import (
     _expand_env_vars,
     _load_client_section,
@@ -27,8 +29,52 @@ from src.tewi.config import (
     _load_search_section,
     _load_theme_sections,
     _load_ui_section,
+    get_available_profiles,
+    get_config_path,
+    profile_name,
 )
 from src.tewi.theme import ThemeConfigError
+
+
+class TestProfileNames:
+    """Test cases for profile name validation.
+
+    Profile names are printed for shell completion (bash "compgen -W"
+    executes "$(...)" in them) and are part of config file path.
+    """
+
+    @pytest.fixture
+    def config_dir(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(config, "get_config_dir", lambda: tmp_path)
+        return tmp_path
+
+    def test_available_profiles_skip_unsafe_names(self, config_dir):
+        for name in ["home", "seed_box.2", "$(touch PWNED)", "a b", "`id`"]:
+            (config_dir / f"tewi-{name}.conf").touch()
+        (config_dir / "tewi.conf").touch()
+
+        assert get_available_profiles() == ["home", "seed_box.2"]
+
+    def test_available_profiles_without_config_dir(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(config, "get_config_dir", lambda: tmp_path / "x")
+
+        assert get_available_profiles() == []
+
+    def test_profile_name_accepts_safe_name(self):
+        assert profile_name("seed_box.2") == "seed_box.2"
+
+    @pytest.mark.parametrize("name", ["$(id)", "../tewi", "a/b", "-x", ""])
+    def test_profile_name_rejects_unsafe_name(self, name):
+        with pytest.raises(argparse.ArgumentTypeError):
+            profile_name(name)
+
+    def test_config_path(self, config_dir):
+        assert get_config_path() == config_dir / "tewi.conf"
+        assert get_config_path("home") == config_dir / "tewi-home.conf"
+
+    def test_config_path_rejects_unsafe_profile(self, config_dir):
+        with pytest.raises(ValueError):
+            get_config_path("../../etc/x")
 
 
 class TestExpandEnvVars:

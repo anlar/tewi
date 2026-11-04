@@ -9,6 +9,15 @@ _HASH_BASE32_RE = re.compile(r"^[A-Za-z2-7]{32}$")
 # Text consisting of a single HTTP(S) URL and nothing else
 _HTTP_URL_RE = re.compile(r"^https?://\S+$", re.IGNORECASE)
 
+# Profile and theme names. They are printed for shell completion, where
+# bash "compgen -W" expands "$(...)", backticks and variables in them,
+# and profile name is also a part of config file path.
+_SAFE_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
+
+SAFE_NAME_RULE = (
+    "letters, digits, '.', '_' and '-', starting with letter or digit"
+)
+
 
 @log_time
 def is_torrent_link(text: str) -> bool:
@@ -27,6 +36,12 @@ def is_http_url(text: str) -> bool:
     a description around the URL) makes the check fail.
     """
     return bool(_HTTP_URL_RE.match(text.strip())) if text else False
+
+
+@log_time
+def is_safe_name(name: str) -> bool:
+    """Check if name is valid for profile or theme (see SAFE_NAME_RULE)."""
+    return bool(_SAFE_NAME_RE.fullmatch(name))
 
 
 @log_time

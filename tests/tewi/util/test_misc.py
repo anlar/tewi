@@ -1,4 +1,43 @@
-from src.tewi.util.misc import is_http_url, is_torrent_hash, is_torrent_link
+import pytest
+
+from src.tewi.util.misc import (
+    is_http_url,
+    is_safe_name,
+    is_torrent_hash,
+    is_torrent_link,
+)
+
+# Names with shell syntax, which "compgen -W" in bash completion would
+# expand, or path separators
+UNSAFE_NAMES = [
+    "",
+    "$(touch PWNED)",
+    "a$(id)",
+    "`id`",
+    "${HOME}",
+    "my profile",
+    "a;b",
+    "../x",
+    "a/b",
+    "-x",
+    ".hidden",
+    "name\n",
+    "naïve",
+]
+
+
+class TestIsSafeName:
+    """Test cases for is_safe_name function."""
+
+    @pytest.mark.parametrize(
+        "name", ["home", "Seed_Box", "nas-2", "v1.2", "9", "textual-dark"]
+    )
+    def test_safe_names(self, name):
+        assert is_safe_name(name) is True
+
+    @pytest.mark.parametrize("name", UNSAFE_NAMES)
+    def test_unsafe_names(self, name):
+        assert is_safe_name(name) is False
 
 
 class TestIsTorrentLink:

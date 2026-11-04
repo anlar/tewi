@@ -37,6 +37,7 @@ from .config import (
     get_config_path,
     load_config,
     merge_config_with_args,
+    profile_name,
 )
 from .search.manager import SearchClient, print_available_providers
 from .theme import ThemeConfigError, build_custom_themes
@@ -1161,7 +1162,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     # Profiles
     profile_arg = p.add_argument(
         "--profile",
-        type=str,
+        type=profile_name,
         action=TrackSetAction,
         help="Load configuration profile from tewi-PROFILE.conf",
     )

@@ -68,6 +68,17 @@ class TestParseColor:
 class TestValidateThemeOptions:
     """Test cases for validate_theme_options function."""
 
+    @pytest.mark.parametrize("name", ["$(id)", "`id`", "my theme", "a;b"])
+    def test_unsafe_name_rejected(self, name):
+        """Test that names unsafe for shell completion are rejected."""
+        with pytest.raises(ThemeConfigError, match="invalid theme name"):
+            validate_theme_options(name, {})
+
+    @pytest.mark.parametrize("name", list(BUILTIN_THEMES))
+    def test_builtin_theme_names_are_valid(self, name):
+        """Test that built-in themes can still be overridden by name."""
+        validate_theme_options(name, {})
+
     def test_valid_options(self):
         """Test that all supported options are accepted."""
         validate_theme_options(

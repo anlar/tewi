@@ -20,7 +20,7 @@ import configparser
 import os
 import re
 import sys
-from argparse import Action, Namespace
+from argparse import Action, ArgumentTypeError, Namespace
 from pathlib import Path
 
 from platformdirs import user_config_dir
@@ -31,6 +31,7 @@ from .theme import (
     ThemeConfigError,
     validate_theme_options,
 )
+from .util.misc import SAFE_NAME_RULE, is_safe_name
 
 _ENV_VAR_PATTERN = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
 
@@ -66,6 +67,19 @@ def get_config_dir() -> Path:
     return Path(user_config_dir("tewi", appauthor=False))
 
 
+def profile_name(value: str) -> str:
+    """Validate profile name passed in command line (argparse type).
+
+    Raises:
+        ArgumentTypeError: If name is not valid
+    """
+    if not is_safe_name(value):
+        raise ArgumentTypeError(
+            f"invalid profile name '{value}' (use {SAFE_NAME_RULE})"
+        )
+    return value
+
+
 def get_config_path(profile: str | None = None) -> Path:
     """
     Get the configuration file path.
@@ -76,9 +90,14 @@ def get_config_path(profile: str | None = None) -> Path:
 
     Returns:
         Path to the configuration file
+
+    Raises:
+        ValueError: If profile name is not valid
     """
     config_dir = get_config_dir()
     if profile:
+        if not is_safe_name(profile):
+            raise ValueError(f"Invalid profile name: {profile!r}")
         return config_dir / f"tewi-{profile}.conf"
     else:
         return config_dir / "tewi.conf"
@@ -87,6 +106,10 @@ def get_config_path(profile: str | None = None) -> Path:
 def get_available_profiles() -> list[str]:
     """
     Get list of available configuration profiles.
+
+    Files with invalid profile names (see SAFE_NAME_RULE) are skipped:
+    names are printed for shell completion, which would execute
+    commands embedded in them (e.g. "tewi-$(cmd).conf").
 
     Returns:
         List of profile names (without tewi- prefix and .conf suffix)
@@ -98,8 +121,9 @@ def get_available_profiles() -> list[str]:
     profiles = []
     for config_file in config_dir.glob("tewi-*.conf"):
         # Extract profile name from tewi-PROFILE.conf
-        profile_name = config_file.stem.removeprefix("tewi-")
-        profiles.append(profile_name)
+        name = config_file.stem.removeprefix("tewi-")
+        if is_safe_name(name):
+            profiles.append(name)
 
     return sorted(profiles)
 
@@ -483,6 +507,7 @@ refresh_interval =
 
 # Custom themes: add one [theme.NAME] section per theme and select it with
 # theme option in [ui] section. Themes also appear in the theme selector.
+# NAME may contain letters, digits, '.', '_' and '-'.
 # If NAME matches a built-in theme (see tewi --themes), the section
 # overrides colors of that theme.
 #
