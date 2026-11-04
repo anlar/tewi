@@ -175,6 +175,22 @@ Or to rTorrent via web server exposing XML-RPC (e.g. nginx or ruTorrent):
 $ tewi --client-type rtorrent --host XXXX --port 443 --path /RPC2 --username XXXX --password XXXX
 ```
 
+For daemon on another machine enable HTTPS with `--tls` (or `https://`
+prefix in host), otherwise password is sent unencrypted. Daemon must
+serve HTTPS itself (qBittorrent and Deluge web UI support it) or via web
+server in front of it. Self-signed certificate (or its CA) could be
+trusted with `--ca-cert`:
+
+```
+$ tewi --client-type qbittorrent --host https://nas --port 8080 --ca-cert ~/nas.pem --username XXXX --password XXXX
+```
+
+Alternatively connect through SSH tunnel or VPN (e.g. WireGuard).
+
+Status line shows connection security: `TLS`, `TLS unverified` (certificate
+verification is disabled) or `No TLS` (unencrypted connection to another
+machine, not shown for `localhost`).
+
 Connection and other settings could be stored in configuration file. To
 create default configuration file use:
 

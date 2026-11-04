@@ -20,7 +20,12 @@ import configparser
 import os
 import re
 import sys
-from argparse import Action, ArgumentTypeError, Namespace
+from argparse import (
+    Action,
+    ArgumentTypeError,
+    BooleanOptionalAction,
+    Namespace,
+)
 from pathlib import Path
 
 from platformdirs import user_config_dir
@@ -56,6 +61,18 @@ class TrackSetAction(Action):
     def __call__(self, parser, namespace, values, option_string=None):
         setattr(namespace, self.dest, values)
         setattr(namespace, f"{self.dest}{self.SET_POSTFIX}", True)
+
+
+class TrackSetBooleanAction(BooleanOptionalAction):
+    """Boolean flag with --no- variant, tracking that it was set.
+
+    Plain store_true flags can't be distinguished from defaults, so values
+    from config file would override them (see merge_config_with_args).
+    """
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        super().__call__(parser, namespace, values, option_string)
+        setattr(namespace, f"{self.dest}{TrackSetAction.SET_POSTFIX}", True)
 
 
 def get_config_dir() -> Path:
@@ -211,10 +228,16 @@ def _load_client_section(
         ("path", "path"),
         ("username", "username"),
         ("password", "password"),
+        ("ca_cert", "ca_cert"),
     ]:
         val = _get_string_option(parser, "client", option)
         if val:
             config[key] = val
+
+    for option in ("tls", "tls_verify"):
+        val = _get_bool_option(parser, "client", option)
+        if val is not None:
+            config[option] = val
 
 
 def _load_ui_section(parser: configparser.ConfigParser, config: dict) -> None:
@@ -480,6 +503,21 @@ password =
 # for rTorrent over HTTP, e.g. /RPC2 (leave empty for defaults; rTorrent
 # connects directly via SCGI by default)
 path =
+
+# Connect over HTTPS (default: false). Enable it for daemons on other
+# machines, otherwise password is sent unencrypted. Host with https://
+# prefix (e.g. https://nas) enables it too. rTorrent requires path
+# (XML-RPC over HTTPS), as SCGI connection can't be encrypted.
+tls =
+
+# Verify daemon certificate (default: true). Prefer ca_cert for
+# self-signed certificates: without verification connection can be
+# intercepted.
+tls_verify =
+
+# CA certificate (or self-signed daemon certificate) file to trust,
+# e.g. ~/.config/tewi/nas.pem (default: system certificates)
+ca_cert =
 
 [ui]
 # View mode for torrent list: card, compact, or oneline (default: card)

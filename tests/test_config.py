@@ -23,6 +23,7 @@ import pytest
 
 from src.tewi import config
 from src.tewi.config import (
+    TrackSetBooleanAction,
     _expand_env_vars,
     _load_client_section,
     _load_debug_section,
@@ -31,6 +32,7 @@ from src.tewi.config import (
     _load_ui_section,
     get_available_profiles,
     get_config_path,
+    merge_config_with_args,
     profile_name,
 )
 from src.tewi.theme import ThemeConfigError
@@ -118,6 +120,60 @@ class TestExpandEnvVars:
         result = _expand_env_vars("${TEWI_TEST_USER}:${TEWI_TEST_PASS}")
 
         assert result == "admin:hunter2"
+
+
+class TestTlsOptions:
+    """Test cases for TLS options in [client] section and CLI."""
+
+    def load(self, text: str) -> dict:
+        parser = configparser.ConfigParser()
+        parser.read_string(text)
+        config = {}
+        _load_client_section(parser, config)
+        return config
+
+    def test_tls_options_loaded(self):
+        config = self.load(
+            "[client]\ntls = yes\ntls_verify = false\nca_cert = ~/nas.pem\n"
+        )
+
+        assert config == {
+            "tls": True,
+            "tls_verify": False,
+            "ca_cert": "~/nas.pem",
+        }
+
+    def test_empty_tls_options_ignored(self):
+        config = self.load("[client]\ntls =\ntls_verify =\nca_cert =\n")
+
+        assert config == {}
+
+    @pytest.fixture
+    def parser(self):
+        parser = argparse.ArgumentParser()
+        parser.add_argument(
+            "--tls", default=False, action=TrackSetBooleanAction
+        )
+        return parser
+
+    @pytest.mark.parametrize(
+        "cli,config_value,expected",
+        [
+            ([], True, True),
+            (["--tls"], False, True),
+            (["--no-tls"], True, False),
+            ([], None, False),
+        ],
+    )
+    def test_cli_flag_overrides_config(
+        self, parser, cli, config_value, expected
+    ):
+        args = parser.parse_args(cli)
+        config = {} if config_value is None else {"tls": config_value}
+
+        merge_config_with_args(config, args)
+
+        assert args.tls is expected
 
 
 class TestLoadClientSection:

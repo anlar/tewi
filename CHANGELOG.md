@@ -13,6 +13,8 @@ handle multi-line list body as single line.
 ### Added
 
 - Add multiple sort orders for torrent list: press `m` in sort dialog to chain orders, where following orders break ties of previous ones (e.g. progress, then age)
+- Add HTTPS connection to torrent client with `--tls` option or `https://` prefix in host, with certificate verification (`--no-tls-verify` to disable) and custom CA or self-signed certificate (`--ca-cert`)
+- Show connection security badge in status line: `TLS`, `TLS unverified` or `No TLS` (for unencrypted connection to another machine)
 
 ### Changed
 
@@ -22,6 +24,7 @@ handle multi-line list body as single line.
 - Restrict profile and theme names to safe characters
 - Accept only magnet and HTTP(S) links from web search and open only HTTP(S) links, skip search results with malformed info hash
 - Limit torrent file download from URL: follow up to 5 redirects to magnet or HTTP(S) links only, download files up to 100 MiB, add torrents in background without blocking UI
+- Log warning when password is sent to torrent client on another machine without TLS
 
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 

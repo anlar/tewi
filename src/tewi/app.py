@@ -32,6 +32,7 @@ from textual.widgets import ContentSwitcher
 
 from .config import (
     TrackSetAction,
+    TrackSetBooleanAction,
     create_default_config,
     get_available_profiles,
     get_config_path,
@@ -41,7 +42,12 @@ from .config import (
 )
 from .search.manager import SearchClient, print_available_providers
 from .theme import ThemeConfigError, build_custom_themes
-from .torrent.factory import ClientCapability, create_client
+from .torrent.factory import (
+    ClientCapability,
+    TlsOptions,
+    create_client,
+    split_host_scheme,
+)
 from .torrent.models import ClientError, Torrent
 from .ui.dialog.confirm import ConfirmDialog
 from .ui.dialog.help import HelpDialog
@@ -195,6 +201,7 @@ class MainApp(App):
         search_default_preset: str | None = None,
         theme: str = DEFAULT_THEME,
         custom_themes: list[Theme] | None = None,
+        tls: TlsOptions | None = None,
     ):
         super().__init__()
 
@@ -236,6 +243,7 @@ class MainApp(App):
             path=path,
             username=username,
             password=password,
+            tls=tls,
         )
 
         self.search = SearchClient(
@@ -265,8 +273,10 @@ class MainApp(App):
             self.tewi_version,
             self.client.meta()["name"],
             self.client.meta()["version"],
-            self.c_host,
+            # Scheme is shown as TLS badge
+            split_host_scheme(self.c_host, TlsOptions())[0],
             self.c_port,
+            self.client.connection_security(),
         ).data_bind(
             r_connected=MainApp.r_connected,
             r_connected_ts=MainApp.r_connected_ts,
@@ -1021,6 +1031,28 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         action=TrackSetAction,
         help="BitTorrent daemon password for connection",
     )
+    p.add_argument(
+        "--tls",
+        default=False,
+        action=TrackSetBooleanAction,
+        help="Connect to BitTorrent daemon over HTTPS (default: off; "
+        "host with https:// prefix enables it too)",
+    )
+    p.add_argument(
+        "--tls-verify",
+        default=True,
+        action=TrackSetBooleanAction,
+        help="Verify BitTorrent daemon TLS certificate (default: on)",
+    )
+    ca_cert_arg = p.add_argument(
+        "--ca-cert",
+        type=str,
+        metavar="FILE",
+        action=TrackSetAction,
+        help="CA certificate (or self-signed daemon certificate) "
+        "file to trust for TLS connection",
+    )
+    ca_cert_arg.complete = shtab.FILE
 
     # UI
     p.add_argument(
@@ -1253,6 +1285,13 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     return p
 
 
+def _tls_options(args) -> TlsOptions:
+    """Build TLS settings for torrent client from CLI/config options."""
+    return TlsOptions(
+        enabled=args.tls, verify=args.tls_verify, ca_cert=args.ca_cert
+    )
+
+
 def _handle_add_torrent_mode(args) -> None:
     """Handle non-interactive add-torrent mode."""
     try:
@@ -1263,6 +1302,7 @@ def _handle_add_torrent_mode(args) -> None:
             path=args.path,
             username=args.username,
             password=args.password,
+            tls=_tls_options(args),
         )
         client.add_torrent(args.add_torrent)
         print(
@@ -1412,6 +1452,7 @@ def create_app():
             path=args.path,
             username=args.username,
             password=args.password,
+            tls=_tls_options(args),
             view_mode=args.view_mode,
             theme=args.theme,
             custom_themes=custom_themes,

@@ -16,6 +16,8 @@ from ..models import (
     ClientMeta,
     ClientSession,
     ClientStats,
+    ConnectionSecurity,
+    TlsOptions,
     Torrent,
     TorrentCategory,
     TorrentDetail,
@@ -25,7 +27,11 @@ from ..models import (
     TorrentPeerState,
     TorrentTracker,
 )
-from ..util import count_torrents_by_status, download_torrent_from_url
+from ..util import (
+    connection_security,
+    count_torrents_by_status,
+    download_torrent_from_url,
+)
 
 
 class DelugeClient(BaseClient):
@@ -101,10 +107,16 @@ class DelugeClient(BaseClient):
         path: str | None = None,
         username: str | None = None,
         password: str | None = None,
+        tls: TlsOptions | None = None,
     ) -> None:
+        tls = tls or TlsOptions()
+        scheme = "https" if tls.enabled else "http"
         json_path = path or "/json"
-        self.base_url = f"http://{host}:{port}{json_path}"
+        self.base_url = f"{scheme}://{host}:{port}{json_path}"
         self._session = requests.Session()
+        self._session.verify = tls.requests_verify
+        self._host = host
+        self._tls = tls
         self.password = password
         self._request_id = 0
 
@@ -114,6 +126,11 @@ class DelugeClient(BaseClient):
             self._connect_daemon()
         except Exception as e:
             raise ClientError(f"Failed to authenticate with Deluge: {e}")
+
+    def connection_security(self) -> ConnectionSecurity:
+        return connection_security(
+            self._host, self._tls.enabled, self._tls.verify
+        )
 
     def capable(self, capability: ClientCapability) -> bool:
         match capability:

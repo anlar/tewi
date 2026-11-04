@@ -16,6 +16,8 @@ from ..models import (
     ClientMeta,
     ClientSession,
     ClientStats,
+    ConnectionSecurity,
+    TlsOptions,
     Torrent,
     TorrentCategory,
     TorrentDetail,
@@ -25,7 +27,11 @@ from ..models import (
     TorrentPeerState,
     TorrentTracker,
 )
-from ..util import count_torrents_by_status, download_torrent_from_url
+from ..util import (
+    connection_security,
+    count_torrents_by_status,
+    download_torrent_from_url,
+)
 
 
 class QBittorrentClient(BaseClient):
@@ -82,12 +88,27 @@ class QBittorrentClient(BaseClient):
         port: str,
         username: str | None = None,
         password: str | None = None,
+        tls: TlsOptions | None = None,
     ) -> None:
+        tls = tls or TlsOptions()
+        self._host = host
+        kwargs = {}
+        if tls.enabled:
+            # Without forced scheme library would fall back to HTTP if
+            # HTTPS connection fails
+            host = f"https://{host}"
+            kwargs = {
+                "FORCE_SCHEME_FROM_HOST": True,
+                "VERIFY_WEBUI_CERTIFICATE": tls.verify,
+                "REQUESTS_ARGS": {"verify": tls.requests_verify},
+            }
+
         self.client = QBittorrentAPIClient(
             host=host,
             port=port,
             username=username or "",
             password=password or "",
+            **kwargs,
         )
 
         # Authenticate
@@ -95,6 +116,15 @@ class QBittorrentClient(BaseClient):
             self.client.auth_log_in()
         except Exception as e:
             raise ClientError(f"Failed to authenticate with qBittorrent: {e}")
+
+    def connection_security(self) -> ConnectionSecurity:
+        # Library detects scheme on first request (it may switch to HTTPS
+        # even if TLS wasn't requested), there is no public API for it
+        url = getattr(getattr(self.client, "_url", None), "_base_url", None)
+        verified = getattr(self.client, "_VERIFY_WEBUI_CERTIFICATE", True)
+        return connection_security(
+            self._host, (url or "").startswith("https://"), verified
+        )
 
     def capable(self, capability: ClientCapability) -> bool:
         match capability:

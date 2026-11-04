@@ -209,6 +209,43 @@ class ClientSession(TypedDict):
     torrents_stop: int
 
 
+class ConnectionSecurity(Enum):
+    """Security of connection to torrent client daemon."""
+
+    LOCAL = auto()
+    """Unencrypted connection to local machine (traffic never leaves it)."""
+
+    PLAIN = auto()
+    """Unencrypted connection to another machine."""
+
+    TLS = auto()
+    """Encrypted connection with verified certificate."""
+
+    TLS_UNVERIFIED = auto()
+    """Encrypted connection without certificate verification."""
+
+
+@dataclass(frozen=True)
+class TlsOptions:
+    """TLS (HTTPS) settings for connection to torrent client daemon."""
+
+    enabled: bool = False
+    """Connect over HTTPS instead of HTTP."""
+
+    verify: bool = True
+    """Verify daemon certificate (and host name)."""
+
+    ca_cert: str | None = None
+    """Path to CA certificate (or self-signed certificate) to trust."""
+
+    @property
+    def requests_verify(self) -> bool | str:
+        """Value for `verify` argument of requests library."""
+        if self.verify and self.ca_cert:
+            return self.ca_cert
+        return self.verify
+
+
 class ClientError(Exception):
     """Base exception for all client errors."""
 

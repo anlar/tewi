@@ -54,6 +54,20 @@
     background: $error;
 }
 
+/* connection security: badge for TLS or unencrypted remote connection
+   (text contrast is computed for badge background, not panel one) */
+#info-panel > #tls {
+    color: auto 87%;
+}
+
+#info-panel > #tls.secure {
+    background: $success;
+}
+
+#info-panel > #tls.insecure {
+    background: $warning;
+}
+
 /* STATE PANEL */
 
 #state-panel {
@@ -136,6 +150,10 @@ StatePanel > .search {
 #info-panel > #connection.disconnected:ansi,
 StatePanel > .search:ansi {
     color: ansi_bright_white;
+}
+
+#info-panel > #tls:ansi {
+    color: ansi_black;
 }
 
 #state-panel > .sort:ansi,

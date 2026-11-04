@@ -5,11 +5,13 @@ import os
 import posixpath
 import re
 import socket
+import ssl
 import threading
 import urllib.parse
 import xmlrpc.client
 from dataclasses import asdict
 from datetime import datetime, timedelta
+from functools import partial
 from http.client import HTTPConnection
 from typing import Any
 from xml.parsers.expat import ExpatError
@@ -22,6 +24,8 @@ from ..models import (
     ClientMeta,
     ClientSession,
     ClientStats,
+    ConnectionSecurity,
+    TlsOptions,
     Torrent,
     TorrentCategory,
     TorrentDetail,
@@ -31,7 +35,11 @@ from ..models import (
     TorrentPeerState,
     TorrentTracker,
 )
-from ..util import count_torrents_by_status, download_torrent_from_url
+from ..util import (
+    connection_security,
+    count_torrents_by_status,
+    download_torrent_from_url,
+)
 
 logger = get_logger()
 
@@ -145,9 +153,20 @@ class HTTPTransport(xmlrpc.client.Transport):
 class HTTPSTransport(xmlrpc.client.SafeTransport):
     """XML-RPC transport over HTTPS with connection timeout."""
 
-    def __init__(self, timeout: float = TIMEOUT) -> None:
-        super().__init__()
+    def __init__(
+        self, timeout: float = TIMEOUT, context: ssl.SSLContext | None = None
+    ) -> None:
+        super().__init__(context=context)
         self.timeout = timeout
+
+
+def _ssl_context(tls: TlsOptions) -> ssl.SSLContext:
+    """Create SSL context for HTTPS transport from TLS settings."""
+    context = ssl.create_default_context(cafile=tls.ca_cert)
+    if not tls.verify:
+        context.check_hostname = False
+        context.verify_mode = ssl.CERT_NONE
+    return context
 
     def make_connection(self, host: Any) -> HTTPConnection:
         conn = super().make_connection(host)
@@ -322,9 +341,15 @@ class RTorrentClient(BaseClient):
         path: str | None = None,
         username: str | None = None,
         password: str | None = None,
+        tls: TlsOptions | None = None,
     ) -> None:
+        tls = tls or TlsOptions()
+        self._host = host
+        self._tls = tls
         if path:
-            scheme = "https" if port == "443" else "http"
+            # Port 443 implies HTTPS, as before tls option was added
+            use_tls = tls.enabled or port == "443"
+            scheme = "https" if use_tls else "http"
             auth = ""
             if username:
                 auth = urllib.parse.quote(username, safe="")
@@ -334,9 +359,16 @@ class RTorrentClient(BaseClient):
 
             self._url = f"{scheme}://{auth}{host}:{port}{path}"
             self._transport_class = (
-                HTTPSTransport if scheme == "https" else HTTPTransport
+                partial(HTTPSTransport, context=_ssl_context(tls))
+                if use_tls
+                else HTTPTransport
             )
         else:
+            if tls.enabled:
+                raise ClientError(
+                    "rTorrent TLS requires XML-RPC over HTTPS: set path "
+                    "(e.g. /RPC2), SCGI connection can't be encrypted"
+                )
             self._url = f"http://{host}:{port}/"
             self._transport_class = SCGITransport
 
@@ -350,6 +382,12 @@ class RTorrentClient(BaseClient):
         # Check connection
         self.version = self._call("system.client_version")
         self._check_version(self.version)
+
+    @log_time
+    def connection_security(self) -> ConnectionSecurity:
+        return connection_security(
+            self._host, self._url.startswith("https://"), self._tls.verify
+        )
 
     @log_time
     def capable(self, capability: ClientCapability) -> bool:

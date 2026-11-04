@@ -1,13 +1,14 @@
 """Utility functions for torrent operations."""
 
 import hashlib
+import ipaddress
 import math
 import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import replace
 
-from .models import ClientError, Torrent
+from .models import ClientError, ConnectionSecurity, Torrent
 
 
 def torrents_test(torrents: list[Torrent], target_count: int) -> list[Torrent]:
@@ -47,6 +48,42 @@ def torrents_test(torrents: list[Torrent], target_count: int) -> list[Torrent]:
             idx = idx + 1
 
     return result
+
+
+def is_loopback(host: str) -> bool:
+    """Check if host is local machine (connection never leaves it).
+
+    Only host name itself is checked (no DNS lookup): "localhost" and
+    loopback IP addresses.
+    """
+    host = host.strip("[]").lower()
+    if host == "localhost" or host.endswith(".localhost"):
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
+
+
+def connection_security(
+    host: str, tls: bool, verified: bool
+) -> ConnectionSecurity:
+    """Get security of connection to daemon.
+
+    Args:
+        host: Daemon host (without scheme)
+        tls: Connection uses TLS
+        verified: TLS certificate is verified
+    """
+    if tls:
+        return (
+            ConnectionSecurity.TLS
+            if verified
+            else ConnectionSecurity.TLS_UNVERIFIED
+        )
+    if is_loopback(host):
+        return ConnectionSecurity.LOCAL
+    return ConnectionSecurity.PLAIN
 
 
 def count_torrents_by_status(torrents: list[Torrent]) -> dict[str, int]:

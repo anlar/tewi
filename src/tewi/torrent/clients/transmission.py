@@ -19,6 +19,8 @@ from ..models import (
     ClientMeta,
     ClientSession,
     ClientStats,
+    ConnectionSecurity,
+    TlsOptions,
     Torrent,
     TorrentCategory,
     TorrentDetail,
@@ -28,7 +30,27 @@ from ..models import (
     TorrentPeerState,
     TorrentTracker,
 )
-from ..util import count_torrents_by_status, download_torrent_from_url
+from ..util import (
+    connection_security,
+    count_torrents_by_status,
+    download_torrent_from_url,
+)
+
+
+class _TransmissionRPCClient(TransmissionRPCClient):
+    """transmission-rpc client with configurable certificate verification.
+
+    Library has no option for it and makes first request from constructor,
+    so verification is set on its HTTP session before session requests.
+    """
+
+    def __init__(self, verify: bool | str, **kwargs) -> None:
+        self._verify = verify
+        super().__init__(**kwargs)
+
+    def get_session(self, *args, **kwargs):
+        self._http_session.verify = self._verify
+        return super().get_session(*args, **kwargs)
 
 
 class TransmissionClient(BaseClient):
@@ -59,8 +81,11 @@ class TransmissionClient(BaseClient):
         path: str | None = None,
         username: str | None = None,
         password: str | None = None,
+        tls: TlsOptions | None = None,
     ) -> None:
+        tls = tls or TlsOptions()
         kwargs = {
+            "protocol": "https" if tls.enabled else "http",
             "host": host,
             "port": port,
             "username": username,
@@ -69,7 +94,15 @@ class TransmissionClient(BaseClient):
         if path is not None:
             kwargs["path"] = path
 
-        self.client = TransmissionRPCClient(**kwargs)
+        self.client = _TransmissionRPCClient(tls.requests_verify, **kwargs)
+        self._host = host
+        self._tls = tls
+
+    @log_time
+    def connection_security(self) -> ConnectionSecurity:
+        return connection_security(
+            self._host, self._tls.enabled, self._tls.verify
+        )
 
     @log_time
     def capable(self, capability: ClientCapability) -> bool:

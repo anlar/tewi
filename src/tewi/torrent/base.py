@@ -7,6 +7,8 @@ from .models import (
     ClientMeta,
     ClientSession,
     ClientStats,
+    ConnectionSecurity,
+    TlsOptions,
     Torrent,
     TorrentCategory,
     TorrentDetail,
@@ -54,14 +56,26 @@ class BaseClient(ABC):
         port: str,
         username: str | None = None,
         password: str | None = None,
+        tls: TlsOptions | None = None,
     ) -> None:
         """Initialize the client connection.
 
         Args:
-            host: The hostname or IP address of the daemon
+            host: The hostname or IP address of the daemon (without scheme)
             port: The port number as a string
             username: Optional authentication username
             password: Optional authentication password
+            tls: Optional TLS settings (plain HTTP is used if not set)
+        """
+        pass
+
+    @abstractmethod
+    def connection_security(self) -> ConnectionSecurity:
+        """Get security of connection to daemon.
+
+        Based on scheme actually used for connection, which may differ
+        from TLS settings (e.g. qBittorrent client switches to HTTPS
+        automatically, rTorrent uses HTTPS on port 443).
         """
         pass
 
