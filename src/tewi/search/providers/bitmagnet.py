@@ -23,12 +23,12 @@ class BitmagnetProvider(BaseSearchProvider):
     Available endpoints: https://bitmagnet.io/guides/endpoints.html
     """
 
-    # GraphQL query template for search with $QUERY placeholder
-    GRAPHQL_QUERY = """{
+    # GraphQL query for search, search term is passed as $query variable
+    GRAPHQL_QUERY = """query Search($query: String!) {
   torrentContent {
     search(
       input: {
-        queryString: "$QUERY"
+        queryString: $query
         offset: 0
         limit: 50
         orderBy: { field: seeders, descending: true }
@@ -94,11 +94,11 @@ class BitmagnetProvider(BaseSearchProvider):
 }"""
 
     # GraphQL query template for fetching torrent details by info hash
-    GRAPHQL_DETAILS_QUERY = """{
+    GRAPHQL_DETAILS_QUERY = """query Details($infoHash: String!) {
   torrentContent {
     search(
       input: {
-        queryString: "$INFOHASH"
+        queryString: $infoHash
       }
     ) {
       items {
@@ -359,21 +359,15 @@ class BitmagnetProvider(BaseSearchProvider):
         return None
 
     def _build_graphql_query(self, query: str) -> dict:
-        """Build GraphQL query body with escaped search query.
+        """Build GraphQL query body with search term as variable.
 
         Args:
             query: Search term
 
         Returns:
-            Dictionary with query field for POST body
+            Dictionary with query and variables fields for POST body
         """
-        # Escape query string for JSON
-        escaped_query = json.dumps(query)[1:-1]  # Remove outer quotes
-
-        # Replace placeholder in template
-        query_str = self.GRAPHQL_QUERY.replace("$QUERY", escaped_query)
-
-        return {"query": query_str}
+        return {"query": self.GRAPHQL_QUERY, "variables": {"query": query}}
 
     def _fetch_results(self, url: str, query_body: dict) -> dict:
         """Fetch and parse JSON results from Bitmagnet GraphQL API.
@@ -451,12 +445,10 @@ class BitmagnetProvider(BaseSearchProvider):
             return None
 
         try:
-            # Build GraphQL query for details
-            escaped_hash = json.dumps(info_hash)[1:-1]
-            query_str = self.GRAPHQL_DETAILS_QUERY.replace(
-                "$INFOHASH", escaped_hash
-            )
-            query_body = {"query": query_str}
+            query_body = {
+                "query": self.GRAPHQL_DETAILS_QUERY,
+                "variables": {"infoHash": info_hash},
+            }
 
             url = f"{self.bitmagnet_url.rstrip('/')}/graphql"
             post_data = json.dumps(query_body).encode("utf-8")
