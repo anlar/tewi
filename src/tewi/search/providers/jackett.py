@@ -11,7 +11,7 @@ from typing import Any
 from ...util.log import get_logger, log_time
 from ..base import BaseSearchProvider
 from ..models import Category, Indexer, SearchResult, StandardCategories
-from ..util import build_magnet_link
+from ..util import MAX_ERROR_BODY_SIZE, build_magnet_link, read_response
 
 logger = get_logger()
 
@@ -242,7 +242,7 @@ class JackettProvider(BaseSearchProvider):
             with self.urlopen(url, timeout=10) as response:
                 # ElementTree doesn't load external entities or DTDs, and
                 # expat (>= 2.4.1) limits entity expansion
-                return ET.fromstring(response.read())  # noqa: S314
+                return ET.fromstring(read_response(response))  # noqa: S314
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
                 raise Exception("Invalid Jackett API key")
@@ -401,13 +401,15 @@ class JackettProvider(BaseSearchProvider):
         try:
             logger.debug(f"Jackett: requesting URL: {url}")
             with self.urlopen(url) as response:
-                return json.loads(response.read().decode("utf-8"))
+                return json.loads(read_response(response).decode("utf-8"))
         except urllib.error.HTTPError as e:
             # Read error response body for more details
             error_body = ""
             try:
                 if e.fp:
-                    error_body = e.fp.read().decode("utf-8")
+                    error_body = e.fp.read(MAX_ERROR_BODY_SIZE).decode(
+                        "utf-8", errors="replace"
+                    )
                     logger.error(
                         f"Jackett HTTP {e.code} response: {error_body}"
                     )

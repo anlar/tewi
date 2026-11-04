@@ -9,7 +9,7 @@ from typing import Any
 from ...util.log import get_logger, log_time
 from ..base import BaseSearchProvider
 from ..models import Category, Indexer, SearchResult, StandardCategories
-from ..util import build_magnet_link
+from ..util import MAX_ERROR_BODY_SIZE, build_magnet_link, read_response
 
 logger = get_logger()
 
@@ -224,7 +224,7 @@ class ProwlarrProvider(BaseSearchProvider):
         """
         try:
             with self.urlopen(url, timeout=10) as response:
-                return json.loads(response.read().decode("utf-8"))
+                return json.loads(read_response(response).decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
                 raise Exception("Invalid Prowlarr API key")
@@ -321,13 +321,15 @@ class ProwlarrProvider(BaseSearchProvider):
         try:
             logger.debug(f"Prowlarr: requesting URL: {url}")
             with self.urlopen(url) as response:
-                return json.loads(response.read().decode("utf-8"))
+                return json.loads(read_response(response).decode("utf-8"))
         except urllib.error.HTTPError as e:
             # Read error response body for more details
             error_body = ""
             try:
                 if e.fp:
-                    error_body = e.fp.read().decode("utf-8")
+                    error_body = e.fp.read(MAX_ERROR_BODY_SIZE).decode(
+                        "utf-8", errors="replace"
+                    )
                     logger.error(
                         f"Prowlarr HTTP {e.code} response: {error_body}"
                     )

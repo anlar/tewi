@@ -30,6 +30,7 @@ handle multi-line list body as single line.
 - Create config file and log directory accessible only by owner
 - Remove control characters from text of torrents, peers, trackers and search results, so terminal escape sequences in them aren't passed to terminal
 - Add 30 seconds timeout to Deluge requests, so not responding daemon doesn't block refresh forever
+- Limit search provider responses to 20 MiB
 
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 

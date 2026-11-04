@@ -9,7 +9,7 @@ from typing import Any
 from ...util.log import log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
-from ..util import build_magnet_link
+from ..util import build_magnet_link, read_response
 
 
 class YTSProvider(BaseSearchProvider):
@@ -150,7 +150,7 @@ class YTSProvider(BaseSearchProvider):
 
         try:
             with self.urlopen(url) as response:
-                return json.loads(response.read().decode("utf-8"))
+                return json.loads(read_response(response).decode("utf-8"))
         except urllib.error.URLError as e:
             raise Exception(f"Network error: {e}")
         except json.JSONDecodeError as e:

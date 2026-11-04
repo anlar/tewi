@@ -9,7 +9,7 @@ from datetime import datetime
 from ...util.log import log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
-from ..util import build_magnet_link
+from ..util import build_magnet_link, read_response
 
 
 class NyaaProvider(BaseSearchProvider):
@@ -128,7 +128,7 @@ class NyaaProvider(BaseSearchProvider):
 
         try:
             with self.urlopen(url) as response:
-                data = response.read().decode("utf-8")
+                data = read_response(response).decode("utf-8")
 
             # Parse RSS XML. ElementTree doesn't load external entities or
             # DTDs, and expat (>= 2.4.1) limits entity expansion

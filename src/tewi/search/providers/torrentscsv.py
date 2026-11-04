@@ -9,7 +9,7 @@ from typing import Any
 from ...util.log import log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult
-from ..util import build_magnet_link, detect_category_from_name
+from ..util import build_magnet_link, detect_category_from_name, read_response
 
 
 class TorrentsCsvProvider(BaseSearchProvider):
@@ -66,7 +66,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
         try:
             with self.urlopen(url) as response:
-                data = json.loads(response.read().decode("utf-8"))
+                data = json.loads(read_response(response).decode("utf-8"))
 
             torrents = data.get("torrents", [])
             if not torrents:

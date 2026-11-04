@@ -10,6 +10,7 @@ from typing import Any
 from ...util.log import get_logger, log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
+from ..util import MAX_ERROR_BODY_SIZE, read_response
 
 logger = get_logger()
 
@@ -393,7 +394,9 @@ class BitmagnetProvider(BaseSearchProvider):
 
             logger.debug(f"Bitmagnet: requesting URL: {url}")
             with self.urlopen_post(url, data=post_data) as response:
-                response_data = json.loads(response.read().decode("utf-8"))
+                response_data = json.loads(
+                    read_response(response).decode("utf-8")
+                )
 
             # Check for GraphQL errors
             if "errors" in response_data:
@@ -410,7 +413,9 @@ class BitmagnetProvider(BaseSearchProvider):
             error_body = ""
             try:
                 if e.fp:
-                    error_body = e.fp.read().decode("utf-8")
+                    error_body = e.fp.read(MAX_ERROR_BODY_SIZE).decode(
+                        "utf-8", errors="replace"
+                    )
                     logger.error(
                         f"Bitmagnet HTTP {e.code} response: {error_body}"
                     )
@@ -458,7 +463,9 @@ class BitmagnetProvider(BaseSearchProvider):
 
             logger.debug(f"Bitmagnet: fetching content details for {info_hash}")
             with self.urlopen_post(url, data=post_data) as response:
-                response_data = json.loads(response.read().decode("utf-8"))
+                response_data = json.loads(
+                    read_response(response).decode("utf-8")
+                )
 
             # Navigate to content object
             items = (

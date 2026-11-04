@@ -75,6 +75,28 @@ def urlopen_post(url: str, data: bytes, timeout: int = 30) -> Any:
     return urllib.request.urlopen(request, timeout=timeout)  # noqa: S310
 
 
+# Max size of search provider response (large Jackett or Prowlarr search
+# over many indexers is a few MB)
+MAX_RESPONSE_SIZE = 20 * 1024 * 1024  # bytes
+
+# Max size of error response body read, it's only used in error message
+MAX_ERROR_BODY_SIZE = 4096  # bytes
+
+
+def read_response(response: Any) -> bytes:
+    """Read search provider response, limiting its size.
+
+    Raises:
+        urllib.error.URLError: If response is larger than MAX_RESPONSE_SIZE
+    """
+    data = response.read(MAX_RESPONSE_SIZE + 1)
+    if len(data) > MAX_RESPONSE_SIZE:
+        raise urllib.error.URLError(
+            f"response is larger than {MAX_RESPONSE_SIZE // (1024 * 1024)} MiB"
+        )
+    return data
+
+
 def build_magnet_link(
     info_hash: str, name: str, trackers: list[str] | None = None
 ) -> str:

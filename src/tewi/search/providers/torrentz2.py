@@ -8,7 +8,7 @@ from typing import Any
 from ...util.log import log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
-from ..util import build_magnet_link
+from ..util import build_magnet_link, read_response
 
 
 class Torrentz2Provider(BaseSearchProvider):
@@ -194,7 +194,7 @@ class Torrentz2Provider(BaseSearchProvider):
 
         try:
             with self.urlopen(url) as response:
-                data = json.loads(response.read().decode("utf-8"))
+                data = json.loads(read_response(response).decode("utf-8"))
 
             success = data.get("success")
             if not success:
