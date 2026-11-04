@@ -42,6 +42,13 @@ class TestInitLogger:
     """Test cases for init_logger function."""
 
     @pytest.fixture(autouse=True)
+    def no_chmod(self, monkeypatch):
+        """Tests mock mkdir, so log directory doesn't exist for chmod."""
+        monkeypatch.setattr(
+            "src.tewi.util.log.Path.chmod", lambda self, mode: None
+        )
+
+    @pytest.fixture(autouse=True)
     def reset_logging(self):
         """Reset logging configuration before each test."""
         root_logger = logging.getLogger()
