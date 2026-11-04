@@ -11,6 +11,10 @@ on:
   schedule:
     - cron: "0 0 * * 1"  # Weekly on Monday at 00:00 UTC
 
+# Read-only token: workflow runs code from pull requests
+permissions:
+  contents: read
+
 jobs:
   build:
 
@@ -27,6 +31,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v7
+      with:
+        persist-credentials: false
 
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v7
@@ -47,7 +53,7 @@ jobs:
         python -m pip install . --group dev
 
     - name: Install Transmission (cached)
-      uses: awalsh128/cache-apt-pkgs-action@latest
+      uses: awalsh128/cache-apt-pkgs-action@v1.6.3
       with:
         packages: transmission-daemon transmission-cli
         version: 1.0
