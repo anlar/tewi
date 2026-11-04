@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 from enum import Enum, auto
 from typing import TypedDict
 
+from ..util.misc import strip_control_chars_in_fields
+
 
 @dataclass(frozen=True)
 class Torrent:
@@ -36,6 +38,10 @@ class Torrent:
     category: str | None
     labels: list[str]
 
+    def __post_init__(self) -> None:
+        # Text comes from torrents, peers and trackers
+        strip_control_chars_in_fields(self)
+
 
 class TorrentFilePriority(Enum):
     NOT_DOWNLOADING = auto()
@@ -57,6 +63,10 @@ class TorrentFile:
     completed: int  # bytes
     priority: TorrentFilePriority
 
+    def __post_init__(self) -> None:
+        # Text comes from torrents, peers and trackers
+        strip_control_chars_in_fields(self)
+
 
 class TorrentPeerState(Enum):
     INTERESTED = "Interested"
@@ -75,6 +85,10 @@ class TorrentCategory:
 
     name: str
     save_path: str | None
+
+    def __post_init__(self) -> None:
+        # Text comes from torrents, peers and trackers
+        strip_control_chars_in_fields(self)
 
 
 @dataclass(frozen=True)
@@ -98,6 +112,10 @@ class TorrentPeer:
     dl_state: TorrentPeerState
     ul_state: TorrentPeerState
 
+    def __post_init__(self) -> None:
+        # Text comes from torrents, peers and trackers
+        strip_control_chars_in_fields(self)
+
 
 @dataclass(frozen=True)
 class TorrentTracker:
@@ -115,6 +133,10 @@ class TorrentTracker:
     next_announce: datetime | None = None
     last_scrape: datetime | None = None
     next_scrape: datetime | None = None
+
+    def __post_init__(self) -> None:
+        # Text comes from torrents, peers and trackers
+        strip_control_chars_in_fields(self)
 
 
 @dataclass(frozen=True)

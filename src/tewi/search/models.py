@@ -2,6 +2,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
+from ..util.misc import strip_control_chars_in_fields
+
 
 class Category:
     """Represents a Jackett category with ID, name, and hierarchy support."""
@@ -214,3 +216,7 @@ class SearchResult:
     page_url: str | None = None  # Link to torrent page on provider site
     freeleech: bool = False
     fields: dict[str, str] | None = None  # Provider-specific metadata
+
+    def __post_init__(self) -> None:
+        # Text comes from search provider
+        strip_control_chars_in_fields(self)
