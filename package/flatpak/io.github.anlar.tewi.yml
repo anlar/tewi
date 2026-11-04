@@ -1,3 +1,5 @@
+# Not maintained: kept for reference only, Flatpak isn't published, as it
+# wasn't accepted to Flathub: https://github.com/flathub/flathub/pull/7398
 app-id: io.github.anlar.tewi
 runtime: org.freedesktop.Platform
 runtime-version: '25.08'
