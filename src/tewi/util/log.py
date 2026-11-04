@@ -27,6 +27,8 @@ from typing import Callable, ParamSpec, TypeVar
 
 from platformdirs import user_log_dir
 
+from .redact import redact_secrets
+
 P = ParamSpec("P")
 T = TypeVar("T")
 
@@ -38,7 +40,11 @@ _ESCAPES = {"\n": "\\n", "\r": "\\r"}
 
 
 class _EscapingFormatter(logging.Formatter):
-    """Formatter escaping line breaks and control characters in messages.
+    """Formatter masking secrets and escaping control characters.
+
+    Messages may contain URLs with passwords and API keys (also from
+    client libraries, e.g. transmission-rpc logs its URL with credentials
+    at debug level), so secrets are masked.
 
     Messages may contain text from torrent clients and search providers
     (e.g. error messages), which could otherwise forge log entries.
@@ -49,12 +55,13 @@ class _EscapingFormatter(logging.Formatter):
     def formatMessage(self, record: logging.LogRecord) -> str:  # noqa: N802
         record.message = _CONTROL_CHARS_RE.sub(
             lambda m: _ESCAPES.get(m[0], f"\\x{ord(m[0]):02x}"),
-            record.message,
+            redact_secrets(record.message),
         )
         return super().formatMessage(record)
 
     def formatException(self, ei) -> str:  # noqa: N802
-        return textwrap.indent(super().formatException(ei), "  ")
+        text = redact_secrets(super().formatException(ei))
+        return textwrap.indent(text, "  ")
 
 
 def get_logger() -> logging.Logger:
