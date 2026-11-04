@@ -228,7 +228,6 @@ class TransmissionClient(BaseClient):
                 "status",
                 "totalSize",
                 "downloadDir",
-                "left_until_done",
                 "percentDone",
                 "eta",
                 "rateUpload",
