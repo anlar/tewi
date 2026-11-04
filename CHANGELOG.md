@@ -38,6 +38,7 @@ handle multi-line list body as single line.
 - Mask passwords, API keys and passkeys of URLs and auth headers in log and notifications
 - Load GeoIP database only from geoip2fast installation, as file with the same name in current directory was loaded and could run code, and don't fail on start if database can't be loaded
 - Require requests 2.33.0 or newer, as older versions have known vulnerabilities (CVE-2024-47081, CVE-2026-25645)
+- Don't show GeoIP error text like `<invalid ip address>` as peer country
 
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 

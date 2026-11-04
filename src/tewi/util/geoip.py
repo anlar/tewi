@@ -42,4 +42,6 @@ def get_country(address: str) -> str | None:
         return None
 
     country_name = geoip.lookup(address).country_name
-    return None if country_name == "<not found in database>" else country_name
+    # Placeholders like "<not found in database>" or "<invalid ip address>"
+    # are returned instead of country name when lookup fails
+    return None if country_name.startswith("<") else country_name
