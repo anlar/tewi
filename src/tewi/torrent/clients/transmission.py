@@ -299,7 +299,7 @@ class TransmissionClient(BaseClient):
 
     @log_time
     def start_all_torrents(self) -> None:
-        self.client.start_all()
+        self.client.start_torrent()
 
     @log_time
     def stop_torrent(self, hashes: str | list[str]) -> None:
@@ -509,20 +509,20 @@ class TransmissionClient(BaseClient):
         direction = "Incoming" if peer.get("isIncoming", False) else "Outgoing"
 
         dl_state = self._get_peer_state(
-            peer["clientIsInterested"], peer["clientIsChoked"]
+            peer.get("clientIsInterested"), peer.get("clientIsChoked")
         )
         ul_state = self._get_peer_state(
-            peer["peerIsInterested"], peer["peerIsChoked"]
+            peer.get("peerIsInterested"), peer.get("peerIsChoked")
         )
 
         return TorrentPeer(
-            address=peer["address"],
-            client_name=peer["clientName"],
-            progress=peer["progress"],
-            is_encrypted=peer["isEncrypted"],
-            rate_to_client=peer["rateToClient"],
-            rate_to_peer=peer["rateToPeer"],
-            flag_str=peer["flagStr"],
+            address=peer.get("address"),
+            client_name=peer.get("clientName"),
+            progress=peer.get("progress"),
+            is_encrypted=peer.get("isEncrypted"),
+            rate_to_client=peer.get("rateToClient"),
+            rate_to_peer=peer.get("rateToPeer"),
+            flag_str=peer.get("flagStr"),
             port=peer.get("port", -1),
             connection_type=connection_type,
             direction=direction,

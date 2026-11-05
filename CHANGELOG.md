@@ -44,6 +44,7 @@ handle multi-line list body as single line.
 - Require setuptools 77.0 or newer to build package, as older versions don't support SPDX license field
 - Replace geoip2fast with built-in peer country lookup by [ip-location-db](https://github.com/sapics/ip-location-db) data, downloaded on release: adds IPv6 peers, updates data from 2024, loads on first lookup in 25 ms and uses ~5 MiB of memory instead of ~40 MiB on start
 - Show Deluge peer country by name instead of code
+- Require transmission-rpc 7.0.12 or newer and stop using its APIs removed in transmission-rpc 8
 
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 
