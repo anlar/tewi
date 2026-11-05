@@ -142,10 +142,25 @@ class TableApp(ClickApp):
         table.add_row(self.cell)
 
 
-async def click_first_row(pilot, table: DataTable) -> None:
+# Offsets inside cell text to click: injected markup would render
+# "uTorrent 3.6" right after cell padding (or after "[F] " prefix).
+# Each pilot click costs ~80ms, so avoid clicking every cell.
+CELL_TEXT_OFFSETS = (1, 6)
+
+
+async def click_first_row(
+    pilot, table: DataTable, keys: tuple[str, ...] | None = None
+) -> None:
+    """Click inside text of columns (all by default) of the first row."""
     await pilot.pause()
-    for x in range(1, 12):
-        await pilot.click(table, offset=(x, 1))
+    x = 0
+    for column in table.ordered_columns:
+        if keys is None or column.key.value in keys:
+            for offset in CELL_TEXT_OFFSETS:
+                await pilot.click(
+                    table, offset=(x + table.cell_padding + offset, 1)
+                )
+        x += column.get_render_width(table)
     await pilot.pause()
 
 
@@ -194,7 +209,7 @@ def test_reactive_label_does_not_parse_markup_by_default(payload):
             line = "".join(s.text for s in label.render_line(0))
             assert line.rstrip() == payload
 
-            for x in range(1, 30, 2):
+            for x in CELL_TEXT_OFFSETS:
                 await pilot.click(ReactiveLabel, offset=(x, 0))
             await pilot.pause()
             assert app.pwned == 0
@@ -241,9 +256,8 @@ def test_web_search_title_does_not_run_action_on_click(payload, freeleech):
             assert not has_markup_style(title)
             assert not has_markup_style(row[0])
 
-            for x in range(1, table.size.width, 4):
-                await pilot.click(table, offset=(x, 1))
-            await pilot.pause()
+            # Only these columns contain payload
+            await click_first_row(pilot, table, ("source", "name"))
             assert app.pwned == 0
 
     asyncio.run(run())
