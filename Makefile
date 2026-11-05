@@ -22,7 +22,10 @@ completions:
 	mkdir -p completions/bash
 	uv run tewi --print-completion bash > completions/bash/tewi
 
-build: check test clean completions
+geoip:
+	uv run python package/build_geoip.py
+
+build: check test clean completions geoip
 	uv run python -m build
 
 install-pipx:

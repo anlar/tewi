@@ -69,8 +69,8 @@ Features:
 * [requests](https://github.com/psf/requests)
 * [platformdirs](https://github.com/tox-dev/platformdirs)
 * [shtab](https://github.com/iterative/shtab)
-* [geoip2fast](https://github.com/rabuchaim/geoip2fast) (optional, used for
-  peer country lookup)
+* [ip-location-db](https://github.com/sapics/ip-location-db) (`user-country`
+  database, used for peer country lookup)
 * [pyperclip](https://github.com/asweigart/pyperclip) (optional, used for
   pasting links from clipboard when adding torrents)
 

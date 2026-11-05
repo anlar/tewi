@@ -16,7 +16,6 @@ requires-python = ">=3.10"
 dependencies = [
   "textual >= 3.1.0",
   "transmission-rpc >= 7.0.11",
-  "geoip2fast >= 1.2.2",
   "pyperclip >= 1.9.0",
   "qbittorrent-api >= 2025.7.0",
   "platformdirs >= 4.2.0",
@@ -57,9 +56,6 @@ markers = [
 ]
 filterwarnings = [
   "error::DeprecationWarning",
-  # geoip2fast has invalid escape sequences (warns on old Python versions)
-  # https://github.com/rabuchaim/geoip2fast/issues/16#issuecomment-5677708133
-  "ignore:invalid escape sequence:DeprecationWarning",
 ]
 
 [tool.basedpyright]

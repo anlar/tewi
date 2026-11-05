@@ -42,6 +42,7 @@ handle multi-line list body as single line.
 - Fix Deluge torrent details failing to load and showing client as offline when torrent has IPv6 peers
 - Require Textual 3.1.0 or newer: older versions crash on notifications and, before 2.0, parse markup in labels which must show text literally (ANSI themes need Textual 8.2.5 or newer)
 - Require setuptools 77.0 or newer to build package, as older versions don't support SPDX license field
+- Replace geoip2fast with built-in peer country lookup by [ip-location-db](https://github.com/sapics/ip-location-db) data, downloaded on release: adds IPv6 peers, updates data from 2024, loads on first lookup in 25 ms and uses ~5 MiB of memory instead of ~40 MiB on start
 
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 

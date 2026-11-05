@@ -1,2 +1,3 @@
 include src/tewi/*.tcss
+include src/tewi/util/geoip.dat.gz
 recursive-include completions *
