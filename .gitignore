@@ -11,3 +11,4 @@ __pycache__
 release-notes.md
 .flatpak-builder
 src/tewi/util/geoip.dat.gz
+uv.lock
