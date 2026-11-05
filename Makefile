@@ -7,6 +7,9 @@ test:
 test-github:
 	uv run python -m pytest -v --transmission-port=9092
 
+test-github-min:
+	uv run --resolution lowest-direct python -m pytest -v --transmission-port=9092
+
 test-all:
 	uv run python -m pytest -v --runxfail
 
