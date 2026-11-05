@@ -391,7 +391,9 @@ class _TorrentHandler(BaseHTTPRequestHandler):
 def server():
     """Run local HTTP server, yield its base URL."""
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), _TorrentHandler)
-    thread = threading.Thread(target=httpd.serve_forever, daemon=True)
+    thread = threading.Thread(
+        target=httpd.serve_forever, args=(0.01,), daemon=True
+    )
     thread.start()
     yield f"http://127.0.0.1:{httpd.server_address[1]}"
     httpd.shutdown()

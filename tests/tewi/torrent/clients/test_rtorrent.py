@@ -372,7 +372,9 @@ class FakeHTTPServer:
 
         self.server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
         self.port = self.server.server_address[1]
-        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+        threading.Thread(
+            target=self.server.serve_forever, args=(0.01,), daemon=True
+        ).start()
 
     def close(self) -> None:
         self.server.shutdown()

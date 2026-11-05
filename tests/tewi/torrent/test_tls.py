@@ -250,7 +250,9 @@ def https_server(certificate):
     context.load_cert_chain(cert, key)
 
     server = _TLSServer(context)
-    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread = threading.Thread(
+        target=server.serve_forever, args=(0.01,), daemon=True
+    )
     thread.start()
     yield server
     server.shutdown()
