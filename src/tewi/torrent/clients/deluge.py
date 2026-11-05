@@ -8,6 +8,7 @@ from typing import Any
 
 import requests
 
+from ...util.countries import get_country_name
 from ...util.log import log_time
 from ...util.misc import is_torrent_hash, is_torrent_link
 from ..base import BaseClient, ClientCapability
@@ -811,6 +812,9 @@ class DelugeClient(BaseClient):
         address = address.strip("[]")
         port: int = int(port_str)
 
+        # Deluge returns country code, empty or spaces without GeoIP database
+        country_code = (peer.get("country") or "").strip()
+
         return TorrentPeer(
             address=address,
             port=port,
@@ -822,7 +826,7 @@ class DelugeClient(BaseClient):
             flag_str=None,
             connection_type=None,
             direction=None,
-            country=peer.get("country"),
+            country=get_country_name(country_code) if country_code else None,
             dl_state=TorrentPeerState.NONE,
             ul_state=TorrentPeerState.NONE,
         )
