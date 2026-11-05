@@ -17,16 +17,20 @@ import datetime
 import gzip
 import hashlib
 import io
+import json
 import struct
 import sys
+import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
-RELEASE_URL = "https://github.com/sapics/ip-location-db/releases/download"
-DATA_URL = RELEASE_URL + "/latest/user-country-ipv{version}-num.csv"
-CHECKSUM_URL = (
-    RELEASE_URL + "/checksum/user-country-ipv{version}-num.csv.sha256"
+# Assets are downloaded with GitHub API: direct release download links
+# sometimes fail with 504 Gateway Time-out for hours, while API works
+RELEASE_API_URL = (
+    "https://api.github.com/repos/sapics/ip-location-db/releases/tags/latest"
 )
+ASSET_NAME = "user-country-ipv{version}-num.csv"
 
 DEFAULT_OUTPUT = (
     Path(__file__).resolve().parent.parent
@@ -41,24 +45,67 @@ HEADER = struct.Struct("<8s10sHII")
 
 NO_COUNTRY = "--"
 TIMEOUT = 60
+ATTEMPTS = 3
+RETRY_DELAY = 10
+USER_AGENT = "tewi-build-geoip"
 
 
-def download(url: str) -> bytes:
-    """Download file by HTTPS URL."""
+def _is_transient(error: Exception) -> bool:
+    """Check if request error is temporary and request may be retried."""
+    if isinstance(error, urllib.error.HTTPError):
+        return error.code >= 500 or error.code == 429
+    return isinstance(error, (urllib.error.URLError, TimeoutError))
+
+
+def download(url: str, accept: str) -> bytes:
+    """Download HTTPS URL, retry on temporary errors."""
     if not url.startswith("https://"):
         raise ValueError(f"Only HTTPS URLs are allowed: {url}")
-    with urllib.request.urlopen(url, timeout=TIMEOUT) as resp:  # noqa: S310
-        return resp.read()
+
+    request = urllib.request.Request(  # noqa: S310 (HTTPS checked above)
+        url, headers={"Accept": accept, "User-Agent": USER_AGENT}
+    )
+    for attempt in range(1, ATTEMPTS + 1):
+        try:
+            with urllib.request.urlopen(  # noqa: S310
+                request, timeout=TIMEOUT
+            ) as resp:
+                return resp.read()
+        except Exception as e:
+            if attempt == ATTEMPTS or not _is_transient(e):
+                raise
+            delay = RETRY_DELAY * attempt
+            print(
+                f"Download of {url} failed ({e}), retry in {delay} s",
+                file=sys.stderr,
+            )
+            time.sleep(delay)
+    raise AssertionError("unreachable")
 
 
-def download_verified(version: int) -> bytes:
-    """Download CSV for IP version and verify its SHA-256 checksum."""
-    data = download(DATA_URL.format(version=version))
-    expected = download(CHECKSUM_URL.format(version=version)).split()[0]
-    actual = hashlib.sha256(data).hexdigest()
-    if actual != expected.decode("ascii").lower():
-        raise ValueError(f"IPv{version} data checksum mismatch: {actual}")
-    return data
+def download_assets() -> tuple[bytes, bytes]:
+    """Download IPv4 and IPv6 CSV, verify their SHA-256 checksums."""
+    release = json.loads(download(RELEASE_API_URL, "application/json"))
+    assets = {a["name"]: a for a in release["assets"]}
+
+    result = []
+    for version in (4, 6):
+        name = ASSET_NAME.format(version=version)
+        asset = assets.get(name)
+        if asset is None:
+            raise ValueError(f"Release has no {name} asset")
+
+        algorithm, _, expected = (asset.get("digest") or "").partition(":")
+        if algorithm != "sha256":
+            raise ValueError(f"Release has no SHA-256 digest for {name}")
+
+        data = download(asset["url"], "application/octet-stream")
+        actual = hashlib.sha256(data).hexdigest()
+        if actual != expected.lower():
+            raise ValueError(f"{name} checksum mismatch: {actual}")
+        result.append(data)
+
+    return result[0], result[1]
 
 
 def build_ranges(
@@ -161,11 +208,21 @@ def main() -> None:
     args = parser.parse_args()
 
     date = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
-    content = encode(date, download_verified(4), download_verified(6))
+    try:
+        content = encode(date, *download_assets())
+    except (OSError, ValueError, KeyError) as e:
+        sys.exit(f"Can't build GeoIP data: {e}")
 
+    # Write to temporary file first, so interrupted run doesn't leave
+    # partial file, which make would consider up to date
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    with gzip.GzipFile(args.output, "wb", compresslevel=9, mtime=0) as f:
-        f.write(content)
+    tmp = args.output.with_name(args.output.name + ".tmp")
+    try:
+        with gzip.GzipFile(tmp, "wb", compresslevel=9, mtime=0) as f:
+            f.write(content)
+        tmp.replace(args.output)
+    finally:
+        tmp.unlink(missing_ok=True)
     print(f"GeoIP data from {date} written to {args.output}")
 
 

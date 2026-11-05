@@ -1,6 +1,8 @@
 import gzip
 import importlib.util
+import io
 import ipaddress
+import urllib.error
 from pathlib import Path
 
 import pytest
@@ -42,6 +44,61 @@ V6_CSV = _csv(
 
 def _data():
     return parse_data(build_geoip.encode("2026-11-05", V4_CSV, V6_CSV))
+
+
+class _Response(io.BytesIO):
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        pass
+
+
+class TestDownload:
+    """Test cases for data download retries."""
+
+    @pytest.fixture
+    def urlopen(self, monkeypatch):
+        """Replace urlopen with fake failing with given HTTP codes first."""
+        calls = []
+
+        def setup(*codes):
+            def fake(request, timeout):
+                calls.append(request.full_url)
+                if len(calls) <= len(codes):
+                    raise urllib.error.HTTPError(
+                        request.full_url, codes[len(calls) - 1], "", {}, None
+                    )
+                return _Response(b"data")
+
+            monkeypatch.setattr(build_geoip.urllib.request, "urlopen", fake)
+            return calls
+
+        monkeypatch.setattr(build_geoip, "RETRY_DELAY", 0)
+        return setup
+
+    def test_retry_on_server_error(self, urlopen):
+        calls = urlopen(504, 503)
+        assert build_geoip.download("https://example.org/", "*/*") == b"data"
+        assert len(calls) == 3
+
+    def test_give_up_after_attempts(self, urlopen):
+        calls = urlopen(504, 504, 504)
+        with pytest.raises(urllib.error.HTTPError):
+            build_geoip.download("https://example.org/", "*/*")
+        assert len(calls) == build_geoip.ATTEMPTS
+
+    def test_no_retry_on_client_error(self, urlopen):
+        calls = urlopen(404)
+        with pytest.raises(urllib.error.HTTPError):
+            build_geoip.download("https://example.org/", "*/*")
+        assert len(calls) == 1
+
+    def test_only_https(self, urlopen):
+        calls = urlopen()
+        with pytest.raises(ValueError, match="HTTPS"):
+            build_geoip.download("http://example.org/", "*/*")
+        assert calls == []
 
 
 class TestBuildRanges:

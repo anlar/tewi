@@ -14,16 +14,22 @@ fix:
 	uv run ruff format
 	uv run ruff check --fix
 
+GEOIP_DATA = src/tewi/util/geoip.dat.gz
+
 clean:
 	rm --force dist/*
 	rm -rf completions
+	rm --force $(GEOIP_DATA)
 
 completions:
 	mkdir -p completions/bash
 	uv run tewi --print-completion bash > completions/bash/tewi
 
-geoip:
-	uv run python package/build_geoip.py
+# Download only if missing, "make clean" removes it to get latest data
+geoip: $(GEOIP_DATA)
+
+$(GEOIP_DATA):
+	uv run python package/build_geoip.py --output $@
 
 build: check test clean completions geoip
 	uv run python -m build
