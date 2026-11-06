@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-    - '*'
+    - 'v*'
 
 jobs:
 
@@ -16,7 +16,9 @@ jobs:
       with:
         persist-credentials: false
     - name: Generate changelog for release
-      run: ./package/extract-changelog.sh "$GITHUB_REF_NAME" | tee release-notes.md
+      run: |
+        ./package/extract-changelog.sh "$GITHUB_REF_NAME" | tee release-notes.md
+        test -s release-notes.md
     - name: Create draft release
       env:
         GH_TOKEN: ${{ github.token }}
