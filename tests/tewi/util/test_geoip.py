@@ -3,6 +3,7 @@ import importlib.util
 import io
 import ipaddress
 import urllib.error
+import urllib.request
 from pathlib import Path
 
 import pytest
@@ -99,6 +100,66 @@ class TestDownload:
         with pytest.raises(ValueError, match="HTTPS"):
             build_geoip.download("http://example.org/", "*/*")
         assert calls == []
+
+
+class TestDownloadToken:
+    """Test cases for GitHub token usage in data download."""
+
+    API_URL = "https://api.github.com/repos/o/r/releases/assets/1"
+
+    @pytest.fixture
+    def requests(self, monkeypatch):
+        """Replace urlopen with fake, clear token environment variables."""
+        requests = []
+
+        def fake(request, timeout):
+            requests.append(request)
+            return _Response(b"data")
+
+        monkeypatch.setattr(build_geoip.urllib.request, "urlopen", fake)
+        for variable in build_geoip.TOKEN_VARIABLES:
+            monkeypatch.delenv(variable, raising=False)
+        return requests
+
+    @pytest.mark.parametrize(
+        "name", ["GITHUB_PUBLIC_TOKEN", "GITHUB_TOKEN", "GH_TOKEN"]
+    )
+    def test_token_sent_to_api(self, requests, monkeypatch, name):
+        monkeypatch.setenv(name, "secret")
+        build_geoip.download(self.API_URL, "*/*")
+        assert requests[0].get_header("Authorization") == "Bearer secret"
+
+    def test_public_token_preferred(self, requests, monkeypatch):
+        monkeypatch.setenv("GH_TOKEN", "gh")
+        monkeypatch.setenv("GITHUB_TOKEN", "github")
+        monkeypatch.setenv("GITHUB_PUBLIC_TOKEN", "public")
+        build_geoip.download(self.API_URL, "*/*")
+        assert requests[0].get_header("Authorization") == "Bearer public"
+
+    def test_empty_token_skipped(self, requests, monkeypatch):
+        monkeypatch.setenv("GITHUB_PUBLIC_TOKEN", "")
+        monkeypatch.setenv("GITHUB_TOKEN", "github")
+        build_geoip.download(self.API_URL, "*/*")
+        assert requests[0].get_header("Authorization") == "Bearer github"
+
+    def test_no_token(self, requests):
+        build_geoip.download(self.API_URL, "*/*")
+        assert not requests[0].has_header("Authorization")
+
+    def test_token_not_sent_to_other_host(self, requests, monkeypatch):
+        monkeypatch.setenv("GITHUB_TOKEN", "secret")
+        build_geoip.download("https://example.org/", "*/*")
+        assert not requests[0].has_header("Authorization")
+
+    def test_token_not_sent_on_redirect(self, requests, monkeypatch):
+        monkeypatch.setenv("GITHUB_TOKEN", "secret")
+        build_geoip.download(self.API_URL, "*/*")
+
+        redirected = urllib.request.HTTPRedirectHandler().redirect_request(
+            requests[0], None, 302, "Found", {}, "https://example.org/asset"
+        )
+        assert redirected.full_url == "https://example.org/asset"
+        assert not redirected.has_header("Authorization")
 
 
 class TestBuildRanges:

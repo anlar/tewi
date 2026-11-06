@@ -8,6 +8,10 @@ https://github.com/sapics/ip-location-db
 
 Run on release, output file isn't stored in repository. File format is
 described in ``src/tewi/util/geoip.py``.
+
+Set ``GITHUB_PUBLIC_TOKEN``, ``GITHUB_TOKEN`` or ``GH_TOKEN`` environment
+variable (first non-empty is used) to make authenticated GitHub API requests
+with higher rate limit.
 """
 
 import argparse
@@ -18,15 +22,18 @@ import gzip
 import hashlib
 import io
 import json
+import os
 import struct
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
 # Assets are downloaded with GitHub API: direct release download links
 # sometimes fail with 504 Gateway Time-out for hours, while API works
+API_HOST = "api.github.com"
 RELEASE_API_URL = (
     "https://api.github.com/repos/sapics/ip-location-db/releases/tags/latest"
 )
@@ -48,6 +55,7 @@ TIMEOUT = 60
 ATTEMPTS = 3
 RETRY_DELAY = 10
 USER_AGENT = "tewi-build-geoip"
+TOKEN_VARIABLES = ("GITHUB_PUBLIC_TOKEN", "GITHUB_TOKEN", "GH_TOKEN")
 
 
 def _is_transient(error: Exception) -> bool:
@@ -55,6 +63,15 @@ def _is_transient(error: Exception) -> bool:
     if isinstance(error, urllib.error.HTTPError):
         return error.code >= 500 or error.code == 429
     return isinstance(error, (urllib.error.URLError, TimeoutError))
+
+
+def _github_token() -> str | None:
+    """Get optional token to raise GitHub API rate limit from environment."""
+    for variable in TOKEN_VARIABLES:
+        token = os.environ.get(variable)
+        if token:
+            return token
+    return None
 
 
 def download(url: str, accept: str) -> bytes:
@@ -65,6 +82,11 @@ def download(url: str, accept: str) -> bytes:
     request = urllib.request.Request(  # noqa: S310 (HTTPS checked above)
         url, headers={"Accept": accept, "User-Agent": USER_AGENT}
     )
+    token = _github_token()
+    if token and urllib.parse.urlsplit(url).hostname == API_HOST:
+        # Unredirected: assets redirect to storage host, it must not get token
+        request.add_unredirected_header("Authorization", f"Bearer {token}")
+
     for attempt in range(1, ATTEMPTS + 1):
         try:
             with urllib.request.urlopen(  # noqa: S310
