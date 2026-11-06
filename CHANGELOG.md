@@ -18,10 +18,13 @@ handle multi-line list body as single line.
 
 ### Changed
 
+- **Breaking:** Restrict profile and theme names to letters, digits, `.`, `_` and `-`, starting with letter or digit: `--profile` with other name and config with such `[theme.NAME]` section stop with error, profile files with such names are not listed in `--profiles` and shell completion
+- **Breaking:** Require Textual 3.1.0 or newer: older versions crash on notifications and, before 2.0, parse markup in labels which must show text literally (ANSI themes need Textual 8.2.5 or newer)
+- **Breaking:** Require requests 2.33.0 or newer, as older versions have known vulnerabilities (CVE-2024-47081, CVE-2026-25645)
+- **Breaking:** Require transmission-rpc 7.0.12 or newer and stop using its APIs removed in transmission-rpc 8
 - Load Jackett indexers without searching trackers [#188](https://github.com/anlar/tewi/pull/188)
 - Fix showing square brackets in torrent list name filter without extra backslash
 - Show text from torrents, peers, trackers, search providers and torrent client literally, without parsing it as markup (prevent action injection on mouse click)
-- Restrict profile and theme names to safe characters
 - Accept only magnet and HTTP(S) links from web search and open only HTTP(S) links, skip search results with malformed info hash, allow only HTTP(S) search provider URLs
 - Limit torrent file download from URL: follow up to 5 redirects to magnet or HTTP(S) links only, download files up to 100 MiB, add torrents in background without blocking UI
 - Log warning when password is sent to torrent client on another machine without TLS
@@ -36,16 +39,17 @@ handle multi-line list body as single line.
 - Escape line breaks and control characters in log messages and indent tracebacks, so text from torrent clients and search providers can't forge log entries
 - Don't write password and API keys to log on startup
 - Mask passwords, API keys and passkeys of URLs and auth headers in log and notifications
-- Load GeoIP database only from geoip2fast installation, as file with the same name in current directory was loaded and could run code, and don't fail on start if database can't be loaded
-- Require requests 2.33.0 or newer, as older versions have known vulnerabilities (CVE-2024-47081, CVE-2026-25645)
+- Don't load GeoIP database from current directory, as file with the same name was loaded from there and could run code, and don't fail on start if database can't be loaded
 - Don't show GeoIP error text like `<invalid ip address>` as peer country
 - Fix Deluge torrent details failing to load and showing client as offline when torrent has IPv6 peers
-- Require Textual 3.1.0 or newer: older versions crash on notifications and, before 2.0, parse markup in labels which must show text literally (ANSI themes need Textual 8.2.5 or newer)
 - Require setuptools 77.0 or newer to build package, as older versions don't support SPDX license field
 - Replace geoip2fast with built-in peer country lookup by [ip-location-db](https://github.com/sapics/ip-location-db) data, downloaded on release: adds IPv6 peers, updates data from 2024, loads on first lookup in 25 ms and uses ~5 MiB of memory instead of ~40 MiB on start
 - Show Deluge peer country by name instead of code
-- Require transmission-rpc 7.0.12 or newer and stop using its APIs removed in transmission-rpc 8
 - Run tests on minimum supported dependency versions in CI
+
+### Removed
+
+- Remove `geoip2fast` dependency, replaced by built-in peer country lookup
 
 ## [3.1.0] - 2026-10-31 - Spectrum Rabbit
 
