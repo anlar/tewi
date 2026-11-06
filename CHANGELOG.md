@@ -10,6 +10,8 @@ handle multi-line list body as single line.
 
 ## [Unreleased]
 
+## [4.0.0] - 2026-11-06 - Lucky Handshake
+
 ### Added
 
 - Add multiple sort orders for torrent list: press `m` in sort dialog to chain orders, where following orders break ties of previous ones (e.g. progress, then age)
