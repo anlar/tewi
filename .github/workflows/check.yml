@@ -19,6 +19,7 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     env:
       # Ubuntu AppArmor profile for transmission-daemon allows access only
       # to its default locations, so use them instead of home directory
