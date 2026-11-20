@@ -663,7 +663,8 @@ timeout =
 # dialog opens. The value must match a [search.preset.NAME] section name.
 #
 # indexers: comma-separated indexer IDs; omit to select all indexers
-#   - built-in providers: tpb, yts, nyaa, torrentscsv, bitmagnet, bitsearch
+#   - built-in providers: tpb, yts, nyaa, torrentscsv, bitmagnet, bitsearch,
+#     knaben
 #   - Jackett: jackett (all sub-indexers), jackett:all (single Jackett
 #              indexer, when jackett_multi is disabled), or jackett:NAME
 #              (by indexer name)

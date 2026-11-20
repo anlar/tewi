@@ -1,0 +1,230 @@
+"""Unit tests for Knaben provider (without Knaben)."""
+
+import json
+from unittest.mock import patch
+
+import pytest
+
+from src.tewi.search.models import StandardCategories
+from src.tewi.search.providers.knaben import KnabenProvider
+
+HIT = {
+    "bytes": 5922042,
+    "cachedOrigin": "The Pirate Bay",
+    "category": "Books / EBooks",
+    "categoryId": [9001000, 9000000],
+    "date": "2023-12-29T17:45:36+00:00",
+    "description": "Uploader: zakareya<br>Rapha&euml;l [x](http://evil)",
+    "details": "https://knaben.xyz/thepiratebay/description.php?id=74258938",
+    "grabs": 9,
+    "hash": "9AEE1886AA248AC833BAD1C67E0C0C24CF15AC42",
+    "id": "2c740d3d7ed4f05e9b51c3f6a3fcf412687d089a",
+    "lastSeen": "2026-11-19T23:16:44+00:00",
+    "link": None,
+    "livePeers": 1,
+    "liveSeeders": 6,
+    "magnetUrl": (
+        "magnet:?xt=urn:btih:9AEE1886AA248AC833BAD1C67E0C0C24CF15AC42"
+        "&dn=Handbook&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337"
+    ),
+    "peers": 0,
+    "score": None,
+    "seeders": 10,
+    "title": "The Debian Handbook by Rapha&euml;l Hertzog EPUB",
+    "tracker": "The Pirate Bay",
+    "trackerId": "thepiratebay",
+    "virusDetection": 0.33,
+}
+
+
+@pytest.fixture
+def provider():
+    return KnabenProvider()
+
+
+@pytest.fixture
+def result(provider):
+    return provider._parse_torrent(HIT)
+
+
+@pytest.fixture
+def mock_urlopen():
+    with patch("src.tewi.search.base._urlopen") as mock:
+        response = mock.return_value.__enter__.return_value
+        response.read.return_value = json.dumps({"hits": [HIT]}).encode()
+        yield mock
+
+
+class TestParseTorrent:
+    def test_result(self, result):
+        assert result.title == "The Debian Handbook by Raphaël Hertzog EPUB"
+        assert result.info_hash == HIT["hash"]
+        assert result.magnet_link == HIT["magnetUrl"]
+        assert result.torrent_link is None
+        assert result.page_url == HIT["details"]
+        assert result.categories == [StandardCategories.BOOKS_EBOOK]
+        assert result.seeders == 10
+        assert result.leechers == 0
+        assert result.downloads == 9
+        assert result.size == 5922042
+        assert result.upload_date.year == 2023
+
+    def test_missing_hash_is_skipped(self, provider):
+        assert provider._parse_torrent({**HIT, "hash": None}) is None
+
+    def test_missing_title_is_skipped(self, provider):
+        assert provider._parse_torrent({**HIT, "title": None}) is None
+
+    def test_invalid_hit_is_skipped(self, provider):
+        assert provider._parse_torrent("hit") is None
+
+    def test_missing_magnet_is_built(self, provider):
+        result = provider._parse_torrent({**HIT, "magnetUrl": None})
+
+        assert result.magnet_link.startswith(
+            "magnet:?xt=urn:btih:9AEE1886AA248AC833BAD1C67E0C0C24CF15AC42"
+        )
+
+    def test_invalid_date_is_ignored(self, provider):
+        result = provider._parse_torrent({**HIT, "date": 123})
+
+        assert result.upload_date is None
+
+    @pytest.mark.parametrize(
+        "category_ids, expected",
+        [
+            ([9001000, 9000000], [StandardCategories.BOOKS_EBOOK]),
+            ([4004000], [StandardCategories.PC]),  # PC/Unix
+            ([1000000, 1001045], [StandardCategories.AUDIO_MP3]),  # genre
+            # Anime results are often in Movies/Other too
+            (
+                [3000000, 3008000, 6000000, 6001000],
+                [
+                    StandardCategories.MOVIES_OTHER,
+                    StandardCategories.TV_ANIME,
+                ],
+            ),
+            # TV is dropped as Anime is more specific
+            ([2000000, 6000000], [StandardCategories.TV_ANIME]),
+            ([10000000], [StandardCategories.OTHER]),
+            ([99000000], []),
+            (None, []),
+        ],
+    )
+    def test_categories(self, provider, category_ids, expected):
+        assert provider.get_categories(category_ids) == expected
+
+
+class TestDetails:
+    def test_details(self, provider, result):
+        md = provider.details_extended(result)
+
+        assert "- **Tracker:** The Pirate Bay\n" in md
+        assert "- **Category:** Books / EBooks\n" in md
+        assert "- **Live Seeders:** 6\n" in md
+        assert "- **Last Seen:** 2026-11-19 23:16\n" in md
+
+    def test_description_is_escaped(self, provider, result):
+        md = provider.details_extended(result)
+
+        assert "Uploader: zakareya  \nRaphaël \\[x\\]\\(http://evil\\)" in md
+        assert "<br>" not in md
+
+    def test_description_same_as_title_is_hidden(self, provider):
+        result = provider._parse_torrent({**HIT, "description": HIT["title"]})
+
+        assert "## Description" not in provider.details_extended(result)
+
+    @pytest.mark.parametrize(
+        "description, expected",
+        [
+            # <br> and newlines are kept as hard breaks
+            ("a<br>b<BR/>c", "a  \nb  \nc"),
+            ("a\r\nb\rc\nd", "a  \nb  \nc  \nd"),
+            # Empty lines separate paragraphs and are merged
+            ("a\r\n\r\n\r\n  \r\nb", "a\n\nb"),
+            ("<br><br>a  b<br><br>", "a b"),
+            # Other tags are removed
+            ("<b>a</b><p>b", "a b"),
+            ("<br>  <br>", None),
+        ],
+    )
+    def test_description_lines(self, provider, description, expected):
+        assert provider._format_description(description, "title") == expected
+
+    def test_description_lines_are_truncated(self, provider):
+        lines = [f"line {i}" for i in range(provider.MAX_DESCRIPTION_LINES)]
+        description = "\n".join([*lines, "extra"])
+
+        md = provider._format_description(description, "title")
+
+        assert md.endswith(f"line {provider.MAX_DESCRIPTION_LINES - 1}…")
+        assert "extra" not in md
+
+    def test_description_with_max_lines_is_not_truncated(self, provider):
+        lines = [f"line {i}" for i in range(provider.MAX_DESCRIPTION_LINES)]
+
+        md = provider._format_description("\n".join(lines), "title")
+
+        assert not md.endswith("…")
+
+    def test_description_chars_are_truncated(self, provider):
+        description = "a" * (provider.MAX_DESCRIPTION_CHARS - 2) + "\nbbbbb"
+
+        md = provider._format_description(description, "title")
+
+        assert md.endswith("  \nbb…")
+
+
+class TestSearch:
+    def test_empty_query(self, provider, mock_urlopen):
+        assert provider.search("  ") == []
+        mock_urlopen.assert_not_called()
+
+    def test_search_request(self, provider, mock_urlopen):
+        results = provider.search(" debian ")
+
+        url = mock_urlopen.call_args.args[0]
+        assert url.startswith("https://api.knaben.org/v2/search?q=debian&")
+        assert "o=seeders" in url
+        assert "c=" not in url
+        assert url.endswith("&xxx")
+        assert len(results) == 1
+
+    @pytest.mark.parametrize(
+        "categories, expected",
+        [
+            (None, []),
+            ([StandardCategories.MOVIES], [3000000]),
+            ([StandardCategories.MOVIES_UHD], [3000000]),
+            ([StandardCategories.TV], [2000000, 6000000]),
+            ([StandardCategories.PC_GAMES], [4000000, 8000000]),
+            (
+                [StandardCategories.BOOKS, StandardCategories.CONSOLE],
+                [7000000, 9000000],
+            ),
+        ],
+    )
+    def test_convert(self, provider, categories, expected):
+        assert provider._convert_categories_to_knaben(categories) == expected
+
+    def test_search_request_categories(self, provider, mock_urlopen):
+        provider.search("dune", [StandardCategories.TV])
+
+        url = mock_urlopen.call_args.args[0]
+        assert "c=2000000%2C6000000" in url
+        assert "xxx" not in url
+
+    def test_search_request_xxx_category(self, provider, mock_urlopen):
+        provider.search("dune", [StandardCategories.XXX])
+
+        url = mock_urlopen.call_args.args[0]
+        assert "c=5000000" in url
+        assert url.endswith("&xxx")
+
+    def test_invalid_response(self, provider, mock_urlopen):
+        response = mock_urlopen.return_value.__enter__.return_value
+        response.read.return_value = b"not json"
+
+        with pytest.raises(Exception, match="Failed to parse API response"):
+            provider.search("dune")

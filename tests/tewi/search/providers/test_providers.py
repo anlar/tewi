@@ -15,6 +15,7 @@ from src.tewi.search.models import SearchResult, StandardCategories
 from src.tewi.search.providers.bitmagnet import BitmagnetProvider
 from src.tewi.search.providers.bitsearch import BitsearchProvider
 from src.tewi.search.providers.jackett import JackettProvider
+from src.tewi.search.providers.knaben import KnabenProvider
 from src.tewi.search.providers.nyaa import NyaaProvider
 from src.tewi.search.providers.prowlarr import ProwlarrProvider
 from src.tewi.search.providers.torrentscsv import TorrentsCsvProvider
@@ -315,6 +316,26 @@ class TestBitsearchProviderIntegration(BaseProviderIntegrationTest):
             categories |= set(sub_map.values())
         categories.add(StandardCategories.OTHER)
         return categories
+
+    def requires_trackers(self) -> bool:
+        return False
+
+
+class TestKnabenProviderIntegration(BaseProviderIntegrationTest):
+    """Integration tests for Knaben provider."""
+
+    def get_provider(self):
+        return KnabenProvider()
+
+    def get_search_query(self) -> str:
+        return "debian"
+
+    def get_valid_categories(self) -> set:
+        # All categories that KnabenProvider.get_categories() can return
+        provider = self.get_provider()
+        return set(provider.CATEGORY_MAP.values()) | set(
+            provider.SUBCATEGORY_MAP.values()
+        )
 
     def requires_trackers(self) -> bool:
         return False

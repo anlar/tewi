@@ -1193,9 +1193,10 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
             "prowlarr",
             "bitmagnet",
             "bitsearch",
+            "knaben",
             "torrentz2",
         ],
-        default=["tpb", "yts", "nyaa", "torrentscsv", "bitsearch"],
+        default=["tpb", "yts", "nyaa", "torrentscsv", "bitsearch", "knaben"],
         action=TrackSetAction,
         help="Space-separated list of enabled search providers. "
         "Order matters: first providers take priority when deduplicating",

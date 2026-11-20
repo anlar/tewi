@@ -13,6 +13,7 @@ handle multi-line list body as single line.
 ### Added
 
 - Add Bitsearch search provider (`bitsearch`), enabled by default
+- Add Knaben search provider (`knaben`), meta-indexer of public trackers, enabled by default
 
 ### Changed
 

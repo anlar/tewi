@@ -3,6 +3,7 @@
 from .bitmagnet import BitmagnetProvider
 from .bitsearch import BitsearchProvider
 from .jackett import JackettProvider
+from .knaben import KnabenProvider
 from .nyaa import NyaaProvider
 from .prowlarr import ProwlarrProvider
 from .torrentscsv import TorrentsCsvProvider
@@ -17,5 +18,6 @@ __all__ = [
     "TPBProvider",
     "NyaaProvider",
     "JackettProvider",
+    "KnabenProvider",
     "ProwlarrProvider",
 ]
