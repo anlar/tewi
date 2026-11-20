@@ -10,10 +10,8 @@ from functools import lru_cache
 from rich.text import Text
 from textual.color import Color
 
-from ..util.log import get_logger, log_time
-from ..util.misc import is_http_url, strip_control_chars
-
-logger = get_logger()
+from ..util.log import log_time
+from ..util.misc import strip_control_chars
 
 
 def subtitle_keys(*key_desc_pairs: tuple[str, str]) -> str:
@@ -38,10 +36,12 @@ def subtitle_keys(*key_desc_pairs: tuple[str, str]) -> str:
 
 
 def open(path: str) -> None:
-    """Open file or URL using platform-specific default application.
+    """Open local file using platform-specific default application.
+
+    Use `App.open_url` for URLs, it accepts only HTTP(S) ones.
 
     Args:
-        path: File path or URL to open
+        path: File path to open
 
     Raises:
         Exception: If opening fails on the current platform
@@ -65,30 +65,6 @@ def open(path: str) -> None:
         os.startfile(path)  # noqa: S606
     else:
         raise Exception(f"Unsupported platform: {system}")
-
-
-def open_url(url: str) -> bool:
-    """Open HTTP(S) URL using platform-specific default application.
-
-    Use it instead of `open` for URLs from remote sources (e.g. search
-    providers): other values (file paths, file:// or custom scheme URLs,
-    UNC paths on Windows) are rejected, as default application could
-    open local files or leak credentials for them.
-
-    Args:
-        url: URL to open
-
-    Returns:
-        False if URL was rejected
-
-    Raises:
-        Exception: If opening fails on the current platform
-    """
-    if not is_http_url(url):
-        logger.warning(f"Rejected opening non-HTTP(S) URL: {url!r}")
-        return False
-    open(url.strip())
-    return True
 
 
 # Functions from util/print.py

@@ -8,7 +8,7 @@ from textual.widgets import Link, Markdown, Static
 
 from ....util.log import log_time
 from ...messages import AddTorrentFromWebSearchCommand, Notification
-from ...util import open_url, subtitle_keys
+from ...util import subtitle_keys
 
 
 class TorrentDetailsDialog(ModalScreen[None]):
@@ -98,10 +98,8 @@ class TorrentDetailsDialog(ModalScreen[None]):
 
     @log_time
     def action_open_link(self) -> None:
-        if self.site_link and not open_url(self.site_link):
-            self.post_message(
-                Notification("Only HTTP(S) links can be opened", "warning")
-            )
+        if self.site_link:
+            self.app.open_url(self.site_link)
 
     @log_time
     def action_close(self) -> None:

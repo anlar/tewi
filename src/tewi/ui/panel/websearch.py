@@ -21,7 +21,6 @@ from ..messages import (
     OpenTorrentListCommand,
 )
 from ..util import (
-    open_url,
     plain_text,
     print_size,
     source_text,
@@ -366,10 +365,8 @@ class TorrentWebSearch(Static):
             self.post_message(Notification("No torrent selected", "warning"))
             return
 
-        if result.page_url and not open_url(result.page_url):
-            self.post_message(
-                Notification("Only HTTP(S) links can be opened", "warning")
-            )
+        if result.page_url:
+            self.app.open_url(result.page_url)
 
     @log_time
     def action_toggle_view_mode(self) -> None:

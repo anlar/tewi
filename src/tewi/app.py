@@ -927,9 +927,9 @@ class MainApp(App):
     def open_url(self, url: str, *, new_tab: bool = True) -> None:
         """Open URL in web browser, only HTTP(S) URLs are allowed.
 
-        Used by Link and Markdown widgets, which may show links from
-        remote data (e.g. torrent details from search providers): other
-        schemes could open local files or custom URL handlers.
+        Used for all links, which may come from remote data (e.g. search
+        results and torrent details from search providers): other schemes
+        or file paths could open local files or custom URL handlers.
         """
         if not is_http_url(url):
             logger.warning(f"Rejected opening non-HTTP(S) URL: {url!r}")
@@ -938,7 +938,7 @@ class MainApp(App):
             )
             return
 
-        super().open_url(url, new_tab=new_tab)
+        super().open_url(url.strip(), new_tab=new_tab)
 
     def check_action(
         self, action: str, parameters: tuple[object, ...]

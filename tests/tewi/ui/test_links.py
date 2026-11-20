@@ -13,7 +13,6 @@ from textual.app import App
 
 from src.tewi.app import MainApp
 from src.tewi.torrent.models import ClientError
-from src.tewi.ui import util as ui_util
 from src.tewi.ui.messages import AddTorrentFromWebSearchCommand, Notification
 
 HTTP_URLS = [
@@ -36,30 +35,6 @@ UNSAFE_URLS = [
 
 
 @pytest.fixture
-def opened(monkeypatch):
-    """Record values passed to platform open function."""
-    values = []
-    monkeypatch.setattr(ui_util, "open", values.append)
-    return values
-
-
-class TestOpenUrl:
-    @pytest.mark.parametrize("url", HTTP_URLS)
-    def test_http_url_is_opened(self, opened, url):
-        assert ui_util.open_url(url) is True
-        assert opened == [url]
-
-    def test_url_is_stripped(self, opened):
-        assert ui_util.open_url(" https://example.com/\n") is True
-        assert opened == ["https://example.com/"]
-
-    @pytest.mark.parametrize("url", UNSAFE_URLS)
-    def test_unsafe_url_is_rejected(self, opened, url):
-        assert ui_util.open_url(url) is False
-        assert opened == []
-
-
-@pytest.fixture
 def app(monkeypatch):
     """MainApp without running or connecting to torrent client."""
     opened = []
@@ -74,7 +49,7 @@ def app(monkeypatch):
 
 
 class TestMainAppOpenUrl:
-    """MainApp.open_url is used by Link and Markdown widgets."""
+    """MainApp.open_url is used for all links (widgets and key bindings)."""
 
     @pytest.mark.parametrize("url", HTTP_URLS)
     def test_http_url_is_opened(self, app, url):
@@ -82,6 +57,11 @@ class TestMainAppOpenUrl:
 
         assert app.opened == [url]
         assert app.messages == []
+
+    def test_url_is_stripped(self, app):
+        app.open_url(" https://example.com/\n")
+
+        assert app.opened == ["https://example.com/"]
 
     @pytest.mark.parametrize("url", UNSAFE_URLS)
     def test_unsafe_url_is_rejected(self, app, url):
