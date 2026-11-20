@@ -10,6 +10,10 @@ handle multi-line list body as single line.
 
 ## [Unreleased]
 
+### Changed
+
+- Show torrent client version in top panel literally, without parsing it as markup, and remove control characters from it
+
 ## [4.0.0] - 2026-11-06 - Lucky Handshake
 
 ### Added

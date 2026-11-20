@@ -7,6 +7,7 @@ from textual.widgets import Static
 
 from ...torrent.models import ConnectionSecurity
 from ...util.log import log_time
+from ...util.misc import strip_control_chars
 from ..util import (
     print_time_ago,
     subtitle_keys,
@@ -53,8 +54,13 @@ class InfoPanel(Static):
         with Horizontal(id="info-panel"):
             yield Static(f"Tewi {self.app_version}", classes="column")
             yield Static("»»»", classes="column delimiter")
+            # Version is reported by daemon, so it's shown literally
             yield Static(
-                f"{self.client_name} {self.client_version}", classes="column"
+                strip_control_chars(
+                    f"{self.client_name} {self.client_version}"
+                ),
+                markup=False,
+                classes="column",
             )
             yield Static("»»»", classes="column delimiter")
             yield Static(
