@@ -17,6 +17,7 @@ handle multi-line list body as single line.
 - Fix missing timeout of rTorrent HTTPS connection, so not responding daemon doesn't block refresh forever
 - **Breaking:** Read config values literally, without "%" interpolation: "%" in password or API key no longer crashes startup showing part of the value in error; replace "%%" escapes with single "%"
 - Remove control characters from notifications and torrent client preferences, which could contain text from torrent client and search providers
+- Send torrent file downloaded from URL to Transmission directly, without writing it to temporary file
 
 ## [4.0.0] - 2026-11-06 - Lucky Handshake
 

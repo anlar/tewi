@@ -16,9 +16,12 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from types import SimpleNamespace
+
 import pytest
 
 from src.tewi.torrent.base import ClientCapability
+from src.tewi.torrent.clients import transmission
 from src.tewi.torrent.clients.transmission import TransmissionClient
 
 
@@ -33,6 +36,45 @@ def client(request):
     """
     port = request.config.getoption("--transmission-port")
     return TransmissionClient(host="localhost", port=port)
+
+
+class TestAddTorrentFromUrl:
+    """Test adding torrent downloaded from URL (without daemon)."""
+
+    @pytest.fixture
+    def added(self):
+        return []
+
+    @pytest.fixture
+    def tr_client(self, added):
+        client = object.__new__(TransmissionClient)
+        client.client = SimpleNamespace(add_torrent=added.append)
+        return client
+
+    def test_torrent_file_is_sent_as_bytes(self, tr_client, added, monkeypatch):
+        monkeypatch.setattr(
+            transmission,
+            "download_torrent_from_url",
+            lambda url: (None, b"d4:infod4:name1:xee"),
+        )
+
+        tr_client.add_torrent("https://example.com/x.torrent")
+
+        assert added == [b"d4:infod4:name1:xee"]
+
+    def test_redirect_to_magnet_is_sent_as_link(
+        self, tr_client, added, monkeypatch
+    ):
+        magnet = "magnet:?xt=urn:btih:" + "a" * 40
+        monkeypatch.setattr(
+            transmission,
+            "download_torrent_from_url",
+            lambda url: (magnet, None),
+        )
+
+        tr_client.add_torrent("https://example.com/x.torrent")
+
+        assert added == [magnet]
 
 
 @pytest.mark.integration

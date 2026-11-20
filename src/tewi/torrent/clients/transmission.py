@@ -2,7 +2,6 @@
 
 import os
 import pathlib
-import tempfile
 from dataclasses import asdict
 from datetime import datetime
 
@@ -270,23 +269,8 @@ class TransmissionClient(BaseClient):
             self.client.add_torrent(f"magnet:?xt=urn:btih:{value.strip()}")
         elif is_torrent_link(value):
             magnet_link, torrent_data = download_torrent_from_url(value)
-            if magnet_link:
-                self.client.add_torrent(magnet_link)
-            else:
-                # Got torrent file data - write to temp file
-                # transmission-rpc doesn't accept raw bytes/base64,
-                # so we write to a temp file
-                with tempfile.NamedTemporaryFile(
-                    suffix=".torrent", delete=False
-                ) as tmp_file:
-                    tmp_file.write(torrent_data)
-                    tmp_path = tmp_file.name
-
-                try:
-                    self.client.add_torrent(pathlib.Path(tmp_path))
-                finally:
-                    # Clean up temp file
-                    os.unlink(tmp_path)
+            # Bytes are sent as torrent file content
+            self.client.add_torrent(magnet_link or torrent_data)
         else:
             file = os.path.expanduser(value)
             if not os.path.exists(file):
