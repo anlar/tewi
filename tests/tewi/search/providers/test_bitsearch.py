@@ -74,13 +74,13 @@ class TestDetails:
         assert "- debian\\.iso (1.02 kB)\n" in md
         assert "- \\# README\n" in md
         assert "## Trackers\n" in md
-        assert "- udp://tracker\\.example\\.org:1337/announce\n" in md
+        assert "- udp\\://tracker\\.example\\.org\\:1337/announce\n" in md
         assert "DHT" not in md
 
     def test_remote_markdown_is_escaped(self, provider, result, mock_urlopen):
         md = provider.details_extended(result)
 
-        assert "\\[x\\]\\(http://evil\\)" in md
+        assert "\\[x\\]\\(http\\://evil\\)" in md
 
     def test_files_list_is_limited(self, provider, result, mock_urlopen):
         files = [{"path": f"f{i}"} for i in range(150)]

@@ -4,11 +4,13 @@ import urllib.error
 from unittest.mock import MagicMock, patch
 
 import pytest
+from markdown_it import MarkdownIt
 
 from src.tewi.search.models import StandardCategories
 from src.tewi.search.util import (
     build_magnet_link,
     detect_category_from_name,
+    escape_markdown,
     urlopen,
     urlopen_post,
 )
@@ -377,3 +379,34 @@ class TestUrlopen:
         mock_urlopen.assert_called_once()
         call_kwargs = mock_urlopen.call_args[1]
         assert call_kwargs["timeout"] == 30
+
+
+class TestEscapeMarkdown:
+    @staticmethod
+    def render(md: str) -> list:
+        """Parse Markdown the same way as Textual Markdown widget."""
+        tokens = MarkdownIt("gfm-like").parse(md)
+        return [c for t in tokens if t.children for c in t.children]
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "# heading",
+            "[x](http://evil) **bold** `code` <b>",
+            "https://i.imgur.com/x.jpeg",
+            "see http://a.b/c and ftp://x.org/f",
+            "<https://x.org/a?b=c#d>",
+            "HTTPS://X.ORG",
+            "mailto:a@b.org",
+            "www.imdb.com/title",
+            "12:30 a\\b",
+        ],
+    )
+    def test_rendered_as_plain_text(self, text):
+        tokens = self.render(escape_markdown(text))
+
+        assert all(t.type in ("text", "text_special") for t in tokens)
+        assert "".join(t.content for t in tokens) == text
+
+    def test_single_line(self):
+        assert escape_markdown("a\nb\x07") == "a b"

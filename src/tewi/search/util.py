@@ -102,14 +102,17 @@ def read_response(response: Any) -> bytes:
     return data
 
 
-_MARKDOWN_SPECIAL_RE = re.compile(r"([\\`*_{}\[\]()<>#+\-.!|~&])")
+# ":" is escaped so URLs in remote text are not auto-linked: they would be
+# linked only up to the first escaped character (e.g. "https://www")
+_MARKDOWN_SPECIAL_RE = re.compile(r"([\\`*_{}\[\]()<>#+\-.!|~&:])")
 
 
 def escape_markdown(value: object) -> str:
     """Escape remote text for display in Markdown widget.
 
     Text from search providers could contain Markdown syntax (e.g. links
-    or headings), which would change rendered details.
+    or headings), which would change rendered details. URLs are shown as
+    plain text, not links.
 
     Args:
         value: Text to escape

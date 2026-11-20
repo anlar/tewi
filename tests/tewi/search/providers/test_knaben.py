@@ -127,7 +127,9 @@ class TestDetails:
     def test_description_is_escaped(self, provider, result):
         md = provider.details_extended(result)
 
-        assert "Uploader: zakareya  \nRaphaël \\[x\\]\\(http://evil\\)" in md
+        assert (
+            "Uploader\\: zakareya  \nRaphaël \\[x\\]\\(http\\://evil\\)" in md
+        )
         assert "<br>" not in md
 
     def test_description_same_as_title_is_hidden(self, provider):
