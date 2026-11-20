@@ -19,6 +19,10 @@ handle multi-line list body as single line.
 - Remove control characters from notifications and torrent client preferences, which could contain text from torrent client and search providers
 - Send torrent file downloaded from URL to Transmission directly, without writing it to temporary file
 
+### Removed
+
+- **Breaking:** Remove `--debug` option and `debugpy` dev dependency
+
 ## [4.0.0] - 2026-11-06 - Lucky Handshake
 
 ### Added

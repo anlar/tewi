@@ -111,7 +111,6 @@ from .ui.panel.info import InfoPanel
 from .ui.panel.listview import TorrentListViewPanel
 from .ui.panel.state import StatePanel
 from .ui.panel.websearch import TorrentWebSearch
-from .util.debug import start_debugpy
 from .util.log import get_logger, init_logger, log_time
 from .util.misc import is_http_url, is_torrent_link, strip_control_chars
 from .util.redact import redact_secrets
@@ -1253,13 +1252,6 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
 
     # Other
     p.add_argument(
-        "--debug",
-        type=int,
-        metavar="PORT",
-        action=TrackSetAction,
-        help="Start debugpy server on specified port for remote debugging",
-    )
-    p.add_argument(
         "--log-level",
         type=str,
         default="info",
@@ -1428,10 +1420,6 @@ def create_app():
 
     # Initialize logging
     init_logger(args.log_level, args.log_size)
-
-    # Start debugpy server if --debug option is provided
-    if hasattr(args, "debug") and args.debug:
-        start_debugpy(args.debug)
 
     logger.info(f"Start Tewi {tewi_version}...")
     if profile:
