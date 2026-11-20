@@ -989,7 +989,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     p.add_argument(
         "--create-config",
         action="store_true",
-        help="Create default configuration file and exit",
+        help="Create default configuration file (if it doesn't exist) and exit",
     )
 
     # Client

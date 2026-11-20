@@ -18,6 +18,7 @@
 
 import argparse
 import configparser
+import stat
 
 import pytest
 
@@ -30,6 +31,7 @@ from src.tewi.config import (
     _load_search_section,
     _load_theme_sections,
     _load_ui_section,
+    create_default_config,
     get_available_profiles,
     get_config_path,
     merge_config_with_args,
@@ -77,6 +79,28 @@ class TestProfileNames:
     def test_config_path_rejects_unsafe_profile(self, config_dir):
         with pytest.raises(ValueError):
             get_config_path("../../etc/x")
+
+
+class TestCreateDefaultConfig:
+    def test_creates_config_readable_only_by_owner(self, tmp_path):
+        path = tmp_path / "tewi" / "tewi.conf"
+
+        create_default_config(path)
+
+        assert "[client]" in path.read_text()
+        assert stat.S_IMODE(path.stat().st_mode) == 0o600
+        assert stat.S_IMODE(path.parent.stat().st_mode) == 0o700
+
+    def test_does_not_overwrite_existing_config(self, tmp_path, capsys):
+        path = tmp_path / "tewi.conf"
+        path.write_text("[client]\npassword = secret\n")
+
+        with pytest.raises(SystemExit) as e:
+            create_default_config(path)
+
+        assert e.value.code == 1
+        assert path.read_text() == "[client]\npassword = secret\n"
+        assert "already exists" in capsys.readouterr().err
 
 
 class TestExpandEnvVars:

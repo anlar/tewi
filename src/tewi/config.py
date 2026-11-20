@@ -472,6 +472,8 @@ def create_default_config(path: Path) -> None:
     """
     Create a default configuration file with comments.
 
+    Exits with error if file already exists.
+
     Args:
         path: Path where the config file should be created
     """
@@ -669,9 +671,15 @@ log_size =
 # vim: ft=dosini
 """
 
+    # Existing config is never overwritten, and new one is created
+    # readable only by owner from the start
     try:
-        path.write_text(config_content)
-        path.chmod(0o600)
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(config_content)
+    except FileExistsError:
+        print(f"Error: Config file already exists: {path}", file=sys.stderr)
+        sys.exit(1)
     except OSError as e:
         print(
             f"Error: Failed to create config file {path}: {e}", file=sys.stderr
