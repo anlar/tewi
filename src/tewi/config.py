@@ -398,6 +398,22 @@ def _load_theme_sections(
         config.setdefault("custom_themes", {})[name] = options
 
 
+def _warn_if_accessible_by_others(config_path: Path) -> None:
+    """Warn if config file, which may hold secrets, isn't private.
+
+    Files created by hand get default permissions (usually readable by
+    everyone).
+    """
+    if os.name == "nt":
+        return
+    if config_path.stat().st_mode & 0o077:
+        print(
+            f"Warning: Config file {config_path} is accessible by other "
+            f"users, restrict it with: chmod 600 {config_path}",
+            file=sys.stderr,
+        )
+
+
 def _load_config_file(config_path: Path, config: dict) -> None:
     """
     Load configuration from a single INI file and merge into config dict.
@@ -408,6 +424,8 @@ def _load_config_file(config_path: Path, config: dict) -> None:
     """
     if not config_path.exists():
         return
+
+    _warn_if_accessible_by_others(config_path)
 
     # Values are read literally: "%" interpolation would reject passwords
     # with "%" (showing part of them in error) or substitute other options

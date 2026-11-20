@@ -19,6 +19,7 @@ handle multi-line list body as single line.
 - Remove control characters from notifications and torrent client preferences, which could contain text from torrent client and search providers
 - Send torrent file downloaded from URL to Transmission directly, without writing it to temporary file
 - Send Prowlarr API key in `X-Api-Key` header instead of URL query
+- Warn on start if config file is accessible by other users
 
 ### Removed
 

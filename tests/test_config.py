@@ -18,6 +18,7 @@
 
 import argparse
 import configparser
+import os
 import stat
 
 import pytest
@@ -119,6 +120,27 @@ class TestLoadConfig:
         )
 
         assert load_config()["password"] == password
+
+    @pytest.mark.skipif(os.name == "nt", reason="POSIX permissions")
+    @pytest.mark.parametrize("mode", [0o644, 0o640, 0o604, 0o620])
+    def test_warns_if_accessible_by_others(self, config_dir, capsys, mode):
+        path = config_dir / "tewi.conf"
+        path.write_text("[client]\npassword = secret\n")
+        path.chmod(mode)
+
+        assert load_config()["password"] == "secret"
+        assert "chmod 600" in capsys.readouterr().err
+
+    @pytest.mark.skipif(os.name == "nt", reason="POSIX permissions")
+    @pytest.mark.parametrize("mode", [0o600, 0o400])
+    def test_no_warning_for_private_config(self, config_dir, capsys, mode):
+        path = config_dir / "tewi.conf"
+        path.write_text("[client]\npassword = secret\n")
+        path.chmod(mode)
+
+        load_config()
+
+        assert capsys.readouterr().err == ""
 
 
 class TestExpandEnvVars:
