@@ -321,6 +321,15 @@ class TestUrlopen:
         mock_urlopen.assert_called_once()
 
     @patch("src.tewi.search.util.urllib.request.urlopen")
+    def test_urlopen_adds_extra_headers(self, mock_urlopen):
+        """Test that extra headers are sent along with User-Agent."""
+        urlopen("https://example.com", headers={"X-Api-Key": "key"})
+
+        request = mock_urlopen.call_args.args[0]
+        assert request.get_header("X-api-key") == "key"
+        assert request.get_header("User-agent")
+
+    @patch("src.tewi.search.util.urllib.request.urlopen")
     @patch("src.tewi.search.util.urllib.request.Request")
     def test_urlopen_adds_user_agent(self, mock_request_class, mock_urlopen):
         """Test that urlopen adds User-Agent header."""

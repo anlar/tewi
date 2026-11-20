@@ -28,7 +28,9 @@ def _check_scheme(url: str) -> None:
         raise urllib.error.URLError(f"unsupported URL scheme: {scheme!r}")
 
 
-def urlopen(url: str, timeout: int = 30) -> Any:
+def urlopen(
+    url: str, timeout: int = 30, headers: dict[str, str] | None = None
+) -> Any:
     """Open URL with User-Agent header.
 
     Creates a Request object with User-Agent header set to imitate
@@ -37,6 +39,7 @@ def urlopen(url: str, timeout: int = 30) -> Any:
     Args:
         url: URL to fetch
         timeout: Request timeout in seconds (default: 30)
+        headers: Extra request headers (e.g. API key)
 
     Returns:
         HTTP response context manager
@@ -47,6 +50,8 @@ def urlopen(url: str, timeout: int = 30) -> Any:
     _check_scheme(url)
     request = urllib.request.Request(url)  # noqa: S310 (scheme checked)
     request.add_header("User-Agent", USER_AGENT)
+    for name, value in (headers or {}).items():
+        request.add_header(name, value)
     return urllib.request.urlopen(request, timeout=timeout)  # noqa: S310
 
 

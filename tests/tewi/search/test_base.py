@@ -73,6 +73,17 @@ class TestBaseSearchProviderUrlopen:
 
         mock_urlopen.assert_called_once_with("http://example.com")
 
+    @patch("src.tewi.search.base._urlopen")
+    def test_passes_headers(self, mock_urlopen):
+        """Test that extra headers are passed to urlopen."""
+        provider = _StubProvider(timeout=45)
+
+        provider.urlopen("http://example.com", headers={"X-Api-Key": "k"})
+
+        mock_urlopen.assert_called_once_with(
+            "http://example.com", timeout=45, headers={"X-Api-Key": "k"}
+        )
+
 
 class TestBaseSearchProviderUrlopenPost:
     """Test cases for BaseSearchProvider.urlopen_post."""

@@ -206,9 +206,15 @@ class ProwlarrProvider(BaseSearchProvider):
             Complete URL to fetch indexers list
         """
         base_url = self.prowlarr_url.rstrip("/")
-        endpoint = f"{base_url}/api/v1/indexer"
-        params = {"apikey": self.api_key}
-        return f"{endpoint}?{urllib.parse.urlencode(params)}"
+        return f"{base_url}/api/v1/indexer"
+
+    def _auth_headers(self) -> dict[str, str]:
+        """Get API key header.
+
+        Key is sent in header instead of URL query, so it doesn't get to
+        access logs of Prowlarr and proxies in front of it.
+        """
+        return {"X-Api-Key": self.api_key}
 
     def _fetch_indexers(self, url: str) -> list:
         """Fetch and parse JSON indexers list from Prowlarr API.
@@ -223,7 +229,9 @@ class ProwlarrProvider(BaseSearchProvider):
             Exception: If request fails or response invalid
         """
         try:
-            with self.urlopen(url, timeout=10) as response:
+            with self.urlopen(
+                url, timeout=10, headers=self._auth_headers()
+            ) as response:
                 return json.loads(read_response(response).decode("utf-8"))
         except urllib.error.HTTPError as e:
             if e.code in (401, 403):
@@ -287,10 +295,7 @@ class ProwlarrProvider(BaseSearchProvider):
         endpoint = f"{base_url}/api/v1/search"
 
         # Build query parameters list (for repeated params)
-        params_list = [
-            ("apikey", self.api_key),
-            ("query", query.strip()),
-        ]
+        params_list = [("query", query.strip())]
 
         # Add indexer filter if specific indexers selected
         # Prowlarr expects multiple 'indexerIds' params, not comma-separated
@@ -320,7 +325,7 @@ class ProwlarrProvider(BaseSearchProvider):
         """
         try:
             logger.debug(f"Prowlarr: requesting URL: {url}")
-            with self.urlopen(url) as response:
+            with self.urlopen(url, headers=self._auth_headers()) as response:
                 return json.loads(read_response(response).decode("utf-8"))
         except urllib.error.HTTPError as e:
             # Read error response body for more details

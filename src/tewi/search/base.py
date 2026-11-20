@@ -26,22 +26,31 @@ class BaseSearchProvider(ABC):
         """
         self.timeout = timeout
 
-    def urlopen(self, url: str, timeout: int | None = None) -> Any:
+    def urlopen(
+        self,
+        url: str,
+        timeout: int | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> Any:
         """Open URL with the provider's configured timeout.
 
         Args:
             url: URL to fetch
             timeout: Override timeout in seconds (defaults to
                     `self.timeout` when not given)
+            headers: Extra request headers (e.g. API key)
 
         Returns:
             HTTP response context manager
         """
+        kwargs = {}
+        if timeout is None:
+            timeout = self.timeout
         if timeout is not None:
-            return _urlopen(url, timeout=timeout)
-        if self.timeout is not None:
-            return _urlopen(url, timeout=self.timeout)
-        return _urlopen(url)
+            kwargs["timeout"] = timeout
+        if headers:
+            kwargs["headers"] = headers
+        return _urlopen(url, **kwargs)
 
     def urlopen_post(
         self, url: str, data: bytes, timeout: int | None = None
