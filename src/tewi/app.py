@@ -113,7 +113,7 @@ from .ui.panel.state import StatePanel
 from .ui.panel.websearch import TorrentWebSearch
 from .util.debug import start_debugpy
 from .util.log import get_logger, init_logger, log_time
-from .util.misc import is_http_url, is_torrent_link
+from .util.misc import is_http_url, is_torrent_link, strip_control_chars
 from .util.redact import redact_secrets
 from .version import __version__
 
@@ -471,10 +471,11 @@ class MainApp(App):
         timeout = 3 if event.severity == "information" else 5
 
         # Messages may include remote text (e.g. errors returned by
-        # torrent client or search provider), so they are shown literally,
-        # and URLs in them (e.g. download links) may contain API keys
+        # torrent client or search provider), so they are shown literally
+        # without control characters, and URLs in them (e.g. download
+        # links) may contain API keys
         self.notify(
-            message=redact_secrets(event.message),
+            message=strip_control_chars(redact_secrets(event.message)),
             severity=event.severity,
             timeout=timeout,
             markup=False,

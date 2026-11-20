@@ -11,7 +11,7 @@ from rich.text import Text
 from textual.color import Color
 
 from ..util.log import get_logger, log_time
-from ..util.misc import is_http_url
+from ..util.misc import is_http_url, strip_control_chars
 
 logger = get_logger()
 
@@ -276,12 +276,16 @@ def plain_text(value: object, style: str = "", **kwargs) -> Text:
     "[@click=...]" actions triggered by a mouse click. Use this for all
     such values instead of passing them as str.
 
+    Control characters are removed too, as not all remote text comes
+    from DTOs which strip them (e.g. client preferences).
+
     Args:
         value: Value to show (None is shown as empty string)
         style: Optional Rich style for the whole text
         **kwargs: Extra arguments for Text (e.g. justify)
     """
-    return Text("" if value is None else str(value), style=style, **kwargs)
+    text = "" if value is None else strip_control_chars(str(value))
+    return Text(text, style=style, **kwargs)
 
 
 def source_text(name: str, source: str, short: bool = False) -> Text:

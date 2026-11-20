@@ -16,6 +16,7 @@ handle multi-line list body as single line.
 - Don't overwrite existing config file with `--create-config`, create new one readable only by owner from the start
 - Fix missing timeout of rTorrent HTTPS connection, so not responding daemon doesn't block refresh forever
 - **Breaking:** Read config values literally, without "%" interpolation: "%" in password or API key no longer crashes startup showing part of the value in error; replace "%%" escapes with single "%"
+- Remove control characters from notifications and torrent client preferences, which could contain text from torrent client and search providers
 
 ## [4.0.0] - 2026-11-06 - Lucky Handshake
 

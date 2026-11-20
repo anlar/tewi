@@ -31,6 +31,7 @@ from textual.widgets import DataTable
 
 from src.tewi.app import MainApp
 from src.tewi.search.models import SearchResult
+from src.tewi.ui.messages import Notification
 from src.tewi.ui.panel.details import _style_cell
 from src.tewi.ui.panel.websearch import TorrentWebSearch
 from src.tewi.ui.util import plain_text, source_text
@@ -63,6 +64,11 @@ class TestPlainText:
 
     def test_none_is_empty(self):
         assert plain_text(None).plain == ""
+
+    def test_control_chars_are_removed(self):
+        text = plain_text("/data\x1b]52;c;cHduZWQ=\x07\x9b2J\tdir")
+
+        assert text.plain == "/data]52;c;cHduZWQ=2J\tdir"
 
     def test_style_and_justify(self):
         text = plain_text("name", "bold", justify="right")
@@ -282,3 +288,17 @@ class TestCheckActionBlocksUnsafeActions:
 
     def test_regular_action_is_allowed(self, app):
         assert MainApp.check_action(app, "help", ()) is True
+
+
+class TestNotification:
+    def test_message_is_shown_literally_without_control_chars(self):
+        calls = []
+        app = SimpleNamespace(notify=lambda **kwargs: calls.append(kwargs))
+        message = "RPC error: [@click=app.pwn()]x[/]\x1b]0;title\x07\nmore"
+
+        MainApp.handle_notification(app, Notification(message, "error"))
+
+        assert calls[0]["message"] == (
+            "RPC error: [@click=app.pwn()]x[/]]0;title\nmore"
+        )
+        assert calls[0]["markup"] is False
