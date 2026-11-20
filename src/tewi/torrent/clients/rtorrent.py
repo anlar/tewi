@@ -159,6 +159,11 @@ class HTTPSTransport(xmlrpc.client.SafeTransport):
         super().__init__(context=context)
         self.timeout = timeout
 
+    def make_connection(self, host: Any) -> HTTPConnection:
+        conn = super().make_connection(host)
+        conn.timeout = self.timeout
+        return conn
+
 
 def _ssl_context(tls: TlsOptions) -> ssl.SSLContext:
     """Create SSL context for HTTPS transport from TLS settings."""
@@ -167,11 +172,6 @@ def _ssl_context(tls: TlsOptions) -> ssl.SSLContext:
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE
     return context
-
-    def make_connection(self, host: Any) -> HTTPConnection:
-        conn = super().make_connection(host)
-        conn.timeout = self.timeout
-        return conn
 
 
 class RTorrentClient(BaseClient):

@@ -18,7 +18,7 @@ import pytest
 from src.tewi.torrent import factory
 from src.tewi.torrent.clients.deluge import DelugeClient
 from src.tewi.torrent.clients.qbittorrent import QBittorrentClient
-from src.tewi.torrent.clients.rtorrent import RTorrentClient
+from src.tewi.torrent.clients.rtorrent import HTTPSTransport, RTorrentClient
 from src.tewi.torrent.clients.transmission import TransmissionClient
 from src.tewi.torrent.factory import create_client, split_host_scheme
 from src.tewi.torrent.models import (
@@ -311,6 +311,13 @@ class TestClientTlsConnection:
 def test_rtorrent_tls_requires_http_path():
     with pytest.raises(ClientError, match="SCGI"):
         RTorrentClient("127.0.0.1", "5000", tls=TlsOptions(enabled=True))
+
+
+def test_rtorrent_https_transport_sets_timeout():
+    # Without timeout, not responding daemon would block refresh forever
+    conn = HTTPSTransport(timeout=7).make_connection("127.0.0.1:443")
+
+    assert conn.timeout == 7
 
 
 class TestConnectionSecurity:
