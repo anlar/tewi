@@ -214,7 +214,9 @@ class TorrentWebSearch(Static):
                     ),
                     up_date,
                     r.seeders,
-                    print_size(r.size, ndigits=0),
+                    print_size(r.size, ndigits=0)
+                    if r.size is not None
+                    else "-",
                     category_display,
                     title,
                     key=r.info_hash,
@@ -226,7 +228,7 @@ class TorrentWebSearch(Static):
                     r.seeders,
                     r.leechers,
                     r.downloads if r.downloads is not None else "-",
-                    print_size(r.size),
+                    print_size(r.size) if r.size is not None else "-",
                     r.files_count if r.files_count is not None else "-",
                     category_display,
                     title,

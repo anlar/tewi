@@ -18,6 +18,7 @@ from src.tewi.search.providers.jackett import JackettProvider
 from src.tewi.search.providers.knaben import KnabenProvider
 from src.tewi.search.providers.nyaa import NyaaProvider
 from src.tewi.search.providers.prowlarr import ProwlarrProvider
+from src.tewi.search.providers.therarbg import TheRarbgProvider
 from src.tewi.search.providers.torrentscsv import TorrentsCsvProvider
 from src.tewi.search.providers.tpb import TPBProvider
 from src.tewi.search.providers.yts import YTSProvider
@@ -336,6 +337,22 @@ class TestKnabenProviderIntegration(BaseProviderIntegrationTest):
         return set(provider.CATEGORY_MAP.values()) | set(
             provider.SUBCATEGORY_MAP.values()
         )
+
+    def requires_trackers(self) -> bool:
+        return False
+
+
+class TestTheRarbgProviderIntegration(BaseProviderIntegrationTest):
+    """Integration tests for TheRARBG provider."""
+
+    def get_provider(self):
+        return TheRarbgProvider()
+
+    def get_search_query(self) -> str:
+        return "debian"
+
+    def get_valid_categories(self) -> set:
+        return set(self.get_provider().CATEGORY_MAP.values())
 
     def requires_trackers(self) -> bool:
         return False

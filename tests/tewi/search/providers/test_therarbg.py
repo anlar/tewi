@@ -1,0 +1,359 @@
+"""Unit tests for TheRARBG provider (without TheRARBG)."""
+
+import json
+from unittest.mock import patch
+from urllib.parse import parse_qs, urlparse
+
+import pytest
+
+from src.tewi.search.models import StandardCategories
+from src.tewi.search.providers.therarbg import TheRarbgProvider
+
+HASH_JSON = "24E7981047AAA2B08EBE7D79086631CA46C56ABC"
+HASH_RSS = "486cd36015b1b04a2803df2ecfe6e7d5ee69f8de"
+
+JSON_TORRENT = {
+    "pk": "824589",
+    "n": "The Witcher S04 Season 4 2025 1080p NF WEBRip",
+    "a": 1761826864,
+    "c": "TV",
+    "s": 6012954214,
+    "t": None,
+    "u": "RaptaG",
+    "se": 278,
+    "le": 87,
+    "i": "tt5180504",
+    "h": HASH_JSON,
+    "tg": ["1080p", "[x](http://evil)"],
+}
+
+FUZZY_TORRENT = {
+    **JSON_TORRENT,
+    "pk": "1",
+    "n": "Watcher 2022 1080p",
+    "h": "B" * 40,
+}
+
+SEARCH = {
+    "links": {"next": None, "previous": None},
+    "page_size": 100,
+    "count": 2,
+    "total": 2,
+    "results": [JSON_TORRENT, FUZZY_TORRENT],
+}
+
+
+def rss_item(
+    info_hash: str = HASH_RSS,
+    title: str = "The Witcher Guide",
+    category: str = "Books",
+) -> str:
+    return f"""
+<item>
+  <title>{title}</title>
+  <link>https://therarbg.com/post-detail/77cac7/the-witcher-guide/</link>
+  <guid isPermaLink="false">{info_hash}</guid>
+  <pubDate>Mon, 08 Apr 2024 18:42:59 +0000</pubDate>
+  <description>122.4 MB - 3 seeders - quality 0/100</description>
+  <category>{category}</category>
+  <enclosure url="magnet:?xt=urn:btih:{info_hash}" length="128398131"
+    type="application/x-bittorrent" />
+</item>"""
+
+
+def rss(*items: str) -> bytes:
+    return (
+        '<?xml version="1.0" encoding="utf-8"?>'
+        f'<rss version="2.0"><channel>{"".join(items)}</channel></rss>'
+    ).encode()
+
+
+DETAILS = {
+    "eid": "824589",
+    "downloads": 25802,
+    "language": "English",
+    "imdb": "tt5180504",
+    "last_checked": "2026-11-18T22:59:25.892732Z",
+    "num_files": 0,
+    "files": [
+        {"name": "e1.mkv", "size": 1024, "full_location": "S04/e1.mkv"},
+        {"name": "# README", "size": None, "full_location": None},
+    ],
+    "trackers": [
+        {
+            "tracker": "udp://tracker.example.org:1337",
+            "seeders": 5,
+            "leechers": 2,
+        },
+        {"tracker": "udp://dead.example.org:80"},
+    ],
+}
+
+
+@pytest.fixture
+def provider():
+    return TheRarbgProvider()
+
+
+@pytest.fixture
+def result(provider):
+    return provider._parse_torrent(JSON_TORRENT)
+
+
+def mock_responses(mock, json_data=SEARCH, rss_data: bytes | None = None):
+    """Return JSON search and RSS feed responses by requested URL."""
+    if rss_data is None:
+        rss_data = rss()
+
+    def urlopen(url, **kwargs):
+        response = mock.return_value.__enter__.return_value
+        if "/api/rss/" in url:
+            response.read.return_value = rss_data
+        else:
+            response.read.return_value = json.dumps(json_data).encode()
+        return mock.return_value
+
+    mock.side_effect = urlopen
+
+
+@pytest.fixture
+def mock_urlopen():
+    with patch("src.tewi.search.base._urlopen") as mock:
+        mock_responses(mock)
+        yield mock
+
+
+def request_params(mock, index: int) -> dict[str, list[str]]:
+    return parse_qs(urlparse(mock.call_args_list[index].args[0]).query)
+
+
+class TestSearch:
+    def test_empty_query(self, provider, mock_urlopen):
+        assert provider.search("  ") == []
+        mock_urlopen.assert_not_called()
+
+    def test_requests(self, provider, mock_urlopen):
+        provider.search(" witcher ")
+
+        json_url = mock_urlopen.call_args_list[0].args[0]
+        assert json_url.startswith("https://therarbg.com/get-posts/?")
+        assert request_params(mock_urlopen, 0) == {
+            "keywords": ["witcher"],
+            "format": ["json"],
+            "order": ["-se"],
+            "page_size": ["100"],
+        }
+        rss_url = mock_urlopen.call_args_list[1].args[0]
+        assert rss_url.startswith("https://therarbg.com/api/rss/search/?")
+        assert request_params(mock_urlopen, 1) == {
+            "q": ["witcher"],
+            "limit": ["100"],
+        }
+
+    def test_fuzzy_matches_are_removed(self, provider, mock_urlopen):
+        results = provider.search("witcher")
+
+        assert [r.info_hash for r in results] == [HASH_JSON]
+
+    def test_rss_results_are_merged(self, provider, mock_urlopen):
+        mock_responses(
+            mock_urlopen,
+            rss_data=rss(rss_item(HASH_JSON.lower()), rss_item()),
+        )
+
+        results = provider.search("witcher")
+
+        # JSON result is kept for duplicate, as it has leechers
+        assert [r.info_hash for r in results] == [HASH_JSON, HASH_RSS]
+        assert results[0].leechers == 87
+
+    def test_rss_failure_is_ignored(self, provider, mock_urlopen):
+        mock_responses(mock_urlopen, rss_data=b"not xml")
+
+        results = provider.search("witcher")
+
+        assert [r.info_hash for r in results] == [HASH_JSON]
+
+    def test_json_failure_is_raised(self, provider, mock_urlopen):
+        mock_urlopen.side_effect = None
+        response = mock_urlopen.return_value.__enter__.return_value
+        response.read.return_value = b"not json"
+
+        with pytest.raises(Exception, match="Failed to parse API response"):
+            provider.search("witcher")
+
+    @pytest.mark.parametrize(
+        "query, title, expected",
+        [
+            ("witcher", "The.Witcher.S01", True),
+            ("WITCHER s01", "The_Witcher-S01E01", True),
+            ("ubuntu 24.04", "ubuntu-24.04.1-desktop-amd64.iso", True),
+            ("debian", "Defiance 2013 S01", False),
+            ("dune part two", "Dune Part One", False),
+            ("Война", "Война и мир 1966", True),
+        ],
+    )
+    def test_matches(self, provider, query, title, expected):
+        words = provider._words(query)
+
+        assert provider._matches(title, words) is expected
+
+
+class TestCategoryFilter:
+    @pytest.mark.parametrize(
+        "categories, expected",
+        [
+            (None, []),
+            ([StandardCategories.MOVIES], ["Movies"]),
+            ([StandardCategories.MOVIES_UHD], ["Movies"]),
+            ([StandardCategories.TV], ["Anime", "Documentaries", "TV"]),
+            ([StandardCategories.PC_GAMES], ["Apps", "Games"]),
+            (
+                [StandardCategories.CONSOLE, StandardCategories.BOOKS],
+                ["Books", "Games"],
+            ),
+        ],
+    )
+    def test_convert(self, provider, categories, expected):
+        assert provider._convert_categories_to_rarbg(categories) == expected
+
+    def test_single_category_request(self, provider, mock_urlopen):
+        provider.search("witcher", [StandardCategories.MOVIES])
+
+        assert request_params(mock_urlopen, 0)["category"] == ["Movies"]
+        assert request_params(mock_urlopen, 1)["category"] == ["Movies"]
+
+    def test_several_categories_request(self, provider, mock_urlopen):
+        mock_responses(
+            mock_urlopen,
+            rss_data=rss(
+                rss_item("C" * 40, category="TV"),
+                rss_item("D" * 40, category="Movies"),
+            ),
+        )
+
+        results = provider.search("witcher", [StandardCategories.TV])
+
+        assert request_params(mock_urlopen, 0)["category"] == [
+            "Anime",
+            "Documentaries",
+            "TV",
+        ]
+        # RSS filters by single category only, so it's filtered locally
+        assert "category" not in request_params(mock_urlopen, 1)
+        assert [r.info_hash for r in results] == [HASH_JSON, "C" * 40]
+
+
+class TestParse:
+    def test_json_result(self, result):
+        assert result.title == JSON_TORRENT["n"]
+        assert result.info_hash == HASH_JSON
+        assert result.magnet_link.startswith(f"magnet:?xt=urn:btih:{HASH_JSON}")
+        assert result.categories == [StandardCategories.TV]
+        assert result.seeders == 278
+        assert result.leechers == 87
+        assert result.size == 6012954214
+        assert result.upload_date.year == 2025
+        assert result.page_url == (
+            "https://therarbg.com/post-detail/824589/"
+            "the-witcher-s04-season-4-2025-1080p-nf-webrip/"
+        )
+        assert result.fields["tags"] == "1080p, \\[x\\]\\(http\\://evil\\)"
+
+    def test_json_result_without_hash_is_skipped(self, provider):
+        assert provider._parse_torrent({**JSON_TORRENT, "h": None}) is None
+
+    def test_json_result_with_invalid_hash_is_skipped(self, provider):
+        torrent = {**JSON_TORRENT, "h": "x&tr=http://evil"}
+
+        assert provider._parse_torrent(torrent) is None
+
+    def test_rss_result(self, provider, mock_urlopen):
+        mock_responses(
+            mock_urlopen, json_data={"results": []}, rss_data=rss(rss_item())
+        )
+
+        [result] = provider.search("witcher")
+
+        assert result.info_hash == HASH_RSS
+        assert result.categories == [StandardCategories.BOOKS]
+        assert result.seeders == 3
+        assert result.leechers is None
+        assert result.size == 128398131
+        assert result.upload_date.year == 2024
+        assert result.fields["torrent_id"] == "77cac7"
+
+    def test_rss_result_without_size(self, provider, mock_urlopen):
+        item = rss_item().replace('length="128398131"', "")
+        mock_responses(
+            mock_urlopen, json_data={"results": []}, rss_data=rss(item)
+        )
+
+        [result] = provider.search("witcher")
+
+        assert result.size is None
+
+    @pytest.mark.parametrize(
+        "category, expected",
+        [
+            ("Games", StandardCategories.PC_GAMES),
+            ("Anime", StandardCategories.TV_ANIME),
+            ("Documentaries", StandardCategories.TV_DOCUMENTARY),
+            ("Apps", StandardCategories.PC),
+        ],
+    )
+    def test_category(self, provider, category, expected):
+        assert provider._get_categories(category) == [expected]
+
+    def test_unknown_category(self, provider):
+        assert provider._get_categories("Unknown") is None
+
+
+class TestDetails:
+    @pytest.fixture
+    def mock_details(self):
+        with patch("src.tewi.search.base._urlopen") as mock:
+            response = mock.return_value.__enter__.return_value
+            response.read.return_value = json.dumps(DETAILS).encode()
+            yield mock
+
+    def test_details_request(self, provider, result, mock_details):
+        provider.details_extended(result)
+
+        url = mock_details.call_args.args[0]
+        assert url == ("https://therarbg.com/post-detail/824589/x/?format=json")
+
+    def test_details_content(self, provider, result, mock_details):
+        md = provider.details_extended(result)
+
+        assert "- **Category:** TV\n" in md
+        assert "- **Uploader:** RaptaG\n" in md
+        assert "- **Downloads:** 25802\n" in md
+        assert "- **Language:** English\n" in md
+        assert "- **IMDB:** https://www.imdb.com/title/tt5180504/\n" in md
+        assert "- **Last Checked:** 2026-11-18 22:59\n" in md
+        # File count from list, as num_files could be 0
+        assert "## Files (2)\n" in md
+        assert "- S04/e1\\.mkv (1.02 kB)\n" in md
+        assert "- \\# README\n" in md
+        assert (
+            "- udp\\://tracker\\.example\\.org\\:1337 (5 seeders, 2 leechers)\n"
+        ) in md
+        assert "- udp\\://dead\\.example\\.org\\:80\n" in md
+
+    def test_invalid_imdb_is_skipped(self, provider, result, mock_details):
+        response = mock_details.return_value.__enter__.return_value
+        response.read.return_value = json.dumps(
+            {**DETAILS, "imdb": "tt1 [x](http://evil)"}
+        ).encode()
+
+        assert "IMDB" not in provider.details_extended(result)
+
+    def test_details_failure(self, provider, result, mock_details):
+        response = mock_details.return_value.__enter__.return_value
+        response.read.return_value = b"not json"
+
+        md = provider.details_extended(result)
+
+        assert "- **Category:** TV\n" in md
+        assert "## Files" not in md

@@ -14,6 +14,7 @@ handle multi-line list body as single line.
 
 - Add Bitsearch search provider (`bitsearch`), enabled by default
 - Add Knaben search provider (`knaben`), meta-indexer of public trackers, enabled by default
+- Add TheRARBG search provider (`therarbg`), enabled by default
 
 ### Changed
 
@@ -32,6 +33,10 @@ handle multi-line list body as single line.
 
 - **Breaking:** Remove `--debug` option and `debugpy` dev dependency
 - Remove Torrentz2 search provider, as its site is shut down; `torrentz2` provider ID is now an alias for `bitsearch`, which serves the same torrent database
+
+### Fixed
+
+- Fix web search results and details failing to show when a search provider doesn't report torrent size
 
 ## [4.0.0] - 2026-11-06 - Lucky Handshake
 

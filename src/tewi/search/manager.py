@@ -14,6 +14,7 @@ from .providers import (
     KnabenProvider,
     NyaaProvider,
     ProwlarrProvider,
+    TheRarbgProvider,
     TorrentsCsvProvider,
     TPBProvider,
     YTSProvider,
@@ -27,6 +28,7 @@ AVAILABLE_PROVIDERS: dict[str, type[BaseSearchProvider]] = {
     "torrentscsv": TorrentsCsvProvider,
     "bitsearch": BitsearchProvider,
     "knaben": KnabenProvider,
+    "therarbg": TheRarbgProvider,
     "yts": YTSProvider,
     "nyaa": NyaaProvider,
     "jackett": JackettProvider,
@@ -45,6 +47,7 @@ DEFAULT_PROVIDER_ORDER = [
     "bitmagnet",
     "bitsearch",
     "knaben",
+    "therarbg",
 ]
 
 # Retired provider IDs mapped to the providers replacing them

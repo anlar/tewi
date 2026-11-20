@@ -6,6 +6,7 @@ from .jackett import JackettProvider
 from .knaben import KnabenProvider
 from .nyaa import NyaaProvider
 from .prowlarr import ProwlarrProvider
+from .therarbg import TheRarbgProvider
 from .torrentscsv import TorrentsCsvProvider
 from .tpb import TPBProvider
 from .yts import YTSProvider
@@ -20,4 +21,5 @@ __all__ = [
     "JackettProvider",
     "KnabenProvider",
     "ProwlarrProvider",
+    "TheRarbgProvider",
 ]

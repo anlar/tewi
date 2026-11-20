@@ -124,3 +124,28 @@ class TestBaseSearchProviderUrlopenPost:
         mock_urlopen_post.assert_called_once_with(
             "http://example.com", data=b"{}"
         )
+
+
+class TestDetailsCommon:
+    @staticmethod
+    def result(size: int | None) -> SearchResult:
+        return SearchResult(
+            title="title",
+            info_hash="a" * 40,
+            magnet_link=None,
+            torrent_link=None,
+            provider="Stub",
+            provider_id="stub",
+            provider_short="S",
+            size=size,
+        )
+
+    def test_size(self):
+        md = _StubProvider().details_common(self.result(1000))
+
+        assert "- **Size:** 1 kB\n" in md
+
+    def test_unknown_size(self):
+        md = _StubProvider().details_common(self.result(None))
+
+        assert "- **Size:** Unknown\n" in md

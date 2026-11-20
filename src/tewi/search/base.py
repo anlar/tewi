@@ -166,7 +166,10 @@ class BaseSearchProvider(ABC):
         md += f"- **Info Hash:** `{result.info_hash}`\n"
 
         md += "## Statistics\n"
-        md += f"- **Size:** {print_size(result.size)}\n"
+        if result.size is not None:
+            md += f"- **Size:** {print_size(result.size)}\n"
+        else:
+            md += "- **Size:** Unknown\n"
         md += f"- **Seeders:** {result.seeders}\n"
         md += f"- **Leechers:** {result.leechers}\n"
 
