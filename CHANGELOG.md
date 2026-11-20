@@ -15,6 +15,7 @@ handle multi-line list body as single line.
 - Show torrent client version in top panel literally, without parsing it as markup, and remove control characters from it
 - Don't overwrite existing config file with `--create-config`, create new one readable only by owner from the start
 - Fix missing timeout of rTorrent HTTPS connection, so not responding daemon doesn't block refresh forever
+- **Breaking:** Read config values literally, without "%" interpolation: "%" in password or API key no longer crashes startup showing part of the value in error; replace "%%" escapes with single "%"
 
 ## [4.0.0] - 2026-11-06 - Lucky Handshake
 

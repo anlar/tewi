@@ -34,6 +34,7 @@ from src.tewi.config import (
     create_default_config,
     get_available_profiles,
     get_config_path,
+    load_config,
     merge_config_with_args,
     profile_name,
 )
@@ -101,6 +102,23 @@ class TestCreateDefaultConfig:
         assert e.value.code == 1
         assert path.read_text() == "[client]\npassword = secret\n"
         assert "already exists" in capsys.readouterr().err
+
+
+class TestLoadConfig:
+    @pytest.fixture
+    def config_dir(self, tmp_path, monkeypatch):
+        monkeypatch.setattr(config, "get_config_dir", lambda: tmp_path)
+        return tmp_path
+
+    @pytest.mark.parametrize(
+        "password", ["s3cr%et", "s3cr%%et", "%(username)s", "100%"]
+    )
+    def test_percent_in_value_is_read_literally(self, config_dir, password):
+        (config_dir / "tewi.conf").write_text(
+            f"[client]\nusername = admin\npassword = {password}\n"
+        )
+
+        assert load_config()["password"] == password
 
 
 class TestExpandEnvVars:

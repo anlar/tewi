@@ -409,7 +409,9 @@ def _load_config_file(config_path: Path, config: dict) -> None:
     if not config_path.exists():
         return
 
-    parser = configparser.ConfigParser()
+    # Values are read literally: "%" interpolation would reject passwords
+    # with "%" (showing part of them in error) or substitute other options
+    parser = configparser.ConfigParser(interpolation=None)
     try:
         parser.read(config_path)
     except configparser.Error as e:
