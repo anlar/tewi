@@ -4,6 +4,9 @@ check:
 test:
 	uv run python -m pytest -v
 
+test-unit:
+	uv run python -m pytest -v -m "not integration"
+
 test-github:
 	uv run python -m pytest -v --transmission-port=9092
 

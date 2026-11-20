@@ -26,6 +26,7 @@ from src.tewi.torrent.models import ClientError
 class TestCreateClient:
     """Test cases for create_client factory function."""
 
+    @pytest.mark.integration
     def test_create_transmission_client(self, request):
         """Test creating a Transmission client.
 
