@@ -29,6 +29,7 @@ from src.tewi.config import (
     _expand_env_vars,
     _load_client_section,
     _load_debug_section,
+    _load_preset_sections,
     _load_search_section,
     _load_theme_sections,
     _load_ui_section,
@@ -988,6 +989,20 @@ timeout = 60
         _load_search_section(parser, config)
 
         assert config["search_timeout"] == 60
+
+    def test_preset_retired_indexer_is_replaced(self):
+        """Test retired provider ID in preset indexers is resolved."""
+        config_text = """
+[search.preset.General]
+indexers = tpb, torrentz2
+"""
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+
+        _load_preset_sections(parser, config)
+
+        assert config["search_presets"][0].indexers == ["tpb", "bitsearch"]
 
 
 class TestLoadThemeSections:

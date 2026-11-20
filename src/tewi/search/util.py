@@ -6,7 +6,7 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from ..util.misc import is_torrent_hash
+from ..util.misc import is_torrent_hash, strip_control_chars
 from .models import Category, StandardCategories
 
 # User-Agent string to imitate a popular browser
@@ -100,6 +100,25 @@ def read_response(response: Any) -> bytes:
             f"response is larger than {MAX_RESPONSE_SIZE // (1024 * 1024)} MiB"
         )
     return data
+
+
+_MARKDOWN_SPECIAL_RE = re.compile(r"([\\`*_{}\[\]()<>#+\-.!|~&])")
+
+
+def escape_markdown(value: object) -> str:
+    """Escape remote text for display in Markdown widget.
+
+    Text from search providers could contain Markdown syntax (e.g. links
+    or headings), which would change rendered details.
+
+    Args:
+        value: Text to escape
+
+    Returns:
+        Single-line text with Markdown special characters escaped
+    """
+    text = strip_control_chars(str(value).replace("\n", " "))
+    return _MARKDOWN_SPECIAL_RE.sub(r"\\\1", text)
 
 
 def build_magnet_link(

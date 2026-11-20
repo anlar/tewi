@@ -9,10 +9,12 @@ from textual.binding import Binding, BindingType
 from textual.containers import Vertical
 from textual.reactive import reactive
 from textual.widgets import DataTable, Static
+from textual.worker import get_current_worker
 
+from ...search.base import BaseSearchProvider
 from ...search.models import SearchResult
 from ...search.sorting import get_search_sort_option, sort_search_results
-from ...util.log import log_time
+from ...util.log import get_logger, log_time
 from ..dialog.search.details import TorrentDetailsDialog
 from ..dialog.search.sort import SearchSortDialog
 from ..messages import (
@@ -28,6 +30,8 @@ from ..util import (
     theme_markup_color,
 )
 from ..widget.common import ReactiveLabel
+
+logger = get_logger()
 
 
 class TorrentWebSearch(Static):
@@ -316,11 +320,46 @@ class TorrentWebSearch(Static):
             )
             return
 
-        # Generate details using the provider
-        common_content = provider.details_common(result)
-        extended_content = provider.details_extended(result)
+        self.load_details(provider, result)
 
-        # Show the details dialog
+    @work(exclusive=True, thread=True, group="websearch-details")
+    @log_time
+    def load_details(
+        self, provider: BaseSearchProvider, result: SearchResult
+    ) -> None:
+        """Generate torrent details, which could load extra data from provider.
+
+        Args:
+            provider: Provider which returned the result
+            result: Search result to show details for
+        """
+        try:
+            common_content = provider.details_common(result)
+            extended_content = provider.details_extended(result)
+        except Exception as e:
+            logger.warning(f"Failed to load search result details: {e}")
+            self.post_message(
+                Notification(f"Failed to load details: {e}", "error")
+            )
+            return
+
+        if get_current_worker().is_cancelled:
+            return
+        self.app.call_from_thread(
+            self.show_details, result, common_content, extended_content
+        )
+
+    @log_time
+    def show_details(
+        self, result: SearchResult, common_content: str, extended_content: str
+    ) -> None:
+        """Show the details dialog.
+
+        Args:
+            result: Search result to show details for
+            common_content: Common details (left column)
+            extended_content: Provider-specific details (right column)
+        """
         self.app.push_screen(
             TorrentDetailsDialog(
                 result.title,

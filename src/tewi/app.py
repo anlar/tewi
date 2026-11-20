@@ -1192,9 +1192,10 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
             "jackett",
             "prowlarr",
             "bitmagnet",
+            "bitsearch",
             "torrentz2",
         ],
-        default=["tpb", "yts", "nyaa", "torrentscsv", "torrentz2"],
+        default=["tpb", "yts", "nyaa", "torrentscsv", "bitsearch"],
         action=TrackSetAction,
         help="Space-separated list of enabled search providers. "
         "Order matters: first providers take priority when deduplicating",

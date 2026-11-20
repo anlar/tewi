@@ -10,6 +10,10 @@ handle multi-line list body as single line.
 
 ## [Unreleased]
 
+### Added
+
+- Add Bitsearch search provider (`bitsearch`), enabled by default
+
 ### Changed
 
 - Show torrent client version in top panel literally, without parsing it as markup, and remove control characters from it
@@ -21,10 +25,12 @@ handle multi-line list body as single line.
 - Send Prowlarr API key in `X-Api-Key` header instead of URL query
 - Warn on start if config file is accessible by other users
 - Open search result links the same way as other links, also in browser when running with textual-serve
+- Load search result details in background, so UI doesn't freeze while provider fetches extra details
 
 ### Removed
 
 - **Breaking:** Remove `--debug` option and `debugpy` dev dependency
+- Remove Torrentz2 search provider, as its site is shut down; `torrentz2` provider ID is now an alias for `bitsearch`, which serves the same torrent database
 
 ## [4.0.0] - 2026-11-06 - Lucky Handshake
 

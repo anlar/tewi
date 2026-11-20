@@ -1,7 +1,7 @@
 """Tests for search manager."""
 
 from src.tewi.search.base import BaseSearchProvider
-from src.tewi.search.manager import SearchClient
+from src.tewi.search.manager import SearchClient, resolve_provider_aliases
 from src.tewi.search.models import SearchResult
 
 VALID_HASH = "a" * 40
@@ -69,3 +69,23 @@ class TestSearchInfoHashValidation:
         )
 
         assert [r.title for r in found] == ["valid"]
+
+
+class TestProviderAliases:
+    def test_retired_id_is_replaced(self):
+        assert resolve_provider_aliases(["tpb", "torrentz2"]) == [
+            "tpb",
+            "bitsearch",
+        ]
+
+    def test_duplicates_after_resolving_are_removed(self):
+        assert resolve_provider_aliases(["torrentz2", "yts", "bitsearch"]) == [
+            "bitsearch",
+            "yts",
+        ]
+
+    def test_enabled_providers_accept_alias(self):
+        client = SearchClient(
+            None, None, False, None, None, False, None, 30, ["torrentz2"]
+        )
+        assert client._enabled_providers == ["bitsearch"]

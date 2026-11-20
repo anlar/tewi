@@ -9,11 +9,11 @@ from .base import BaseSearchProvider
 from .models import Category, Indexer, SearchResult
 from .providers import (
     BitmagnetProvider,
+    BitsearchProvider,
     JackettProvider,
     NyaaProvider,
     ProwlarrProvider,
     TorrentsCsvProvider,
-    Torrentz2Provider,
     TPBProvider,
     YTSProvider,
 )
@@ -24,7 +24,7 @@ logger = get_logger()
 AVAILABLE_PROVIDERS: dict[str, type[BaseSearchProvider]] = {
     "tpb": TPBProvider,
     "torrentscsv": TorrentsCsvProvider,
-    "torrentz2": Torrentz2Provider,
+    "bitsearch": BitsearchProvider,
     "yts": YTSProvider,
     "nyaa": NyaaProvider,
     "jackett": JackettProvider,
@@ -41,8 +41,26 @@ DEFAULT_PROVIDER_ORDER = [
     "jackett",
     "prowlarr",
     "bitmagnet",
-    "torrentz2",
+    "bitsearch",
 ]
+
+# Retired provider IDs mapped to the providers replacing them
+PROVIDER_ALIASES: dict[str, str] = {
+    "torrentz2": "bitsearch",
+}
+
+
+def resolve_provider_aliases(provider_ids: list[str]) -> list[str]:
+    """Replace retired provider IDs with current ones.
+
+    Args:
+        provider_ids: Provider or indexer IDs
+
+    Returns:
+        IDs with aliases resolved and duplicates removed, order preserved
+    """
+    resolved = [PROVIDER_ALIASES.get(p, p) for p in provider_ids]
+    return list(dict.fromkeys(resolved))
 
 
 def print_available_providers() -> None:
@@ -139,6 +157,8 @@ class SearchClient:
         """
         if not enabled_providers:
             return None
+
+        enabled_providers = resolve_provider_aliases(enabled_providers)
 
         # Validate provider IDs
         unknown_providers: list[str] = []

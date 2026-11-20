@@ -30,6 +30,7 @@ from pathlib import Path
 
 from platformdirs import user_config_dir
 
+from .search.manager import resolve_provider_aliases
 from .search.models import SearchPreset
 from .theme import (
     THEME_SECTION_PREFIX,
@@ -333,6 +334,8 @@ def _load_search_presets(
             continue
         name = section[len("search.preset.") :]
         indexers = _get_list_option(parser, section, "indexers")
+        if indexers:
+            indexers = resolve_provider_aliases(indexers)
         categories = _get_list_option(parser, section, "categories")
         presets.append(
             SearchPreset(name=name, indexers=indexers, categories=categories)
@@ -660,7 +663,7 @@ timeout =
 # dialog opens. The value must match a [search.preset.NAME] section name.
 #
 # indexers: comma-separated indexer IDs; omit to select all indexers
-#   - built-in providers: tpb, yts, nyaa, torrentscsv, bitmagnet, torrentz2
+#   - built-in providers: tpb, yts, nyaa, torrentscsv, bitmagnet, bitsearch
 #   - Jackett: jackett (all sub-indexers), jackett:all (single Jackett
 #              indexer, when jackett_multi is disabled), or jackett:NAME
 #              (by indexer name)
