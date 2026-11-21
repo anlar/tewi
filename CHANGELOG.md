@@ -33,6 +33,7 @@ handle multi-line list body as single line.
 - Change default search providers order to `yts`, `nekobt`, `nyaa`, `tpb`, `therarbg`, `bitsearch`, `knaben`, `limetorrents`, `torrentscsv` (specialized providers first)
 - Fix web search results and details failing to show when a search provider doesn't report torrent size
 - Fix search provider counts (seeders, leechers, downloads, size, files) sent as text being parsed as markup in search results
+- Fix Jackett, Prowlarr, Bitmagnet, TPB, YTS and Nyaa search result details showing provider text as Markdown, which could add fake details or links with misleading text
 
 ### Removed
 

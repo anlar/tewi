@@ -9,7 +9,13 @@ from typing import Any
 from ...util.log import get_logger, log_time
 from ..base import BaseSearchProvider
 from ..models import Category, Indexer, SearchResult, StandardCategories
-from ..util import MAX_ERROR_BODY_SIZE, build_magnet_link, read_response
+from ..util import (
+    MAX_ERROR_BODY_SIZE,
+    build_magnet_link,
+    escape_markdown,
+    markdown_value,
+    read_response,
+)
 
 logger = get_logger()
 
@@ -159,7 +165,8 @@ class ProwlarrProvider(BaseSearchProvider):
             # Transform field for display
             display_name, display_value = self._transform_field(key, value)
             if display_name:
-                md += f"- **{display_name}:** {display_value}\n"
+                name = escape_markdown(display_name)
+                md += f"- **{name}:** {markdown_value(display_value)}\n"
 
         return md
 
@@ -613,7 +620,7 @@ class ProwlarrProvider(BaseSearchProvider):
             Tuple of (display_name, display_value)
         """
         if key == "imdbId":
-            if value:
+            if str(value).isdigit() and int(value):
                 return "IMDB", f"https://www.imdb.com/title/tt{value}/"
             else:
                 return None, None

@@ -124,6 +124,30 @@ def escape_markdown(value: object) -> str:
     return _MARKDOWN_SPECIAL_RE.sub(r"\\\1", text)
 
 
+# HTTP(S) URL without characters which could start Markdown syntax around
+# it (e.g. "https://x/)[text](https://other"), so it's auto-linked as is
+_SAFE_URL_RE = re.compile(r"https?://[^\s\\`*\[\](){}<>|]+", re.IGNORECASE)
+
+
+def markdown_value(value: object) -> str:
+    """Format remote value for display in Markdown widget.
+
+    Safe HTTP(S) URLs are kept as is, so they are shown as links (opened
+    by App.open_url, which accepts only HTTP(S) URLs). Other values,
+    including URLs with Markdown syntax, are escaped as plain text.
+
+    Args:
+        value: Value to format
+
+    Returns:
+        Single-line Markdown text
+    """
+    text = strip_control_chars(str(value)).strip()
+    if _SAFE_URL_RE.fullmatch(text):
+        return text
+    return escape_markdown(value)
+
+
 _NON_WORD_RE = re.compile(r"[\W_]+")
 
 

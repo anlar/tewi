@@ -10,7 +10,12 @@ from typing import Any
 from ...util.log import get_logger, log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
-from ..util import MAX_ERROR_BODY_SIZE, read_response
+from ..util import (
+    MAX_ERROR_BODY_SIZE,
+    escape_markdown,
+    markdown_value,
+    read_response,
+)
 
 logger = get_logger()
 
@@ -299,6 +304,7 @@ class BitmagnetProvider(BaseSearchProvider):
 
         lines = []
         for name, url in links_data:
+            name, url = escape_markdown(name), markdown_value(url)
             lines.append(f"- **{name}:** {url}\n")
 
         if lines:
@@ -335,6 +341,7 @@ class BitmagnetProvider(BaseSearchProvider):
         for field_key, field_label in field_defs:
             value = fields.get(field_key)
             if value:
+                value = escape_markdown(value)
                 lines.append(f"- **{field_label}:** {value}\n")
 
         if lines:

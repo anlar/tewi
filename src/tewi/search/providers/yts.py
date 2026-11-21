@@ -1,6 +1,7 @@
 """YTS torrent search provider implementation."""
 
 import json
+import re
 import urllib.error
 import urllib.parse
 from datetime import datetime
@@ -9,7 +10,7 @@ from typing import Any
 from ...util.log import log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
-from ..util import build_magnet_link, read_response
+from ..util import build_magnet_link, escape_markdown, read_response
 
 
 class YTSProvider(BaseSearchProvider):
@@ -37,6 +38,9 @@ class YTSProvider(BaseSearchProvider):
         "udp://p4p.arenabg.com:1337",
         "udp://tracker.leechers-paradise.org:6969",
     ]
+
+    _IMDB_RE = re.compile(r"tt\d+")
+    _YOUTUBE_ID_RE = re.compile(r"[\w-]+")
 
     @property
     def id(self) -> str:
@@ -360,19 +364,35 @@ class YTSProvider(BaseSearchProvider):
             ("runtime", "Runtime", None),
             ("genres", "Genres", None),
             ("language", "Language", None),
-            ("rating", "Rating", lambda v: f"{v}/10"),
+            ("rating", "Rating", lambda v: f"{escape_markdown(v)}/10"),
             ("summary", "Summary", None),
-            ("imdb_code", "IMDB", lambda v: f"https://www.imdb.com/title/{v}"),
+            (
+                "imdb_code",
+                "IMDB",
+                lambda v: (
+                    f"https://www.imdb.com/title/{v}"
+                    if self._IMDB_RE.fullmatch(v)
+                    else None
+                ),
+            ),
             (
                 "yt_trailer_code",
                 "Trailer",
-                lambda v: f"https://www.youtube.com/watch?v={v}",
+                lambda v: (
+                    f"https://www.youtube.com/watch?v={v}"
+                    if self._YOUTUBE_ID_RE.fullmatch(v)
+                    else None
+                ),
             ),
         ]
         for key, label, formatter in field_mappings:
             if key in fields:
-                value = formatter(fields[key]) if formatter else fields[key]
-                md += f"- **{label}:** {value}\n"
+                if formatter:
+                    value = formatter(fields[key])
+                else:
+                    value = escape_markdown(fields[key])
+                if value:
+                    md += f"- **{label}:** {value}\n"
         return md
 
     def _add_quality_info(self, md: str, fields: dict[str, str]) -> str:
@@ -388,6 +408,6 @@ class YTSProvider(BaseSearchProvider):
         ]
         for key, label in field_mappings:
             if key in fields:
-                md += f"- **{label}:** {fields[key]}\n"
+                md += f"- **{label}:** {escape_markdown(fields[key])}\n"
 
         return md

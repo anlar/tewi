@@ -11,7 +11,13 @@ from typing import Any
 from ...util.log import get_logger, log_time
 from ..base import BaseSearchProvider
 from ..models import Category, Indexer, SearchResult, StandardCategories
-from ..util import MAX_ERROR_BODY_SIZE, build_magnet_link, read_response
+from ..util import (
+    MAX_ERROR_BODY_SIZE,
+    build_magnet_link,
+    escape_markdown,
+    markdown_value,
+    read_response,
+)
 
 logger = get_logger()
 
@@ -167,7 +173,7 @@ class JackettProvider(BaseSearchProvider):
             value = result.fields[key]
             # Transform field for display
             display_name, display_value = self._transform_field(key, value)
-            md += f"- **{display_name}:** {display_value}\n"
+            md += f"- **{escape_markdown(display_name)}:** {display_value}\n"
 
         return md
 
@@ -667,11 +673,12 @@ class JackettProvider(BaseSearchProvider):
             value: Field value
 
         Returns:
-            Tuple of (display_name, display_value)
+            Tuple of (display_name, display_value), where value is
+            Markdown text (escaped, as it comes from indexer)
         """
         if key == "CategoryDesc":
-            return "Category", value
-        elif key == "Imdb":
+            return "Category", markdown_value(value)
+        elif key == "Imdb" and value.isdigit():
             return "IMDB", f"https://www.imdb.com/title/tt{value}/"
 
-        return key, value
+        return key, markdown_value(value)

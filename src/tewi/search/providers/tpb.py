@@ -1,6 +1,7 @@
 """The Pirate Bay torrent search provider implementation."""
 
 import json
+import re
 import urllib.error
 import urllib.parse
 from datetime import datetime
@@ -9,7 +10,7 @@ from typing import Any
 from ...util.log import log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
-from ..util import build_magnet_link, read_response
+from ..util import build_magnet_link, escape_markdown, read_response
 
 
 class TPBProvider(BaseSearchProvider):
@@ -104,6 +105,8 @@ class TPBProvider(BaseSearchProvider):
         8000: 600,  # Other -> Other
     }
 
+    _IMDB_RE = re.compile(r"tt\d+")
+
     @property
     def id(self) -> str:
         return "tpb"
@@ -187,7 +190,8 @@ class TPBProvider(BaseSearchProvider):
         md = "## Uploader\n"
 
         if "username" in result.fields:
-            md += f"- **Username:** {result.fields['username']}\n"
+            username = escape_markdown(result.fields["username"])
+            md += f"- **Username:** {username}\n"
 
         if "status" in result.fields:
             status = result.fields["status"]
@@ -201,12 +205,12 @@ class TPBProvider(BaseSearchProvider):
                 case "member":
                     md += "Member\n"
                 case _:
-                    md += f"{status}\n"
+                    md += f"{escape_markdown(status)}\n"
 
-        if "imdb" in result.fields and result.fields["imdb"]:
+        imdb_code = result.fields.get("imdb")
+        if imdb_code and self._IMDB_RE.fullmatch(imdb_code):
             md += "## Movie\n"
 
-            imdb_code = result.fields["imdb"]
             imdb_url = f"https://www.imdb.com/title/{imdb_code}/"
             md += f"- **IMDB:** {imdb_url}\n"
 

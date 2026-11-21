@@ -11,6 +11,7 @@ from src.tewi.search.util import (
     build_magnet_link,
     detect_category_from_name,
     escape_markdown,
+    markdown_value,
     matches_query,
     query_words,
     urlopen,
@@ -412,6 +413,47 @@ class TestEscapeMarkdown:
 
     def test_single_line(self):
         assert escape_markdown("a\nb\x07") == "a b"
+
+
+class TestMarkdownValue:
+    render = staticmethod(TestEscapeMarkdown.render)
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://www.themoviedb.org/movie/278",
+            "http://jackett:9117/dl/x/?jackett_apikey=k&path=a_b%20c",
+            "HTTPS://X.ORG/a?b=c#d",
+        ],
+    )
+    def test_safe_url_is_linked_as_is(self, url):
+        tokens = self.render(markdown_value(f" {url} "))
+
+        assert tokens[0].type == "link_open"
+        assert tokens[0].attrs["href"].lower() == url.lower()
+        assert [t.type for t in tokens] == ["link_open", "text", "link_close"]
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "https://www.imdb.com/)[x](https://evil",
+            "https://a.org/<b>",
+            "https://a.org/`x`",
+            "https://a.org/a b",
+            "https://a.org/\\[x]",
+            "ftp://a.org/f",
+            "plain [x](https://evil) text",
+            42,
+        ],
+    )
+    def test_other_value_is_plain_text(self, text):
+        tokens = self.render(markdown_value(text))
+
+        assert all(t.type in ("text", "text_special") for t in tokens)
+        assert "".join(t.content for t in tokens) == str(text)
+
+    def test_single_line_without_control_chars(self):
+        assert markdown_value("a\nb\x1b") == "a b"
 
 
 class TestMatchesQuery:
