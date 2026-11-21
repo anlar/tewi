@@ -1187,6 +1187,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         choices=[
             "tpb",
             "yts",
+            "nekobt",
             "nyaa",
             "torrentscsv",
             "jackett",
@@ -1201,6 +1202,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         default=[
             "tpb",
             "yts",
+            "nekobt",
             "nyaa",
             "torrentscsv",
             "bitsearch",

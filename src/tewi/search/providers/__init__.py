@@ -5,6 +5,7 @@ from .bitsearch import BitsearchProvider
 from .jackett import JackettProvider
 from .knaben import KnabenProvider
 from .limetorrents import LimeTorrentsProvider
+from .nekobt import NekoBtProvider
 from .nyaa import NyaaProvider
 from .prowlarr import ProwlarrProvider
 from .therarbg import TheRarbgProvider
@@ -22,6 +23,7 @@ __all__ = [
     "JackettProvider",
     "KnabenProvider",
     "LimeTorrentsProvider",
+    "NekoBtProvider",
     "ProwlarrProvider",
     "TheRarbgProvider",
 ]

@@ -16,6 +16,7 @@ handle multi-line list body as single line.
 - Add Knaben search provider (`knaben`), meta-indexer of public trackers, enabled by default
 - Add TheRARBG search provider (`therarbg`), enabled by default
 - Add LimeTorrents search provider (`limetorrents`), enabled by default
+- Add nekoBT anime search provider (`nekobt`), enabled by default
 
 ### Changed
 

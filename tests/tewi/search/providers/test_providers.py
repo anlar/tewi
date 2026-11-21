@@ -17,6 +17,7 @@ from src.tewi.search.providers.bitsearch import BitsearchProvider
 from src.tewi.search.providers.jackett import JackettProvider
 from src.tewi.search.providers.knaben import KnabenProvider
 from src.tewi.search.providers.limetorrents import LimeTorrentsProvider
+from src.tewi.search.providers.nekobt import NekoBtProvider
 from src.tewi.search.providers.nyaa import NyaaProvider
 from src.tewi.search.providers.prowlarr import ProwlarrProvider
 from src.tewi.search.providers.therarbg import TheRarbgProvider
@@ -376,6 +377,22 @@ class TestLimeTorrentsProviderIntegration(BaseProviderIntegrationTest):
 
     def requires_trackers(self) -> bool:
         return False
+
+
+class TestNekoBtProviderIntegration(BaseProviderIntegrationTest):
+    """Integration tests for nekoBT provider."""
+
+    def get_provider(self):
+        return NekoBtProvider()
+
+    def get_search_query(self) -> str:
+        return "anime"
+
+    def get_valid_categories(self) -> set:
+        return set(self.get_provider().CATEGORY_MAP.values())
+
+    def requires_trackers(self) -> bool:
+        return True
 
 
 class TestNyaaProviderIntegration(BaseProviderIntegrationTest):

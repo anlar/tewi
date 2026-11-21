@@ -13,6 +13,7 @@ from .providers import (
     JackettProvider,
     KnabenProvider,
     LimeTorrentsProvider,
+    NekoBtProvider,
     NyaaProvider,
     ProwlarrProvider,
     TheRarbgProvider,
@@ -32,6 +33,7 @@ AVAILABLE_PROVIDERS: dict[str, type[BaseSearchProvider]] = {
     "therarbg": TheRarbgProvider,
     "limetorrents": LimeTorrentsProvider,
     "yts": YTSProvider,
+    "nekobt": NekoBtProvider,
     "nyaa": NyaaProvider,
     "jackett": JackettProvider,
     "prowlarr": ProwlarrProvider,
@@ -42,6 +44,7 @@ AVAILABLE_PROVIDERS: dict[str, type[BaseSearchProvider]] = {
 DEFAULT_PROVIDER_ORDER = [
     "tpb",
     "yts",
+    "nekobt",
     "nyaa",
     "torrentscsv",
     "jackett",
