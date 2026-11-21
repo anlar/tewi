@@ -7,6 +7,7 @@ from textual.screen import ModalScreen
 from textual.widgets import Link, Markdown, Static
 
 from ....util.log import log_time
+from ....util.misc import strip_control_chars
 from ...messages import AddTorrentFromWebSearchCommand, Notification
 from ...util import subtitle_keys
 
@@ -126,10 +127,14 @@ class TorrentDetailsWidget(Static):
             extended_content: Provider-specific details (right column)
         """
         super().__init__()
-        self.title = title
-        self.page_url = page_url or ""
-        self.common_content = common_content
-        self.extended_content = extended_content
+        # Content is built from search provider data, and not all of it
+        # comes from SearchResult, which strips control characters (e.g.
+        # details loaded on demand), so escape sequences in it would be
+        # passed to terminal
+        self.title = strip_control_chars(title)
+        self.page_url = strip_control_chars(page_url or "")
+        self.common_content = strip_control_chars(common_content)
+        self.extended_content = strip_control_chars(extended_content)
 
     @log_time
     def compose(self) -> ComposeResult:
