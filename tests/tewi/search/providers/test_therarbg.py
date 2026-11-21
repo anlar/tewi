@@ -9,20 +9,20 @@ import pytest
 from src.tewi.search.models import StandardCategories
 from src.tewi.search.providers.therarbg import TheRarbgProvider
 
-HASH_JSON = "24E7981047AAA2B08EBE7D79086631CA46C56ABC"
-HASH_RSS = "486cd36015b1b04a2803df2ecfe6e7d5ee69f8de"
+HASH_JSON = "0123456789ABCDEF0123456789ABCDEF01234567"
+HASH_RSS = "fedcba9876543210fedcba9876543210fedcba98"
 
 JSON_TORRENT = {
-    "pk": "824589",
-    "n": "The Witcher S04 Season 4 2025 1080p NF WEBRip",
+    "pk": "a00001",
+    "n": "Example Show S04 Season 4 2025 1080p WEBRip",
     "a": 1761826864,
     "c": "TV",
-    "s": 6012954214,
+    "s": 6000000000,
     "t": None,
-    "u": "RaptaG",
+    "u": "uploader1",
     "se": 278,
     "le": 87,
-    "i": "tt5180504",
+    "i": "tt0000001",
     "h": HASH_JSON,
     "tg": ["1080p", "[x](http://evil)"],
 }
@@ -30,7 +30,7 @@ JSON_TORRENT = {
 FUZZY_TORRENT = {
     **JSON_TORRENT,
     "pk": "1",
-    "n": "Watcher 2022 1080p",
+    "n": "Sample 2022 1080p",
     "h": "B" * 40,
 }
 
@@ -45,13 +45,13 @@ SEARCH = {
 
 def rss_item(
     info_hash: str = HASH_RSS,
-    title: str = "The Witcher Guide",
+    title: str = "Example Guide",
     category: str = "Books",
 ) -> str:
     return f"""
 <item>
   <title>{title}</title>
-  <link>https://therarbg.com/post-detail/77cac7/the-witcher-guide/</link>
+  <link>https://therarbg.com/post-detail/a00002/example-guide/</link>
   <guid isPermaLink="false">{info_hash}</guid>
   <pubDate>Mon, 08 Apr 2024 18:42:59 +0000</pubDate>
   <description>122.4 MB - 3 seeders - quality 0/100</description>
@@ -69,10 +69,10 @@ def rss(*items: str) -> bytes:
 
 
 DETAILS = {
-    "eid": "824589",
-    "downloads": 25802,
+    "eid": "a00001",
+    "downloads": 1234,
     "language": "English",
-    "imdb": "tt5180504",
+    "imdb": "tt0000001",
     "last_checked": "2026-11-18T22:59:25.892732Z",
     "num_files": 0,
     "files": [
@@ -133,12 +133,12 @@ class TestSearch:
         mock_urlopen.assert_not_called()
 
     def test_requests(self, provider, mock_urlopen):
-        provider.search(" witcher ")
+        provider.search(" example ")
 
         json_url = mock_urlopen.call_args_list[0].args[0]
         assert json_url.startswith("https://therarbg.com/get-posts/?")
         assert request_params(mock_urlopen, 0) == {
-            "keywords": ["witcher"],
+            "keywords": ["example"],
             "format": ["json"],
             "order": ["-se"],
             "page_size": ["100"],
@@ -146,12 +146,12 @@ class TestSearch:
         rss_url = mock_urlopen.call_args_list[1].args[0]
         assert rss_url.startswith("https://therarbg.com/api/rss/search/?")
         assert request_params(mock_urlopen, 1) == {
-            "q": ["witcher"],
+            "q": ["example"],
             "limit": ["100"],
         }
 
     def test_fuzzy_matches_are_removed(self, provider, mock_urlopen):
-        results = provider.search("witcher")
+        results = provider.search("example")
 
         assert [r.info_hash for r in results] == [HASH_JSON]
 
@@ -161,7 +161,7 @@ class TestSearch:
             rss_data=rss(rss_item(HASH_JSON.lower()), rss_item()),
         )
 
-        results = provider.search("witcher")
+        results = provider.search("example")
 
         # JSON result is kept for duplicate, as it has leechers
         assert [r.info_hash for r in results] == [HASH_JSON, HASH_RSS]
@@ -170,7 +170,7 @@ class TestSearch:
     def test_rss_failure_is_ignored(self, provider, mock_urlopen):
         mock_responses(mock_urlopen, rss_data=b"not xml")
 
-        results = provider.search("witcher")
+        results = provider.search("example")
 
         assert [r.info_hash for r in results] == [HASH_JSON]
 
@@ -180,23 +180,7 @@ class TestSearch:
         response.read.return_value = b"not json"
 
         with pytest.raises(Exception, match="Failed to parse API response"):
-            provider.search("witcher")
-
-    @pytest.mark.parametrize(
-        "query, title, expected",
-        [
-            ("witcher", "The.Witcher.S01", True),
-            ("WITCHER s01", "The_Witcher-S01E01", True),
-            ("ubuntu 24.04", "ubuntu-24.04.1-desktop-amd64.iso", True),
-            ("debian", "Defiance 2013 S01", False),
-            ("dune part two", "Dune Part One", False),
-            ("Война", "Война и мир 1966", True),
-        ],
-    )
-    def test_matches(self, provider, query, title, expected):
-        words = provider._words(query)
-
-        assert provider._matches(title, words) is expected
+            provider.search("example")
 
 
 class TestCategoryFilter:
@@ -218,7 +202,7 @@ class TestCategoryFilter:
         assert provider._convert_categories_to_rarbg(categories) == expected
 
     def test_single_category_request(self, provider, mock_urlopen):
-        provider.search("witcher", [StandardCategories.MOVIES])
+        provider.search("example", [StandardCategories.MOVIES])
 
         assert request_params(mock_urlopen, 0)["category"] == ["Movies"]
         assert request_params(mock_urlopen, 1)["category"] == ["Movies"]
@@ -232,7 +216,7 @@ class TestCategoryFilter:
             ),
         )
 
-        results = provider.search("witcher", [StandardCategories.TV])
+        results = provider.search("example", [StandardCategories.TV])
 
         assert request_params(mock_urlopen, 0)["category"] == [
             "Anime",
@@ -252,11 +236,11 @@ class TestParse:
         assert result.categories == [StandardCategories.TV]
         assert result.seeders == 278
         assert result.leechers == 87
-        assert result.size == 6012954214
+        assert result.size == 6000000000
         assert result.upload_date.year == 2025
         assert result.page_url == (
-            "https://therarbg.com/post-detail/824589/"
-            "the-witcher-s04-season-4-2025-1080p-nf-webrip/"
+            "https://therarbg.com/post-detail/a00001/"
+            "example-show-s04-season-4-2025-1080p-webrip/"
         )
         assert result.fields["tags"] == "1080p, \\[x\\]\\(http\\://evil\\)"
 
@@ -273,7 +257,7 @@ class TestParse:
             mock_urlopen, json_data={"results": []}, rss_data=rss(rss_item())
         )
 
-        [result] = provider.search("witcher")
+        [result] = provider.search("example")
 
         assert result.info_hash == HASH_RSS
         assert result.categories == [StandardCategories.BOOKS]
@@ -281,7 +265,7 @@ class TestParse:
         assert result.leechers is None
         assert result.size == 128398131
         assert result.upload_date.year == 2024
-        assert result.fields["torrent_id"] == "77cac7"
+        assert result.fields["torrent_id"] == "a00002"
 
     def test_rss_result_without_size(self, provider, mock_urlopen):
         item = rss_item().replace('length="128398131"', "")
@@ -289,7 +273,7 @@ class TestParse:
             mock_urlopen, json_data={"results": []}, rss_data=rss(item)
         )
 
-        [result] = provider.search("witcher")
+        [result] = provider.search("example")
 
         assert result.size is None
 
@@ -321,16 +305,16 @@ class TestDetails:
         provider.details_extended(result)
 
         url = mock_details.call_args.args[0]
-        assert url == ("https://therarbg.com/post-detail/824589/x/?format=json")
+        assert url == ("https://therarbg.com/post-detail/a00001/x/?format=json")
 
     def test_details_content(self, provider, result, mock_details):
         md = provider.details_extended(result)
 
         assert "- **Category:** TV\n" in md
-        assert "- **Uploader:** RaptaG\n" in md
-        assert "- **Downloads:** 25802\n" in md
+        assert "- **Uploader:** uploader1\n" in md
+        assert "- **Downloads:** 1234\n" in md
         assert "- **Language:** English\n" in md
-        assert "- **IMDB:** https://www.imdb.com/title/tt5180504/\n" in md
+        assert "- **IMDB:** https://www.imdb.com/title/tt0000001/\n" in md
         assert "- **Last Checked:** 2026-11-18 22:59\n" in md
         # File count from list, as num_files could be 0
         assert "## Files (2)\n" in md

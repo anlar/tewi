@@ -1195,6 +1195,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
             "bitsearch",
             "knaben",
             "therarbg",
+            "limetorrents",
             "torrentz2",
         ],
         default=[
@@ -1205,6 +1206,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
             "bitsearch",
             "knaben",
             "therarbg",
+            "limetorrents",
         ],
         action=TrackSetAction,
         help="Space-separated list of enabled search providers. "

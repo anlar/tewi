@@ -16,6 +16,7 @@ from src.tewi.search.providers.bitmagnet import BitmagnetProvider
 from src.tewi.search.providers.bitsearch import BitsearchProvider
 from src.tewi.search.providers.jackett import JackettProvider
 from src.tewi.search.providers.knaben import KnabenProvider
+from src.tewi.search.providers.limetorrents import LimeTorrentsProvider
 from src.tewi.search.providers.nyaa import NyaaProvider
 from src.tewi.search.providers.prowlarr import ProwlarrProvider
 from src.tewi.search.providers.therarbg import TheRarbgProvider
@@ -353,6 +354,25 @@ class TestTheRarbgProviderIntegration(BaseProviderIntegrationTest):
 
     def get_valid_categories(self) -> set:
         return set(self.get_provider().CATEGORY_MAP.values())
+
+    def requires_trackers(self) -> bool:
+        return False
+
+
+class TestLimeTorrentsProviderIntegration(BaseProviderIntegrationTest):
+    """Integration tests for LimeTorrents provider."""
+
+    def get_provider(self):
+        return LimeTorrentsProvider()
+
+    def get_search_query(self) -> str:
+        return "debian"
+
+    def get_valid_categories(self) -> set:
+        provider = self.get_provider()
+        return set(provider.CATEGORY_MAP.values()) | set(
+            provider.SUBCATEGORY_MAP.values()
+        )
 
     def requires_trackers(self) -> bool:
         return False

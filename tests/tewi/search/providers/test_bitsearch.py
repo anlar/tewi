@@ -191,7 +191,7 @@ class TestCategoryFilter:
         response = mock_urlopen.return_value.__enter__.return_value
         response.read.return_value = b'{"success": true, "results": []}'
 
-        provider.search("dune", [StandardCategories.MOVIES])
+        provider.search("example", [StandardCategories.MOVIES])
 
         url = mock_urlopen.call_args.args[0]
         assert "category=2" in url
@@ -203,7 +203,7 @@ class TestCategoryFilter:
             {"success": True, "results": [SEARCH_TORRENT]}
         ).encode()
 
-        results = provider.search("dune", [StandardCategories.TV])
+        results = provider.search("example", [StandardCategories.TV])
 
         urls = [c.args[0] for c in mock_urlopen.call_args_list]
         assert len(urls) == 2
@@ -215,7 +215,7 @@ class TestCategoryFilter:
         response = mock_urlopen.return_value.__enter__.return_value
         response.read.return_value = b'{"success": true, "results": []}'
 
-        provider.search("dune")
+        provider.search("example")
 
         url = mock_urlopen.call_args.args[0]
         assert "category" not in url

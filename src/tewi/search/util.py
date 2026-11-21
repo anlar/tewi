@@ -124,6 +124,39 @@ def escape_markdown(value: object) -> str:
     return _MARKDOWN_SPECIAL_RE.sub(r"\\\1", text)
 
 
+_NON_WORD_RE = re.compile(r"[\W_]+")
+
+
+def query_words(query: str) -> list[str]:
+    """Split search query to lowercase words, ignoring punctuation.
+
+    Args:
+        query: Search query
+
+    Returns:
+        Query words
+    """
+    return _NON_WORD_RE.sub(" ", query.casefold()).split()
+
+
+def matches_query(title: str, words: list[str]) -> bool:
+    """Check that torrent title contains all query words.
+
+    Used to remove fuzzy matches returned by some providers (e.g.
+    "Exemplar" for "example"). Words are matched as substrings, so release
+    names without separators (e.g. "TheShow3") are matched too.
+
+    Args:
+        title: Torrent title
+        words: Query words from `query_words`
+
+    Returns:
+        True if title contains all words
+    """
+    normalized = " ".join(query_words(title))
+    return all(word in normalized for word in words)
+
+
 def build_magnet_link(
     info_hash: str, name: str, trackers: list[str] | None = None
 ) -> str:

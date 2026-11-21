@@ -14,23 +14,23 @@ HIT = {
     "category": "Books / EBooks",
     "categoryId": [9001000, 9000000],
     "date": "2023-12-29T17:45:36+00:00",
-    "description": "Uploader: zakareya<br>Rapha&euml;l [x](http://evil)",
-    "details": "https://knaben.xyz/thepiratebay/description.php?id=74258938",
+    "description": "Uploader: uploader1<br>Ren&eacute; [x](http://evil)",
+    "details": "https://knaben.xyz/thepiratebay/description.php?id=1000001",
     "grabs": 9,
-    "hash": "9AEE1886AA248AC833BAD1C67E0C0C24CF15AC42",
-    "id": "2c740d3d7ed4f05e9b51c3f6a3fcf412687d089a",
+    "hash": "0123456789ABCDEF0123456789ABCDEF01234567",
+    "id": "1111111111111111111111111111111111111111",
     "lastSeen": "2026-11-19T23:16:44+00:00",
     "link": None,
     "livePeers": 1,
     "liveSeeders": 6,
     "magnetUrl": (
-        "magnet:?xt=urn:btih:9AEE1886AA248AC833BAD1C67E0C0C24CF15AC42"
+        "magnet:?xt=urn:btih:0123456789ABCDEF0123456789ABCDEF01234567"
         "&dn=Handbook&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337"
     ),
     "peers": 0,
     "score": None,
     "seeders": 10,
-    "title": "The Debian Handbook by Rapha&euml;l Hertzog EPUB",
+    "title": "The Example Handbook by Ren&eacute; Author EPUB",
     "tracker": "The Pirate Bay",
     "trackerId": "thepiratebay",
     "virusDetection": 0.33,
@@ -57,7 +57,7 @@ def mock_urlopen():
 
 class TestParseTorrent:
     def test_result(self, result):
-        assert result.title == "The Debian Handbook by Raphaël Hertzog EPUB"
+        assert result.title == "The Example Handbook by René Author EPUB"
         assert result.info_hash == HIT["hash"]
         assert result.magnet_link == HIT["magnetUrl"]
         assert result.torrent_link is None
@@ -82,7 +82,7 @@ class TestParseTorrent:
         result = provider._parse_torrent({**HIT, "magnetUrl": None})
 
         assert result.magnet_link.startswith(
-            "magnet:?xt=urn:btih:9AEE1886AA248AC833BAD1C67E0C0C24CF15AC42"
+            "magnet:?xt=urn:btih:0123456789ABCDEF0123456789ABCDEF01234567"
         )
 
     def test_invalid_date_is_ignored(self, provider):
@@ -127,9 +127,7 @@ class TestDetails:
     def test_description_is_escaped(self, provider, result):
         md = provider.details_extended(result)
 
-        assert (
-            "Uploader\\: zakareya  \nRaphaël \\[x\\]\\(http\\://evil\\)" in md
-        )
+        assert "Uploader\\: uploader1  \nRené \\[x\\]\\(http\\://evil\\)" in md
         assert "<br>" not in md
 
     def test_description_same_as_title_is_hidden(self, provider):
@@ -184,10 +182,10 @@ class TestSearch:
         mock_urlopen.assert_not_called()
 
     def test_search_request(self, provider, mock_urlopen):
-        results = provider.search(" debian ")
+        results = provider.search(" example ")
 
         url = mock_urlopen.call_args.args[0]
-        assert url.startswith("https://api.knaben.org/v2/search?q=debian&")
+        assert url.startswith("https://api.knaben.org/v2/search?q=example&")
         assert "o=seeders" in url
         assert "c=" not in url
         assert url.endswith("&xxx")
@@ -211,14 +209,14 @@ class TestSearch:
         assert provider._convert_categories_to_knaben(categories) == expected
 
     def test_search_request_categories(self, provider, mock_urlopen):
-        provider.search("dune", [StandardCategories.TV])
+        provider.search("example", [StandardCategories.TV])
 
         url = mock_urlopen.call_args.args[0]
         assert "c=2000000%2C6000000" in url
         assert "xxx" not in url
 
     def test_search_request_xxx_category(self, provider, mock_urlopen):
-        provider.search("dune", [StandardCategories.XXX])
+        provider.search("example", [StandardCategories.XXX])
 
         url = mock_urlopen.call_args.args[0]
         assert "c=5000000" in url
@@ -229,4 +227,4 @@ class TestSearch:
         response.read.return_value = b"not json"
 
         with pytest.raises(Exception, match="Failed to parse API response"):
-            provider.search("dune")
+            provider.search("example")

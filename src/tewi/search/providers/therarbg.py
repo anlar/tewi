@@ -13,7 +13,13 @@ from ...ui.util import print_size
 from ...util.log import get_logger, log_time
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
-from ..util import build_magnet_link, escape_markdown, read_response
+from ..util import (
+    build_magnet_link,
+    escape_markdown,
+    matches_query,
+    query_words,
+    read_response,
+)
 
 logger = get_logger()
 
@@ -102,9 +108,9 @@ class TheRarbgProvider(BaseSearchProvider):
         known = {r.info_hash.upper() for r in results}
         results += [r for r in rss_results if r.info_hash.upper() not in known]
 
-        # Search also returns fuzzy matches (e.g. "Defiance" for "debian")
-        words = self._words(query)
-        return [r for r in results if self._matches(r.title, words)]
+        # Search also returns fuzzy matches (e.g. "Exemplar" for "example")
+        words = query_words(query)
+        return [r for r in results if matches_query(r.title, words)]
 
     def _search_json(
         self, query: str, rarbg_categories: list[str]
@@ -417,15 +423,6 @@ class TheRarbgProvider(BaseSearchProvider):
         """Map TheRARBG category name to StandardCategories."""
         mapped = self.CATEGORY_MAP.get(category)
         return [mapped] if mapped else None
-
-    def _words(self, text: str) -> list[str]:
-        """Split text to lowercase words, ignoring punctuation."""
-        return self._NON_WORD_RE.sub(" ", text.casefold()).split()
-
-    def _matches(self, title: str, words: list[str]) -> bool:
-        """Check that title contains all query words."""
-        normalized = " ".join(self._words(title))
-        return all(word in normalized for word in words)
 
     def _convert_categories_to_rarbg(
         self, categories: list[Category] | None

@@ -11,6 +11,8 @@ from src.tewi.search.util import (
     build_magnet_link,
     detect_category_from_name,
     escape_markdown,
+    matches_query,
+    query_words,
     urlopen,
     urlopen_post,
 )
@@ -410,3 +412,30 @@ class TestEscapeMarkdown:
 
     def test_single_line(self):
         assert escape_markdown("a\nb\x07") == "a b"
+
+
+class TestMatchesQuery:
+    def test_query_words(self):
+        assert query_words(" The.Example_S01-E01 (2019) ") == [
+            "the",
+            "example",
+            "s01",
+            "e01",
+            "2019",
+        ]
+
+    @pytest.mark.parametrize(
+        "query, title, expected",
+        [
+            ("example", "The.Example.S01", True),
+            ("EXAMPLE s01", "The_Example-S01E01", True),
+            ("example 3", "TheExample3.SomeGame", True),
+            ("ubuntu 24.04", "ubuntu-24.04.1-desktop-amd64.iso", True),
+            ("example", "Exemplar 2013 S01", False),
+            ("example part two", "Example Part One", False),
+            ("Пример", "Пример фильма 2020", True),
+            ("", "anything", True),
+        ],
+    )
+    def test_matches(self, query, title, expected):
+        assert matches_query(title, query_words(query)) is expected
