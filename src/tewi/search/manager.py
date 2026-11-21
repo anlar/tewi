@@ -42,18 +42,18 @@ AVAILABLE_PROVIDERS: dict[str, type[BaseSearchProvider]] = {
 
 # Default provider order (used when no providers are configured)
 DEFAULT_PROVIDER_ORDER = [
-    "tpb",
     "yts",
     "nekobt",
     "nyaa",
-    "torrentscsv",
+    "tpb",
+    "therarbg",
     "jackett",
     "prowlarr",
     "bitmagnet",
     "bitsearch",
     "knaben",
-    "therarbg",
     "limetorrents",
+    "torrentscsv",
 ]
 
 # Retired provider IDs mapped to the providers replacing them

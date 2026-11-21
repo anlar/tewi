@@ -30,6 +30,7 @@ handle multi-line list body as single line.
 - Warn on start if config file is accessible by other users
 - Open search result links the same way as other links, also in browser when running with textual-serve
 - Load search result details in background, so UI doesn't freeze while provider fetches extra details
+- Change default search providers order to `yts`, `nekobt`, `nyaa`, `tpb`, `therarbg`, `bitsearch`, `knaben`, `limetorrents`, `torrentscsv` (specialized providers first)
 
 ### Removed
 
