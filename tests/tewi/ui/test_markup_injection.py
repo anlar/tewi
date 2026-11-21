@@ -269,6 +269,76 @@ def test_web_search_title_does_not_run_action_on_click(payload, freeleech):
     asyncio.run(run())
 
 
+def search_result(info_hash: str, **counts) -> SearchResult:
+    return SearchResult(
+        title="Title",
+        info_hash=info_hash,
+        magnet_link=None,
+        torrent_link=None,
+        provider="Provider",
+        provider_id="test",
+        provider_short="Prov",
+        **counts,
+    )
+
+
+COUNT_PAYLOADS = [
+    *PAYLOADS,
+    # Malformed markup raised MarkupError when table rendered the cell
+    "[/oops]",
+]
+
+
+@pytest.mark.parametrize("payload", COUNT_PAYLOADS)
+def test_web_search_counts_do_not_run_action_on_click(payload):
+    async def run() -> None:
+        app = WebSearchApp()
+        async with app.run_test(size=(160, 40)) as pilot:
+            panel = app.query_one(TorrentWebSearch)
+            panel.r_results = [
+                search_result(
+                    "a" * 40,
+                    seeders=payload,
+                    leechers=payload,
+                    downloads=payload,
+                    files_count=payload,
+                )
+            ]
+            await pilot.pause()
+
+            table = panel.query_one(DataTable)
+            await click_first_row(
+                pilot, table, ("seeders", "leechers", "downloads", "files")
+            )
+            assert app.pwned == 0
+
+    asyncio.run(run())
+
+
+def test_web_search_mixed_count_types_are_sorted():
+    """Text count from one provider mixed with int from another crashed
+    sorting by comparing str with int."""
+
+    async def run() -> None:
+        app = WebSearchApp()
+        async with app.run_test(size=(160, 40)) as pilot:
+            panel = app.query_one(TorrentWebSearch)
+            panel.r_results = [
+                search_result("a" * 40, seeders=10),
+                search_result("b" * 40, seeders="12"),
+                search_result("c" * 40, seeders="many"),
+            ]
+            await pilot.pause()
+
+            assert [r.seeders for r in panel._display_results] == [
+                12,
+                10,
+                None,
+            ]
+
+    asyncio.run(run())
+
+
 class TestCheckActionBlocksUnsafeActions:
     @pytest.fixture
     def app(self):

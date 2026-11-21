@@ -31,15 +31,13 @@ handle multi-line list body as single line.
 - Open search result links the same way as other links, also in browser when running with textual-serve
 - Load search result details in background, so UI doesn't freeze while provider fetches extra details
 - Change default search providers order to `yts`, `nekobt`, `nyaa`, `tpb`, `therarbg`, `bitsearch`, `knaben`, `limetorrents`, `torrentscsv` (specialized providers first)
+- Fix web search results and details failing to show when a search provider doesn't report torrent size
+- Fix search provider counts (seeders, leechers, downloads, size, files) sent as text being parsed as markup in search results
 
 ### Removed
 
 - **Breaking:** Remove `--debug` option and `debugpy` dev dependency
 - Remove Torrentz2 search provider, as its site is shut down; `torrentz2` provider ID is now an alias for `bitsearch`, which serves the same torrent database
-
-### Fixed
-
-- Fix web search results and details failing to show when a search provider doesn't report torrent size
 
 ## [4.0.0] - 2026-11-06 - Lucky Handshake
 
