@@ -37,7 +37,12 @@ geoip: $(GEOIP_DATA)
 $(GEOIP_DATA):
 	uv run python package/build_geoip.py --output $@
 
-build: check test clean completions geoip
+build: check test dist
+
+# Package without lint and tests, used by release workflow. Phony as it's
+# also a name of output directory
+.PHONY: dist
+dist: clean completions geoip
 	uv run python -m build
 
 install-pipx:

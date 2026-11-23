@@ -20,6 +20,7 @@ handle multi-line list body as single line.
 - Add maximum search time to web search status while searching
 - Add marking torrents in list to run group actions (`space` to mark and move to next torrent, `V` to mark all/clear, `Esc` to clear marks before filters) [#164](https://github.com/anlar/tewi/pull/164)
 - Show names of torrents in remove confirmation
+- Add publishing release to PyPI from GitHub Actions
 
 ### Changed
 
