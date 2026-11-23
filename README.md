@@ -35,8 +35,8 @@ Features:
 
 - Connect to Transmission/qBittorrent/Deluge/rTorrent daemon by credentials,
   with HTTPS support
-- Browse torrents list with sorting by multiple orders, filtering by state or
-  name and in-list search
+- Browse torrents list with sorting by multiple orders, filtering by state,
+  name, category or label and in-list search
 - Different view modes: card, compact, oneline
 - Display torrent details: overview, files, trackers, peers
 - Manage torrent files: toggle download, change priority, multi-select,

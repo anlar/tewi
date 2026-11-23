@@ -642,6 +642,37 @@ FilterWidget > DataTable {
     width: auto;
 }
 
+FilterTagDialog {
+    align: center middle;
+}
+
+FilterTagWidget {
+    width: auto;
+    height: auto;
+    border-title-align: center;
+    /* solid background, so dialog doesn't blend with content behind it */
+    background: $surface;
+    border: round $primary;
+    border-title-color: $text-primary;
+    border-subtitle-color: $text-primary;
+    padding: 1;
+}
+
+FilterTagWidget > ListView {
+    height: auto;
+    /* limit list, not dialog, so list scrolls to its cursor */
+    max-height: 70vh;
+    width: auto;
+    /* fit border title and subtitle */
+    min-width: 28;
+}
+
+FilterTagWidget > ListView > ListItem {
+    width: auto;
+    min-width: 100%;
+    padding: 0 1;
+}
+
 /* SCREEN: PREFERENCES DIALOG */
 
 PreferencesDialog {

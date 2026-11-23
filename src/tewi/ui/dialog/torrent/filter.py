@@ -5,21 +5,35 @@ from textual.screen import ModalScreen
 from textual.widgets import DataTable, Static
 
 from ....util.log import log_time
-from ...messages import FilterUpdatedEvent
-from ...models import filter_options
+from ...messages import FilterUpdatedEvent, OpenFilterTagCommand
+from ...models import TagType, filter_options
 from ...util import subtitle_keys
 
 
 class FilterDialog(ModalScreen):
     @log_time
+    def __init__(self, tag_types: list[TagType]):
+        self.tag_types = tag_types
+        super().__init__()
+
+    @log_time
     def compose(self) -> ComposeResult:
-        yield FilterWidget()
+        yield FilterWidget(self.tag_types)
 
 
 class FilterWidget(Static):
     BINDINGS = [
         Binding("escape,x", "close", "[Navigation] Close"),
     ]
+
+    @log_time
+    def __init__(self, tag_types: list[TagType]):
+        """
+        Args:
+            tag_types: Tag types (category, label) supported by client
+        """
+        self.tag_types = tag_types
+        super().__init__()
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -41,11 +55,26 @@ class FilterWidget(Static):
             b = Binding(f.key, f"select_filter('{f.id}')")
             self._bindings._add_binding(b)
 
+        for tag_type in self.tag_types:
+            table.add_row(
+                tag_type.display_name,
+                Text(tag_type.key, justify="center"),
+            )
+
+            b = Binding(tag_type.key, f"open_tag_filter('{tag_type.name}')")
+            self._bindings._add_binding(b)
+
     @log_time
     def action_select_filter(self, filter_id):
         filter_option = next(x for x in filter_options if x.id == filter_id)
 
         self.post_message(FilterUpdatedEvent(filter_option))
+
+        self.parent.dismiss(False)
+
+    @log_time
+    def action_open_tag_filter(self, tag_type: str) -> None:
+        self.post_message(OpenFilterTagCommand(TagType[tag_type]))
 
         self.parent.dismiss(False)
 

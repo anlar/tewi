@@ -82,6 +82,9 @@ class StatePanel(Static):
                 name = truncate(new_r_filter_state.name, 10)
                 parts.append(f'"{name}"')
 
+            for tag_type, tag_name in new_r_filter_state.tags:
+                parts.append(f"{tag_type.value}: {truncate(tag_name, 10)}")
+
             if parts:
                 self.r_filter = (
                     f"Filter: {' + '.join(parts)} "

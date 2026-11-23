@@ -82,7 +82,7 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         Binding("L", "update_torrent_labels", "[Torrent] Update labels"),
         Binding("C", "update_torrent_category", "[Torrent] Set category"),
         Binding("s", "sort_order", "[Torrent] Sort order"),
-        Binding("f", "filter", "[Torrent] Filter by state"),
+        Binding("f", "filter", "[Torrent] Filter by state/category/label"),
         Binding("F", "filter_name", "[Torrent] Filter by name"),
         Binding(
             "escape",

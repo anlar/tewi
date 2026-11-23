@@ -1,4 +1,9 @@
+from collections import Counter
+from enum import Enum
 from typing import NamedTuple
+
+from ..torrent.base import ClientCapability
+from ..torrent.models import Torrent
 
 
 class PageState(NamedTuple):
@@ -83,10 +88,65 @@ class FilterOption(NamedTuple):
     filter_func: None
 
 
+class TagType(Enum):
+    CATEGORY = "Category"
+    LABEL = "Label"
+
+    @property
+    def capability(self) -> ClientCapability:
+        """Client capability required to filter by this tag type."""
+        return ClientCapability[self.name]
+
+    @property
+    def key(self) -> str:
+        """Key to open filter by this tag type in filter dialog."""
+        return self.value[0].lower()
+
+    @property
+    def display_name(self) -> str:
+        """Filter dialog row with underlined key."""
+        return f"[u]{self.value[0]}[/]{self.value[1:]}..."
+
+    def names(self, torrent: Torrent) -> set[str]:
+        """Get torrent category or labels.
+
+        Args:
+            torrent: Torrent to get names of
+
+        Returns:
+            Category (empty if torrent has none) or labels of torrent
+        """
+        if self == TagType.CATEGORY:
+            return {torrent.category} if torrent.category else set()
+        return set(torrent.labels)
+
+
+def count_tags(
+    torrents: list[Torrent], tag_type: TagType, current: str | None = None
+) -> dict[str, int]:
+    """Count torrents per category or label.
+
+    Args:
+        torrents: Torrents to count
+        tag_type: Count categories or labels
+        current: Name of current filter, included even if no torrent has
+            it, so filter is shown (e.g. set in config with a typo)
+
+    Returns:
+        Torrent count per category/label name, sorted by name
+    """
+    counts = Counter(name for t in torrents for name in tag_type.names(t))
+    if current is not None:
+        counts[current] += 0
+    return dict(sorted(counts.items(), key=lambda x: x[0].lower()))
+
+
 class FilterState(NamedTuple):
     option: FilterOption
     torrent_count: int
     name: str = ""
+    tags: tuple[tuple[TagType, str], ...] = ()
+    """Pairs of tag type and category/label name."""
 
 
 filter_options = [
@@ -115,8 +175,8 @@ filter_options = [
     FilterOption(
         "checking",
         "Checking",
-        "c",
-        "[u]C[/]hecking",
+        "h",
+        "C[u]h[/]ecking",
         lambda t: t.status in ("checking", "check pending"),
     ),
     FilterOption(
@@ -155,3 +215,64 @@ def get_filter_by_id(filter_id: str) -> FilterOption:
         if filter_option.id == filter_id:
             return filter_option
     raise ValueError(f"Unknown filter ID: {filter_id}")
+
+
+def parse_filter(value: str) -> tuple[FilterOption, dict[TagType, str]]:
+    """Parse filter from CLI or config.
+
+    Filter is comma-separated list of state (e.g. "seeding") and
+    "category:NAME" or "label:NAME", at most one of each kind.
+
+    Args:
+        value: Filter like "seeding,label:hd"
+
+    Returns:
+        Filter by state ("all" if not set) and category/label name per tag
+        type
+
+    Raises:
+        ValueError: If filter is invalid
+    """
+    option = None
+    tags: dict[TagType, str] = {}
+    tag_types = {t.value.lower(): t for t in TagType}
+
+    for item in (x.strip() for x in value.split(",")):
+        if not item:
+            continue
+
+        prefix, sep, name = item.partition(":")
+
+        if not sep:
+            if option is not None:
+                raise ValueError(f"more than one state in filter: {value}")
+            try:
+                option = get_filter_by_id(item.lower())
+            except ValueError:
+                states = ", ".join(f.id for f in filter_options)
+                raise ValueError(
+                    f"unknown filter '{item}' (use state: {states}; "
+                    "or category:NAME, label:NAME)"
+                ) from None
+            continue
+
+        tag_type = tag_types.get(prefix.strip().lower())
+        name = name.strip()
+
+        if not tag_type:
+            raise ValueError(
+                f"unknown filter '{item}' (use category:NAME or label:NAME)"
+            )
+        if not name:
+            raise ValueError(f"empty name in filter '{item}'")
+        if tag_type in tags:
+            raise ValueError(
+                f"more than one {tag_type.value.lower()} in filter: {value}"
+            )
+
+        tags[tag_type] = name
+
+    if option is None:
+        option = get_filter_by_id("all")
+
+    return option, tags

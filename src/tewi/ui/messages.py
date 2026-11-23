@@ -4,7 +4,7 @@ from textual.message import Message
 
 from ..search.models import Category, SearchResult
 from ..torrent.models import Torrent, TorrentFilePriority
-from .models import FilterOption, MarkState, PageState, SortKey
+from .models import FilterOption, MarkState, PageState, SortKey, TagType
 
 # Commands
 
@@ -42,6 +42,11 @@ class OpenFilterCommand(Message):
 @dataclass
 class OpenFilterNameCommand(Message):
     pass
+
+
+@dataclass
+class OpenFilterTagCommand(Message):
+    tag_type: TagType
 
 
 @dataclass
@@ -194,6 +199,14 @@ class FilterUpdatedEvent(Message):
 @dataclass
 class FilterNameUpdatedEvent(Message):
     name: str
+
+
+@dataclass
+class FilterTagUpdatedEvent(Message):
+    """Filter by category or label: name is None to clear it."""
+
+    tag_type: TagType
+    name: str | None
 
 
 @dataclass

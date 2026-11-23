@@ -60,6 +60,7 @@ from .ui.dialog.torrent.category import UpdateTorrentCategoryDialog
 from .ui.dialog.torrent.edit import EditTorrentDialog
 from .ui.dialog.torrent.filter import FilterDialog
 from .ui.dialog.torrent.filter_name import FilterNameDialog
+from .ui.dialog.torrent.filter_tag import FilterTagDialog
 from .ui.dialog.torrent.label import UpdateTorrentLabelsDialog
 from .ui.dialog.torrent.search import SearchDialog
 from .ui.dialog.torrent.sort import SortOrderDialog
@@ -71,6 +72,7 @@ from .ui.messages import (
     Confirm,
     EditTorrentCommand,
     FilterNameUpdatedEvent,
+    FilterTagUpdatedEvent,
     FilterUpdatedEvent,
     MarksChangedEvent,
     Notification,
@@ -78,6 +80,7 @@ from .ui.messages import (
     OpenEditTorrentCommand,
     OpenFilterCommand,
     OpenFilterNameCommand,
+    OpenFilterTagCommand,
     OpenSearchCommand,
     OpenSortOrderCommand,
     OpenTorrentInfoCommand,
@@ -103,9 +106,14 @@ from .ui.messages import (
     WebSearchQuerySubmitted,
 )
 from .ui.models import (
+    FilterOption,
     FilterState,
+    TagType,
+    count_tags,
     default_sort_keys,
+    filter_options,
     get_filter_by_id,
+    parse_filter,
     sort_torrents,
 )
 from .ui.panel.details import TorrentInfoPanel
@@ -223,7 +231,8 @@ class MainApp(App):
         prowlarr_multi: bool,
         bitmagnet_url: str,
         search_query: str,
-        filter: str,
+        filter_option: FilterOption,
+        filter_tags: dict[TagType, str],
         badge_max_count: int,
         badge_max_length: int,
         search_default_mode: str,
@@ -291,13 +300,56 @@ class MainApp(App):
             enabled_providers=search_providers,
         )
 
-        self.filter_option = get_filter_by_id(filter)
+        self.filter_option = filter_option
         self.filter_name = ""
+        # Category/label name per tag type. Replaced, not changed in place,
+        # as it's read by worker thread loading torrents
+        self.filter_tags = self.supported_filter_tags(filter_tags)
+        # All torrents before filtering, to list categories/labels
+        self.all_torrents: list[Torrent] = []
         self.r_filter_state = FilterState(
-            self.filter_option, 0, self.filter_name
+            self.filter_option,
+            0,
+            self.filter_name,
+            tuple(self.filter_tags.items()),
         )
 
         logger.info("Application initialization completed")
+
+    @log_time
+    def supported_tag_types(self) -> list[TagType]:
+        """Get tag types supported by torrent client.
+
+        Returns:
+            Tag types (category, label) supported by torrent client
+        """
+        return [t for t in TagType if self.client.capable(t.capability)]
+
+    @log_time
+    def supported_filter_tags(
+        self, filter_tags: dict[TagType, str]
+    ) -> dict[TagType, str]:
+        """Drop filters by category/label not supported by torrent client.
+
+        They are ignored instead of failing, so the same config file can be
+        used with different clients.
+
+        Args:
+            filter_tags: Category/label name per tag type
+
+        Returns:
+            Filters by tag types supported by torrent client
+        """
+        supported = self.supported_tag_types()
+
+        for tag_type, name in filter_tags.items():
+            if tag_type not in supported:
+                logger.warning(
+                    f"Ignore filter by {tag_type.value.lower()} '{name}': "
+                    f"not supported by {self.c_type}"
+                )
+
+        return {t: n for t, n in filter_tags.items() if t in supported}
 
     @log_time
     def compose(self) -> ComposeResult:
@@ -395,21 +447,32 @@ class MainApp(App):
 
                 # Load session with full list of torrents (before filtering)
                 session = self.client.session(torrents)
+                all_torrents = torrents
                 # Torrents hidden by filter keep their marks
                 torrent_hashes = {t.hash for t in torrents}
 
-                torrents = [
-                    t for t in torrents if self.filter_option.filter_func(t)
-                ]
+                # Filters are read once, as UI thread may change them while
+                # loading, so state shows filters which were applied
+                filter_option = self.filter_option
+                filter_name = self.filter_name
+                filter_tags = self.filter_tags
 
-                if self.filter_name:
-                    filter_name = self.filter_name.lower()
+                torrents = [t for t in torrents if filter_option.filter_func(t)]
+
+                if filter_name:
+                    name = filter_name.lower()
+                    torrents = [t for t in torrents if name in t.name.lower()]
+
+                for tag_type, tag_name in filter_tags.items():
                     torrents = [
-                        t for t in torrents if filter_name in t.name.lower()
+                        t for t in torrents if tag_name in tag_type.names(t)
                     ]
 
                 filter_state = FilterState(
-                    self.filter_option, len(torrents), self.filter_name
+                    filter_option,
+                    len(torrents),
+                    filter_name,
+                    tuple(filter_tags.items()),
                 )
 
                 sort_torrents(torrents, self.r_sort_keys)
@@ -420,6 +483,7 @@ class MainApp(App):
                     self.set_tdata_list,
                     torrents,
                     torrent_hashes,
+                    all_torrents,
                     session,
                     filter_state,
                 )
@@ -454,11 +518,13 @@ class MainApp(App):
         self,
         torrents: list[Torrent],
         torrent_hashes: set[str],
+        all_torrents: list[Torrent],
         session,
         filter_state: FilterState,
     ) -> None:
         # Before updating list, so it isn't drawn with removed marks
         self.query_one(TorrentListViewPanel).drop_missing_marks(torrent_hashes)
+        self.all_torrents = all_torrents
         self.r_torrents = torrents
         self.r_session = session
         self.r_filter_state = filter_state
@@ -545,7 +611,22 @@ class MainApp(App):
     @log_time
     @on(OpenFilterCommand)
     def handle_open_filter_command(self, event: OpenFilterCommand) -> None:
-        self.push_screen(FilterDialog())
+        self.push_screen(FilterDialog(self.supported_tag_types()))
+
+    @log_time
+    @on(OpenFilterTagCommand)
+    def handle_open_filter_tag_command(
+        self, event: OpenFilterTagCommand
+    ) -> None:
+        current = self.filter_tags.get(event.tag_type)
+
+        self.push_screen(
+            FilterTagDialog(
+                event.tag_type,
+                count_tags(self.all_torrents, event.tag_type, current),
+                current,
+            )
+        )
 
     @log_time
     @on(OpenFilterNameCommand)
@@ -832,10 +913,29 @@ class MainApp(App):
             self.post_message(Notification("Filter by name cleared"))
 
     @log_time
+    @on(FilterTagUpdatedEvent)
+    def handle_filter_tag_updated_event(
+        self, event: FilterTagUpdatedEvent
+    ) -> None:
+        type_name = event.tag_type.value.lower()
+
+        if event.name is not None:
+            self.filter_tags = {**self.filter_tags, event.tag_type: event.name}
+            self.post_message(
+                Notification(f"Filter by {type_name}: {event.name}")
+            )
+        else:
+            self.filter_tags = {
+                k: v for k, v in self.filter_tags.items() if k != event.tag_type
+            }
+            self.post_message(Notification(f"Filter by {type_name} cleared"))
+
+    @log_time
     @on(ClearFiltersCommand)
     def handle_clear_filters_command(self, event: ClearFiltersCommand) -> None:
         self.filter_option = get_filter_by_id("all")
         self.filter_name = ""
+        self.filter_tags = {}
 
         self.post_message(Notification("Filters cleared"))
 
@@ -1287,16 +1387,10 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         "--filter",
         type=str,
         default="all",
-        choices=[
-            "all",
-            "active",
-            "downloading",
-            "seeding",
-            "paused",
-            "finished",
-        ],
         action=TrackSetAction,
-        help="Filter torrents by status",
+        help="Filter torrents: comma-separated state "
+        f"({', '.join(f.id for f in filter_options)}), category:NAME and "
+        "label:NAME, e.g. seeding,label:hd",
     )
     p.add_argument(
         "--badge-max-count",
@@ -1641,6 +1735,13 @@ def create_app():
         )
         sys.exit(1)
 
+    # Validate filter
+    try:
+        filter_option, filter_tags = parse_filter(args.filter)
+    except ValueError as e:
+        print(f"Error: Invalid filter: {e}", file=sys.stderr)
+        sys.exit(1)
+
     # Validate search query if provided
     if args.search:
         query = args.search.strip()
@@ -1680,7 +1781,8 @@ def create_app():
             prowlarr_multi=args.prowlarr_multi,
             bitmagnet_url=args.bitmagnet_url,
             search_query=args.search,
-            filter=args.filter,
+            filter_option=filter_option,
+            filter_tags=filter_tags,
             badge_max_count=args.badge_max_count,
             badge_max_length=args.badge_max_length,
             search_providers=getattr(args, "search_providers", None),

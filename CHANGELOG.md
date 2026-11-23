@@ -21,6 +21,7 @@ handle multi-line list body as single line.
 - Add marking torrents in list to run group actions (`space` to mark and move to next torrent, `V` to mark all/clear, `Esc` to clear marks before filters) [#164](https://github.com/anlar/tewi/pull/164)
 - Show names of torrents in remove confirmation
 - Add publishing release to PyPI from GitHub Actions
+- Add filtering torrents by category and label (combined with other filters)
 
 ### Changed
 
@@ -42,6 +43,8 @@ handle multi-line list body as single line.
 - Apply search timeout (`--search-timeout`) to the whole search: providers not finished in time are skipped and reported, instead of delaying results
 - Run torrent actions in background (UI doesn't freeze while torrent client process), and show failed action as warning instead of crashing
 - **Breaking:** Move start/stop torrent from `space` to `p` and change torrent priority from `p` to `i` (`space` marks torrents)
+- Fix `--filter` not accepting `checking` and `incomplete` states, and show error for invalid `filter` in config instead of failing to initialize application
+- **Breaking:** Change key of "Checking" in filter dialog from `c` to `h`
 
 ### Removed
 

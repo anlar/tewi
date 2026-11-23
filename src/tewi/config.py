@@ -557,7 +557,9 @@ theme =
 # Number of torrents displayed per page (default: 1000)
 page_size =
 
-# Filter torrents by status: all, active, downloading, seeding, paused, finished
+# Filter torrents: comma-separated state (all, active, downloading, seeding,
+# checking, paused, incomplete, finished), category:NAME and label:NAME,
+# at most one of each kind, e.g. seeding, label:hd
 filter =
 
 # Maximum number of badges to display (-1: unlimited, 0: none, 1+: count)
