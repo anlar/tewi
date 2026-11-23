@@ -18,6 +18,7 @@
 
 import argparse
 import sys
+from collections.abc import Callable
 from datetime import datetime
 from time import time
 
@@ -539,6 +540,40 @@ class MainApp(App):
                 )
             )
 
+    @work(thread=True, group="torrent_action")
+    def run_torrent_action(
+        self,
+        action: Callable[[], None],
+        success_message: str,
+        failure_message: str,
+        on_success: Callable[[], None] | None = None,
+    ) -> None:
+        """Run torrent client call in background thread.
+
+        Client calls may take long (slow daemon, actions sending request
+        per torrent, moving data), which would block UI if done in message
+        handler.
+
+        Args:
+            action: Client call to run
+            success_message: Notification shown when call succeeds
+            failure_message: Notification shown with error when call fails
+            on_success: Callback run in UI thread when call succeeds
+        """
+        try:
+            action()
+        except Exception as e:
+            logger.warning(f"{failure_message}: {e}")
+            self.post_message(
+                Notification(f"{failure_message}:\n{e}", "warning")
+            )
+            return
+
+        if on_success is not None:
+            self.call_from_thread(on_success)
+
+        self.post_message(Notification(success_message))
+
     @log_time
     @on(OpenUpdateTorrentLabelsCommand)
     def handle_open_update_torrent_labels_command(
@@ -558,16 +593,22 @@ class MainApp(App):
     def handle_verify_torrent_command(
         self, event: VerifyTorrentCommand
     ) -> None:
-        self.client.verify_torrent(event.torrent_hash)
-        self.post_message(Notification("Torrent sent to verification"))
+        self.run_torrent_action(
+            lambda: self.client.verify_torrent(event.torrent_hash),
+            "Torrent sent to verification",
+            "Failed to verify torrent",
+        )
 
     @log_time
     @on(ReannounceTorrentCommand)
     def handle_reannounce_torrent_command(
         self, event: ReannounceTorrentCommand
     ) -> None:
-        self.client.reannounce_torrent(event.torrent_hash)
-        self.post_message(Notification("Torrent reannounce started"))
+        self.run_torrent_action(
+            lambda: self.client.reannounce_torrent(event.torrent_hash),
+            "Torrent reannounce started",
+            "Failed to reannounce torrent",
+        )
 
     @log_time
     @on(ChangeTorrentPriorityCommand)
@@ -585,9 +626,10 @@ class MainApp(App):
             new_priority = 0
             priority_label = "Normal"
 
-        self.client.set_priority(event.torrent_hash, new_priority)
-        self.post_message(
-            Notification(f"Torrent priority set to {priority_label}")
+        self.run_torrent_action(
+            lambda: self.client.set_priority(event.torrent_hash, new_priority),
+            f"Torrent priority set to {priority_label}",
+            "Failed to set torrent priority",
         )
 
     @log_time
@@ -622,33 +664,28 @@ class MainApp(App):
             count_label = f"{len(event.torrent_hashes)} torrents"
 
         if len(labels) > 0:
-            self.client.update_labels(event.torrent_hashes, labels)
-
-            self.post_message(
-                Notification(
-                    f"Updated torrent labels ({count_label}):\n"
-                    f"{','.join(labels)}"
-                )
+            message = (
+                f"Updated torrent labels ({count_label}):\n{','.join(labels)}"
             )
         else:
-            self.client.update_labels(event.torrent_hashes, [])
+            message = f"Removed torrent labels ({count_label})"
 
-            self.post_message(
-                Notification(f"Removed torrent labels ({count_label})")
-            )
+        self.run_torrent_action(
+            lambda: self.client.update_labels(event.torrent_hashes, labels),
+            message,
+            "Failed to update torrent labels",
+        )
 
     @log_time
     @on(EditTorrentCommand)
     def handle_edit_torrent_command(self, event: EditTorrentCommand) -> None:
-        try:
-            self.client.edit_torrent(
+        self.run_torrent_action(
+            lambda: self.client.edit_torrent(
                 event.torrent_hash, event.name, event.location
-            )
-            self.post_message(Notification("Torrent updated successfully"))
-        except Exception as e:
-            self.post_message(
-                Notification(f"Failed to update torrent: {str(e)}", "error")
-            )
+            ),
+            "Torrent updated successfully",
+            "Failed to update torrent",
+        )
 
     @log_time
     @on(OpenUpdateTorrentCategoryCommand)
@@ -663,14 +700,15 @@ class MainApp(App):
     def handle_update_torrent_category_command(
         self, event: UpdateTorrentCategoryCommand
     ) -> None:
-        try:
-            self.client.set_category(event.torrent_hash, event.category)
-            category_name = event.category if event.category else "None"
-            self.post_message(Notification(f"Category set to: {category_name}"))
-        except Exception as e:
-            self.post_message(
-                Notification(f"Failed to set category: {str(e)}", "error")
-            )
+        category_name = event.category if event.category else "None"
+
+        self.run_torrent_action(
+            lambda: self.client.set_category(
+                event.torrent_hash, event.category
+            ),
+            f"Category set to: {category_name}",
+            "Failed to set category",
+        )
 
     @log_time
     @on(SortOrderUpdatedEvent)
@@ -778,11 +816,17 @@ class MainApp(App):
         self, event: ToggleTorrentCommand
     ) -> None:
         if event.torrent_status == "stopped":
-            self.client.start_torrent(event.torrent_hash)
-            self.post_message(Notification("Torrent started"))
+            self.run_torrent_action(
+                lambda: self.client.start_torrent(event.torrent_hash),
+                "Torrent started",
+                "Failed to start torrent",
+            )
         else:
-            self.client.stop_torrent(event.torrent_hash)
-            self.post_message(Notification("Torrent stopped"))
+            self.run_torrent_action(
+                lambda: self.client.stop_torrent(event.torrent_hash),
+                "Torrent stopped",
+                "Failed to stop torrent",
+            )
 
     @log_time
     @on(RemoveTorrentCommand)
@@ -791,14 +835,16 @@ class MainApp(App):
     ) -> None:
         def check_quit(confirmed: bool | None) -> None:
             if confirmed:
-                self.client.remove_torrent(
-                    event.torrent_hash, delete_data=False
+                self.run_torrent_action(
+                    lambda: self.client.remove_torrent(
+                        event.torrent_hash, delete_data=False
+                    ),
+                    "Torrent removed",
+                    "Failed to remove torrent",
+                    on_success=lambda: self.query_one(
+                        TorrentListViewPanel
+                    ).post_message(TorrentRemovedEvent(event.torrent_hash)),
                 )
-
-                self.query_one(TorrentListViewPanel).post_message(
-                    TorrentRemovedEvent(event.torrent_hash)
-                )
-                self.post_message(Notification("Torrent removed"))
 
         message = "Remove torrent?"
         description = (
@@ -818,12 +864,16 @@ class MainApp(App):
     def handle_trash_torrent_command(self, event: TrashTorrentCommand) -> None:
         def check_quit(confirmed: bool | None) -> None:
             if confirmed:
-                self.client.remove_torrent(event.torrent_hash, delete_data=True)
-
-                self.query_one(TorrentListViewPanel).post_message(
-                    TorrentTrashedEvent(event.torrent_hash)
+                self.run_torrent_action(
+                    lambda: self.client.remove_torrent(
+                        event.torrent_hash, delete_data=True
+                    ),
+                    "Torrent and its data removed",
+                    "Failed to remove torrent and its data",
+                    on_success=lambda: self.query_one(
+                        TorrentListViewPanel
+                    ).post_message(TorrentTrashedEvent(event.torrent_hash)),
                 )
-                self.post_message(Notification("Torrent and its data removed"))
 
         message = "Remove torrent and delete data?"
         description = (
@@ -845,8 +895,11 @@ class MainApp(App):
     ) -> None:
         def check_quit(confirmed: bool | None) -> None:
             if confirmed:
-                self.client.start_all_torrents()
-                self.post_message(Notification("All torrents started"))
+                self.run_torrent_action(
+                    self.client.start_all_torrents,
+                    "All torrents started",
+                    "Failed to start all torrents",
+                )
 
         message = "Start all torrents?"
         description = (
@@ -866,8 +919,11 @@ class MainApp(App):
     ) -> None:
         def check_quit(confirmed: bool | None) -> None:
             if confirmed:
-                self.client.stop_all_torrents()
-                self.post_message(Notification("All torrents stopped"))
+                self.run_torrent_action(
+                    self.client.stop_all_torrents,
+                    "All torrents stopped",
+                    "Failed to stop all torrents",
+                )
 
         message = "Stop all torrents?"
         description = (

@@ -37,6 +37,7 @@ handle multi-line list body as single line.
 - Fix Jackett, Prowlarr, Bitmagnet, TPB, YTS and Nyaa search result details showing provider text as Markdown, which could add fake details or links with misleading text
 - Remove control characters from search result details
 - Apply search timeout (`--search-timeout`) to the whole search: providers not finished in time are skipped and reported, instead of delaying results
+- Run torrent actions in background (UI doesn't freeze while torrent client process), and show failed action as warning instead of crashing
 
 ### Removed
 
