@@ -3,6 +3,7 @@ from textual.binding import Binding
 from textual.screen import ModalScreen
 from textual.widgets import Static, TextArea
 
+from ....torrent.models import Torrent
 from ....util.log import log_time
 from ...messages import TorrentLabelsUpdatedEvent
 from ...util import subtitle_keys
@@ -10,14 +11,13 @@ from ...util import subtitle_keys
 
 class UpdateTorrentLabelsDialog(ModalScreen):
     @log_time
-    def __init__(self, torrent, torrent_ids):
-        self.torrent = torrent
-        self.torrent_ids = torrent_ids
+    def __init__(self, torrents: list[Torrent]):
+        self.torrents = torrents
         super().__init__()
 
     @log_time
     def compose(self) -> ComposeResult:
-        yield UpdateTorrentLabelsWidget(self.torrent, self.torrent_ids)
+        yield UpdateTorrentLabelsWidget(self.torrents)
 
 
 class UpdateTorrentLabelsWidget(Static):
@@ -27,9 +27,12 @@ class UpdateTorrentLabelsWidget(Static):
     ]
 
     @log_time
-    def __init__(self, torrent, torrent_ids):
-        self.torrent = torrent
-        self.torrent_ids = torrent_ids
+    def __init__(self, torrents: list[Torrent]):
+        """
+        Args:
+            torrents: Torrents to set labels (replacing current ones) to
+        """
+        self.torrents = torrents
         super().__init__()
 
     @log_time
@@ -38,15 +41,24 @@ class UpdateTorrentLabelsWidget(Static):
 
     @log_time
     def on_mount(self) -> None:
-        self.border_title = "Update torrent labels (comma-separated list)"
+        if len(self.torrents) == 1:
+            self.border_title = "Update torrent labels (comma-separated list)"
+        else:
+            self.border_title = (
+                f"Set labels of {len(self.torrents)} torrents "
+                "(comma-separated list)"
+            )
         self.border_subtitle = subtitle_keys(
             ("Enter", "Update"), ("ESC", "Close")
         )
 
         text_area = self.query_one(TextArea)
 
-        if self.torrent and len(self.torrent.labels) > 0:
-            text_area.load_text(", ".join(self.torrent.labels))
+        # Labels replace current ones, so they are prefilled only if all
+        # torrents have the same labels
+        labels = self.torrents[0].labels
+        if labels and all(t.labels == labels for t in self.torrents):
+            text_area.load_text(", ".join(labels))
 
         text_area.cursor_location = text_area.document.end
 
@@ -54,12 +66,9 @@ class UpdateTorrentLabelsWidget(Static):
     def action_update(self) -> None:
         value = self.query_one(TextArea).text
 
-        if self.torrent:
-            torrent_ids = [self.torrent.hash]
-        else:
-            torrent_ids = self.torrent_ids
-
-        self.post_message(TorrentLabelsUpdatedEvent(torrent_ids, value))
+        self.post_message(
+            TorrentLabelsUpdatedEvent([t.hash for t in self.torrents], value)
+        )
 
         self.parent.dismiss(False)
 

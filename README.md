@@ -45,7 +45,7 @@ Features:
 - Edit torrent name and location
 - Add new torrents from file, magnet link, URL, info hash or clipboard
 - Torrent actions: start/pause, start/stop all, remove/trash, verify,
-  reannounce, change priority
+  reannounce, change priority (single or multi-select)
 - View general speed limits and toggle alternative speed limits
 - View session statistics
 - View torrent client preferences

@@ -4,7 +4,7 @@ from textual.reactive import reactive
 from textual.widgets import Static
 
 from ...util.log import log_time
-from ..models import FilterState, SortKey
+from ..models import FilterState, MarkState, SortKey
 from ..util import print_size, print_speed, truncate
 from ..widget.common import PageIndicator, ReactiveLabel, SpeedIndicator
 
@@ -13,6 +13,7 @@ class StatePanel(Static):
     r_session = reactive(None)
     r_sort_keys = reactive(None)
     r_filter_state = reactive(None)
+    r_marks = reactive(None)
 
     # recompose whole line to update blocks width
     r_search = reactive(None, recompose=True)
@@ -20,6 +21,7 @@ class StatePanel(Static):
     r_stats = reactive("", recompose=True)
     r_sort = reactive("", recompose=True)
     r_filter = reactive("", recompose=True)
+    r_marked = reactive("", recompose=True)
     r_speed_limit = reactive("", recompose=True)
     r_speed_limit_delimiter = reactive("", recompose=True)
 
@@ -43,6 +45,9 @@ class StatePanel(Static):
             )
             yield ReactiveLabel(id="filter", classes="column filter").data_bind(
                 name=StatePanel.r_filter
+            )
+            yield ReactiveLabel(id="marked", classes="column marked").data_bind(
+                name=StatePanel.r_marked
             )
             yield Static("", classes="column")
             yield ReactiveLabel(
@@ -85,6 +90,20 @@ class StatePanel(Static):
                 return
 
         self.r_filter = ""
+
+    @log_time
+    def watch_r_marks(self, new_r_marks: MarkState | None) -> None:
+        # MarkState is tuple, which is truthy even with zero counts
+        listed, hidden = new_r_marks or MarkState(listed=0, hidden=0)
+
+        if listed and hidden:
+            self.r_marked = f"Marked: {listed} (+{hidden} hidden)"
+        elif listed:
+            self.r_marked = f"Marked: {listed}"
+        elif hidden:
+            self.r_marked = f"Marked: {hidden} hidden"
+        else:
+            self.r_marked = ""
 
     @log_time
     def update_sort(self, sort_keys: tuple[SortKey, ...]) -> None:
@@ -149,6 +168,13 @@ class StatePanel(Static):
             self.remove_class("filter-none")
         else:
             self.add_class("filter-none")
+
+    @log_time
+    def watch_r_marked(self, new_value: str) -> None:
+        if new_value:
+            self.remove_class("marked-none")
+        else:
+            self.add_class("marked-none")
 
     @log_time
     def print_stats(self, session) -> str:

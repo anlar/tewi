@@ -72,6 +72,7 @@ from .ui.messages import (
     EditTorrentCommand,
     FilterNameUpdatedEvent,
     FilterUpdatedEvent,
+    MarksChangedEvent,
     Notification,
     OpenAddTorrentCommand,
     OpenEditTorrentCommand,
@@ -133,6 +134,33 @@ UNSAFE_ACTIONS_WITH_PARAMS = {"screenshot"}
 # CLI options holding secrets, masked when options are logged
 SECRET_OPTIONS = {"password", "jackett_api_key", "prowlarr_api_key"}
 
+# Number of torrent names listed in remove confirmation
+CONFIRM_MAX_NAMES = 3
+
+
+def count_message(count: int, single: str, multi: str) -> str:
+    """Return message for one torrent, or for several ones.
+
+    Messages are complete text, not format strings, as they may include
+    text from torrent client (e.g. category name).
+
+    Args:
+        count: Number of torrents
+        single: Message for one torrent
+        multi: Message for several torrents
+    """
+    return single if count == 1 else multi
+
+
+def confirm_names(torrents: list[Torrent]) -> list[str]:
+    """Return names of first torrents to list in confirmation."""
+    names = [t.name for t in torrents[:CONFIRM_MAX_NAMES]]
+
+    if len(torrents) > CONFIRM_MAX_NAMES:
+        names.append(f"and {len(torrents) - CONFIRM_MAX_NAMES} more")
+
+    return names
+
 
 # Core UI panels
 
@@ -158,6 +186,7 @@ class MainApp(App):
     r_session = reactive(None)
     r_page = reactive(None)
     r_search = reactive(None)
+    r_marks = reactive(None)
 
     r_connected = reactive(True)
     r_connected_ts = reactive(time)
@@ -323,6 +352,7 @@ class MainApp(App):
             r_filter_state=MainApp.r_filter_state,
             r_page=MainApp.r_page,
             r_search=MainApp.r_search,
+            r_marks=MainApp.r_marks,
         )
 
     @log_time
@@ -365,6 +395,8 @@ class MainApp(App):
 
                 # Load session with full list of torrents (before filtering)
                 session = self.client.session(torrents)
+                # Torrents hidden by filter keep their marks
+                torrent_hashes = {t.hash for t in torrents}
 
                 torrents = [
                     t for t in torrents if self.filter_option.filter_func(t)
@@ -385,7 +417,11 @@ class MainApp(App):
                 logger.info(f"Loaded {len(torrents)} torrents from client")
 
                 self.call_from_thread(
-                    self.set_tdata_list, torrents, session, filter_state
+                    self.set_tdata_list,
+                    torrents,
+                    torrent_hashes,
+                    session,
+                    filter_state,
                 )
             elif current_pane == "torrent-info":
                 info_panel = self.query_one(TorrentInfoPanel)
@@ -415,8 +451,14 @@ class MainApp(App):
 
     @log_time
     def set_tdata_list(
-        self, torrents: list[Torrent], session, filter_state: FilterState
+        self,
+        torrents: list[Torrent],
+        torrent_hashes: set[str],
+        session,
+        filter_state: FilterState,
     ) -> None:
+        # Before updating list, so it isn't drawn with removed marks
+        self.query_one(TorrentListViewPanel).drop_missing_marks(torrent_hashes)
         self.r_torrents = torrents
         self.r_session = session
         self.r_filter_state = filter_state
@@ -485,7 +527,11 @@ class MainApp(App):
     @on(Confirm)
     def handle_confirm(self, event: Confirm) -> None:
         self.push_screen(
-            ConfirmDialog(message=event.message, description=event.description),
+            ConfirmDialog(
+                message=event.message,
+                description=event.description,
+                items=event.items,
+            ),
             event.check_quit,
         )
 
@@ -579,23 +625,29 @@ class MainApp(App):
     def handle_open_update_torrent_labels_command(
         self, event: OpenUpdateTorrentLabelsCommand
     ) -> None:
-        self.push_screen(UpdateTorrentLabelsDialog(event.torrent, None))
+        self.push_screen(UpdateTorrentLabelsDialog(event.torrents))
 
     @log_time
     @on(OpenEditTorrentCommand)
     def handle_open_edit_torrent_command(
         self, event: OpenEditTorrentCommand
     ) -> None:
-        self.push_screen(EditTorrentDialog(event.torrent))
+        self.push_screen(EditTorrentDialog(event.torrents))
 
     @log_time
     @on(VerifyTorrentCommand)
     def handle_verify_torrent_command(
         self, event: VerifyTorrentCommand
     ) -> None:
+        count = len(event.torrent_hashes)
+
         self.run_torrent_action(
-            lambda: self.client.verify_torrent(event.torrent_hash),
-            "Torrent sent to verification",
+            lambda: self.client.verify_torrent(event.torrent_hashes),
+            count_message(
+                count,
+                "Torrent sent to verification",
+                f"{count} torrents sent to verification",
+            ),
             "Failed to verify torrent",
         )
 
@@ -604,9 +656,15 @@ class MainApp(App):
     def handle_reannounce_torrent_command(
         self, event: ReannounceTorrentCommand
     ) -> None:
+        count = len(event.torrent_hashes)
+
         self.run_torrent_action(
-            lambda: self.client.reannounce_torrent(event.torrent_hash),
-            "Torrent reannounce started",
+            lambda: self.client.reannounce_torrent(event.torrent_hashes),
+            count_message(
+                count,
+                "Torrent reannounce started",
+                f"Reannounce started for {count} torrents",
+            ),
             "Failed to reannounce torrent",
         )
 
@@ -626,9 +684,17 @@ class MainApp(App):
             new_priority = 0
             priority_label = "Normal"
 
+        count = len(event.torrent_hashes)
+
         self.run_torrent_action(
-            lambda: self.client.set_priority(event.torrent_hash, new_priority),
-            f"Torrent priority set to {priority_label}",
+            lambda: self.client.set_priority(
+                event.torrent_hashes, new_priority
+            ),
+            count_message(
+                count,
+                f"Torrent priority set to {priority_label}",
+                f"Priority of {count} torrents set to {priority_label}",
+            ),
             "Failed to set torrent priority",
         )
 
@@ -679,11 +745,22 @@ class MainApp(App):
     @log_time
     @on(EditTorrentCommand)
     def handle_edit_torrent_command(self, event: EditTorrentCommand) -> None:
+        def edit() -> None:
+            for torrent in event.torrents:
+                # Without new name (moving several torrents) each keeps
+                # its own one
+                name = torrent.name if event.name is None else event.name
+                self.client.edit_torrent(torrent.hash, name, event.location)
+
+        count = len(event.torrents)
+
         self.run_torrent_action(
-            lambda: self.client.edit_torrent(
-                event.torrent_hash, event.name, event.location
+            edit,
+            count_message(
+                count,
+                "Torrent updated successfully",
+                f"{count} torrents moved",
             ),
-            "Torrent updated successfully",
             "Failed to update torrent",
         )
 
@@ -693,7 +770,9 @@ class MainApp(App):
         self, event: OpenUpdateTorrentCategoryCommand
     ) -> None:
         categories = self.client.get_categories()
-        self.push_screen(UpdateTorrentCategoryDialog(event.torrent, categories))
+        self.push_screen(
+            UpdateTorrentCategoryDialog(event.torrents, categories)
+        )
 
     @log_time
     @on(UpdateTorrentCategoryCommand)
@@ -701,12 +780,17 @@ class MainApp(App):
         self, event: UpdateTorrentCategoryCommand
     ) -> None:
         category_name = event.category if event.category else "None"
+        count = len(event.torrent_hashes)
 
         self.run_torrent_action(
             lambda: self.client.set_category(
-                event.torrent_hash, event.category
+                event.torrent_hashes, event.category
             ),
-            f"Category set to: {category_name}",
+            count_message(
+                count,
+                f"Category set to: {category_name}",
+                f"Category of {count} torrents set to: {category_name}",
+            ),
             "Failed to set category",
         )
 
@@ -759,6 +843,11 @@ class MainApp(App):
     @on(PageChangedEvent)
     def handle_page_changed_event(self, event: PageChangedEvent) -> None:
         self.r_page = event.state
+
+    @log_time
+    @on(MarksChangedEvent)
+    def handle_marks_changed_event(self, event: MarksChangedEvent) -> None:
+        self.r_marks = event.state
 
     @log_time
     @on(SearchStateChangedEvent)
@@ -815,16 +904,25 @@ class MainApp(App):
     def handle_toggle_torrent_command(
         self, event: ToggleTorrentCommand
     ) -> None:
-        if event.torrent_status == "stopped":
+        hashes = [t.hash for t in event.torrents]
+        count = len(hashes)
+
+        # Several torrents are started if any of them is stopped, so they
+        # end up in the same state
+        if any(t.status == "stopped" for t in event.torrents):
             self.run_torrent_action(
-                lambda: self.client.start_torrent(event.torrent_hash),
-                "Torrent started",
+                lambda: self.client.start_torrent(hashes),
+                count_message(
+                    count, "Torrent started", f"{count} torrents started"
+                ),
                 "Failed to start torrent",
             )
         else:
             self.run_torrent_action(
-                lambda: self.client.stop_torrent(event.torrent_hash),
-                "Torrent stopped",
+                lambda: self.client.stop_torrent(hashes),
+                count_message(
+                    count, "Torrent stopped", f"{count} torrents stopped"
+                ),
                 "Failed to stop torrent",
             )
 
@@ -833,58 +931,94 @@ class MainApp(App):
     def handle_remove_torrent_command(
         self, event: RemoveTorrentCommand
     ) -> None:
+        # Torrents are chosen when key is pressed: list refresh while
+        # dialog is open doesn't change what is removed
+        hashes = [t.hash for t in event.torrents]
+        count = len(hashes)
+
         def check_quit(confirmed: bool | None) -> None:
             if confirmed:
                 self.run_torrent_action(
                     lambda: self.client.remove_torrent(
-                        event.torrent_hash, delete_data=False
+                        hashes, delete_data=False
                     ),
-                    "Torrent removed",
+                    count_message(
+                        count, "Torrent removed", f"{count} torrents removed"
+                    ),
                     "Failed to remove torrent",
                     on_success=lambda: self.query_one(
                         TorrentListViewPanel
-                    ).post_message(TorrentRemovedEvent(event.torrent_hash)),
+                    ).post_message(TorrentRemovedEvent(hashes)),
                 )
 
-        message = "Remove torrent?"
-        description = (
+        message = count_message(
+            count, "Remove torrent?", f"Remove {count} torrents?"
+        )
+        description = count_message(
+            count,
             "Once removed, continuing the "
             "transfer will require the torrent file. "
-            "Are you sure you want to remove it?"
+            "Are you sure you want to remove it?",
+            "Once removed, continuing the "
+            "transfer will require the torrent files. "
+            "Are you sure you want to remove them?",
         )
 
         self.post_message(
             Confirm(
-                message=message, description=description, check_quit=check_quit
+                message=message,
+                description=description,
+                check_quit=check_quit,
+                items=confirm_names(event.torrents),
             )
         )
 
     @log_time
     @on(TrashTorrentCommand)
     def handle_trash_torrent_command(self, event: TrashTorrentCommand) -> None:
+        # Torrents are chosen when key is pressed: list refresh while
+        # dialog is open doesn't change what is removed
+        hashes = [t.hash for t in event.torrents]
+        count = len(hashes)
+
         def check_quit(confirmed: bool | None) -> None:
             if confirmed:
                 self.run_torrent_action(
                     lambda: self.client.remove_torrent(
-                        event.torrent_hash, delete_data=True
+                        hashes, delete_data=True
                     ),
-                    "Torrent and its data removed",
+                    count_message(
+                        count,
+                        "Torrent and its data removed",
+                        f"{count} torrents and their data removed",
+                    ),
                     "Failed to remove torrent and its data",
                     on_success=lambda: self.query_one(
                         TorrentListViewPanel
-                    ).post_message(TorrentTrashedEvent(event.torrent_hash)),
+                    ).post_message(TorrentTrashedEvent(hashes)),
                 )
 
-        message = "Remove torrent and delete data?"
-        description = (
+        message = count_message(
+            count,
+            "Remove torrent and delete data?",
+            f"Remove {count} torrents and delete data?",
+        )
+        description = count_message(
+            count,
             "All data downloaded for this torrent "
             "will be deleted. Are you sure you "
-            "want to remove it?"
+            "want to remove it?",
+            "All data downloaded for these torrents "
+            "will be deleted. Are you sure you "
+            "want to remove them?",
         )
 
         self.post_message(
             Confirm(
-                message=message, description=description, check_quit=check_quit
+                message=message,
+                description=description,
+                check_quit=check_quit,
+                items=confirm_names(event.torrents),
             )
         )
 

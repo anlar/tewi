@@ -6,6 +6,16 @@ class PageState(NamedTuple):
     total: int
 
 
+class MarkState(NamedTuple):
+    """Count of marked torrents in torrent list."""
+
+    listed: int
+    """Marked torrents shown by current filter (used by actions)."""
+
+    hidden: int
+    """Marked torrents hidden by current filter (kept, but not used)."""
+
+
 class SortOrder(NamedTuple):
     id: str
     name: str

@@ -18,6 +18,8 @@ handle multi-line list body as single line.
 - Add LimeTorrents search provider (`limetorrents`), enabled by default
 - Add nekoBT anime search provider (`nekobt`), enabled by default
 - Add maximum search time to web search status while searching
+- Add marking torrents in list to run group actions (`space` to mark and move to next torrent, `V` to mark all/clear, `Esc` to clear marks before filters) [#164](https://github.com/anlar/tewi/pull/164)
+- Show names of torrents in remove confirmation
 
 ### Changed
 
@@ -38,6 +40,7 @@ handle multi-line list body as single line.
 - Remove control characters from search result details
 - Apply search timeout (`--search-timeout`) to the whole search: providers not finished in time are skipped and reported, instead of delaying results
 - Run torrent actions in background (UI doesn't freeze while torrent client process), and show failed action as warning instead of crashing
+- **Breaking:** Move start/stop torrent from `space` to `p` and change torrent priority from `p` to `i` (`space` marks torrents)
 
 ### Removed
 

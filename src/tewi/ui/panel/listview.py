@@ -1,6 +1,7 @@
 import math
 from typing import ClassVar, Optional
 
+from rich.segment import Segment
 from rich.style import Style
 from textual import events, on
 from textual.binding import Binding, BindingType
@@ -15,6 +16,7 @@ from ...util.log import log_time
 from ..messages import (
     ChangeTorrentPriorityCommand,
     ClearFiltersCommand,
+    MarksChangedEvent,
     Notification,
     OpenAddTorrentCommand,
     OpenEditTorrentCommand,
@@ -37,12 +39,15 @@ from ..messages import (
     TrashTorrentCommand,
     VerifyTorrentCommand,
 )
-from ..models import PageState
+from ..models import MarkState, PageState
 from ..widget.torrent_item import (
     TorrentItemRenderer,
     create_renderer,
     queue_width,
 )
+
+# Drawn in first column of marked item (left padding of every line)
+MARK = "▌"
 
 
 class TorrentListViewPanel(ScrollView, can_focus=True):
@@ -50,8 +55,14 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
 
     Items are not widgets: list draws only visible lines with Line API
     (render_line), using renderer for current view mode. Rendered items are
-    cached and redrawn only when torrent data, width or highlight changes,
-    so cost of updates and cursor movement doesn't depend on page size.
+    cached and redrawn only when torrent data, width, highlight or mark
+    changes, so cost of updates and cursor movement doesn't depend on page
+    size.
+
+    Torrents can be marked to run actions on all of them at once. Marks
+    are kept for torrents hidden by filter (e.g. finished torrent in
+    "Downloading" filter), but actions use only listed ones, so they never
+    change torrents user can't see.
     """
 
     BINDINGS: ClassVar[list[BindingType]] = [
@@ -73,9 +84,15 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         Binding("s", "sort_order", "[Torrent] Sort order"),
         Binding("f", "filter", "[Torrent] Filter by state"),
         Binding("F", "filter_name", "[Torrent] Filter by name"),
-        Binding("escape", "clear_filters", "[Torrent] Clear filters"),
-        Binding("p", "change_priority", "[Torrent] Change priority"),
-        Binding("space", "toggle_torrent", "[Torrent] Toggle state"),
+        Binding(
+            "escape",
+            "clear_marks_or_filters",
+            "[Torrent] Clear marks/filters",
+        ),
+        Binding("space", "toggle_mark", "[Torrent] Toggle mark"),
+        Binding("V", "toggle_mark_all", "[Torrent] Mark/clear all"),
+        Binding("i", "change_priority", "[Torrent] Change priority"),
+        Binding("p", "toggle_torrent", "[Torrent] Toggle state"),
         Binding("r", "remove_torrent", "[Torrent] Remove"),
         Binding("R", "trash_torrent", "[Torrent] Trash with data"),
         Binding("v", "verify_torrent", "[Torrent] Verify"),
@@ -93,6 +110,9 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         "torrent-list--hover",
         "torrent-list--even-row",
         "torrent-list--odd-row",
+        "torrent-list--marked",
+        "torrent-list--mark",
+        "torrent-list--cursor-mark",
         "torrent-list--name",
         "torrent-list--muted",
         "torrent-list--status-download",
@@ -309,7 +329,12 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         self.page_torrents: list[Torrent] = []
         self.page_state: PageState | None = None
 
-        # item index -> (torrent, width, highlight kind, rendered lines)
+        # Hashes of marked torrents, including ones hidden by filter
+        self.marked: set[str] = set()
+        self.mark_state: MarkState | None = None
+
+        # item index -> (torrent, width, highlight kind, marked,
+        # rendered lines)
         self._item_cache: dict[int, tuple] = {}
         # (component name, item base style) -> resolved style
         self._style_cache: dict[tuple[str, Style], Style] = {}
@@ -318,12 +343,16 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
 
     @log_time
     def watch_r_torrents(self, new_r_torrents):
-        self.update_queue_width(new_r_torrents or [])
+        self.show_torrents(new_r_torrents or [])
 
-        if new_r_torrents:
-            self.update_page(torrents=new_r_torrents)
-        else:
-            self.update_page(torrents=[])
+    @log_time
+    def show_torrents(
+        self, torrents: list[Torrent], hl_torrent_id: str | None = None
+    ) -> None:
+        """Show updated torrent list, keeping highlighted torrent."""
+        self.update_queue_width(torrents)
+        self.update_page(torrents, hl_torrent_id)
+        self._update_mark_state()
 
     @log_time
     def next_page(self, forward: bool) -> None:
@@ -456,9 +485,12 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
 
     def _render_item(self, idx: int, width: int) -> list[Strip]:
         torrent = self.page_torrents[idx]
+        marked = torrent.hash in self.marked
 
         if idx == self.index:
             kind = "cursor"
+        elif marked:
+            kind = "marked"
         elif idx == self.hover_index:
             kind = "hover"
         elif idx % 2:
@@ -468,8 +500,13 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
 
         cached = self._item_cache.get(idx)
         if cached is not None:
-            c_torrent, c_width, c_kind, strips = cached
-            if c_width == width and c_kind == kind and c_torrent == torrent:
+            c_torrent, c_width, c_kind, c_marked, strips = cached
+            if (
+                c_width == width
+                and c_kind == kind
+                and c_marked == marked
+                and c_torrent == torrent
+            ):
                 return strips
 
         base = self.get_component_rich_style(f"torrent-list--{kind}")
@@ -483,12 +520,18 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
             return self._component_style(name, base)
 
         lines = self.renderer.render(torrent, width, style)
+
+        if marked:
+            # Every line starts with padding, so mark doesn't shift item
+            mark = Segment(MARK, style("mark"))
+            lines = [[mark, *Strip(line).crop(1)] for line in lines]
+
         strips = [
             Strip(line).apply_style(base).adjust_cell_length(width, base)
             for line in lines
         ]
 
-        self._item_cache[idx] = (torrent, width, kind, strips)
+        self._item_cache[idx] = (torrent, width, kind, marked, strips)
         return strips
 
     def _component_style(self, name: str, base: Style) -> Style:
@@ -685,45 +728,45 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
 
     @log_time
     def action_edit_torrent(self) -> None:
-        if (torrent := self.get_hl_torrent()) is not None:
-            self.post_message(OpenEditTorrentCommand(torrent))
+        if torrents := self.target_torrents():
+            self.post_message(OpenEditTorrentCommand(torrents))
 
     @log_time
     def action_update_torrent_labels(self) -> None:
-        if (torrent := self.get_hl_torrent()) is not None:
-            self.post_message(OpenUpdateTorrentLabelsCommand(torrent))
+        if torrents := self.target_torrents():
+            self.post_message(OpenUpdateTorrentLabelsCommand(torrents))
 
     @log_time
     def action_update_torrent_category(self) -> None:
-        if (torrent := self.get_hl_torrent()) is not None:
-            self.post_message(OpenUpdateTorrentCategoryCommand(torrent))
+        if torrents := self.target_torrents():
+            self.post_message(OpenUpdateTorrentCategoryCommand(torrents))
 
     @log_time
     def action_verify_torrent(self) -> None:
-        if (torrent_id := self.get_hl_torrent_id()) is not None:
-            self.post_message(VerifyTorrentCommand(torrent_id))
+        if torrents := self.target_torrents():
+            self.post_message(VerifyTorrentCommand([t.hash for t in torrents]))
 
     @log_time
     def action_reannounce_torrent(self) -> None:
-        if (torrent_id := self.get_hl_torrent_id()) is not None:
-            self.post_message(ReannounceTorrentCommand(torrent_id))
-
-    @log_time
-    def action_toggle_torrent(self) -> None:
-        if (torrent := self.get_hl_torrent()) is not None:
+        if torrents := self.target_torrents():
             self.post_message(
-                ToggleTorrentCommand(torrent.hash, torrent.status)
+                ReannounceTorrentCommand([t.hash for t in torrents])
             )
 
     @log_time
+    def action_toggle_torrent(self) -> None:
+        if torrents := self.target_torrents():
+            self.post_message(ToggleTorrentCommand(torrents))
+
+    @log_time
     def action_remove_torrent(self) -> None:
-        if (torrent_id := self.get_hl_torrent_id()) is not None:
-            self.post_message(RemoveTorrentCommand(torrent_id))
+        if torrents := self.target_torrents():
+            self.post_message(RemoveTorrentCommand(torrents))
 
     @log_time
     def action_trash_torrent(self) -> None:
-        if (torrent_id := self.get_hl_torrent_id()) is not None:
-            self.post_message(TrashTorrentCommand(torrent_id))
+        if torrents := self.target_torrents():
+            self.post_message(TrashTorrentCommand(torrents))
 
     @log_time
     def action_add_torrent(self) -> None:
@@ -750,15 +793,55 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         self.post_message(OpenFilterNameCommand())
 
     @log_time
-    def action_clear_filters(self) -> None:
-        self.post_message(ClearFiltersCommand())
+    def action_clear_marks_or_filters(self) -> None:
+        """Clear marks if any listed torrent is marked, else filters.
+
+        Marks of torrents hidden by filter are kept: clearing filters
+        shows them, so pressing again clears them.
+        """
+        if self.marked_torrents():
+            self.clear_marks()
+        else:
+            self.post_message(ClearFiltersCommand())
 
     @log_time
     def action_change_priority(self) -> None:
-        if (torrent := self.get_hl_torrent()) is not None:
+        if torrents := self.target_torrents():
+            # Next priority is chosen by the first torrent and set to all
             self.post_message(
-                ChangeTorrentPriorityCommand(torrent.hash, torrent.priority)
+                ChangeTorrentPriorityCommand(
+                    [t.hash for t in torrents], torrents[0].priority
+                )
             )
+
+    # Actions: marks
+
+    @log_time
+    def action_toggle_mark(self) -> None:
+        """Toggle mark of highlighted torrent and move to the next one."""
+        if (torrent := self.get_hl_torrent()) is None:
+            return
+
+        if torrent.hash in self.marked:
+            self.marked.discard(torrent.hash)
+        else:
+            self.marked.add(torrent.hash)
+
+        # Cursor doesn't move from the last item, so redraw it explicitly
+        self._refresh_item(self.index)
+        self._update_mark_state()
+        self.action_cursor_down()
+
+    @log_time
+    def action_toggle_mark_all(self) -> None:
+        """Mark all listed torrents (on all pages), or clear marks if any
+        listed torrent is marked."""
+        if self.marked_torrents():
+            self.clear_marks()
+        else:
+            self.marked.update(t.hash for t in self.r_torrents or [])
+            self.refresh()
+            self._update_mark_state()
 
     @log_time
     def action_toggle_view_mode(self) -> None:
@@ -886,24 +969,90 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
     @log_time
     @on(TorrentRemovedEvent)
     def handle_torrent_removed_event(self, event: TorrentRemovedEvent) -> None:
-        self._remove_item(event.torrent_hash)
+        self._remove_items(event.torrent_hashes)
 
     @log_time
     @on(TorrentTrashedEvent)
-    def handle_torrent_trashed_event(self, event: TorrentRemovedEvent) -> None:
-        self._remove_item(event.torrent_hash)
+    def handle_torrent_trashed_event(self, event: TorrentTrashedEvent) -> None:
+        self._remove_items(event.torrent_hashes)
 
     @log_time
-    def _remove_item(self, torrent_hash: str) -> None:
-        """Remove torrent from page until next torrent list update."""
-        self.page_torrents = [
-            t for t in self.page_torrents if t.hash != torrent_hash
-        ]
+    def _remove_items(self, torrent_hashes: list[str]) -> None:
+        """Remove torrents from list until next torrent list update.
 
-        self._item_cache.clear()
-        self._update_virtual_size()
-        self.index = self.validate_index(self.index)
+        Cursor stays on highlighted torrent, or moves to the next one if
+        highlighted torrent is removed.
+        """
+        removed = set(torrent_hashes)
+        self.marked -= removed
+
+        old_torrents = self.r_torrents or []
+        torrents = [t for t in old_torrents if t.hash not in removed]
+
+        hl_torrent_id = None
+        if torrents and (hl_torrent := self.get_hl_torrent()) is not None:
+            # Kept torrents before cursor: it's index of highlighted torrent
+            # in new list, or of the next one if it was removed
+            current = self.torrent_idx(hl_torrent) or 0
+            idx = sum(t.hash not in removed for t in old_torrents[:current])
+            hl_torrent_id = torrents[min(idx, len(torrents) - 1)].hash
+
+        # Without watcher: it would look for highlighted torrent on page
+        # which still shows removed ones
+        self.set_reactive(TorrentListViewPanel.r_torrents, torrents)
+        self.show_torrents(torrents, hl_torrent_id)
+
+    # Marks
+
+    @log_time
+    def marked_torrents(self) -> list[Torrent]:
+        """Return marked torrents shown by current filter, in list order."""
+        if not self.marked or not self.r_torrents:
+            return []
+
+        return [t for t in self.r_torrents if t.hash in self.marked]
+
+    @log_time
+    def target_torrents(self) -> list[Torrent]:
+        """Return torrents to run action on: listed marked torrents, or
+        highlighted torrent if none of them is marked."""
+        if marked := self.marked_torrents():
+            return marked
+
+        if (torrent := self.get_hl_torrent()) is not None:
+            return [torrent]
+
+        return []
+
+    @log_time
+    def clear_marks(self) -> None:
+        """Unmark all torrents, including ones hidden by filter."""
+        self.marked.clear()
         self.refresh()
+        self._update_mark_state()
+
+    @log_time
+    def drop_missing_marks(self, torrent_hashes: set[str]) -> None:
+        """Unmark torrents which are not in torrent client anymore.
+
+        Args:
+            torrent_hashes: Hashes of all torrents in client (unfiltered)
+        """
+        if self.marked <= torrent_hashes:
+            return
+
+        self.marked &= torrent_hashes
+        # List isn't updated if only hidden torrents were removed (listed
+        # ones are the same), so counts are updated here
+        self._update_mark_state()
+
+    def _update_mark_state(self) -> None:
+        listed = len(self.marked_torrents())
+        state = MarkState(listed=listed, hidden=len(self.marked) - listed)
+
+        if state != self.mark_state:
+            self.mark_state = state
+            self.post_message(MarksChangedEvent(state))
 
     # Common helpers
 

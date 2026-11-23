@@ -73,7 +73,7 @@
 #state-panel {
     grid-size: 12;
     /* last 4 columns: arrow, upload speed, arrow, download speed */
-    grid-columns: auto auto auto auto 1fr auto auto 2 10 2 12;
+    grid-columns: auto auto auto auto auto 1fr auto auto 2 10 2 12;
     height: 1;
     background: $secondary;
 }
@@ -100,6 +100,12 @@ StatePanel > .search {
 
 #state-panel > .filter {
     background: $secondary-lighten-3;
+}
+
+/* same color as marks in torrent list */
+#state-panel > .marked {
+    color: auto 87%;
+    background: $accent;
 }
 
 #state-panel > .arrow {
@@ -130,6 +136,10 @@ StatePanel > .search {
 }
 
 .filter-none > #state-panel > #filter {
+    background: $secondary;
+}
+
+.marked-none > #state-panel > #marked {
     background: $secondary;
 }
 
@@ -186,6 +196,32 @@ SpeedIndicator.non-zero {
 
 ReactiveLinkLabel > ReactiveLabel, ReactiveLinkLabel > Link {
     width: 100%;
+}
+
+/* TORRENT LIST MARKS */
+
+/* marked item: mark in its first column and tinted background */
+TorrentListViewPanel > .torrent-list--marked {
+    background: $accent 15%;
+}
+
+TorrentListViewPanel > .torrent-list--mark {
+    color: $accent;
+}
+
+/* accent may be close to cursor color */
+TorrentListViewPanel > .torrent-list--cursor-mark {
+    color: auto 87%;
+}
+
+TorrentListViewPanel:ansi > .torrent-list--cursor-mark {
+    color: $block-cursor-foreground;
+}
+
+/* ANSI colors can't be blended: tint would become solid accent
+   background, hiding mark and text, so only mark is drawn */
+TorrentListViewPanel:ansi > .torrent-list--marked {
+    background: transparent;
 }
 
 /* TORRENT INFO PANEL */

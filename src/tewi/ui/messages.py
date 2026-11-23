@@ -4,7 +4,7 @@ from textual.message import Message
 
 from ..search.models import Category, SearchResult
 from ..torrent.models import Torrent, TorrentFilePriority
-from .models import FilterOption, PageState, SortKey
+from .models import FilterOption, MarkState, PageState, SortKey
 
 # Commands
 
@@ -51,56 +51,57 @@ class ClearFiltersCommand(Message):
 
 @dataclass
 class OpenUpdateTorrentLabelsCommand(Message):
-    torrent: Torrent
+    torrents: list[Torrent]
 
 
 @dataclass
 class OpenEditTorrentCommand(Message):
-    torrent: Torrent
+    torrents: list[Torrent]
 
 
 @dataclass
 class OpenUpdateTorrentCategoryCommand(Message):
-    torrent: Torrent
+    torrents: list[Torrent]
 
 
 @dataclass
 class EditTorrentCommand(Message):
-    torrent_hash: str
-    name: str
+    """Edit torrents: name is None to keep names (moving several)."""
+
+    torrents: list[Torrent]
+    name: str | None
     location: str
 
 
 @dataclass
 class UpdateTorrentCategoryCommand(Message):
-    torrent_hash: str
+    torrent_hashes: list[str]
     category: str | None
 
 
 @dataclass
 class RemoveTorrentCommand(Message):
-    torrent_hash: str
+    torrents: list[Torrent]
 
 
 @dataclass
 class TrashTorrentCommand(Message):
-    torrent_hash: str
+    torrents: list[Torrent]
 
 
 @dataclass
 class VerifyTorrentCommand(Message):
-    torrent_hash: str
+    torrent_hashes: list[str]
 
 
 @dataclass
 class ReannounceTorrentCommand(Message):
-    torrent_hash: str
+    torrent_hashes: list[str]
 
 
 @dataclass
 class ToggleTorrentCommand(Message):
-    torrent_hash: str
-    torrent_status: str
+    torrents: list[Torrent]
 
 
 @dataclass
@@ -115,7 +116,7 @@ class StopAllTorrentsCommand(Message):
 
 @dataclass
 class ChangeTorrentPriorityCommand(Message):
-    torrent_hash: str
+    torrent_hashes: list[str]
     current_priority: int | None
 
 
@@ -149,12 +150,12 @@ class WebSearchQuerySubmitted(Message):
 
 @dataclass
 class TorrentRemovedEvent(Message):
-    torrent_hash: str
+    torrent_hashes: list[str]
 
 
 @dataclass
 class TorrentTrashedEvent(Message):
-    torrent_hash: str
+    torrent_hashes: list[str]
 
 
 @dataclass
@@ -201,6 +202,11 @@ class PageChangedEvent(Message):
 
 
 @dataclass
+class MarksChangedEvent(Message):
+    state: MarkState
+
+
+@dataclass
 class SearchStateChangedEvent(Message):
     current: int | None = None
     total: int | None = None
@@ -225,3 +231,5 @@ class Confirm(Message):
     message: str
     description: str
     check_quit: bool
+    # Shown literally below description (e.g. torrent names)
+    items: list[str] | None = None
