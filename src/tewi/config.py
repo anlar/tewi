@@ -650,7 +650,7 @@ hide_zero_seeders =
 # Default view mode for search results: standard or compact (default: standard)
 default_mode =
 
-# Timeout in seconds for search provider HTTP requests (default: 30)
+# Maximum time in seconds to wait for search results (default: 30)
 timeout =
 
 # Search presets: define named combinations of indexers and categories.

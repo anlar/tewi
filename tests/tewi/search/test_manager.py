@@ -1,5 +1,8 @@
 """Tests for search manager."""
 
+import threading
+import time
+
 from src.tewi.search.base import BaseSearchProvider
 from src.tewi.search.manager import SearchClient, resolve_provider_aliases
 from src.tewi.search.models import SearchResult
@@ -37,6 +40,22 @@ class FakeProvider(BaseSearchProvider):
 
     def details_extended(self, result: SearchResult) -> str:
         return ""
+
+
+class StalledProvider(FakeProvider):
+    """Provider whose search blocks until released."""
+
+    def __init__(self) -> None:
+        super().__init__([])
+        self.release = threading.Event()
+
+    @property
+    def name(self) -> str:
+        return "Stalled"
+
+    def search(self, query, categories=None, indexers=None):
+        self.release.wait(10)
+        return [result("late", VALID_HASH)]
 
 
 def search(results: list[SearchResult]) -> list[SearchResult]:
@@ -89,3 +108,20 @@ class TestProviderAliases:
             None, None, False, None, None, False, None, 30, ["torrentz2"]
         )
         assert client._enabled_providers == ["bitsearch"]
+
+
+class TestSearchTimeout:
+    def test_stalled_provider_is_abandoned(self):
+        client = SearchClient(None, None, False, None, None, False, None, 1)
+        stalled = StalledProvider()
+        client._providers = [stalled, FakeProvider([result("x", None)])]
+        try:
+            start = time.monotonic()
+            found, errors = client.search("query", None, None)
+            elapsed = time.monotonic() - start
+        finally:
+            stalled.release.set()
+
+        assert elapsed < 5
+        assert [r.title for r in found] == ["x"]
+        assert errors == ["Stalled: timed out after 1 seconds"]

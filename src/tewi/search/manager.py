@@ -1,7 +1,7 @@
 """Unified search client for multiple torrent search providers."""
 
 import sys
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait
 
 from ..util.log import get_logger
 from ..util.misc import is_torrent_hash
@@ -131,8 +131,8 @@ class SearchClient:
             prowlarr_api_key: API key for Prowlarr authentication (optional)
             prowlarr_multi: Load all Prowlarr indexers individually (optional)
             bitmagnet_url: Base URL of Bitmagnet instance (optional)
-            search_timeout: Default timeout in seconds for provider
-                           HTTP requests
+            search_timeout: Timeout in seconds for provider HTTP
+                           requests and for the whole search
             enabled_providers: List of provider IDs to enable,
                              or None to enable all providers
             hide_zero_seeders: Filter out results with zero seeders
@@ -192,6 +192,11 @@ class SearchClient:
             sys.exit(1)
 
         return enabled_providers
+
+    @property
+    def search_timeout(self) -> int:
+        """Maximum time in seconds to wait for search results."""
+        return self._search_timeout
 
     def get_providers(self) -> list[BaseSearchProvider]:
         """Get list of all search providers, initializing them if needed.
@@ -314,6 +319,8 @@ class SearchClient:
 
         Executes searches across all selected providers concurrently,
         deduplicates results by info_hash, and filters by category.
+        Providers not finished within the search timeout are abandoned
+        and reported as errors.
         When deduplicating, results from providers earlier in the
         configuration take priority.
 
@@ -335,10 +342,11 @@ class SearchClient:
         # Filter providers based on selected indexers
         providers_to_search = self._filter_providers(selected_indexers)
 
-        # Execute all provider searches in parallel, maintaining order
-        with ThreadPoolExecutor(
-            max_workers=len(providers_to_search)
-        ) as executor:
+        # Execute all provider searches in parallel. Don't use executor as
+        # a context manager: its exit waits for every running search, while
+        # stalled providers must be abandoned once the timeout expires.
+        executor = ThreadPoolExecutor(max_workers=len(providers_to_search))
+        try:
             # Submit all search tasks with category filter and indexers
             future_to_provider = {
                 executor.submit(
@@ -347,22 +355,36 @@ class SearchClient:
                 for idx, (provider, indexers) in enumerate(providers_to_search)
             }
 
-            # Collect results in provider order for proper deduplication
-            results_by_provider: dict[int, list[SearchResult]] = {}
-            for future in as_completed(future_to_provider):
-                provider, idx = future_to_provider[future]
-                try:
-                    provider_results = future.result()
-                    results_by_provider[idx] = provider_results
-                except Exception as e:
-                    # Log error but continue with other providers
-                    errors.append(f"{provider.name}: {str(e)}")
-                    logger.exception(f"Failed to search {provider.name}")
-                    results_by_provider[idx] = []
+            done, not_done = wait(
+                future_to_provider, timeout=self._search_timeout
+            )
+        finally:
+            # Return without waiting for timed out searches, their threads
+            # finish in background once HTTP requests time out
+            executor.shutdown(wait=False, cancel_futures=True)
 
-            # Process results in provider order
-            for idx in sorted(results_by_provider.keys()):
-                all_results.extend(results_by_provider[idx])
+        # Collect results in provider order for proper deduplication
+        results_by_provider: dict[int, list[SearchResult]] = {}
+        for future in done:
+            provider, idx = future_to_provider[future]
+            try:
+                results_by_provider[idx] = future.result()
+            except Exception as e:
+                # Log error but continue with other providers
+                errors.append(f"{provider.name}: {str(e)}")
+                logger.exception(f"Failed to search {provider.name}")
+
+        for future in sorted(not_done, key=lambda f: future_to_provider[f][1]):
+            provider, _ = future_to_provider[future]
+            errors.append(
+                f"{provider.name}: timed out after "
+                f"{self._search_timeout} seconds"
+            )
+            logger.warning(f"Search timed out for {provider.name}")
+
+        # Process results in provider order
+        for idx in sorted(results_by_provider.keys()):
+            all_results.extend(results_by_provider[idx])
 
         # Skip results with malformed info hash (it's used to build magnet
         # links and as result key)

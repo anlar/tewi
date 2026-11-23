@@ -25,6 +25,7 @@ from ..messages import (
 from ..util import (
     plain_text,
     print_size,
+    print_time,
     source_text,
     subtitle_keys,
     theme_markup_color,
@@ -87,7 +88,7 @@ class TorrentWebSearch(Static):
             yield ReactiveLabel(id="search-query-label").data_bind(
                 name=TorrentWebSearch.r_query
             )
-            yield ReactiveLabel(id="search-status").data_bind(
+            yield ReactiveLabel(id="search-status", markup=True).data_bind(
                 name=TorrentWebSearch.r_search_status
             )
             yield DataTable(
@@ -465,7 +466,8 @@ class TorrentWebSearch(Static):
                               or None to search all
         """
         self.r_results = []
-        self.r_search_status = "Searching..."
+        timeout = print_time(self.app.search.search_timeout, units=2)
+        self.r_search_status = f"Searching... [dim](up to {timeout})[/]"
 
         all_results, errors = self.app.search.search(
             query, selected_indexers, selected_categories

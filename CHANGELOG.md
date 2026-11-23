@@ -17,6 +17,7 @@ handle multi-line list body as single line.
 - Add TheRARBG search provider (`therarbg`), enabled by default
 - Add LimeTorrents search provider (`limetorrents`), enabled by default
 - Add nekoBT anime search provider (`nekobt`), enabled by default
+- Add maximum search time to web search status while searching
 
 ### Changed
 
@@ -35,6 +36,7 @@ handle multi-line list body as single line.
 - Fix search provider counts (seeders, leechers, downloads, size, files) sent as text being parsed as markup in search results
 - Fix Jackett, Prowlarr, Bitmagnet, TPB, YTS and Nyaa search result details showing provider text as Markdown, which could add fake details or links with misleading text
 - Remove control characters from search result details
+- Apply search timeout (`--search-timeout`) to the whole search: providers not finished in time are skipped and reported, instead of delaying results
 
 ### Removed
 

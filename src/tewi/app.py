@@ -1246,7 +1246,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         default=30,
         metavar="SECONDS",
         action=TrackSetAction,
-        help="Timeout in seconds for search provider HTTP requests",
+        help="Maximum time in seconds to wait for search results",
     )
 
     # Profiles
