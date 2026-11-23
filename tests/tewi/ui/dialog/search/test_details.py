@@ -3,7 +3,7 @@
 import asyncio
 
 from textual.app import App, ComposeResult
-from textual.widgets import Link, Markdown, Static
+from textual.widgets import Link, Static
 
 from src.tewi.ui.dialog.search.details import TorrentDetailsWidget
 
@@ -31,13 +31,17 @@ def test_control_chars_are_removed():
         app = DetailsApp()
         async with app.run_test() as pilot:
             await pilot.pause()
-            common, extended = app.query(Markdown)
+            # Markdown.source is missing in older Textual versions, so
+            # check content the widget passes to Markdown
+            details = app.query_one(TorrentDetailsWidget)
             link = app.query_one(Link)
             title = app.query_one(".details-title", Static)
 
-            assert common.source == "## General\n- **Size:** 1 GB[31m\n"
+            assert (
+                details.common_content == "## General\n- **Size:** 1 GB[31m\n"
+            )
             # Line breaks and tabs are kept
-            assert extended.source == (
+            assert details.extended_content == (
                 "## Info\n- **Overview:** Plot]2;pwned\\\ttext\n"
             )
             assert link.url == "https://example.org/]2;pwned\\"
