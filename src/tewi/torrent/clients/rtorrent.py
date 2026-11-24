@@ -1141,6 +1141,8 @@ class RTorrentClient(BaseClient):
         return Torrent(
             id=None,  # rTorrent doesn't use numeric IDs
             hash=t["d.hash="].lower(),
+            # rTorrent supports only v1 torrents
+            hash_v1=t["d.hash="].lower(),
             name=t["d.name="],
             status=self._normalize_status(t),
             total_size=size,

@@ -15,7 +15,12 @@ class Torrent:
     """
 
     id: int | None
+    # Torrent ID in client: v1 info hash, or truncated v2 info hash of
+    # hybrid and v2-only torrents in clients using libtorrent 2
     hash: str
+    # v1 info hash (SHA-1), used in magnet links; None if unknown or
+    # torrent is v2-only
+    hash_v1: str | None
     name: str
     status: str
     total_size: int  # bytes

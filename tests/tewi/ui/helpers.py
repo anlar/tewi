@@ -11,6 +11,7 @@ def make_torrent(name: str, status: str = "seeding") -> Torrent:
     return Torrent(
         id=None,
         hash=f"hash-{name}",
+        hash_v1=f"hash-{name}",
         name=name,
         status=status,
         total_size=100,

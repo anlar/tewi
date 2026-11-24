@@ -402,6 +402,8 @@ class TransmissionClient(BaseClient):
         return Torrent(
             id=torrent.id,
             hash=torrent.hash_string,
+            # Transmission supports only v1 torrents
+            hash_v1=torrent.hash_string,
             name=torrent.name,
             status=torrent.status,
             total_size=torrent.total_size,

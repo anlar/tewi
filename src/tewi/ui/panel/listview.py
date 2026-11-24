@@ -828,11 +828,12 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
 
         links = []
         for t in torrents:
+            # Magnet link needs v1 info hash, torrent hash may be
+            # truncated v2 info hash (hybrid and v2-only torrents)
             try:
-                links.append(build_magnet_link(t.hash, t.name))
+                links.append(build_magnet_link(t.hash_v1 or "", t.name))
             except ValueError:
-                # Client returned hash not usable in magnet link
-                logger.warning(f"Skip magnet link, invalid hash: {t.hash!r}")
+                logger.warning(f"Skip magnet link, no v1 info hash: {t.hash!r}")
 
         if not links:
             self.post_message(
@@ -843,7 +844,8 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         if skipped := len(torrents) - len(links):
             self.post_message(
                 Notification(
-                    f"Skipped torrents with invalid hash: {skipped}", "warning"
+                    f"Skipped torrents without v1 info hash: {skipped}",
+                    "warning",
                 )
             )
 

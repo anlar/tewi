@@ -729,6 +729,9 @@ class DelugeClient(BaseClient):
         return Torrent(
             id=None,  # Deluge doesn't use numeric IDs
             hash=hash,
+            # Deluge reports only torrent ID: it's v1 info hash, except
+            # hybrid and v2-only torrents with libtorrent 2
+            hash_v1=hash,
             name=t.get("name"),
             status=self._normalize_status(t.get("state")),
             total_size=t.get("total_size"),

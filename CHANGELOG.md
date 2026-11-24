@@ -22,7 +22,7 @@ handle multi-line list body as single line.
 - Show names of torrents in remove confirmation
 - Add publishing release to PyPI from GitHub Actions
 - Add filtering torrents by category and label (combined with other filters)
-- Add copying magnet links of torrents to clipboard (`M`, marked torrents shown by filter one per line, or highlighted torrent)
+- Add copying magnet links of torrents to clipboard (`M`, marked torrents shown by filter one per line, or highlighted torrent), with v1 info hash also for qBittorrent hybrid torrents (v2-only torrents are skipped)
 - Add several torrents at once in add dialog, one per line
 
 ### Changed

@@ -12,7 +12,7 @@ from tests.tewi.ui.helpers import make_list_panel, make_torrent
 
 NAMES = ["first one", "second", "third", "fourth", "fifth"]
 TORRENTS = [
-    replace(make_torrent(name), hash=str(i) * 40)
+    replace(make_torrent(name), hash=str(i) * 40, hash_v1=str(i) * 40)
     for i, name in enumerate(NAMES)
 ]
 
@@ -84,15 +84,28 @@ def test_copies_marked_torrents_one_per_line_in_list_order():
     run_list(test)
 
 
-def test_skips_torrents_with_invalid_hash():
-    torrents = [TORRENTS[0], make_torrent("broken")]
+def test_uses_v1_info_hash_of_hybrid_torrent():
+    # Torrent ID is truncated v2 info hash
+    hybrid = replace(TORRENTS[0], hash="f" * 40)
+
+    async def test(app, pilot):
+        await pilot.press("M")
+
+        assert app.copies == [CopyToClipboardCommand(magnet(0), "magnet link")]
+
+    run_list(test, [hybrid])
+
+
+def test_skips_v2_only_torrents():
+    v2_only = replace(make_torrent("v2"), hash="f" * 40, hash_v1=None)
+    torrents = [TORRENTS[0], v2_only]
 
     async def test(app, pilot):
         await pilot.press("V", "M")
 
         assert app.copies == [CopyToClipboardCommand(magnet(0), "magnet link")]
         assert app.notifications == [
-            ("Skipped torrents with invalid hash: 1", "warning")
+            ("Skipped torrents without v1 info hash: 1", "warning")
         ]
 
     run_list(test, torrents)
@@ -105,4 +118,4 @@ def test_warns_when_no_link_can_be_built():
         assert app.copies == []
         assert app.notifications == [("No magnet links to copy", "warning")]
 
-    run_list(test, [make_torrent("broken")])
+    run_list(test, [replace(make_torrent("v2"), hash_v1=None)])

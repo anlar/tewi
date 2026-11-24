@@ -44,6 +44,7 @@ def create_torrent(
     return Torrent(
         id=id,
         hash=hash,
+        hash_v1=hash,
         name=name,
         status=status,
         total_size=size_when_done,

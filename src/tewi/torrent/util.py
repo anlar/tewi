@@ -38,13 +38,19 @@ def torrents_test(torrents: list[Torrent], target_count: int) -> list[Torrent]:
         for t in torrents:
             if i == 0:
                 t_hash = t.hash
+                t_hash_v1 = t.hash_v1
             else:
                 t_hash = hashlib.sha1(
                     f"{t.hash}-{idx}".encode(), usedforsecurity=False
                 ).hexdigest()
+                t_hash_v1 = t_hash if t.hash_v1 else None
 
             t_copy = replace(
-                t, id=idx, name=t.name + "-" + str(idx), hash=t_hash
+                t,
+                id=idx,
+                name=t.name + "-" + str(idx),
+                hash=t_hash,
+                hash_v1=t_hash_v1,
             )
             result.append(t_copy)
             idx = idx + 1

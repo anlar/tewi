@@ -508,6 +508,20 @@ class QBittorrentClient(BaseClient):
         """Normalize qBittorrent status to common status string."""
         return self.STATUS_MAP.get(qb_status, "stopped")
 
+    @staticmethod
+    def _hash_v1(torrent: TorrentDictionary) -> str | None:
+        """Get v1 info hash of torrent.
+
+        Torrent hash is truncated v2 info hash for hybrid and v2-only
+        torrents. qBittorrent before 4.4 doesn't report v1 info hash, but
+        it supports only v1 torrents, so hash is v1 info hash.
+        """
+        if "infohash_v1" not in torrent:
+            return torrent.hash
+
+        # Empty for v2-only torrents
+        return torrent.infohash_v1 or None
+
     @log_time
     def _torrent_to_dto(self, torrent: TorrentDictionary) -> Torrent:
         """Convert qBittorrent torrent to Torrent.
@@ -524,6 +538,7 @@ class QBittorrentClient(BaseClient):
         return Torrent(
             id=None,  # qBittorrent doesn't use numeric IDs
             hash=torrent.hash,
+            hash_v1=self._hash_v1(torrent),
             name=torrent.name,
             status=self._normalize_status(torrent.state),
             total_size=torrent.total_size,
