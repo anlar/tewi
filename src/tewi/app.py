@@ -146,6 +146,9 @@ SECRET_OPTIONS = {"password", "jackett_api_key", "prowlarr_api_key"}
 # Number of torrent names listed in remove confirmation
 CONFIRM_MAX_NAMES = 3
 
+# Number of errors listed when adding several torrents fails
+ADD_MAX_ERRORS = 3
+
 
 def count_message(count: int, single: str, multi: str) -> str:
     """Return message for one torrent, or for several ones.
@@ -645,20 +648,48 @@ class MainApp(App):
 
         Adding may download torrent file from URL (with redirects), which
         would block UI if done in message handler.
+
+        Value may contain several torrents, one per line (e.g. magnet links
+        copied from torrent list): they are added one by one, as clients
+        would read whole text as single link.
         """
-        try:
-            self.client.add_torrent(value)
-            self.post_message(Notification(success_message))
-        except ClientError as e:
-            self.post_message(
-                Notification(f"Failed to add torrent:\n{e}", "warning")
-            )
-        except FileNotFoundError:
+        values = [v.strip() for v in value.splitlines() if v.strip()]
+        values = values or [value]
+
+        errors = []
+        for v in values:
+            try:
+                self.client.add_torrent(v)
+            except ClientError as e:
+                errors.append(str(e))
+            except FileNotFoundError:
+                errors.append(f"File not found {v}")
+
+        if len(values) == 1:
+            if errors:
+                self.post_message(
+                    Notification(
+                        f"Failed to add torrent:\n{errors[0]}", "warning"
+                    )
+                )
+            else:
+                self.post_message(Notification(success_message))
+        elif errors:
+            shown = errors[:ADD_MAX_ERRORS]
+            if len(errors) > ADD_MAX_ERRORS:
+                shown.append(f"and {len(errors) - ADD_MAX_ERRORS} more")
+
+            added = len(values) - len(errors)
             self.post_message(
                 Notification(
-                    f"Failed to add torrent:\nFile not found {value}",
+                    f"Added {added} of {len(values)} torrents, "
+                    f"failed {len(errors)}:\n" + "\n".join(shown),
                     "warning",
                 )
+            )
+        else:
+            self.post_message(
+                Notification(f"{len(values)} new torrents were added")
             )
 
     @work(thread=True, group="torrent_action")

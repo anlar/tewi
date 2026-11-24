@@ -123,10 +123,16 @@ class AddTorrentApp(App):
 
     add_torrent = MainApp.add_torrent
 
-    def __init__(self, error: Exception | None = None) -> None:
+    def __init__(
+        self,
+        error: Exception | None = None,
+        errors: dict[str, Exception] | None = None,
+    ) -> None:
         super().__init__()
         self.error = error
+        self.errors = errors or {}
         self.threads = []
+        self.added = []
         self.notifications = []
         self.client = SimpleNamespace(add_torrent=self.fake_add_torrent)
 
@@ -134,6 +140,9 @@ class AddTorrentApp(App):
         self.threads.append(threading.current_thread())
         if self.error:
             raise self.error
+        if value in self.errors:
+            raise self.errors[value]
+        self.added.append(value)
 
     def on_notification(self, event: Notification) -> None:
         self.notifications.append((event.message, event.severity))
@@ -159,3 +168,68 @@ def test_add_torrent_runs_in_background_thread(error, expected):
             assert app.notifications == [expected]
 
     asyncio.run(run())
+
+
+def run_add_torrent(value: str, **kwargs) -> AddTorrentApp:
+    async def run() -> AddTorrentApp:
+        app = AddTorrentApp(**kwargs)
+        async with app.run_test() as pilot:
+            app.add_torrent(value, "Added")
+            await app.workers.wait_for_complete()
+            await pilot.pause()
+        return app
+
+    return asyncio.run(run())
+
+
+MAGNET_A = "magnet:?xt=urn:btih:" + "a" * 40 + "&dn=a"
+MAGNET_B = "magnet:?xt=urn:btih:" + "b" * 40 + "&dn=b"
+MAGNET_C = "magnet:?xt=urn:btih:" + "c" * 40 + "&dn=c"
+
+
+def test_add_torrent_adds_each_line_separately():
+    app = run_add_torrent(f"{MAGNET_A}\n\n  {MAGNET_B}  \n{MAGNET_C}\n")
+
+    assert app.added == [MAGNET_A, MAGNET_B, MAGNET_C]
+    assert app.notifications == [("3 new torrents were added", "information")]
+
+
+def test_add_torrent_single_line_ignores_surrounding_blank_lines():
+    app = run_add_torrent(f"\n{MAGNET_A}\n")
+
+    assert app.added == [MAGNET_A]
+    assert app.notifications == [("Added", "information")]
+
+
+def test_add_torrent_reports_failed_lines_and_adds_others():
+    app = run_add_torrent(
+        f"{MAGNET_A}\n/no/such.torrent\n{MAGNET_C}",
+        errors={
+            "/no/such.torrent": FileNotFoundError(),
+            MAGNET_C: ClientError("duplicate"),
+        },
+    )
+
+    assert app.added == [MAGNET_A]
+    assert app.notifications == [
+        (
+            "Added 1 of 3 torrents, failed 2:\n"
+            "File not found /no/such.torrent\nduplicate",
+            "warning",
+        )
+    ]
+
+
+def test_add_torrent_limits_listed_errors():
+    values = [f"/no/{i}.torrent" for i in range(5)]
+    app = run_add_torrent(
+        "\n".join(values),
+        errors={v: ClientError(f"err {i}") for i, v in enumerate(values)},
+    )
+
+    assert app.notifications == [
+        (
+            "Added 0 of 5 torrents, failed 5:\nerr 0\nerr 1\nerr 2\nand 2 more",
+            "warning",
+        )
+    ]
