@@ -2,7 +2,10 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Optional
 
-from ..util.misc import strip_control_chars_in_fields
+from ..util.misc import (
+    normalize_torrent_hash,
+    strip_control_chars_in_fields,
+)
 
 
 class Category:
@@ -249,3 +252,9 @@ class SearchResult:
         # Blank hash means no hash, as hash is used as unique key of result
         if self.info_hash is not None and not self.info_hash.strip():
             object.__setattr__(self, "info_hash", None)
+        # Providers return hash in different forms (hex in upper or lower
+        # case, Base32), while the same hash must give the same key
+        elif self.info_hash is not None:
+            object.__setattr__(
+                self, "info_hash", normalize_torrent_hash(self.info_hash)
+            )

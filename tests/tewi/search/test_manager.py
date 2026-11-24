@@ -1,5 +1,6 @@
 """Tests for search manager."""
 
+import base64
 import threading
 import time
 
@@ -88,6 +89,19 @@ class TestSearchInfoHashValidation:
         )
 
         assert [r.title for r in found] == ["valid"]
+
+    def test_same_hash_in_different_forms_is_deduplicated(self):
+        hex_hash = "c12fe1c06bba254a9dc9f519b335aa7c1367a88a"
+        base32 = base64.b32encode(bytes.fromhex(hex_hash)).decode()
+        found = search(
+            [
+                result("upper", hex_hash.upper()),
+                result("lower", hex_hash),
+                result("base32", base32),
+            ]
+        )
+
+        assert [(r.title, r.info_hash) for r in found] == [("upper", hex_hash)]
 
 
 class TestProviderAliases:

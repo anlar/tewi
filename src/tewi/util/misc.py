@@ -1,3 +1,4 @@
+import base64
 import dataclasses
 import re
 
@@ -91,3 +92,23 @@ def is_torrent_hash(text: str) -> bool:
     """
     value = text.strip()
     return bool(_HASH_HEX_RE.match(value) or _HASH_BASE32_RE.match(value))
+
+
+def normalize_torrent_hash(text: str) -> str:
+    """Convert BitTorrent v1 info hash to lowercase hex form.
+
+    The same hash can be written in hex of any case or in Base32, so
+    hashes have to be normalized before comparing them.
+
+    Args:
+        text: Info hash (40-char hex or 32-char Base32)
+
+    Returns:
+        Lowercase 40-char hex hash, or text unchanged if it isn't a hash
+    """
+    if not is_torrent_hash(text):
+        return text
+    value = text.strip()
+    if len(value) == 32:
+        return base64.b32decode(value.upper()).hex()
+    return value.lower()

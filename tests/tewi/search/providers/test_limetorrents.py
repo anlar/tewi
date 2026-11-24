@@ -67,7 +67,7 @@ class TestSearch:
         [result] = provider.search("example")
 
         assert result.title == "Example Show S01 1080p"
-        assert result.info_hash == HASH
+        assert result.info_hash == HASH.lower()
         assert result.magnet_link.startswith(f"magnet:?xt=urn:btih:{HASH}")
         assert result.torrent_link is None
         assert result.page_url == (
@@ -119,7 +119,9 @@ class TestSearch:
             feed(item(), item("Exemplar S01", info_hash="B" * 40)),
         )
 
-        assert [r.info_hash for r in provider.search("example")] == [HASH]
+        assert [r.info_hash for r in provider.search("example")] == [
+            HASH.lower()
+        ]
 
     def test_title_is_unescaped(self, provider, mock_urlopen):
         set_feed(mock_urlopen, feed(item("Example Guide --&amp;gt; [x]")))
@@ -186,7 +188,7 @@ class TestCategories:
         results = provider.search("example", [StandardCategories.TV_HD])
 
         # Subcategory selects whole parent category
-        assert [r.info_hash for r in results] == [HASH, "C" * 40]
+        assert [r.info_hash for r in results] == [HASH.lower(), "c" * 40]
 
     def test_no_filter(self, provider, mock_urlopen):
         set_feed(

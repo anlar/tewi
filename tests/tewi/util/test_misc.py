@@ -1,3 +1,5 @@
+import base64
+
 import pytest
 
 from src.tewi.util.misc import (
@@ -5,6 +7,7 @@ from src.tewi.util.misc import (
     is_safe_name,
     is_torrent_hash,
     is_torrent_link,
+    normalize_torrent_hash,
 )
 
 # Names with shell syntax, which "compgen -W" in bash completion would
@@ -227,3 +230,27 @@ class TestIsTorrentHash:
             is False
         )
         assert is_torrent_hash("~/downloads/file.torrent") is False
+
+
+class TestNormalizeTorrentHash:
+    """Test cases for normalize_torrent_hash function."""
+
+    HEX = "c12fe1c06bba254a9dc9f519b335aa7c1367a88a"
+
+    def test_hex_is_lowercased(self):
+        assert normalize_torrent_hash(self.HEX.upper()) == self.HEX
+        assert normalize_torrent_hash(self.HEX) == self.HEX
+
+    def test_whitespace_is_stripped(self):
+        assert normalize_torrent_hash(f"  {self.HEX}  ") == self.HEX
+
+    def test_base32_is_converted_to_hex(self):
+        base32 = base64.b32encode(bytes.fromhex(self.HEX)).decode()
+        assert normalize_torrent_hash(base32) == self.HEX
+        assert normalize_torrent_hash(base32.lower()) == self.HEX
+
+    @pytest.mark.parametrize(
+        "value", ["", "abc", "not-a-hash", HEX + "&tr=udp://x:1"]
+    )
+    def test_non_hash_is_unchanged(self, value):
+        assert normalize_torrent_hash(value) == value

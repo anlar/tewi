@@ -58,7 +58,7 @@ def mock_urlopen():
 class TestParseTorrent:
     def test_result(self, result):
         assert result.title == "The Example Handbook by René Author EPUB"
-        assert result.info_hash == HIT["hash"]
+        assert result.info_hash == HIT["hash"].lower()
         assert result.magnet_link == HIT["magnetUrl"]
         assert result.torrent_link is None
         assert result.page_url == HIT["details"]

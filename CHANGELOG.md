@@ -51,6 +51,7 @@ handle multi-line list body as single line.
 - Copy text to system clipboard in addition to terminal one (OSC 52), also when copying selected text in inputs, so copying works in terminals without OSC 52 support
 - Don't use system clipboard in SSH session or textual-serve, where it belongs to machine running Tewi (copy only to terminal clipboard, don't fill link in add dialog)
 - Read clipboard in add dialog in background, so not responding clipboard program doesn't freeze UI
+- Fix duplicate web search results from different providers, which weren't merged when providers wrote the same info hash in different case or in Base32
 
 ### Removed
 

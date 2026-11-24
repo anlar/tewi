@@ -153,7 +153,7 @@ class TestSearch:
     def test_fuzzy_matches_are_removed(self, provider, mock_urlopen):
         results = provider.search("example")
 
-        assert [r.info_hash for r in results] == [HASH_JSON]
+        assert [r.info_hash for r in results] == [HASH_JSON.lower()]
 
     def test_rss_results_are_merged(self, provider, mock_urlopen):
         mock_responses(
@@ -164,7 +164,7 @@ class TestSearch:
         results = provider.search("example")
 
         # JSON result is kept for duplicate, as it has leechers
-        assert [r.info_hash for r in results] == [HASH_JSON, HASH_RSS]
+        assert [r.info_hash for r in results] == [HASH_JSON.lower(), HASH_RSS]
         assert results[0].leechers == 87
 
     def test_rss_failure_is_ignored(self, provider, mock_urlopen):
@@ -172,7 +172,7 @@ class TestSearch:
 
         results = provider.search("example")
 
-        assert [r.info_hash for r in results] == [HASH_JSON]
+        assert [r.info_hash for r in results] == [HASH_JSON.lower()]
 
     def test_json_failure_is_raised(self, provider, mock_urlopen):
         mock_urlopen.side_effect = None
@@ -225,13 +225,13 @@ class TestCategoryFilter:
         ]
         # RSS filters by single category only, so it's filtered locally
         assert "category" not in request_params(mock_urlopen, 1)
-        assert [r.info_hash for r in results] == [HASH_JSON, "C" * 40]
+        assert [r.info_hash for r in results] == [HASH_JSON.lower(), "c" * 40]
 
 
 class TestParse:
     def test_json_result(self, result):
         assert result.title == JSON_TORRENT["n"]
-        assert result.info_hash == HASH_JSON
+        assert result.info_hash == HASH_JSON.lower()
         assert result.magnet_link.startswith(f"magnet:?xt=urn:btih:{HASH_JSON}")
         assert result.categories == [StandardCategories.TV]
         assert result.seeders == 278

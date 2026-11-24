@@ -105,8 +105,8 @@ class TheRarbgProvider(BaseSearchProvider):
             logger.warning(f"TheRARBG: failed to search RSS: {e}")
             rss_results = []
 
-        known = {r.info_hash.upper() for r in results}
-        results += [r for r in rss_results if r.info_hash.upper() not in known]
+        known = {r.info_hash for r in results}
+        results += [r for r in rss_results if r.info_hash not in known]
 
         # Search also returns fuzzy matches (e.g. "Exemplar" for "example")
         words = query_words(query)
