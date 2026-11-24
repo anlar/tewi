@@ -3,15 +3,20 @@
 import base64
 import threading
 import time
+from datetime import datetime, timezone
 
 from src.tewi.search.base import BaseSearchProvider
-from src.tewi.search.manager import SearchClient, resolve_provider_aliases
+from src.tewi.search.manager import (
+    SearchClient,
+    merge_results,
+    resolve_provider_aliases,
+)
 from src.tewi.search.models import SearchResult
 
 VALID_HASH = "a" * 40
 
 
-def result(title: str, info_hash: str | None) -> SearchResult:
+def result(title: str, info_hash: str | None, **kwargs) -> SearchResult:
     return SearchResult(
         title=title,
         info_hash=info_hash,
@@ -20,6 +25,7 @@ def result(title: str, info_hash: str | None) -> SearchResult:
         provider="Fake",
         provider_id="fake",
         provider_short="F",
+        **kwargs,
     )
 
 
@@ -102,6 +108,98 @@ class TestSearchInfoHashValidation:
         )
 
         assert [(r.title, r.info_hash) for r in found] == [("upper", hex_hash)]
+
+
+class TestMergeResults:
+    def test_single_result_is_unchanged(self):
+        r = result("one", VALID_HASH, seeders=5)
+        assert merge_results([r]) is r
+
+    def test_counts_are_max(self):
+        merged = merge_results(
+            [
+                result("a", VALID_HASH, seeders=5, leechers=None, downloads=1),
+                result("b", VALID_HASH, seeders=50, leechers=3),
+                result("c", VALID_HASH, seeders=0, leechers=7, downloads=9),
+            ]
+        )
+
+        assert (merged.seeders, merged.leechers, merged.downloads) == (
+            50,
+            7,
+            9,
+        )
+
+    def test_missing_counts_stay_none(self):
+        merged = merge_results(
+            [result("a", VALID_HASH), result("b", VALID_HASH)]
+        )
+
+        assert merged.seeders is None
+        assert merged.downloads is None
+
+    def test_upload_date_is_earliest(self):
+        early = datetime(2021, 2, 23, tzinfo=timezone.utc)
+        merged = merge_results(
+            [
+                result("a", VALID_HASH, upload_date=datetime(2023, 6, 1)),
+                result("b", VALID_HASH),
+                result("c", VALID_HASH, upload_date=early),
+            ]
+        )
+
+        assert merged.upload_date == early
+
+    def test_files_count_is_from_first_reporting_provider(self):
+        merged = merge_results(
+            [
+                result("a", VALID_HASH),
+                result("b", VALID_HASH, files_count=3),
+                result("c", VALID_HASH, files_count=10),
+            ]
+        )
+
+        assert merged.files_count == 3
+
+    def test_other_fields_are_from_first_result(self):
+        first = result(
+            "first",
+            VALID_HASH,
+            size=100,
+            page_url="https://first",
+            fields={"key": "first"},
+        )
+        merged = merge_results(
+            [
+                first,
+                result(
+                    "second",
+                    VALID_HASH,
+                    size=200,
+                    page_url="https://second",
+                    fields={"key": "second"},
+                ),
+            ]
+        )
+
+        assert merged.title == "first"
+        assert merged.size == 100
+        assert merged.page_url == "https://first"
+        assert merged.fields == {"key": "first"}
+
+    def test_search_merges_duplicates(self):
+        found = search(
+            [
+                result("first", VALID_HASH, seeders=1, downloads=None),
+                result("other", "b" * 40, seeders=2),
+                result("second", VALID_HASH.upper(), seeders=9, downloads=4),
+            ]
+        )
+
+        assert [(r.title, r.seeders, r.downloads) for r in found] == [
+            ("first", 9, 4),
+            ("other", 2, None),
+        ]
 
 
 class TestProviderAliases:

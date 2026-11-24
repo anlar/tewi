@@ -2,6 +2,7 @@
 
 import sys
 from concurrent.futures import ThreadPoolExecutor, wait
+from dataclasses import replace
 
 from ..util.log import get_logger
 from ..util.misc import is_torrent_hash
@@ -75,6 +76,45 @@ def resolve_provider_aliases(provider_ids: list[str]) -> list[str]:
     return list(dict.fromkeys(resolved))
 
 
+def merge_results(results: list[SearchResult]) -> SearchResult:
+    """Merge results of the same torrent found by several providers.
+
+    The first result (by provider order) is used as base. Providers
+    report different peer stats, so the largest seeders, leechers and
+    downloads counts are taken. Some providers report index date as
+    upload date, so the earliest date is taken. Files count is taken
+    from the first provider reporting it.
+
+    Args:
+        results: Results of the same torrent in provider order
+
+    Returns:
+        Merged result
+    """
+    first = results[0]
+    if len(results) == 1:
+        return first
+
+    def max_count(name: str) -> int | None:
+        values = [getattr(r, name) for r in results]
+        return max((v for v in values if v is not None), default=None)
+
+    # Compare by timestamp as dates could be naive or timezone aware
+    dates = [r.upload_date for r in results if r.upload_date]
+    files_count = next(
+        (r.files_count for r in results if r.files_count is not None), None
+    )
+
+    return replace(
+        first,
+        seeders=max_count("seeders"),
+        leechers=max_count("leechers"),
+        downloads=max_count("downloads"),
+        files_count=files_count,
+        upload_date=min(dates, key=lambda d: d.timestamp(), default=None),
+    )
+
+
 def print_available_providers() -> None:
     """Print list of all available search providers to stdout.
 
@@ -102,7 +142,7 @@ class SearchClient:
     Nyaa, Jackett) and provides a unified search interface. It handles:
     - Lazy provider initialization (on first access)
     - Parallel search execution across providers
-    - Result deduplication based on info_hash
+    - Result deduplication based on info_hash, merging duplicates
     - Error handling and logging
 
     Providers are initialized lazily on first use for better performance.
@@ -321,8 +361,8 @@ class SearchClient:
         deduplicates results by info_hash, and filters by category.
         Providers not finished within the search timeout are abandoned
         and reported as errors.
-        When deduplicating, results from providers earlier in the
-        configuration take priority.
+        Duplicates are merged into result of the provider earliest in
+        the configuration (see `merge_results`).
 
         Args:
             query: Search term to query providers with
@@ -394,9 +434,8 @@ class SearchClient:
             if not r.info_hash or is_torrent_hash(r.info_hash)
         ]
 
-        # Deduplicate by info_hash, keeping first occurrence (by provider
-        # order)
-        best_results: dict[str, SearchResult] = {}
+        # Group duplicates by info_hash (in provider order)
+        groups: dict[str, list[SearchResult]] = {}
         for result in all_results:
             # Use info_hash as key; fall back to title:size for results without
             if result.info_hash:
@@ -404,14 +443,9 @@ class SearchClient:
             else:
                 # Deduplicate by title + size when hash unavailable
                 hash_key = f"__no_hash__{result.title}:{result.size}"
+            groups.setdefault(hash_key, []).append(result)
 
-            if hash_key not in best_results:
-                # First occurrence - keep it
-                best_results[hash_key] = result
-            # Else: duplicate - skip it (first provider takes priority)
-
-        # Convert back to list
-        all_results = list(best_results.values())
+        all_results = [merge_results(group) for group in groups.values()]
 
         # Filter by categories if specified
         if selected_categories:
