@@ -22,6 +22,7 @@ handle multi-line list body as single line.
 - Show names of torrents in remove confirmation
 - Add publishing release to PyPI from GitHub Actions
 - Add filtering torrents by category and label (combined with other filters)
+- Add copying magnet links of torrents to clipboard (`M`, all marked torrents one per line)
 
 ### Changed
 

@@ -3,7 +3,7 @@
 from unittest.mock import patch
 
 import src.tewi.util.clipboard as clipboard_module
-from src.tewi.util.clipboard import paste
+from src.tewi.util.clipboard import copy, paste
 
 
 class TestPaste:
@@ -65,3 +65,33 @@ class TestPaste:
             result = paste()
 
             assert result is None
+
+
+class TestCopy:
+    """Tests for the copy() function."""
+
+    def test_copy_puts_text_to_clipboard(self):
+        """Test that copy passes text to clipboard."""
+        with (
+            patch.object(clipboard_module, "_pyperclip_available", True),
+            patch.object(clipboard_module.pyperclip, "copy") as mock_copy,
+        ):
+            assert copy("magnet:?xt=urn:btih:test") is True
+            mock_copy.assert_called_once_with("magnet:?xt=urn:btih:test")
+
+    def test_copy_handles_missing_pyperclip(self):
+        """Test that copy reports failure without pyperclip library."""
+        with patch.object(clipboard_module, "_pyperclip_available", False):
+            assert copy("text") is False
+
+    def test_copy_handles_clipboard_exception(self):
+        """Test that copy reports failure when clipboard access fails."""
+        with (
+            patch.object(clipboard_module, "_pyperclip_available", True),
+            patch.object(
+                clipboard_module.pyperclip,
+                "copy",
+                side_effect=Exception("Clipboard error"),
+            ),
+        ):
+            assert copy("text") is False

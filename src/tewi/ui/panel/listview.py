@@ -11,8 +11,10 @@ from textual.reactive import reactive
 from textual.scroll_view import ScrollView
 from textual.strip import Strip
 
+from ...search.util import build_magnet_link
 from ...torrent.models import Torrent
-from ...util.log import log_time
+from ...util import clipboard
+from ...util.log import get_logger, log_time
 from ..messages import (
     ChangeTorrentPriorityCommand,
     ClearFiltersCommand,
@@ -45,6 +47,8 @@ from ..widget.torrent_item import (
     create_renderer,
     queue_width,
 )
+
+logger = get_logger()
 
 # Drawn in first column of marked item (left padding of every line)
 MARK = "▌"
@@ -92,6 +96,7 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         Binding("space", "toggle_mark", "[Torrent] Toggle mark"),
         Binding("V", "toggle_mark_all", "[Torrent] Mark/clear all"),
         Binding("i", "change_priority", "[Torrent] Change priority"),
+        Binding("M", "copy_magnet_link", "[Torrent] Copy magnet link"),
         Binding("p", "toggle_torrent", "[Torrent] Toggle state"),
         Binding("r", "remove_torrent", "[Torrent] Remove"),
         Binding("R", "trash_torrent", "[Torrent] Trash with data"),
@@ -813,6 +818,44 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
                     [t.hash for t in torrents], torrents[0].priority
                 )
             )
+
+    @log_time
+    def action_copy_magnet_link(self) -> None:
+        """Copy magnet links of target torrents to clipboard, one per line."""
+
+        if not (torrents := self.target_torrents()):
+            return
+
+        links = []
+        for t in torrents:
+            try:
+                links.append(build_magnet_link(t.hash, t.name))
+            except ValueError:
+                # Client returned hash not usable in magnet link
+                logger.warning(f"Skip magnet link, invalid hash: {t.hash!r}")
+
+        if not links:
+            self.post_message(
+                Notification("No magnet links to copy", "warning")
+            )
+            return
+
+        text = "\n".join(links)
+        self.app.copy_to_clipboard(text)
+        clipboard.copy(text)
+
+        count = len(links)
+        message = (
+            "Copied magnet link"
+            if count == 1
+            else f"Copied {count} magnet links"
+        )
+        if skipped := len(torrents) - count:
+            self.post_message(
+                Notification(f"{message}, skipped {skipped}", "warning")
+            )
+        else:
+            self.post_message(Notification(message))
 
     # Actions: marks
 

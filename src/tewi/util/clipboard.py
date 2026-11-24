@@ -1,4 +1,4 @@
-"""Clipboard utilities for getting content from system clipboard."""
+"""Clipboard utilities for system clipboard access."""
 
 from .log import get_logger, log_time
 
@@ -12,7 +12,7 @@ try:
 except ImportError:
     logger.warning(
         "pyperclip library not available, "
-        "clipboard paste functionality will not work"
+        "system clipboard functionality will not work"
     )
     pyperclip = None
     _pyperclip_available = False
@@ -36,3 +36,25 @@ def paste() -> str | None:
     except Exception as e:
         logger.warning(f"Failed to access clipboard: {e}")
         return None
+
+
+@log_time
+def copy(text: str) -> bool:
+    """
+    Put text content to system clipboard.
+
+    Args:
+        text: Text to put to clipboard.
+
+    Returns:
+        bool: True if text was copied, False if clipboard is unavailable.
+    """
+    if not _pyperclip_available:
+        return False
+
+    try:
+        pyperclip.copy(text)
+        return True
+    except Exception as e:
+        logger.warning(f"Failed to access clipboard: {e}")
+        return False
