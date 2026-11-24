@@ -551,7 +551,7 @@ class DelugeClient(BaseClient):
         try:
             for hash_str in hashes:
                 label_value = category if category else ""
-                self._call("label.set_torrent", [hash, label_value])
+                self._call("label.set_torrent", [hash_str, label_value])
         except Exception:
             # If Label plugin is not enabled, silently fail
             pass

@@ -45,6 +45,7 @@ handle multi-line list body as single line.
 - **Breaking:** Move start/stop torrent from `space` to `p` and change torrent priority from `p` to `i` (`space` marks torrents)
 - Fix `--filter` not accepting `checking` and `incomplete` states, and show error for invalid `filter` in config instead of failing to initialize application
 - **Breaking:** Change key of "Checking" in filter dialog from `c` to `h`
+- Fix setting category on Deluge silently doing nothing, as torrent hash wasn't sent to daemon
 
 ### Removed
 
