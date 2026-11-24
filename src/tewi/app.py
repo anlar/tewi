@@ -112,6 +112,7 @@ from .ui.models import (
     count_tags,
     default_sort_keys,
     filter_options,
+    filter_torrents,
     get_filter_by_id,
     parse_filter,
     sort_torrents,
@@ -457,16 +458,9 @@ class MainApp(App):
                 filter_name = self.filter_name
                 filter_tags = self.filter_tags
 
-                torrents = [t for t in torrents if filter_option.filter_func(t)]
-
-                if filter_name:
-                    name = filter_name.lower()
-                    torrents = [t for t in torrents if name in t.name.lower()]
-
-                for tag_type, tag_name in filter_tags.items():
-                    torrents = [
-                        t for t in torrents if tag_name in tag_type.names(t)
-                    ]
+                torrents = filter_torrents(
+                    torrents, filter_option, filter_name, filter_tags
+                )
 
                 filter_state = FilterState(
                     filter_option,
@@ -1383,7 +1377,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         action=TrackSetAction,
         help="Number of torrents displayed per page",
     )
-    p.add_argument(
+    filter_arg = p.add_argument(
         "--filter",
         type=str,
         default="all",
@@ -1391,6 +1385,11 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         help="Filter torrents: comma-separated state "
         f"({', '.join(f.id for f in filter_options)}), category:NAME and "
         "label:NAME, e.g. seeding,label:hd",
+    )
+    # Completes single state or prefix, as values aren't fixed choices
+    filter_arg.complete = shtab.cmd(
+        "echo "
+        + " ".join([f.id for f in filter_options] + ["category:", "label:"])
     )
     p.add_argument(
         "--badge-max-count",
@@ -1735,13 +1734,6 @@ def create_app():
         )
         sys.exit(1)
 
-    # Validate filter
-    try:
-        filter_option, filter_tags = parse_filter(args.filter)
-    except ValueError as e:
-        print(f"Error: Invalid filter: {e}", file=sys.stderr)
-        sys.exit(1)
-
     # Validate search query if provided
     if args.search:
         query = args.search.strip()
@@ -1754,6 +1746,13 @@ def create_app():
     if args.add_torrent:
         logger.info(f"Running in add-torrent mode: {args.add_torrent}")
         _handle_add_torrent_mode(args)
+
+    # Validate filter (after add-torrent mode, which doesn't use it)
+    try:
+        filter_option, filter_tags = parse_filter(args.filter)
+    except ValueError as e:
+        print(f"Error: Invalid filter: {e}", file=sys.stderr)
+        sys.exit(1)
 
     # Create and return the app instance
     try:

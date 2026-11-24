@@ -6,7 +6,14 @@ from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.message import Message
 from textual.reactive import reactive
-from textual.widgets import DataTable, Label, Link, SelectionList, Static
+from textual.widgets import (
+    DataTable,
+    Label,
+    Link,
+    OptionList,
+    SelectionList,
+    Static,
+)
 
 from ...util.log import log_time
 from ...util.misc import is_http_url
@@ -21,6 +28,15 @@ class VimDataTable(DataTable):
         Binding("h", "cursor_left", "Cursor left", show=False),
         Binding("g", "scroll_top", "Home", show=False),
         Binding("G", "scroll_bottom", "End", show=False),
+    ]
+
+
+class VimOptionList(OptionList):
+    BINDINGS = [
+        Binding("k", "cursor_up", "Up", show=False),
+        Binding("j", "cursor_down", "Down", show=False),
+        Binding("g", "first", "First", show=False),
+        Binding("G", "last", "Last", show=False),
     ]
 
 

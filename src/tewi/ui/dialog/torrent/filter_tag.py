@@ -3,12 +3,13 @@ from textual import on
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.screen import ModalScreen
-from textual.widgets import Label, ListItem, ListView, Static
+from textual.widgets import OptionList, Static
 
 from ....util.log import log_time
 from ...messages import FilterTagUpdatedEvent
 from ...models import TagType
 from ...util import plain_text, subtitle_keys
+from ...widget.common import VimOptionList
 
 
 class FilterTagDialog(ModalScreen):
@@ -28,8 +29,6 @@ class FilterTagDialog(ModalScreen):
 
 class FilterTagWidget(Static):
     BINDINGS = [
-        Binding("k", "cursor_up", "[Navigation] Cursor up"),
-        Binding("j", "cursor_down", "[Navigation] Cursor down"),
         Binding("escape,x", "close", "[Navigation] Close"),
     ]
 
@@ -46,23 +45,27 @@ class FilterTagWidget(Static):
         self.tag_type = tag_type
         self.counts = counts
         self.current = current
-        # List item index to category/label name, None for "Any" item
+        # Option index to category/label name, None for "Any" option
         self.names: list[str | None] = [None, *counts]
         super().__init__()
 
     @log_time
     def compose(self) -> ComposeResult:
-        items = [ListItem(Label("(Any)"))]
+        # OptionList renders only visible lines, so it opens fast with
+        # thousands of labels
+        options = [Text("(Any)")]
 
         for name, count in self.counts.items():
-            text = Text.assemble(plain_text(name), (f" ({count})", "dim"))
-            items.append(ListItem(Label(text)))
+            options.append(
+                Text.assemble(
+                    plain_text(name),
+                    (f" ({count})", "dim"),
+                    no_wrap=True,
+                    overflow="ellipsis",
+                )
+            )
 
-        index = (
-            self.names.index(self.current) if self.current in self.counts else 0
-        )
-
-        yield ListView(*items, initial_index=index)
+        yield VimOptionList(*options)
 
     @log_time
     def on_mount(self) -> None:
@@ -71,18 +74,20 @@ class FilterTagWidget(Static):
             ("Enter", "Filter"), ("X", "Close")
         )
 
-    @log_time
-    def action_cursor_up(self) -> None:
-        self.query_one(ListView).action_cursor_up()
+        if self.current in self.counts:
+            option_list = self.query_one(OptionList)
+            option_list.highlighted = self.names.index(self.current)
 
     @log_time
-    def action_cursor_down(self) -> None:
-        self.query_one(ListView).action_cursor_down()
+    @on(OptionList.OptionSelected)
+    def select(self, event: OptionList.OptionSelected) -> None:
+        # Selection is posted as message, so keys pressed before it's
+        # handled may already have closed dialog (e.g. Enter twice) or
+        # moved cursor: second dismiss would pop main screen
+        if not self.parent.is_current:
+            return
 
-    @log_time
-    @on(ListView.Selected)
-    def select(self, event: ListView.Selected) -> None:
-        name = self.names[event.list_view.index]
+        name = self.names[event.option_index]
 
         self.post_message(FilterTagUpdatedEvent(self.tag_type, name))
 

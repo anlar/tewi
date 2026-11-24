@@ -648,6 +648,8 @@ FilterTagDialog {
 
 FilterTagWidget {
     width: auto;
+    /* long names are cropped instead of dialog leaving screen */
+    max-width: 80%;
     height: auto;
     border-title-align: center;
     /* solid background, so dialog doesn't blend with content behind it */
@@ -658,19 +660,15 @@ FilterTagWidget {
     padding: 1;
 }
 
-FilterTagWidget > ListView {
+FilterTagWidget > VimOptionList {
     height: auto;
     /* limit list, not dialog, so list scrolls to its cursor */
     max-height: 70vh;
     width: auto;
     /* fit border title and subtitle */
     min-width: 28;
-}
-
-FilterTagWidget > ListView > ListItem {
-    width: auto;
-    min-width: 100%;
-    padding: 0 1;
+    border: none;
+    padding: 0;
 }
 
 /* SCREEN: PREFERENCES DIALOG */

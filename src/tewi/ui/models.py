@@ -138,7 +138,9 @@ def count_tags(
     counts = Counter(name for t in torrents for name in tag_type.names(t))
     if current is not None:
         counts[current] += 0
-    return dict(sorted(counts.items(), key=lambda x: x[0].lower()))
+    # Exact name breaks ties of names differing only in case, so their
+    # order doesn't depend on set iteration
+    return dict(sorted(counts.items(), key=lambda x: (x[0].lower(), x[0])))
 
 
 class FilterState(NamedTuple):
@@ -244,16 +246,19 @@ def parse_filter(value: str) -> tuple[FilterOption, dict[TagType, str]]:
         prefix, sep, name = item.partition(":")
 
         if not sep:
-            if option is not None:
-                raise ValueError(f"more than one state in filter: {value}")
+            # Checked before duplicates: category/label without prefix
+            # (e.g. "seeding,hd") is reported as unknown, not second state
             try:
-                option = get_filter_by_id(item.lower())
+                state = get_filter_by_id(item.lower())
             except ValueError:
                 states = ", ".join(f.id for f in filter_options)
                 raise ValueError(
                     f"unknown filter '{item}' (use state: {states}; "
                     "or category:NAME, label:NAME)"
                 ) from None
+            if option is not None:
+                raise ValueError(f"more than one state in filter: {value}")
+            option = state
             continue
 
         tag_type = tag_types.get(prefix.strip().lower())
@@ -276,3 +281,31 @@ def parse_filter(value: str) -> tuple[FilterOption, dict[TagType, str]]:
         option = get_filter_by_id("all")
 
     return option, tags
+
+
+def filter_torrents(
+    torrents: list[Torrent],
+    option: FilterOption,
+    name: str,
+    tags: dict[TagType, str],
+) -> list[Torrent]:
+    """Filter torrents by state, name and category/label.
+
+    Args:
+        torrents: Torrents to filter
+        option: Filter by state
+        name: Part of torrent name (case-insensitive), empty to skip
+        tags: Category/label name per tag type (exact match)
+
+    Returns:
+        Torrents matching all filters, in original order
+    """
+    name = name.lower()
+
+    return [
+        t
+        for t in torrents
+        if option.filter_func(t)
+        and name in t.name.lower()
+        and all(n in tag_type.names(t) for tag_type, n in tags.items())
+    ]
