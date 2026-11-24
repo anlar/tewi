@@ -2,8 +2,49 @@
 
 from unittest.mock import patch
 
+import pytest
+
 import src.tewi.util.clipboard as clipboard_module
-from src.tewi.util.clipboard import copy, paste
+from src.tewi.util.clipboard import (
+    copy,
+    is_available,
+    is_remote_session,
+    paste,
+)
+
+SSH_VARS = ("SSH_CONNECTION", "SSH_CLIENT", "SSH_TTY")
+
+
+@pytest.fixture(autouse=True)
+def local_session(monkeypatch):
+    """Run tests as in local session, even if test runs over SSH."""
+    for var in SSH_VARS:
+        monkeypatch.delenv(var, raising=False)
+
+
+class TestRemoteSession:
+    """Tests for detecting SSH session, where clipboard is not user's."""
+
+    def test_local_session(self):
+        assert is_remote_session() is False
+
+    @pytest.mark.parametrize("var", SSH_VARS)
+    def test_ssh_session(self, monkeypatch, var):
+        monkeypatch.setenv(var, "10.0.0.1 5000 10.0.0.2 22")
+        assert is_remote_session() is True
+
+    def test_clipboard_unavailable_in_ssh_session(self, monkeypatch):
+        monkeypatch.setenv("SSH_CONNECTION", "10.0.0.1 5000 10.0.0.2 22")
+        with (
+            patch.object(clipboard_module, "_pyperclip_available", True),
+            patch.object(clipboard_module.pyperclip, "copy") as mock_copy,
+            patch.object(clipboard_module.pyperclip, "paste") as mock_paste,
+        ):
+            assert is_available() is False
+            assert copy("text") is False
+            assert paste() is None
+            mock_copy.assert_not_called()
+            mock_paste.assert_not_called()
 
 
 class TestPaste:

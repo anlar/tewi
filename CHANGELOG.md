@@ -22,7 +22,7 @@ handle multi-line list body as single line.
 - Show names of torrents in remove confirmation
 - Add publishing release to PyPI from GitHub Actions
 - Add filtering torrents by category and label (combined with other filters)
-- Add copying magnet links of torrents to clipboard (`M`, all marked torrents one per line)
+- Add copying magnet links of torrents to clipboard (`M`, marked torrents shown by filter one per line, or highlighted torrent)
 - Add several torrents at once in add dialog, one per line
 
 ### Changed
@@ -48,6 +48,9 @@ handle multi-line list body as single line.
 - Fix `--filter` not accepting `checking` and `incomplete` states, and show error for invalid `filter` in config instead of failing to initialize application
 - **Breaking:** Change key of "Checking" in filter dialog from `c` to `h`
 - Fix setting category on Deluge silently doing nothing, as torrent hash wasn't sent to daemon
+- Copy text to system clipboard in addition to terminal one (OSC 52), also when copying selected text in inputs, so copying works in terminals without OSC 52 support
+- Don't use system clipboard in SSH session or textual-serve, where it belongs to machine running Tewi (copy only to terminal clipboard, don't fill link in add dialog)
+- Read clipboard in add dialog in background, so not responding clipboard program doesn't freeze UI
 
 ### Removed
 

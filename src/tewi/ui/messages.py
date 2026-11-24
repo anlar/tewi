@@ -143,6 +143,13 @@ class AddTorrentFromWebSearchCommand(Message):
 
 
 @dataclass
+class CopyToClipboardCommand(Message):
+    text: str
+    # What is copied, shown in notification (e.g. "3 magnet links")
+    description: str
+
+
+@dataclass
 class WebSearchQuerySubmitted(Message):
     query: str
     selected_indexers: list[str] | None = None

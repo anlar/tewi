@@ -1,8 +1,18 @@
-"""Clipboard utilities for system clipboard access."""
+"""Clipboard utilities for system clipboard access.
+
+System clipboard is accessed with pyperclip, which runs helper programs
+(xclip, wl-copy, pbcopy, etc.): calls may block, so they should run in
+background threads.
+"""
+
+import os
 
 from .log import get_logger, log_time
 
 logger = get_logger()
+
+# Environment variables set by SSH server in remote sessions
+_SSH_ENV_VARS = ("SSH_CONNECTION", "SSH_CLIENT", "SSH_TTY")
 
 # Try to import pyperclip, set flag if not available
 try:
@@ -18,6 +28,21 @@ except ImportError:
     _pyperclip_available = False
 
 
+def is_remote_session() -> bool:
+    """Check if application runs in SSH session.
+
+    System clipboard of remote machine is not the one user works with,
+    and accessing it over forwarded X11 display may hang SSH session on
+    logout (xclip keeps running in background to serve copied text).
+    """
+    return any(os.environ.get(v) for v in _SSH_ENV_VARS)
+
+
+def is_available() -> bool:
+    """Check if system clipboard can be used."""
+    return _pyperclip_available and not is_remote_session()
+
+
 @log_time
 def paste() -> str | None:
     """
@@ -27,7 +52,7 @@ def paste() -> str | None:
         str | None: The clipboard text content, or None if clipboard is empty
                     or unavailable.
     """
-    if not _pyperclip_available:
+    if not is_available():
         return None
 
     try:
@@ -49,7 +74,7 @@ def copy(text: str) -> bool:
     Returns:
         bool: True if text was copied, False if clipboard is unavailable.
     """
-    if not _pyperclip_available:
+    if not is_available():
         return False
 
     try:

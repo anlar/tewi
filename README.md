@@ -73,7 +73,8 @@ Features:
 * [ip-location-db](https://github.com/sapics/ip-location-db) (`user-country`
   database, used for peer country lookup)
 * [pyperclip](https://github.com/asweigart/pyperclip) (optional, used for
-  pasting links from clipboard when adding torrents)
+  system clipboard access: pasting links when adding torrents and copying
+  magnet links; terminal clipboard is used without it)
 
 ## Getting Started
 

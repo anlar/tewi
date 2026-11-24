@@ -1,5 +1,6 @@
 from typing import cast
 
+from textual import work
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.reactive import reactive
@@ -12,6 +13,9 @@ from ....util.misc import is_torrent_link
 from ...messages import AddTorrentCommand
 from ...util import print_size, subtitle_keys
 from ...widget.common import ReactiveLabel
+
+# Shown when clipboard has no link
+DEFAULT_TEXT = "~/"
 
 
 class AddTorrentDialog(ModalScreen[None]):
@@ -59,24 +63,37 @@ class AddTorrentWidget(Static):
         )
 
         text_area = self.query_one(TextArea)
-
-        link = self.get_link_from_clipboard()
-
-        if link:
-            text_area.load_text(link)
-        else:
-            text_area.load_text("~/")
-
+        text_area.load_text(DEFAULT_TEXT)
         text_area.cursor_location = text_area.document.end
 
-    @log_time
-    def get_link_from_clipboard(self) -> str | None:
+        # Clipboard of machine running Tewi is not user's one in web mode
+        if not self.app.is_web:
+            self.load_link_from_clipboard()
+
+    @work(thread=True, group="clipboard")
+    def load_link_from_clipboard(self) -> None:
+        """Read link from system clipboard in background thread.
+
+        Clipboard helper program (e.g. xclip) may not respond, which would
+        block UI if done in message handler.
+        """
         text = clipboard.paste()
 
         if text and is_torrent_link(text):
-            return text
+            self.app.call_from_thread(self.show_link, text)
 
-        return None
+    @log_time
+    def show_link(self, link: str) -> None:
+        """Show link from clipboard, unless user already edited text."""
+        # Dialog may be closed while clipboard was read
+        if not self.is_mounted:
+            return
+
+        text_area = self.query_one(TextArea)
+
+        if text_area.text == DEFAULT_TEXT:
+            text_area.load_text(link)
+            text_area.cursor_location = text_area.document.end
 
     @log_time
     def action_add(self) -> None:

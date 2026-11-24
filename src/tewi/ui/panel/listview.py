@@ -13,11 +13,11 @@ from textual.strip import Strip
 
 from ...search.util import build_magnet_link
 from ...torrent.models import Torrent
-from ...util import clipboard
 from ...util.log import get_logger, log_time
 from ..messages import (
     ChangeTorrentPriorityCommand,
     ClearFiltersCommand,
+    CopyToClipboardCommand,
     MarksChangedEvent,
     Notification,
     OpenAddTorrentCommand,
@@ -840,22 +840,17 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
             )
             return
 
-        text = "\n".join(links)
-        self.app.copy_to_clipboard(text)
-        clipboard.copy(text)
-
-        count = len(links)
-        message = (
-            "Copied magnet link"
-            if count == 1
-            else f"Copied {count} magnet links"
-        )
-        if skipped := len(torrents) - count:
+        if skipped := len(torrents) - len(links):
             self.post_message(
-                Notification(f"{message}, skipped {skipped}", "warning")
+                Notification(
+                    f"Skipped torrents with invalid hash: {skipped}", "warning"
+                )
             )
-        else:
-            self.post_message(Notification(message))
+
+        description = (
+            "magnet link" if len(links) == 1 else f"{len(links)} magnet links"
+        )
+        self.post_message(CopyToClipboardCommand("\n".join(links), description))
 
     # Actions: marks
 

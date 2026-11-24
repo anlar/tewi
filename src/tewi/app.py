@@ -70,6 +70,7 @@ from .ui.messages import (
     ChangeTorrentPriorityCommand,
     ClearFiltersCommand,
     Confirm,
+    CopyToClipboardCommand,
     EditTorrentCommand,
     FilterNameUpdatedEvent,
     FilterTagUpdatedEvent,
@@ -122,6 +123,8 @@ from .ui.panel.info import InfoPanel
 from .ui.panel.listview import TorrentListViewPanel
 from .ui.panel.state import StatePanel
 from .ui.panel.websearch import TorrentWebSearch
+from .ui.util import print_size
+from .util import clipboard
 from .util.log import get_logger, init_logger, log_time
 from .util.misc import is_http_url, is_torrent_link, strip_control_chars
 from .util.redact import redact_secrets
@@ -148,6 +151,11 @@ CONFIRM_MAX_NAMES = 3
 
 # Number of errors listed when adding several torrents fails
 ADD_MAX_ERRORS = 3
+
+# Max size of text copied to clipboard (bytes): terminals and multiplexers
+# silently drop larger OSC 52 sequences (base64 adds 1/3, tmux accepts up
+# to 1 MiB)
+CLIPBOARD_MAX_SIZE = 512 * 1024
 
 
 def count_message(count: int, single: str, multi: str) -> str:
@@ -690,6 +698,84 @@ class MainApp(App):
         else:
             self.post_message(
                 Notification(f"{len(values)} new torrents were added")
+            )
+
+    def copy_to_clipboard(self, text: str) -> None:
+        """Copy text to clipboard, also used by Textual (e.g. copying
+        selected text in input).
+
+        Args:
+            text: Text to copy
+        """
+        self.copy_text(text, None)
+
+    @log_time
+    @on(CopyToClipboardCommand)
+    def handle_copy_to_clipboard_command(
+        self, event: CopyToClipboardCommand
+    ) -> None:
+        size = len(event.text.encode())
+        if size > CLIPBOARD_MAX_SIZE:
+            self.post_message(
+                Notification(
+                    f"Failed to copy {event.description}:\n"
+                    f"too large for clipboard ({print_size(size)})",
+                    "warning",
+                )
+            )
+            return
+
+        self.copy_text(event.text, event.description)
+
+    def copy_text(self, text: str, description: str | None) -> None:
+        """Copy text to terminal clipboard and system clipboard.
+
+        Terminal clipboard (OSC 52) works over SSH, but not every terminal
+        supports it, so text is also put to system clipboard when it is
+        the one user works with: not in SSH session or textual-serve
+        (it would be clipboard of machine running Tewi).
+
+        Args:
+            text: Text to copy
+            description: What is copied, to notify about result (no
+                notification if not set)
+        """
+        # Terminal clipboard (OSC 52)
+        App.copy_to_clipboard(self, text)
+
+        if not self.is_web and clipboard.is_available():
+            self.copy_to_system_clipboard(text, description)
+        elif description is not None:
+            self.post_message(
+                Notification(f"Sent {description} to terminal clipboard")
+            )
+
+    @work(thread=True, group="clipboard")
+    def copy_to_system_clipboard(
+        self, text: str, description: str | None
+    ) -> None:
+        """Copy text to system clipboard in background thread.
+
+        Clipboard helper program (e.g. xclip) may not respond, which would
+        block UI if done in message handler.
+
+        Args:
+            text: Text to copy
+            description: What is copied, to notify about result (no
+                notification if not set)
+        """
+        copied = clipboard.copy(text)
+
+        if description is None:
+            return
+
+        # Text is already sent to terminal clipboard, but terminal may
+        # not support it, so it's reported separately
+        if copied:
+            self.post_message(Notification(f"Copied {description}"))
+        else:
+            self.post_message(
+                Notification(f"Sent {description} to terminal clipboard")
             )
 
     @work(thread=True, group="torrent_action")

@@ -2,32 +2,26 @@
 
 import asyncio
 from dataclasses import replace
-from unittest.mock import patch
 
 from textual import on
 from textual.app import App, ComposeResult
 
-import src.tewi.ui.panel.listview as listview_module
-from src.tewi.ui.messages import Notification
+from src.tewi.ui.messages import CopyToClipboardCommand, Notification
 from src.tewi.ui.panel.listview import TorrentListViewPanel
 from tests.tewi.ui.helpers import make_list_panel, make_torrent
 
-HASH_A = "a" * 40
-HASH_B = "b" * 40
-HASH_C = "c" * 40
-
+NAMES = ["first one", "second", "third", "fourth", "fifth"]
 TORRENTS = [
-    replace(make_torrent("first one"), hash=HASH_A),
-    replace(make_torrent("second"), hash=HASH_B),
-    replace(make_torrent("third"), hash=HASH_C),
+    replace(make_torrent(name), hash=str(i) * 40)
+    for i, name in enumerate(NAMES)
 ]
 
 
 class ListApp(App):
     def __init__(self) -> None:
         super().__init__()
-        self.notifications: list[Notification] = []
-        self.copied: list[str] = []
+        self.notifications: list[tuple[str, str]] = []
+        self.copies: list[CopyToClipboardCommand] = []
 
     def compose(self) -> ComposeResult:
         yield make_list_panel(100)
@@ -39,18 +33,16 @@ class ListApp(App):
     def panel(self) -> TorrentListViewPanel:
         return self.query_one(TorrentListViewPanel)
 
-    def copy_to_clipboard(self, text: str) -> None:
-        self.copied.append(text)
+    @on(CopyToClipboardCommand)
+    def record_copy(self, message: CopyToClipboardCommand) -> None:
+        self.copies.append(message)
 
     @on(Notification)
-    def record(self, message: Notification) -> None:
-        self.notifications.append(message)
+    def record_notification(self, message: Notification) -> None:
+        self.notifications.append((message.message, message.severity))
 
 
-def run_list(test, torrents=TORRENTS) -> list[str]:
-    """Run test and return texts sent to system clipboard."""
-    system_copied: list[str] = []
-
+def run_list(test, torrents=TORRENTS) -> None:
     async def run() -> None:
         app = ListApp()
         async with app.run_test(size=(100, 20)) as pilot:
@@ -58,41 +50,35 @@ def run_list(test, torrents=TORRENTS) -> list[str]:
             await pilot.pause()
             await test(app, pilot)
 
-    with patch.object(
-        listview_module.clipboard,
-        "copy",
-        side_effect=lambda text: system_copied.append(text) or True,
-    ):
-        asyncio.run(run())
-
-    return system_copied
+    asyncio.run(run())
 
 
-def magnet(info_hash: str, name: str) -> str:
-    return f"magnet:?xt=urn:btih:{info_hash}&dn={name}"
+def magnet(idx: int) -> str:
+    name = NAMES[idx].replace(" ", "%20")
+    return f"magnet:?xt=urn:btih:{str(idx) * 40}&dn={name}"
 
 
 def test_copies_highlighted_torrent_without_marks():
     async def test(app, pilot):
-        await pilot.press("M")
+        await pilot.press("j", "M")
 
-        assert app.copied == [magnet(HASH_A, "first%20one")]
-        assert [n.message for n in app.notifications] == ["Copied magnet link"]
+        assert app.copies == [CopyToClipboardCommand(magnet(1), "magnet link")]
+        assert app.notifications == []
 
-    system_copied = run_list(test)
-    assert system_copied == [magnet(HASH_A, "first%20one")]
+    run_list(test)
 
 
 def test_copies_marked_torrents_one_per_line_in_list_order():
     async def test(app, pilot):
-        # Mark third, then first: copy keeps list order
-        await pilot.press("G", "space", "g", "space", "M")
+        # Mark in reverse order: copy keeps list order
+        await pilot.press("G", "space", "k", "k", "space")
+        await pilot.press("g", "space", "M")
 
-        assert app.copied == [
-            magnet(HASH_A, "first%20one") + "\n" + magnet(HASH_C, "third")
-        ]
-        assert [n.message for n in app.notifications] == [
-            "Copied 2 magnet links"
+        assert app.copies == [
+            CopyToClipboardCommand(
+                "\n".join([magnet(0), magnet(2), magnet(4)]),
+                "3 magnet links",
+            )
         ]
 
     run_list(test)
@@ -104,9 +90,9 @@ def test_skips_torrents_with_invalid_hash():
     async def test(app, pilot):
         await pilot.press("V", "M")
 
-        assert app.copied == [magnet(HASH_A, "first%20one")]
-        assert [(n.message, n.severity) for n in app.notifications] == [
-            ("Copied magnet link, skipped 1", "warning")
+        assert app.copies == [CopyToClipboardCommand(magnet(0), "magnet link")]
+        assert app.notifications == [
+            ("Skipped torrents with invalid hash: 1", "warning")
         ]
 
     run_list(test, torrents)
@@ -116,10 +102,7 @@ def test_warns_when_no_link_can_be_built():
     async def test(app, pilot):
         await pilot.press("M")
 
-        assert app.copied == []
-        assert [(n.message, n.severity) for n in app.notifications] == [
-            ("No magnet links to copy", "warning")
-        ]
+        assert app.copies == []
+        assert app.notifications == [("No magnet links to copy", "warning")]
 
-    system_copied = run_list(test, [make_torrent("broken")])
-    assert system_copied == []
+    run_list(test, [make_torrent("broken")])
