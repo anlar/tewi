@@ -4,12 +4,12 @@
 """Abstract base class for torrent search providers."""
 
 from abc import ABC, abstractmethod
+from http.client import HTTPResponse
 from typing import Any
 
-from ..ui.util import print_size
+from ..util.format import print_size
 from .models import (
     Category,
-    DetailsLink,
     DetailsSection,
     Indexer,
     SearchResult,
@@ -19,67 +19,17 @@ from .util import urlopen_post as _urlopen_post
 
 
 class BaseSearchProvider(ABC):
-    """Abstract base class for torrent search providers.
-
-    Each provider implements search functionality for a specific
-    public tracker or torrent search engine.
-    """
+    """Abstract base class for torrent search providers."""
 
     def __init__(self, timeout: int | None = None) -> None:
         """Initialize provider with a request timeout.
 
         Args:
             timeout: Default timeout in seconds for HTTP requests made
-                    via `urlopen`/`urlopen_post`. When None, the
-                    underlying `urlopen`/`urlopen_post` default is used.
+                via `urlopen`/`urlopen_post`. When None, the underlying
+                `urlopen`/`urlopen_post` default is used.
         """
-        self.timeout = timeout
-
-    def urlopen(
-        self,
-        url: str,
-        timeout: int | None = None,
-        headers: dict[str, str] | None = None,
-    ) -> Any:
-        """Open URL with the provider's configured timeout.
-
-        Args:
-            url: URL to fetch
-            timeout: Override timeout in seconds (defaults to
-                    `self.timeout` when not given)
-            headers: Extra request headers (e.g. API key)
-
-        Returns:
-            HTTP response context manager
-        """
-        kwargs = {}
-        if timeout is None:
-            timeout = self.timeout
-        if timeout is not None:
-            kwargs["timeout"] = timeout
-        if headers:
-            kwargs["headers"] = headers
-        return _urlopen(url, **kwargs)
-
-    def urlopen_post(
-        self, url: str, data: bytes, timeout: int | None = None
-    ) -> Any:
-        """Open URL with a POST request using the provider's timeout.
-
-        Args:
-            url: URL to fetch
-            data: POST data as bytes
-            timeout: Override timeout in seconds (defaults to
-                    `self.timeout` when not given)
-
-        Returns:
-            HTTP response context manager
-        """
-        if timeout is not None:
-            return _urlopen_post(url, data=data, timeout=timeout)
-        if self.timeout is not None:
-            return _urlopen_post(url, data=data, timeout=self.timeout)
-        return _urlopen_post(url, data=data)
+        self.timeout: int | None = timeout
 
     @property
     @abstractmethod
@@ -89,13 +39,11 @@ class BaseSearchProvider(ABC):
         Returns:
             Unique string identifier (e.g., 'yts', 'jackett', 'tpb')
         """
-        pass
 
     @property
     @abstractmethod
     def name(self) -> str:
         """Return the provider name."""
-        pass
 
     @property
     def short_name(self) -> str:
@@ -112,25 +60,26 @@ class BaseSearchProvider(ABC):
         categories: list[Category] | None = None,
         indexers: list[str] | None = None,
     ) -> list[SearchResult]:
-        """Provider-specific search implementation.
+        """Search provider for torrents matching query.
 
         Args:
             query: Search term
             categories: Category objects to filter by (optional)
-            indexers: List of indexer IDs to search
-                     (optional, for meta-providers)
+            indexers: List of indexer IDs to search (optional, for
+                meta-providers)
 
         Returns:
             List of SearchResult objects
 
         Raises:
-            Exception: If search fails
+            Exception: If search fails. Providers wrap network and parse
+                errors into it, its message is shown to user prefixed
+                with provider name.
         """
-        pass
 
     @abstractmethod
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
-        """Generate provider-specific details for right column.
+        """Generate provider-specific details of search result.
 
         Args:
             result: Search result to format
@@ -142,17 +91,19 @@ class BaseSearchProvider(ABC):
     def indexers(self) -> list[Indexer]:
         """Return list of available indexers for this provider.
 
-        For most providers, this returns a single indexer (the provider
-        itself) which is basic implementation. For meta-providers like
-        Jackett, this returns all configured indexers.
+        By default returns a single indexer, the provider itself.
+        Meta-providers like Jackett return all configured indexers.
 
         Returns:
-            List of (indexer_id, indexer_name) tuples
+            Indexers available for search
         """
         return [Indexer(self.id, self.name)]
 
     def details_common(self, result: SearchResult) -> list[DetailsSection]:
-        """Generate common torrent details for left column.
+        """Generate common details of search result.
+
+        All fields are always shown, with "-" for values provider
+        doesn't report.
 
         Args:
             result: Search result to format
@@ -160,43 +111,101 @@ class BaseSearchProvider(ABC):
         Returns:
             Sections with common details
         """
-        if result.categories:
-            category = ", ".join(cat.full_path for cat in result.categories)
-        else:
-            category = "Unknown"
+        category = ", ".join(cat.full_path for cat in result.categories)
 
         general = DetailsSection(
             "General",
             fields=(
                 ("Provider", result.provider),
-                ("Category", category),
-                ("Info Hash", result.info_hash or "Unknown"),
+                ("Category", category or "-"),
+                ("Info Hash", result.info_hash or "-"),
             ),
         )
 
-        stats: list[tuple[str, str | DetailsLink]] = []
-        if result.size is not None:
-            stats.append(("Size", print_size(result.size)))
-        else:
-            stats.append(("Size", "Unknown"))
+        size = print_size(result.size) if result.size is not None else "-"
+        uploaded = (
+            result.upload_date.strftime("%Y-%m-%d %H:%M")
+            if result.upload_date is not None
+            else "-"
+        )
 
-        if result.seeders:
-            stats.append(("Seeders", str(result.seeders)))
+        stats = (
+            ("Size", size),
+            ("Seeders", self._format_count(result.seeders)),
+            ("Leechers", self._format_count(result.leechers)),
+            ("Downloads", self._format_count(result.downloads)),
+            ("Files", self._format_count(result.files_count)),
+            ("Uploaded", uploaded),
+            ("Freeleech", "Yes" if result.freeleech else "No"),
+        )
 
-        if result.leechers:
-            stats.append(("Leechers", str(result.leechers)))
+        return [general, DetailsSection("Statistics", fields=stats)]
 
-        if result.downloads:
-            stats.append(("Downloads", str(result.downloads)))
+    def urlopen(
+        self,
+        url: str,
+        timeout: int | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> HTTPResponse:
+        """Open URL with the provider's configured timeout.
 
-        if result.files_count is not None:
-            stats.append(("Files", str(result.files_count)))
+        Args:
+            url: URL to fetch
+            timeout: Override timeout in seconds (defaults to
+                `self.timeout` when not given)
+            headers: Extra request headers (e.g. API key)
 
-        if result.upload_date:
-            date_str = result.upload_date.strftime("%Y-%m-%d %H:%M")
-            stats.append(("Uploaded", date_str))
+        Returns:
+            HTTP response context manager
+        """
+        return _urlopen(url, **self._request_kwargs(timeout, headers))
 
-        if result.freeleech:
-            stats.append(("Freeleech", "Yes"))
+    def urlopen_post(
+        self,
+        url: str,
+        data: bytes,
+        timeout: int | None = None,
+        headers: dict[str, str] | None = None,
+    ) -> HTTPResponse:
+        """Open URL with a POST request using the provider's timeout.
 
-        return [general, DetailsSection("Statistics", fields=tuple(stats))]
+        Args:
+            url: URL to fetch
+            data: POST data as bytes
+            timeout: Override timeout in seconds (defaults to
+                `self.timeout` when not given)
+            headers: Extra request headers (e.g. API key)
+
+        Returns:
+            HTTP response context manager
+        """
+        return _urlopen_post(
+            url, data=data, **self._request_kwargs(timeout, headers)
+        )
+
+    def _request_kwargs(
+        self, timeout: int | None, headers: dict[str, str] | None
+    ) -> dict[str, Any]:
+        """Build optional arguments for `urlopen`/`urlopen_post` helpers.
+
+        Args:
+            timeout: Override timeout in seconds, or None to use
+                `self.timeout`
+            headers: Extra request headers
+
+        Returns:
+            Keyword arguments, omitting ones to leave at helpers' default
+        """
+        if timeout is None:
+            timeout = self.timeout
+        kwargs: dict[str, Any] = {}
+        if timeout is not None:
+            kwargs["timeout"] = timeout
+        if headers:
+            kwargs["headers"] = headers
+        return kwargs
+
+    @staticmethod
+    def _format_count(value: int | None) -> str:
+        """Format count for details, "-" when unknown."""
+        return str(value) if value is not None else "-"

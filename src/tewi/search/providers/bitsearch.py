@@ -9,7 +9,7 @@ import urllib.parse
 from datetime import datetime
 from typing import Any
 
-from ...ui.util import print_size
+from ...util.format import print_size
 from ...util.log import get_logger, log_time
 from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider

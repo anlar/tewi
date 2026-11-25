@@ -17,6 +17,7 @@ from textual.worker import get_current_worker
 from ...search.base import BaseSearchProvider
 from ...search.models import DetailsSection, SearchResult
 from ...search.sorting import get_search_sort_option, sort_search_results
+from ...util.format import print_size, print_time
 from ...util.log import get_logger, log_time
 from ..dialog.search.details import TorrentDetailsDialog
 from ..dialog.search.sort import SearchSortDialog
@@ -25,14 +26,7 @@ from ..messages import (
     Notification,
     OpenTorrentListCommand,
 )
-from ..util import (
-    plain_text,
-    print_size,
-    print_time,
-    source_text,
-    subtitle_keys,
-    theme_markup_color,
-)
+from ..util import plain_text, source_text, subtitle_keys, theme_markup_color
 from ..widget.common import ReactiveLabel
 
 logger = get_logger()

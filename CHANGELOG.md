@@ -54,6 +54,7 @@ handle multi-line list body as single line.
 - Read clipboard in add dialog in background, so not responding clipboard program doesn't freeze UI
 - Fix duplicate web search results from different providers, which weren't merged when providers wrote the same info hash in different case or in Base32
 - Show web search result details as plain text instead of Markdown
+- Show all statistics in web search result details, with `-` for empty values
 
 ### Removed
 

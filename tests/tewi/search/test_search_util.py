@@ -386,6 +386,17 @@ class TestUrlopen:
         call_kwargs = mock_urlopen.call_args[1]
         assert call_kwargs["timeout"] == 30
 
+    @patch("src.tewi.search.util.urllib.request.urlopen")
+    @patch("src.tewi.search.util.urllib.request.Request")
+    def test_urlopen_post_adds_headers(self, mock_request_class, mock_urlopen):
+        """Test that urlopen_post adds extra headers."""
+        mock_request = MagicMock()
+        mock_request_class.return_value = mock_request
+
+        urlopen_post("http://example.com", b"{}", headers={"X-Api-Key": "k"})
+
+        mock_request.add_header.assert_any_call("X-Api-Key", "k")
+
 
 class TestDetailsValue:
     @pytest.mark.parametrize(

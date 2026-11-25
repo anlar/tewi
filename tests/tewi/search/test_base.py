@@ -3,6 +3,7 @@
 
 """Unit tests for BaseSearchProvider shared HTTP helpers."""
 
+from typing import Any
 from unittest.mock import patch
 
 from src.tewi.search.base import BaseSearchProvider
@@ -129,10 +130,23 @@ class TestBaseSearchProviderUrlopenPost:
             "http://example.com", data=b"{}"
         )
 
+    @patch("src.tewi.search.base._urlopen_post")
+    def test_passes_headers(self, mock_urlopen_post):
+        """Test that extra headers are passed to urlopen_post."""
+        provider = _StubProvider()
+
+        provider.urlopen_post(
+            "http://example.com", data=b"{}", headers={"X-Api-Key": "k"}
+        )
+
+        mock_urlopen_post.assert_called_once_with(
+            "http://example.com", data=b"{}", headers={"X-Api-Key": "k"}
+        )
+
 
 class TestDetailsCommon:
     @staticmethod
-    def result(size: int | None) -> SearchResult:
+    def result(size: int | None, **kwargs: Any) -> SearchResult:
         return SearchResult(
             title="title",
             info_hash="a" * 40,
@@ -142,6 +156,7 @@ class TestDetailsCommon:
             provider_id="stub",
             provider_short="S",
             size=size,
+            **kwargs,
         )
 
     def test_size(self):
@@ -152,4 +167,37 @@ class TestDetailsCommon:
     def test_unknown_size(self):
         sections = _StubProvider().details_common(self.result(None))
 
-        assert details_fields(sections)["Size"] == "Unknown"
+        assert details_fields(sections)["Size"] == "-"
+
+    def test_zero_counts_are_shown(self):
+        result = self.result(None, seeders=0, leechers=0, downloads=0)
+        fields = details_fields(_StubProvider().details_common(result))
+
+        assert fields["Seeders"] == "0"
+        assert fields["Leechers"] == "0"
+        assert fields["Downloads"] == "0"
+
+    def test_unknown_values_are_dash(self):
+        result = SearchResult(
+            title="title",
+            info_hash=None,
+            magnet_link=None,
+            torrent_link=None,
+            provider="Stub",
+            provider_id="stub",
+            provider_short="S",
+        )
+        fields = details_fields(_StubProvider().details_common(result))
+
+        assert fields == {
+            "Provider": "Stub",
+            "Category": "-",
+            "Info Hash": "-",
+            "Size": "-",
+            "Seeders": "-",
+            "Leechers": "-",
+            "Downloads": "-",
+            "Files": "-",
+            "Uploaded": "-",
+            "Freeleech": "No",
+        }

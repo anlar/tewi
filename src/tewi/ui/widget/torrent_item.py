@@ -18,7 +18,7 @@ from rich.segment import Segment
 from rich.style import Style
 
 from ...torrent.models import Torrent
-from ..util import print_ratio, print_size, print_speed, print_time
+from ...util.format import print_ratio, print_size, print_speed, print_time
 
 StyleGetter = Callable[[str], Style]
 Line = list[Segment]

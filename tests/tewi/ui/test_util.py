@@ -4,7 +4,7 @@
 from rich.style import Style
 from rich.text import Text
 
-from src.tewi.ui.util import subtitle_keys, theme_markup_color
+from src.tewi.ui.util import subtitle_keys, theme_markup_color, truncate
 
 
 class TestSubtitleKeys:
@@ -105,3 +105,22 @@ class TestThemeMarkupColor:
             color = theme_markup_color(_App({"c": value}), "c")
             text = Text.from_markup(f"[bold {color}]x[/]")
             assert Style.parse(str(text.spans[0].style)).color is not None
+
+
+class TestTruncate:
+    """Test cases for truncate function."""
+
+    def test_short_value_is_kept(self):
+        assert truncate("hello", 10) == "hello"
+        assert truncate("hello", 5) == "hello"
+        assert truncate("", 5) == ""
+
+    def test_long_value_is_truncated(self):
+        assert truncate("hello world", 5) == "hello…"
+
+    def test_zero_means_no_limit(self):
+        assert truncate("hello world", 0) == "hello world"
+
+    def test_markup_is_kept_as_is(self):
+        """Test that value isn't escaped, as it's shown literally."""
+        assert truncate("[b]bold", 10) == "[b]bold"

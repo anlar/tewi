@@ -22,20 +22,14 @@ from textual.widgets import Static, TabbedContent, TabPane
 from textual.widgets.data_table import RowKey
 
 from ...torrent.models import TorrentFile, TorrentFilePriority
+from ...util.format import print_size, print_speed, print_time_ago
 from ...util.geoip import get_country
 from ...util.log import log_time
 from ..messages import OpenTorrentListCommand, ToggleFileDownloadCommand
 from ..util import (
     open as open_path,
 )
-from ..util import (
-    plain_text,
-    print_size,
-    print_speed,
-    print_time_ago,
-    subtitle_keys,
-    theme_markup_color,
-)
+from ..util import plain_text, subtitle_keys, theme_markup_color
 from ..widget.common import ReactiveLabel, ReactiveLinkLabel, VimDataTable
 
 

@@ -11,10 +11,11 @@ from textual.screen import ModalScreen
 from textual.widgets import Static, TextArea
 
 from ....util import clipboard
+from ....util.format import print_size
 from ....util.log import log_time
 from ....util.misc import is_torrent_link
 from ...messages import AddTorrentCommand
-from ...util import print_size, subtitle_keys
+from ...util import subtitle_keys
 from ...widget.common import ReactiveLabel
 
 # Shown when clipboard has no link

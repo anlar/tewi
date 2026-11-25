@@ -6,9 +6,10 @@ from textual.containers import Grid
 from textual.reactive import reactive
 from textual.widgets import Static
 
+from ...util.format import print_size, print_speed
 from ...util.log import log_time
 from ..models import FilterState, MarkState, SortKey
-from ..util import print_size, print_speed, truncate
+from ..util import truncate
 from ..widget.common import PageIndicator, ReactiveLabel, SpeedIndicator
 
 

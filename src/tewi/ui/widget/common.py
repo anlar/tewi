@@ -20,9 +20,9 @@ from textual.widgets import (
     Static,
 )
 
+from ...util.format import print_speed
 from ...util.log import log_time
 from ...util.misc import is_http_url
-from ..util import print_speed
 
 
 class VimDataTable(DataTable):

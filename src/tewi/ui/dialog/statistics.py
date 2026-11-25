@@ -7,8 +7,9 @@ from textual.screen import ModalScreen
 from textual.widgets import Label, Static
 
 from ...torrent.models import ClientStats
+from ...util.format import print_ratio, print_size, print_time
 from ...util.log import log_time
-from ..util import print_ratio, print_size, print_time, subtitle_keys
+from ..util import subtitle_keys
 
 
 class StatisticsDialog(ModalScreen[None]):

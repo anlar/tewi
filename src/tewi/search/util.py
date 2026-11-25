@@ -8,6 +8,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from datetime import datetime
+from http.client import HTTPResponse
 from typing import Any
 
 from ..util.misc import is_http_url, is_torrent_hash
@@ -34,7 +35,7 @@ def _check_scheme(url: str) -> None:
 
 def urlopen(
     url: str, timeout: int = 30, headers: dict[str, str] | None = None
-) -> Any:
+) -> HTTPResponse:
     """Open URL with User-Agent header.
 
     Creates a Request object with User-Agent header set to imitate
@@ -59,7 +60,12 @@ def urlopen(
     return urllib.request.urlopen(request, timeout=timeout)  # noqa: S310
 
 
-def urlopen_post(url: str, data: bytes, timeout: int = 30) -> Any:
+def urlopen_post(
+    url: str,
+    data: bytes,
+    timeout: int = 30,
+    headers: dict[str, str] | None = None,
+) -> HTTPResponse:
     """Open URL with POST request and User-Agent header.
 
     Creates a Request object with User-Agent header set to imitate
@@ -70,6 +76,7 @@ def urlopen_post(url: str, data: bytes, timeout: int = 30) -> Any:
         url: URL to fetch
         data: POST data as bytes
         timeout: Request timeout in seconds (default: 30)
+        headers: Extra request headers (e.g. API key)
 
     Returns:
         HTTP response context manager
@@ -81,6 +88,8 @@ def urlopen_post(url: str, data: bytes, timeout: int = 30) -> Any:
     request = urllib.request.Request(url, data=data)  # noqa: S310
     request.add_header("User-Agent", USER_AGENT)
     request.add_header("Content-Type", "application/json")
+    for name, value in (headers or {}).items():
+        request.add_header(name, value)
     return urllib.request.urlopen(request, timeout=timeout)  # noqa: S310
 
 

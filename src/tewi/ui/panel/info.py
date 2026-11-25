@@ -9,12 +9,10 @@ from textual.reactive import reactive
 from textual.widgets import Static
 
 from ...torrent.models import ConnectionSecurity
+from ...util.format import print_time_ago
 from ...util.log import log_time
 from ...util.misc import strip_control_chars
-from ..util import (
-    print_time_ago,
-    subtitle_keys,
-)
+from ..util import subtitle_keys
 from ..widget.common import ReactiveLayoutLabel
 
 # Badge text and CSS class for connection security (none for local

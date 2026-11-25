@@ -108,8 +108,8 @@ from .ui.panel.info import InfoPanel
 from .ui.panel.listview import TorrentListViewPanel
 from .ui.panel.state import StatePanel
 from .ui.panel.websearch import TorrentWebSearch
-from .ui.util import print_size
 from .util import clipboard
+from .util.format import print_size
 from .util.log import get_logger, init_logger, log_time
 from .util.misc import is_http_url, is_torrent_link, strip_control_chars
 from .util.redact import redact_secrets
