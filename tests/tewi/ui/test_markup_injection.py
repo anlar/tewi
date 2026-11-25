@@ -96,8 +96,9 @@ class TestSourceText:
     def test_short_format(self):
         assert source_text("1337x", "P", short=True).plain == "1337x|P"
 
-    def test_without_source(self):
-        text = source_text("YTS", "")
+    @pytest.mark.parametrize("source", [None, ""])
+    def test_without_source(self, source):
+        text = source_text("YTS", source)
 
         assert text.plain == "YTS"
         assert not text.spans

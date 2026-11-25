@@ -171,7 +171,7 @@ class Indexer(RemoteData):
     id: str
     name: str
     # Plain text name of aggregator (e.g. "Jackett"), shown after name
-    source: str = ""
+    source: str | None = None
 
 
 @dataclass(frozen=True)
@@ -235,7 +235,7 @@ class SearchResult(RemoteData):
     provider_id: str
     provider_short: str
     # Plain text short tag of aggregator (e.g. "J"), shown after provider
-    provider_source: str = ""
+    provider_source: str | None = None
 
     # Optional fields - can be None if not available
     categories: list[Category] | None = None

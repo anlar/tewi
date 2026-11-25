@@ -264,12 +264,12 @@ def plain_text(value: object, style: str = "", **kwargs) -> Text:
     return Text(text, style=style, **kwargs)
 
 
-def source_text(name: str, source: str, short: bool = False) -> Text:
+def source_text(name: str, source: str | None, short: bool = False) -> Text:
     """Build name with dimmed aggregator source as Text (never markup).
 
     Args:
         name: Indexer or provider name (from remote source)
-        source: Aggregator name or tag (e.g. "Jackett", "J"), may be empty
+        source: Aggregator name or tag (e.g. "Jackett", "J"), or None
         short: Use compact format "name|J" instead of "name (J)"
     """
     text = plain_text(name)
