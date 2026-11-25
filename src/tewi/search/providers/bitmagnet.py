@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any
 
 from ...util.log import get_logger, log_time
+from ...util.misc import parse_count
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
 from ..util import (
@@ -634,10 +635,12 @@ class BitmagnetProvider(BaseSearchProvider):
 
             # Extract optional numeric fields
             # Prefer item-level seeders/leechers over torrent-level
-            seeders = item.get("seeders") or torrent.get("seeders")
-            leechers = item.get("leechers") or torrent.get("leechers")
-            size = torrent.get("size")
-            files_count = torrent.get("filesCount")
+            seeders = parse_count(item.get("seeders") or torrent.get("seeders"))
+            leechers = parse_count(
+                item.get("leechers") or torrent.get("leechers")
+            )
+            size = parse_count(torrent.get("size"))
+            files_count = parse_count(torrent.get("filesCount"))
 
             # Parse upload date
             upload_date = self._parse_publish_date(item)

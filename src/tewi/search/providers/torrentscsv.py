@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Any
 
 from ...util.log import log_time
+from ...util.misc import parse_count
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult
 from ..util import build_magnet_link, detect_category_from_name, read_response
@@ -139,10 +140,10 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 provider_id=self.id,
                 provider_short=self.short_name,
                 categories=[category] if category else None,
-                seeders=torrent.get("seeders"),
-                leechers=torrent.get("leechers"),
-                downloads=torrent.get("completed"),
-                size=torrent.get("size_bytes"),
+                seeders=parse_count(torrent.get("seeders")),
+                leechers=parse_count(torrent.get("leechers")),
+                downloads=parse_count(torrent.get("completed")),
+                size=parse_count(torrent.get("size_bytes")),
                 files_count=None,
                 upload_date=upload_date,
                 page_url=None,

@@ -187,25 +187,6 @@ class SearchPreset:
     categories: list[str] | None = None
 
 
-_COUNT_FIELDS = ("seeders", "leechers", "downloads", "size", "files_count")
-
-
-def _to_count(value: object) -> int | None:
-    """Convert count from search provider to int.
-
-    Args:
-        value: Count as int or digit string
-
-    Returns:
-        Count, or None if value isn't a valid count
-    """
-    if isinstance(value, int) and not isinstance(value, bool):
-        return value
-    if isinstance(value, str) and value.strip().isdecimal():
-        return int(value)
-    return None
-
-
 @dataclass(frozen=True)
 class SearchResult:
     """Data Transfer Object for web search results.
@@ -246,10 +227,6 @@ class SearchResult:
     def __post_init__(self) -> None:
         # Text comes from search provider
         strip_control_chars_in_fields(self)
-        # Providers pass counts as received, which could be text: it would
-        # be parsed as markup in results table and break sorting
-        for name in _COUNT_FIELDS:
-            object.__setattr__(self, name, _to_count(getattr(self, name)))
         # Blank hash means no hash, as hash is used as unique key of result
         if self.info_hash is not None and not self.info_hash.strip():
             object.__setattr__(self, "info_hash", None)

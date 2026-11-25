@@ -8,6 +8,7 @@ from src.tewi.util.misc import (
     is_torrent_hash,
     is_torrent_link,
     normalize_torrent_hash,
+    parse_count,
 )
 
 # Names with shell syntax, which "compgen -W" in bash completion would
@@ -254,3 +255,38 @@ class TestNormalizeTorrentHash:
     )
     def test_non_hash_is_unchanged(self, value):
         assert normalize_torrent_hash(value) == value
+
+
+class TestParseCount:
+    """Test cases for parse_count function."""
+
+    @pytest.mark.parametrize(
+        "value, expected",
+        [(0, 0), (12, 12), ("12", 12), (" 7 ", 7)],
+    )
+    def test_valid_count(self, value, expected):
+        assert parse_count(value) == expected
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            None,
+            True,
+            False,
+            -1,
+            "",
+            "-1",
+            "1.5",
+            "1,234",
+            "N/A",
+            "[b]1[/]",
+            "[@click=app.pwn()]42[/]",
+            "[/oops]",
+            "1.5 GB",
+            1.5,
+            [42],
+            {"value": 42},
+        ],
+    )
+    def test_invalid_count_is_none(self, value):
+        assert parse_count(value) is None

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from ...util.log import get_logger, log_time
+from ...util.misc import parse_count
 from ..base import BaseSearchProvider
 from ..models import Category, Indexer, SearchResult, StandardCategories
 from ..util import (
@@ -410,11 +411,11 @@ class ProwlarrProvider(BaseSearchProvider):
                 provider_source="P",
                 provider_id=self.id,
                 categories=self._map_prowlarr_category(result),
-                seeders=result.get("seeders"),
-                leechers=result.get("leechers"),
-                downloads=result.get("grabs"),
-                size=result.get("size"),
-                files_count=result.get("files"),
+                seeders=parse_count(result.get("seeders")),
+                leechers=parse_count(result.get("leechers")),
+                downloads=parse_count(result.get("grabs")),
+                size=parse_count(result.get("size")),
+                files_count=parse_count(result.get("files")),
                 upload_date=self._parse_publish_date(result),
                 page_url=result.get("infoUrl"),
                 freeleech="freeleech" in result.get("indexerFlags"),

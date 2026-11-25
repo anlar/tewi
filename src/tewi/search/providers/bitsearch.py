@@ -8,6 +8,7 @@ from typing import Any
 
 from ...ui.util import print_size
 from ...util.log import get_logger, log_time
+from ...util.misc import parse_count
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
 from ..util import build_magnet_link, escape_markdown, read_response
@@ -458,12 +459,12 @@ class BitsearchProvider(BaseSearchProvider):
                 provider_id=self.id,
                 provider_short=self.short_name,
                 categories=[category] if category else None,
-                seeders=torrent.get("seeders"),
-                leechers=torrent.get("leechers"),
+                seeders=parse_count(torrent.get("seeders")),
+                leechers=parse_count(torrent.get("leechers")),
                 # Search always returns 0 downloads, real count is
                 # available in details only
                 downloads=None,
-                size=torrent.get("size"),
+                size=parse_count(torrent.get("size")),
                 files_count=None,
                 upload_date=self._parse_date(torrent.get("createdAt")),
                 page_url=(

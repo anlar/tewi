@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Any
 
 from ...util.log import log_time
+from ...util.misc import parse_count
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
 from ..util import build_magnet_link, escape_markdown, read_response
@@ -223,10 +224,10 @@ class KnabenProvider(BaseSearchProvider):
                 provider_id=self.id,
                 provider_short=self.short_name,
                 categories=categories or None,
-                seeders=torrent.get("seeders"),
-                leechers=torrent.get("peers"),
-                downloads=torrent.get("grabs"),
-                size=torrent.get("bytes"),
+                seeders=parse_count(torrent.get("seeders")),
+                leechers=parse_count(torrent.get("peers")),
+                downloads=parse_count(torrent.get("grabs")),
+                size=parse_count(torrent.get("bytes")),
                 files_count=None,
                 upload_date=self._parse_date(torrent.get("date")),
                 page_url=torrent.get("details") or None,

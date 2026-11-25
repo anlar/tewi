@@ -219,3 +219,41 @@ class TestCategoryFilter:
 
         url = mock_urlopen.call_args.args[0]
         assert "category" not in url
+
+
+class TestCounts:
+    """Counts are passed from JSON as received, which could be text."""
+
+    def test_digit_strings_are_converted(self, provider):
+        result = provider._parse_torrent(
+            {**SEARCH_TORRENT, "seeders": "1", "leechers": "2", "size": "3"}
+        )
+        assert (
+            result.seeders,
+            result.leechers,
+            result.size,
+        ) == (
+            1,
+            2,
+            3,
+        )
+
+    @pytest.mark.parametrize("value", ["[@click=app.pwn()]1[/]", "-1", None])
+    def test_invalid_values_are_none(self, provider, value):
+        result = provider._parse_torrent(
+            {
+                **SEARCH_TORRENT,
+                "seeders": value,
+                "leechers": value,
+                "size": value,
+            }
+        )
+        assert (
+            result.seeders,
+            result.leechers,
+            result.size,
+        ) == (
+            None,
+            None,
+            None,
+        )

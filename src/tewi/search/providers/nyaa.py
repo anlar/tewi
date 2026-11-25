@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 from ...util.log import log_time
+from ...util.misc import parse_count
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
 from ..util import build_magnet_link, escape_markdown, read_response
@@ -216,13 +217,19 @@ class NyaaProvider(BaseSearchProvider):
             leechers_elem = item.find("nyaa:leechers", ns)
             downloads_elem = item.find("nyaa:downloads", ns)
             seeders = (
-                int(seeders_elem.text) if seeders_elem is not None else None
+                parse_count(seeders_elem.text)
+                if seeders_elem is not None
+                else None
             )
             leechers = (
-                int(leechers_elem.text) if leechers_elem is not None else None
+                parse_count(leechers_elem.text)
+                if leechers_elem is not None
+                else None
             )
             downloads = (
-                int(downloads_elem.text) if downloads_elem is not None else None
+                parse_count(downloads_elem.text)
+                if downloads_elem is not None
+                else None
             )
 
             # Extract category ID

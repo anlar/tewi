@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from ...util.log import get_logger, log_time
+from ...util.misc import parse_count
 from ..base import BaseSearchProvider
 from ..models import Category, Indexer, SearchResult, StandardCategories
 from ..util import (
@@ -485,11 +486,11 @@ class JackettProvider(BaseSearchProvider):
                 provider_source="J",
                 provider_id=self.id,
                 categories=self._map_jackett_category(result),
-                seeders=result.get("Seeders"),
-                leechers=result.get("Peers"),
-                downloads=result.get("Grabs"),
-                size=result.get("Size"),
-                files_count=result.get("Files"),
+                seeders=parse_count(result.get("Seeders")),
+                leechers=parse_count(result.get("Peers")),
+                downloads=parse_count(result.get("Grabs")),
+                size=parse_count(result.get("Size")),
+                files_count=parse_count(result.get("Files")),
                 upload_date=self._parse_upload_date(result),
                 page_url=result.get("Details"),
                 freeleech=result.get("DownloadVolumeFactor") == 0,

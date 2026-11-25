@@ -11,6 +11,7 @@ from typing import Any
 
 from ...ui.util import print_size
 from ...util.log import get_logger, log_time
+from ...util.misc import parse_count
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
 from ..util import (
@@ -330,10 +331,10 @@ class TheRarbgProvider(BaseSearchProvider):
                 provider_id=self.id,
                 provider_short=self.short_name,
                 categories=self._get_categories(category),
-                seeders=torrent.get("se"),
-                leechers=torrent.get("le"),
+                seeders=parse_count(torrent.get("se")),
+                leechers=parse_count(torrent.get("le")),
                 downloads=None,
-                size=torrent.get("s"),
+                size=parse_count(torrent.get("s")),
                 files_count=None,
                 upload_date=upload_date,
                 page_url=self._page_url(tid, title),

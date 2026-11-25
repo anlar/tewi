@@ -112,3 +112,22 @@ def normalize_torrent_hash(text: str) -> str:
     if len(value) == 32:
         return base64.b32decode(value.upper()).hex()
     return value.lower()
+
+
+def parse_count(value: object) -> int | None:
+    """Convert count from remote source to int.
+
+    Remote data (e.g. JSON from search providers) may have counts as text
+    or garbage, which can't be shown, sorted or compared as numbers.
+
+    Args:
+        value: Count as non-negative int or digit string
+
+    Returns:
+        Count, or None if value isn't a valid count
+    """
+    if isinstance(value, int) and not isinstance(value, bool):
+        return value if value >= 0 else None
+    if isinstance(value, str) and value.strip().isdecimal():
+        return int(value)
+    return None

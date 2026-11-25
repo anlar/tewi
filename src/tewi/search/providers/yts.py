@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any
 
 from ...util.log import log_time
+from ...util.misc import parse_count
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
 from ..util import build_magnet_link, escape_markdown, read_response
@@ -237,10 +238,10 @@ class YTSProvider(BaseSearchProvider):
                 provider_id=self.id,
                 provider_short=self.short_name,
                 categories=self._get_category_from_quality(quality),
-                seeders=torrent.get("seeds"),
-                leechers=torrent.get("peers"),
+                seeders=parse_count(torrent.get("seeds")),
+                leechers=parse_count(torrent.get("peers")),
                 downloads=None,
-                size=torrent.get("size_bytes"),
+                size=parse_count(torrent.get("size_bytes")),
                 files_count=None,
                 upload_date=upload_date,
                 page_url=page_url,

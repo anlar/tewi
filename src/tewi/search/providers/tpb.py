@@ -8,6 +8,7 @@ from datetime import datetime
 from typing import Any
 
 from ...util.log import log_time
+from ...util.misc import parse_count
 from ..base import BaseSearchProvider
 from ..models import Category, SearchResult, StandardCategories
 from ..util import build_magnet_link, escape_markdown, read_response
@@ -245,9 +246,7 @@ class TPBProvider(BaseSearchProvider):
                 )
 
             # Get files_count if available
-            files_count = torrent.get("num_files")
-            if files_count is not None:
-                files_count = int(files_count)
+            files_count = parse_count(torrent.get("num_files"))
 
             # Build provider-specific fields
             fields = {}
@@ -272,10 +271,10 @@ class TPBProvider(BaseSearchProvider):
                 provider_id=self.id,
                 provider_short=self.short_name,
                 categories=categories,
-                seeders=int(torrent.get("seeders")),
-                leechers=int(torrent.get("leechers")),
+                seeders=parse_count(torrent.get("seeders")),
+                leechers=parse_count(torrent.get("leechers")),
                 downloads=None,
-                size=int(torrent.get("size")),
+                size=parse_count(torrent.get("size")),
                 files_count=files_count,
                 upload_date=upload_date,
                 page_url=page_url,

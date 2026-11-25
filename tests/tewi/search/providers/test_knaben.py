@@ -228,3 +228,46 @@ class TestSearch:
 
         with pytest.raises(Exception, match="Failed to parse API response"):
             provider.search("example")
+
+
+class TestCounts:
+    """Counts are passed from JSON as received, which could be text."""
+
+    def test_digit_strings_are_converted(self, provider):
+        result = provider._parse_torrent(
+            {**HIT, "seeders": "1", "peers": "2", "grabs": "3", "bytes": "4"}
+        )
+        assert (
+            result.seeders,
+            result.leechers,
+            result.downloads,
+            result.size,
+        ) == (
+            1,
+            2,
+            3,
+            4,
+        )
+
+    @pytest.mark.parametrize("value", ["[@click=app.pwn()]1[/]", "-1", None])
+    def test_invalid_values_are_none(self, provider, value):
+        result = provider._parse_torrent(
+            {
+                **HIT,
+                "seeders": value,
+                "peers": value,
+                "grabs": value,
+                "bytes": value,
+            }
+        )
+        assert (
+            result.seeders,
+            result.leechers,
+            result.downloads,
+            result.size,
+        ) == (
+            None,
+            None,
+            None,
+            None,
+        )
