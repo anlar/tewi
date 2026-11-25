@@ -1,6 +1,7 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Optional
 
 from ..util.misc import (
     normalize_torrent_hash,
@@ -11,7 +12,7 @@ from ..util.misc import (
 class Category:
     """Represents a Jackett category with ID, name, and hierarchy support."""
 
-    def __init__(self, id: int, name: str, parent: Optional["Category"] = None):
+    def __init__(self, id: int, name: str, parent: Category | None = None):
         self.id = id
         self.name = name
         self.parent = parent
@@ -145,7 +146,7 @@ class StandardCategories:
     OTHER_HASHED = Category(8020, "Hashed", OTHER)
 
     @classmethod
-    def get_by_id(cls, id: int) -> Optional[Category]:
+    def get_by_id(cls, id: int) -> Category | None:
         """Get category by ID."""
         for attr_name in dir(cls):
             attr = getattr(cls, attr_name)

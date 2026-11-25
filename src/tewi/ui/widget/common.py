@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import TypeVar
 
 from rich.text import Text
@@ -76,13 +78,13 @@ class CycleSelect(Static):
     class Changed(Message):
         """Fired when selected value changes."""
 
-        def __init__(self, cycle_select: "CycleSelect", value: object) -> None:
+        def __init__(self, cycle_select: CycleSelect, value: object) -> None:
             super().__init__()
             self.cycle_select = cycle_select
             self.value = value
 
         @property
-        def control(self) -> "CycleSelect":
+        def control(self) -> CycleSelect:
             return self.cycle_select
 
     def __init__(
