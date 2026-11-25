@@ -99,10 +99,6 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
         md = "## Information\n"
 
-        if "completed" in result.fields:
-            completed = result.fields["completed"]
-            md += f"- **Completed Downloads:** {completed}\n"
-
         if "scraped_date" in result.fields:
             md += f"- **Last Scraped:** {result.fields['scraped_date']}\n"
 
