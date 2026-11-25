@@ -18,7 +18,7 @@ from ..models import (
     SearchResult,
     StandardCategories,
 )
-from ..util import build_magnet_link, read_response
+from ..util import build_magnet_link, local_time, read_response
 
 logger = get_logger()
 
@@ -109,34 +109,34 @@ class NekoBtProvider(BaseSearchProvider):
             if not result:
                 continue
             if parents and not any(
-                (c.parent or c) in parents for c in result.categories or []
+                (c.parent or c) in parents for c in result.categories
             ):
                 continue
             results.append(result)
         return results
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
-        if not result.fields:
+        if not result.extra:
             return []
 
         info: list[tuple[str, str | DetailsLink]] = [
-            (label, result.fields[key])
+            (label, result.extra[key])
             for key, label in (
                 ("audio", "Audio"),
                 ("subtitles", "Subtitles"),
                 ("uploader", "Uploader"),
                 ("groups", "Groups"),
             )
-            if key in result.fields
+            if key in result.extra
         ]
 
-        if result.fields.get("batch"):
+        if result.extra.get("batch"):
             info.append(("Batch", "Yes"))
 
-        torrent = self._fetch_json("torrents", result.fields.get("torrent_id"))
-        media = self._fetch_json("media", result.fields.get("media_id"))
+        torrent = self._fetch_json("torrents", result.extra.get("torrent_id"))
+        media = self._fetch_json("media", result.extra.get("media_id"))
 
-        sections = [DetailsSection("Information", fields=info)]
+        sections = [DetailsSection("Information", fields=tuple(info))]
         sections += self._format_links(result, torrent, media)
         if torrent:
             sections += self._format_files(torrent.get("files"))
@@ -206,7 +206,7 @@ class NekoBtProvider(BaseSearchProvider):
         return [
             DetailsSection(
                 "Links",
-                fields=[(name, DetailsLink(url)) for name, url in links],
+                fields=tuple((name, DetailsLink(url)) for name, url in links),
             )
         ]
 
@@ -230,7 +230,7 @@ class NekoBtProvider(BaseSearchProvider):
         if len(files) > self.MAX_DETAILS_FILES:
             more = len(files) - self.MAX_DETAILS_FILES
             items.append(f"...and {more} more")
-        return [DetailsSection(f"Files ({len(files)})", items=items)]
+        return [DetailsSection(f"Files ({len(files)})", items=tuple(items))]
 
     def _parse_torrent(self, torrent: Any) -> SearchResult | None:
         """Parse torrent from search results."""
@@ -269,16 +269,16 @@ class NekoBtProvider(BaseSearchProvider):
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=[category] if category else None,
+                categories=(category,) if category else (),
                 seeders=parse_count(torrent.get("seeders")),
                 leechers=parse_count(torrent.get("leechers")),
                 downloads=parse_count(torrent.get("completed")),
                 size=parse_count(torrent.get("filesize")),
                 files_count=None,
-                upload_date=upload_date,
+                upload_date=local_time(upload_date),
                 page_url=f"{self.SITE_URL}/torrents/{tid}",
                 freeleech=True,  # Public tracker
-                fields=fields,
+                extra=fields,
             )
 
         except (AttributeError, KeyError, ValueError, TypeError):
@@ -339,7 +339,7 @@ class NekoBtProvider(BaseSearchProvider):
         return f"HTTP {error.code}: {message or error.reason}"
 
     def _is_movie(self, result: SearchResult) -> bool:
-        return StandardCategories.MOVIES in (result.categories or [])
+        return StandardCategories.MOVIES in result.categories
 
     def _langs(self, value: Any) -> list[str]:
         """Split comma-separated languages."""

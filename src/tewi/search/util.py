@@ -4,6 +4,7 @@ import re
 import urllib.error
 import urllib.parse
 import urllib.request
+from datetime import datetime
 from typing import Any
 
 from ..util.misc import is_http_url, is_torrent_hash
@@ -100,6 +101,21 @@ def read_response(response: Any) -> bytes:
             f"response is larger than {MAX_RESPONSE_SIZE // (1024 * 1024)} MiB"
         )
     return data
+
+
+def local_time(value: datetime | None) -> datetime | None:
+    """Convert search result date to local time zone.
+
+    Providers report dates in different time zones (UTC, site zone, or
+    naive local time), so they are converted to be shown consistently.
+
+    Args:
+        value: Date, naive one is taken as local time
+
+    Returns:
+        Timezone-aware date in local time zone, or None
+    """
+    return value.astimezone() if value else None
 
 
 def details_value(value: object) -> str | DetailsLink:

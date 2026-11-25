@@ -104,7 +104,11 @@ class TestMergeResults:
         early = datetime(2021, 2, 23, tzinfo=timezone.utc)
         merged = merge_results(
             [
-                result("a", VALID_HASH, upload_date=datetime(2023, 6, 1)),
+                result(
+                    "a",
+                    VALID_HASH,
+                    upload_date=datetime(2023, 6, 1, tzinfo=timezone.utc),
+                ),
                 result("b", VALID_HASH),
                 result("c", VALID_HASH, upload_date=early),
             ]
@@ -129,7 +133,7 @@ class TestMergeResults:
             VALID_HASH,
             size=100,
             page_url="https://first",
-            fields={"key": "first"},
+            extra={"key": "first"},
         )
         merged = merge_results(
             [
@@ -139,7 +143,7 @@ class TestMergeResults:
                     VALID_HASH,
                     size=200,
                     page_url="https://second",
-                    fields={"key": "second"},
+                    extra={"key": "second"},
                 ),
             ]
         )
@@ -147,7 +151,7 @@ class TestMergeResults:
         assert merged.title == "first"
         assert merged.size == 100
         assert merged.page_url == "https://first"
-        assert merged.fields == {"key": "first"}
+        assert merged.extra == {"key": "first"}
 
     def test_search_merges_duplicates(self):
         found = search(

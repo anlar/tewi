@@ -31,24 +31,24 @@ class TestControlCharsAreRemoved:
     def test_details_section(self):
         section = DetailsSection(
             f"Files{OSC}",
-            fields=[(f"Label{OSC}", f"value{OSC}")],
-            items=[f"a{OSC}.mkv"],
+            fields=((f"Label{OSC}", f"value{OSC}"),),
+            items=(f"a{OSC}.mkv",),
             text=f"line 1{OSC}\n\tline 2",
         )
 
         assert section == DetailsSection(
             f"Files{CLEAN}",
-            fields=[(f"Label{CLEAN}", f"value{CLEAN}")],
-            items=[f"a{CLEAN}.mkv"],
+            fields=((f"Label{CLEAN}", f"value{CLEAN}"),),
+            items=(f"a{CLEAN}.mkv",),
             # Line breaks and tabs are kept
             text=f"line 1{CLEAN}\n\tline 2",
         )
 
     def test_details_section_keeps_links(self):
         link = DetailsLink("https://x/")
-        section = DetailsSection("Links", fields=[("IMDB", link)])
+        section = DetailsSection("Links", fields=(("IMDB", link),))
 
-        assert section.fields == [("IMDB", link)]
+        assert section.fields == (("IMDB", link),)
 
 
 class TestCategory:

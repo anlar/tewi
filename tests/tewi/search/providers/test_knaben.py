@@ -63,7 +63,7 @@ class TestParseTorrent:
         assert result.magnet_link == HIT["magnetUrl"]
         assert result.torrent_link is None
         assert result.page_url == HIT["details"]
-        assert result.categories == [StandardCategories.BOOKS_EBOOK]
+        assert result.categories == (StandardCategories.BOOKS_EBOOK,)
         assert result.seeders == 10
         assert result.leechers == 0
         assert result.downloads == 9

@@ -23,6 +23,7 @@ from ..util import (
     MAX_ERROR_BODY_SIZE,
     build_magnet_link,
     details_value,
+    local_time,
     read_response,
 )
 
@@ -170,16 +171,16 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             Sections with Jackett details
         """
-        if not result.fields:
+        if not result.extra:
             return []
 
         # All fields in sorted order for consistent display
         fields = [
-            self._transform_field(key, result.fields[key])
-            for key in sorted(result.fields.keys())
+            self._transform_field(key, result.extra[key])
+            for key in sorted(result.extra.keys())
         ]
 
-        return [DetailsSection("Indexer Info", fields=fields)]
+        return [DetailsSection("Indexer Info", fields=tuple(fields))]
 
     def fetch_from_indexer(
         self, query: str, indexer_id: str, categories: list[Category] | None
@@ -488,16 +489,16 @@ class JackettProvider(BaseSearchProvider):
                 provider_short=self._build_provider_name(result, short=True),
                 provider_source="J",
                 provider_id=self.id,
-                categories=self._map_jackett_category(result),
+                categories=tuple(self._map_jackett_category(result) or ()),
                 seeders=parse_count(result.get("Seeders")),
                 leechers=parse_count(result.get("Peers")),
                 downloads=parse_count(result.get("Grabs")),
                 size=parse_count(result.get("Size")),
                 files_count=parse_count(result.get("Files")),
-                upload_date=self._parse_upload_date(result),
+                upload_date=local_time(self._parse_upload_date(result)),
                 page_url=result.get("Details"),
                 freeleech=result.get("DownloadVolumeFactor") == 0,
-                fields=self._build_fields(result),
+                extra=self._build_fields(result),
             )
         except (KeyError, ValueError, TypeError):
             return None
@@ -561,7 +562,7 @@ class JackettProvider(BaseSearchProvider):
         tracker = result.get("Tracker", tracker_id)
         return tracker[:5] if short else tracker
 
-    def _build_fields(self, result: dict[str, Any]) -> dict[str, str]:
+    def _build_fields(self, result: dict[str, Any]) -> dict[str, object]:
         """Build provider-specific fields dict.
 
         Includes all fields from Jackett response except:
@@ -612,7 +613,7 @@ class JackettProvider(BaseSearchProvider):
             else:
                 fields[key] = str(value)
 
-        return fields if fields else None
+        return fields
 
     def _map_jackett_category(
         self, result: dict[str, Any]

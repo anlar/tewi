@@ -20,7 +20,13 @@ from ..models import (
     SearchResult,
     StandardCategories,
 )
-from ..util import build_magnet_link, matches_query, query_words, read_response
+from ..util import (
+    build_magnet_link,
+    local_time,
+    matches_query,
+    query_words,
+    read_response,
+)
 
 logger = get_logger()
 
@@ -186,27 +192,27 @@ class TheRarbgProvider(BaseSearchProvider):
         return results
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
-        if not result.fields:
+        if not result.extra:
             return []
 
         info: list[tuple[str, str | DetailsLink]] = []
 
-        if "r_category" in result.fields:
-            info.append(("Category", result.fields["r_category"]))
+        if "r_category" in result.extra:
+            info.append(("Category", result.extra["r_category"]))
 
-        if "uploader" in result.fields:
-            info.append(("Uploader", result.fields["uploader"]))
+        if "uploader" in result.extra:
+            info.append(("Uploader", result.extra["uploader"]))
 
-        if "tags" in result.fields:
-            info.append(("Tags", result.fields["tags"]))
+        if "tags" in result.extra:
+            info.append(("Tags", result.extra["tags"]))
 
-        details = self._fetch_details(result.fields.get("torrent_id"))
+        details = self._fetch_details(result.extra.get("torrent_id"))
         if not details:
-            return [DetailsSection("Information", fields=info)]
+            return [DetailsSection("Information", fields=tuple(info))]
 
         info.extend(self._format_details(details))
         return [
-            DetailsSection("Information", fields=info),
+            DetailsSection("Information", fields=tuple(info)),
             *self._format_files(details.get("files")),
             *self._format_trackers(details.get("trackers")),
         ]
@@ -283,7 +289,7 @@ class TheRarbgProvider(BaseSearchProvider):
         if len(files) > self.MAX_DETAILS_FILES:
             more = len(files) - self.MAX_DETAILS_FILES
             items.append(f"...and {more} more")
-        return [DetailsSection(f"Files ({len(files)})", items=items)]
+        return [DetailsSection(f"Files ({len(files)})", items=tuple(items))]
 
     def _format_trackers(self, trackers: Any) -> list[DetailsSection]:
         """Format trackers section with seeders/leechers reported by them."""
@@ -299,7 +305,7 @@ class TheRarbgProvider(BaseSearchProvider):
             if isinstance(seeders, int) and isinstance(leechers, int):
                 item += f" ({seeders} seeders, {leechers} leechers)"
             items.append(item)
-        return [DetailsSection("Trackers", items=items)] if items else []
+        return [DetailsSection("Trackers", items=tuple(items))] if items else []
 
     def _parse_torrent(self, torrent: Any) -> SearchResult | None:
         """Parse torrent from JSON search results."""
@@ -336,16 +342,16 @@ class TheRarbgProvider(BaseSearchProvider):
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=self._get_categories(category),
+                categories=tuple(self._get_categories(category) or ()),
                 seeders=parse_count(torrent.get("se")),
                 leechers=parse_count(torrent.get("le")),
                 downloads=None,
                 size=parse_count(torrent.get("s")),
                 files_count=None,
-                upload_date=upload_date,
+                upload_date=local_time(upload_date),
                 page_url=self._page_url(tid, title),
                 freeleech=True,  # Public tracker
-                fields=fields,
+                extra=fields,
             )
 
         except (AttributeError, KeyError, ValueError, TypeError):
@@ -395,17 +401,17 @@ class TheRarbgProvider(BaseSearchProvider):
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=self._get_categories(category),
+                categories=tuple(self._get_categories(category) or ()),
                 seeders=seeders,
                 # Feed has no leechers
                 leechers=None,
                 downloads=None,
                 size=size,
                 files_count=None,
-                upload_date=upload_date,
+                upload_date=local_time(upload_date),
                 page_url=self._page_url(tid, title),
                 freeleech=True,  # Public tracker
-                fields=fields,
+                extra=fields,
             )
 
         except (AttributeError, KeyError, ValueError, TypeError):

@@ -76,12 +76,12 @@ def test_control_chars_are_removed():
         page_url=f"https://example.org/{OSC}",
     )
     app = DetailsApp(
-        common=[DetailsSection(f"General{CSI}", fields=[("Size", f"1{CSI}")])],
+        common=[DetailsSection(f"General{CSI}", fields=(("Size", f"1{CSI}"),))],
         extended=[
             DetailsSection(
-                "Links", fields=[("IMDB", DetailsLink(f"https://x/{OSC}"))]
+                "Links", fields=(("IMDB", DetailsLink(f"https://x/{OSC}")),)
             ),
-            DetailsSection("Files", items=[f"a{OSC}.mkv"]),
+            DetailsSection("Files", items=(f"a{OSC}.mkv",)),
             DetailsSection("Overview", text=f"Plot{OSC} text"),
         ],
         title=result.title,
@@ -101,9 +101,9 @@ def test_control_chars_are_removed():
 
 def test_remote_text_is_shown_literally():
     app = DetailsApp(
-        common=[DetailsSection("General", fields=[("Name", MARKUP)])],
+        common=[DetailsSection("General", fields=(("Name", MARKUP),))],
         extended=[
-            DetailsSection("Files", items=[f"# {MARKUP}"]),
+            DetailsSection("Files", items=(f"# {MARKUP}",)),
             DetailsSection("Overview", text=f"[x](http://evil) {MARKUP}"),
         ],
     )
@@ -117,7 +117,7 @@ def test_remote_text_is_shown_literally():
 
 def test_field_values_are_single_line():
     app = DetailsApp(
-        common=[DetailsSection("General", fields=[("Name", "a\nb  \tc")])],
+        common=[DetailsSection("General", fields=(("Name", "a\nb  \tc"),))],
         extended=[],
     )
 
@@ -129,7 +129,7 @@ def test_long_values_are_aligned_after_labels():
     app = DetailsApp(
         common=[
             DetailsSection(
-                "General", fields=[("Size", "1 GB"), ("Long label", value)]
+                "General", fields=(("Size", "1 GB"), ("Long label", value))
             )
         ],
         extended=[],
@@ -151,7 +151,7 @@ def test_empty_sections_are_skipped():
     app = DetailsApp(
         common=[
             DetailsSection("Empty"),
-            DetailsSection("General", fields=[("Size", "1 GB")]),
+            DetailsSection("General", fields=(("Size", "1 GB"),)),
         ],
         extended=[],
     )

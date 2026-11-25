@@ -138,14 +138,14 @@ class TestSearch:
         assert result.info_hash == HASH
         assert result.magnet_link == MAGNET
         assert result.page_url == "https://nekobt.to/torrents/1000001"
-        assert result.categories == [StandardCategories.TV_ANIME]
+        assert result.categories == (StandardCategories.TV_ANIME,)
         assert result.seeders == 46
         assert result.leechers == 2
         assert result.downloads == 803
         assert result.size == 8423228390
         assert result.upload_date.year == 2026
-        assert result.fields["torrent_id"] == "1000001"
-        assert result.fields["media_id"] == "s1001"
+        assert result.extra["torrent_id"] == "1000001"
+        assert result.extra["media_id"] == "s1001"
 
     def test_api_error(self, provider, mock_urlopen):
         set_responses(
@@ -203,11 +203,11 @@ class TestSearch:
 
         [result] = provider.search("example")
 
-        assert result.categories is None
+        assert result.categories == ()
         assert result.seeders is None
         assert result.size is None
         assert result.upload_date is None
-        assert "media_id" not in result.fields
+        assert "media_id" not in result.extra
 
 
 class TestCategories:
@@ -222,8 +222,8 @@ class TestCategories:
         results = provider.search("example")
 
         assert [r.categories for r in results] == [
-            [StandardCategories.TV_ANIME],
-            [StandardCategories.MOVIES],
+            (StandardCategories.TV_ANIME,),
+            (StandardCategories.MOVIES,),
         ]
 
     def test_movies(self, provider, mock_urlopen, mixed):
@@ -290,10 +290,10 @@ class TestDetails:
         assert fields["IMDB"] == DetailsLink(
             "https://www.imdb.com/title/tt0000001/"
         )
-        assert details_section(sections, "Files (2)").items == [
+        assert details_section(sections, "Files (2)").items == (
             "Example/Example - 01.mkv (1 kB)",
             "# README",
-        ]
+        )
         # Remote Markdown description and media info aren't shown
         assert "Remote" not in repr(sections)
         assert "Unique ID" not in repr(sections)

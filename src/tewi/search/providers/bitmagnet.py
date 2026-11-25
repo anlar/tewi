@@ -17,7 +17,7 @@ from ..models import (
     SearchResult,
     StandardCategories,
 )
-from ..util import MAX_ERROR_BODY_SIZE, details_value, read_response
+from ..util import MAX_ERROR_BODY_SIZE, details_value, local_time, read_response
 
 logger = get_logger()
 
@@ -229,11 +229,11 @@ class BitmagnetProvider(BaseSearchProvider):
         Returns:
             Sections with Bitmagnet details
         """
-        if not result.fields:
+        if not result.extra:
             return []
 
         # Try to fetch additional torrent details
-        fields = dict(result.fields) if result.fields else {}
+        fields = dict(result.extra)
         try:
             content_details = self._fetch_content_details(result.info_hash)
             if content_details:
@@ -310,7 +310,7 @@ class BitmagnetProvider(BaseSearchProvider):
             return None
 
         links = [(str(name), details_value(url)) for name, url in links_data]
-        return DetailsSection("Links", fields=links)
+        return DetailsSection("Links", fields=tuple(links))
 
     def _format_timestamps_section(self, fields: dict) -> DetailsSection | None:
         """Format timestamps section."""
@@ -345,7 +345,7 @@ class BitmagnetProvider(BaseSearchProvider):
         ]
 
         if rows:
-            return DetailsSection(title, fields=rows)
+            return DetailsSection(title, fields=tuple(rows))
         return None
 
     def _validate_config(self, bitmagnet_url: str | None) -> str | None:
@@ -662,16 +662,16 @@ class BitmagnetProvider(BaseSearchProvider):
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=categories,
+                categories=tuple(categories or ()),
                 seeders=seeders,
                 leechers=leechers,
                 downloads=None,
                 size=size,
                 files_count=files_count,
-                upload_date=upload_date,
+                upload_date=local_time(upload_date),
                 page_url=page_url,
                 freeleech=True,  # Public
-                fields=fields,
+                extra=fields,
             )
 
         except (KeyError, ValueError, TypeError) as e:
@@ -719,14 +719,14 @@ class BitmagnetProvider(BaseSearchProvider):
 
         return [category] if category else []
 
-    def _build_fields(self, item: dict[str, Any]) -> dict[str, str] | None:
+    def _build_fields(self, item: dict[str, Any]) -> dict[str, object]:
         """Build provider-specific fields dict from extended metadata.
 
         Args:
             item: Item dict from Bitmagnet GraphQL response
 
         Returns:
-            Dictionary of provider-specific fields or None if empty
+            Dictionary of provider-specific fields
         """
         torrent = item.get("torrent", {})
         fields: dict[str, str] = {}
@@ -738,7 +738,7 @@ class BitmagnetProvider(BaseSearchProvider):
         self._extract_list_fields(torrent, fields)
         self._extract_complex_fields(item, torrent, fields)
 
-        return fields if fields else None
+        return fields
 
     def _extract_content_fields(
         self, item: dict[str, Any], fields: dict[str, str]

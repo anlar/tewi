@@ -72,14 +72,14 @@ class TestDetails:
         assert fields["Category"] == "Softwares"
         assert fields["Subcategory"] == "Linux"
         assert fields["Downloads"] == "898"
-        assert details_section(sections, "Files (2)").items == [
+        assert details_section(sections, "Files (2)").items == (
             "debian.iso (1.02 kB)",
             "# README",
-        ]
+        )
         # "DHT" isn't tracker URL
-        assert details_section(sections, "Trackers").items == [
-            "udp://tracker.example.org:1337/announce"
-        ]
+        assert details_section(sections, "Trackers").items == (
+            "udp://tracker.example.org:1337/announce",
+        )
 
     def test_remote_text_is_kept_as_is(self, provider, result, mock_urlopen):
         fields = details_fields(provider.details_extended(result))
@@ -115,7 +115,7 @@ class TestDetails:
         sections = provider.details_extended(result)
 
         assert "Downloads" not in details_fields(sections)
-        assert details_section(sections, "Files (1)").items == ["a"]
+        assert details_section(sections, "Files (1)").items == ("a",)
 
     def test_network_error_keeps_basic_details(
         self, provider, result, mock_urlopen
@@ -133,7 +133,7 @@ class TestParseTorrent:
         assert result.page_url == (
             "https://bitsearch.eu/torrent/6ae9ad00f20355a4b00411aa"
         )
-        assert result.categories == [StandardCategories.PC]
+        assert result.categories == (StandardCategories.PC,)
         assert result.upload_date.year == 2026
         # Search always returns 0 downloads, so they are unknown
         assert result.downloads is None

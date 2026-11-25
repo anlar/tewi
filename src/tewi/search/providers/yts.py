@@ -17,7 +17,7 @@ from ..models import (
     SearchResult,
     StandardCategories,
 )
-from ..util import build_magnet_link, read_response
+from ..util import build_magnet_link, local_time, read_response
 
 
 class YTSProvider(BaseSearchProvider):
@@ -106,16 +106,16 @@ class YTSProvider(BaseSearchProvider):
         Returns:
             Sections with movie details
         """
-        if not result.fields:
+        if not result.extra:
             return []
 
-        sections = [self._movie_section(result.fields)]
+        sections = [self._movie_section(result.extra)]
         # Long text is shown as paragraph, not squeezed into field value
-        if result.fields.get("summary"):
+        if result.extra.get("summary"):
             sections.append(
-                DetailsSection("Summary", text=result.fields["summary"])
+                DetailsSection("Summary", text=result.extra["summary"])
             )
-        sections.append(self._quality_section(result.fields))
+        sections.append(self._quality_section(result.extra))
         return sections
 
     def _has_movies_category(self, categories: list[Category] | None) -> bool:
@@ -247,16 +247,18 @@ class YTSProvider(BaseSearchProvider):
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=self._get_category_from_quality(quality),
+                categories=tuple(
+                    self._get_category_from_quality(quality) or ()
+                ),
                 seeders=parse_count(torrent.get("seeds")),
                 leechers=parse_count(torrent.get("peers")),
                 downloads=None,
                 size=parse_count(torrent.get("size_bytes")),
                 files_count=None,
-                upload_date=upload_date,
+                upload_date=local_time(upload_date),
                 page_url=page_url,
                 freeleech=True,  # Public tracker
-                fields=fields,
+                extra=fields,
             )
 
         except (KeyError, ValueError, TypeError):
@@ -400,7 +402,7 @@ class YTSProvider(BaseSearchProvider):
                 value = formatter(fields[key]) if formatter else fields[key]
                 if value:
                     rows.append((label, value))
-        return DetailsSection("Movie", fields=rows)
+        return DetailsSection("Movie", fields=tuple(rows))
 
     def _quality_section(self, fields: dict[str, str]) -> DetailsSection:
         """Build quality information section."""
@@ -417,4 +419,4 @@ class YTSProvider(BaseSearchProvider):
             for key, label in field_mappings
             if key in fields
         ]
-        return DetailsSection("Quality", fields=rows)
+        return DetailsSection("Quality", fields=tuple(rows))

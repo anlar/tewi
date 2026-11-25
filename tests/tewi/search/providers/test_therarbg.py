@@ -236,7 +236,7 @@ class TestParse:
         assert result.magnet_link.startswith(
             f"magnet:?xt=urn:btih:{HASH_JSON.lower()}"
         )
-        assert result.categories == [StandardCategories.TV]
+        assert result.categories == (StandardCategories.TV,)
         assert result.seeders == 278
         assert result.leechers == 87
         assert result.size == 6000000000
@@ -245,7 +245,7 @@ class TestParse:
             "https://therarbg.com/post-detail/a00001/"
             "example-show-s04-season-4-2025-1080p-webrip/"
         )
-        assert result.fields["tags"] == "1080p, [x](http://evil)"
+        assert result.extra["tags"] == "1080p, [x](http://evil)"
 
     def test_json_result_without_hash_is_skipped(self, provider):
         assert provider._parse_torrent({**JSON_TORRENT, "h": None}) is None
@@ -263,12 +263,12 @@ class TestParse:
         [result] = provider.search("example")
 
         assert result.info_hash == HASH_RSS
-        assert result.categories == [StandardCategories.BOOKS]
+        assert result.categories == (StandardCategories.BOOKS,)
         assert result.seeders == 3
         assert result.leechers is None
         assert result.size == 128398131
         assert result.upload_date.year == 2024
-        assert result.fields["torrent_id"] == "a00002"
+        assert result.extra["torrent_id"] == "a00002"
 
     def test_rss_result_without_size(self, provider, mock_urlopen):
         item = rss_item().replace('length="128398131"', "")
@@ -323,14 +323,14 @@ class TestDetails:
         )
         assert fields["Last Checked"] == "2026-11-18 22:59"
         # File count from list, as num_files could be 0
-        assert details_section(sections, "Files (2)").items == [
+        assert details_section(sections, "Files (2)").items == (
             "S04/e1.mkv (1.02 kB)",
             "# README",
-        ]
-        assert details_section(sections, "Trackers").items == [
+        )
+        assert details_section(sections, "Trackers").items == (
             "udp://tracker.example.org:1337 (5 seeders, 2 leechers)",
             "udp://dead.example.org:80",
-        ]
+        )
 
     def test_invalid_imdb_is_skipped(self, provider, result, mock_details):
         response = mock_details.return_value.__enter__.return_value

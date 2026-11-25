@@ -12,7 +12,13 @@ from ...util.log import log_time
 from ...util.misc import parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import Category, DetailsSection, SearchResult, StandardCategories
-from ..util import build_magnet_link, matches_query, query_words, read_response
+from ..util import (
+    build_magnet_link,
+    local_time,
+    matches_query,
+    query_words,
+    read_response,
+)
 
 
 class LimeTorrentsProvider(BaseSearchProvider):
@@ -116,14 +122,14 @@ class LimeTorrentsProvider(BaseSearchProvider):
         return results
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
-        if not result.fields:
+        if not result.extra:
             return []
 
         fields = []
-        if "l_category" in result.fields:
-            fields.append(("Category", result.fields["l_category"]))
+        if "l_category" in result.extra:
+            fields.append(("Category", result.extra["l_category"]))
 
-        return [DetailsSection("Information", fields=fields)]
+        return [DetailsSection("Information", fields=tuple(fields))]
 
     def _parse_item(self, item: ET.Element) -> SearchResult | None:
         """Parse torrent from RSS feed item."""
@@ -167,16 +173,18 @@ class LimeTorrentsProvider(BaseSearchProvider):
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=[mapped] if mapped else None,
+                categories=(mapped,) if mapped else (),
                 seeders=seeders,
                 leechers=leechers,
                 downloads=None,
                 size=size,
                 files_count=None,
-                upload_date=self._parse_date(item.findtext("pubDate")),
+                upload_date=local_time(
+                    self._parse_date(item.findtext("pubDate"))
+                ),
                 page_url=self._page_url(item.findtext("link")),
                 freeleech=True,  # Public tracker
-                fields=fields,
+                extra=fields,
             )
 
         except (AttributeError, KeyError, ValueError, TypeError):
@@ -225,4 +233,4 @@ class LimeTorrentsProvider(BaseSearchProvider):
         self, result: SearchResult, parents: set[Category]
     ) -> bool:
         """Check that result belongs to one of selected parent categories."""
-        return any((c.parent or c) in parents for c in result.categories or [])
+        return any((c.parent or c) in parents for c in result.categories)

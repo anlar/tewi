@@ -10,7 +10,12 @@ from ...util.log import log_time
 from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import Category, DetailsSection, SearchResult
-from ..util import build_magnet_link, detect_category_from_name, read_response
+from ..util import (
+    build_magnet_link,
+    detect_category_from_name,
+    local_time,
+    read_response,
+)
 
 
 class TorrentsCsvProvider(BaseSearchProvider):
@@ -95,14 +100,14 @@ class TorrentsCsvProvider(BaseSearchProvider):
         Returns:
             Sections with statistics
         """
-        if not result.fields:
+        if not result.extra:
             return []
 
         fields = []
-        if "scraped_date" in result.fields:
-            fields.append(("Last Scraped", result.fields["scraped_date"]))
+        if "scraped_date" in result.extra:
+            fields.append(("Last Scraped", result.extra["scraped_date"]))
 
-        return [DetailsSection("Information", fields=fields)]
+        return [DetailsSection("Information", fields=tuple(fields))]
 
     def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResult | None:
         """Parse a single torrent from TorrentsCSV API response."""
@@ -138,16 +143,16 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=[category] if category else None,
+                categories=(category,) if category else (),
                 seeders=parse_count(torrent.get("seeders")),
                 leechers=parse_count(torrent.get("leechers")),
                 downloads=parse_count(torrent.get("completed")),
                 size=parse_count(torrent.get("size_bytes")),
                 files_count=None,
-                upload_date=upload_date,
+                upload_date=local_time(upload_date),
                 page_url=None,
                 freeleech=True,  # Public tracker
-                fields=fields,
+                extra=fields,
             )
 
         except (KeyError, ValueError, TypeError):

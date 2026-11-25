@@ -164,11 +164,11 @@ class BaseSearchProvider(ABC):
 
         general = DetailsSection(
             "General",
-            fields=[
+            fields=(
                 ("Provider", result.provider),
                 ("Category", category),
                 ("Info Hash", result.info_hash or "Unknown"),
-            ],
+            ),
         )
 
         stats: list[tuple[str, str | DetailsLink]] = []
@@ -196,4 +196,4 @@ class BaseSearchProvider(ABC):
         if result.freeleech:
             stats.append(("Freeleech", "Yes"))
 
-        return [general, DetailsSection("Statistics", fields=stats)]
+        return [general, DetailsSection("Statistics", fields=tuple(stats))]

@@ -21,6 +21,7 @@ from ..util import (
     MAX_ERROR_BODY_SIZE,
     build_magnet_link,
     details_value,
+    local_time,
     read_response,
 )
 
@@ -161,19 +162,19 @@ class ProwlarrProvider(BaseSearchProvider):
         Returns:
             Sections with Prowlarr details
         """
-        if not result.fields:
+        if not result.extra:
             return []
 
         # All fields in sorted order for consistent display
         fields: list[tuple[str, str | DetailsLink]] = []
-        for key in sorted(result.fields.keys()):
-            value = result.fields[key]
+        for key in sorted(result.extra.keys()):
+            value = result.extra[key]
             # Transform field for display
             display_name, display_value = self._transform_field(key, value)
             if display_name:
                 fields.append((display_name, details_value(display_value)))
 
-        return [DetailsSection("Indexer Info", fields=fields)]
+        return [DetailsSection("Indexer Info", fields=tuple(fields))]
 
     def _validate_config(
         self, prowlarr_url: str | None, api_key: str | None
@@ -414,16 +415,16 @@ class ProwlarrProvider(BaseSearchProvider):
                 provider_short=self._build_provider_name(result, short=True),
                 provider_source="P",
                 provider_id=self.id,
-                categories=self._map_prowlarr_category(result),
+                categories=tuple(self._map_prowlarr_category(result) or ()),
                 seeders=parse_count(result.get("seeders")),
                 leechers=parse_count(result.get("leechers")),
                 downloads=parse_count(result.get("grabs")),
                 size=parse_count(result.get("size")),
                 files_count=parse_count(result.get("files")),
-                upload_date=self._parse_publish_date(result),
+                upload_date=local_time(self._parse_publish_date(result)),
                 page_url=result.get("infoUrl"),
                 freeleech="freeleech" in result.get("indexerFlags"),
-                fields=self._build_fields(result),
+                extra=self._build_fields(result),
             )
         except (KeyError, ValueError, TypeError):
             return None
@@ -515,7 +516,7 @@ class ProwlarrProvider(BaseSearchProvider):
         indexer = result.get("indexer", "Unknown")
         return indexer[:5] if short else indexer
 
-    def _build_fields(self, result: dict[str, Any]) -> dict[str, str]:
+    def _build_fields(self, result: dict[str, Any]) -> dict[str, object]:
         """Build provider-specific fields dict.
 
         Includes all fields from Prowlarr response except:
@@ -573,7 +574,7 @@ class ProwlarrProvider(BaseSearchProvider):
             else:
                 fields[key] = value
 
-        return fields if fields else None
+        return fields
 
     def _map_prowlarr_category(self, result: dict[str, Any]) -> list[Category]:
         """Map Prowlarr category codes to Category objects.

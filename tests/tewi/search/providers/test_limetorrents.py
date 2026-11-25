@@ -75,7 +75,7 @@ class TestSearch:
         assert result.page_url == (
             "https://www.limetorrents.fun/Example-Show-torrent-1000001.html"
         )
-        assert result.categories == [StandardCategories.TV]
+        assert result.categories == (StandardCategories.TV,)
         assert result.seeders == 12
         assert result.leechers == 4
         assert result.size == 11212668
@@ -210,6 +210,6 @@ class TestDetails:
 
         assert sections == [
             DetailsSection(
-                "Information", fields=[("Category", "Other - E-books")]
+                "Information", fields=(("Category", "Other - E-books"),)
             )
         ]

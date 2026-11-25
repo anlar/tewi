@@ -1,6 +1,7 @@
 """Unit tests for search utility functions."""
 
 import urllib.error
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,6 +11,7 @@ from src.tewi.search.util import (
     build_magnet_link,
     details_value,
     detect_category_from_name,
+    local_time,
     matches_query,
     query_words,
     urlopen,
@@ -407,6 +409,29 @@ class TestDetailsValue:
     )
     def test_other_value_is_text(self, value):
         assert details_value(value) == str(value)
+
+
+class TestLocalTime:
+    LOCAL = datetime.now().astimezone().tzinfo
+
+    def test_aware_date_is_converted(self):
+        value = datetime(2026, 1, 1, 12, tzinfo=timezone(timedelta(hours=2)))
+
+        result = local_time(value)
+
+        assert result == value
+        assert result.utcoffset() == result.astimezone(self.LOCAL).utcoffset()
+
+    def test_naive_date_is_taken_as_local(self):
+        value = datetime(2026, 1, 1, 12)
+
+        result = local_time(value)
+
+        assert result.tzinfo is not None
+        assert result.replace(tzinfo=None) == value
+
+    def test_none(self):
+        assert local_time(None) is None
 
 
 class TestMatchesQuery:

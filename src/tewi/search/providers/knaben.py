@@ -12,7 +12,7 @@ from ...util.log import log_time
 from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import Category, DetailsSection, SearchResult, StandardCategories
-from ..util import build_magnet_link, read_response
+from ..util import build_magnet_link, local_time, read_response
 
 
 class KnabenProvider(BaseSearchProvider):
@@ -170,11 +170,11 @@ class KnabenProvider(BaseSearchProvider):
         return results
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
-        if not result.fields:
+        if not result.extra:
             return []
 
         info = [
-            (label, str(result.fields[key]))
+            (label, str(result.extra[key]))
             for key, label in (
                 ("tracker", "Tracker"),
                 ("k_category", "Category"),
@@ -182,13 +182,13 @@ class KnabenProvider(BaseSearchProvider):
                 ("live_peers", "Live Leechers"),
                 ("last_seen", "Last Seen"),
             )
-            if key in result.fields
+            if key in result.extra
         ]
-        sections = [DetailsSection("Information", fields=info)]
+        sections = [DetailsSection("Information", fields=tuple(info))]
 
-        if "description" in result.fields:
+        if "description" in result.extra:
             sections.append(
-                DetailsSection("Description", text=result.fields["description"])
+                DetailsSection("Description", text=result.extra["description"])
             )
 
         return sections
@@ -221,16 +221,16 @@ class KnabenProvider(BaseSearchProvider):
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=categories or None,
+                categories=tuple(categories),
                 seeders=parse_count(torrent.get("seeders")),
                 leechers=parse_count(torrent.get("peers")),
                 downloads=parse_count(torrent.get("grabs")),
                 size=parse_count(torrent.get("bytes")),
                 files_count=None,
-                upload_date=self._parse_date(torrent.get("date")),
+                upload_date=local_time(self._parse_date(torrent.get("date"))),
                 page_url=torrent.get("details") or None,
                 freeleech=True,  # Public trackers
-                fields=self._build_fields(torrent),
+                extra=self._build_fields(torrent),
             )
 
         except (AttributeError, KeyError, ValueError, TypeError):

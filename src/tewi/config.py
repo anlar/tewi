@@ -335,8 +335,10 @@ def _load_search_presets(
         name = section[len("search.preset.") :]
         indexers = _get_list_option(parser, section, "indexers")
         if indexers:
-            indexers = resolve_provider_aliases(indexers)
+            indexers = tuple(resolve_provider_aliases(indexers))
         categories = _get_list_option(parser, section, "categories")
+        if categories:
+            categories = tuple(categories)
         presets.append(
             SearchPreset(name=name, indexers=indexers, categories=categories)
         )

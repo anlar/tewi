@@ -98,7 +98,6 @@ def merge_results(results: list[SearchResult]) -> SearchResult:
         values = [getattr(r, name) for r in results]
         return max((v for v in values if v is not None), default=None)
 
-    # Compare by timestamp as dates could be naive or timezone aware
     dates = [r.upload_date for r in results if r.upload_date]
     files_count = next(
         (r.files_count for r in results if r.files_count is not None), None
@@ -110,7 +109,7 @@ def merge_results(results: list[SearchResult]) -> SearchResult:
         leechers=max_count("leechers"),
         downloads=max_count("downloads"),
         files_count=files_count,
-        upload_date=min(dates, key=lambda d: d.timestamp(), default=None),
+        upload_date=min(dates, default=None),
     )
 
 

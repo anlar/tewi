@@ -1002,7 +1002,23 @@ indexers = tpb, torrentz2
 
         _load_preset_sections(parser, config)
 
-        assert config["search_presets"][0].indexers == ["tpb", "bitsearch"]
+        assert config["search_presets"][0].indexers == ("tpb", "bitsearch")
+
+    def test_preset_lists_are_tuples_or_none(self):
+        """Test preset values are immutable, None if not set."""
+        config_text = """
+[search.preset.Movies]
+categories = Movies, TV/Anime
+"""
+        parser = configparser.ConfigParser()
+        parser.read_string(config_text)
+        config = {}
+
+        _load_preset_sections(parser, config)
+
+        preset = config["search_presets"][0]
+        assert preset.categories == ("Movies", "TV/Anime")
+        assert preset.indexers is None
 
 
 class TestLoadThemeSections:

@@ -17,7 +17,7 @@ from ..models import (
     SearchResult,
     StandardCategories,
 )
-from ..util import build_magnet_link, read_response
+from ..util import build_magnet_link, local_time, read_response
 
 logger = get_logger()
 
@@ -327,28 +327,28 @@ class BitsearchProvider(BaseSearchProvider):
         return results
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
-        if not result.fields:
+        if not result.extra:
             return []
 
         info: list[tuple[str, str | DetailsLink]] = []
 
-        if "t_category" in result.fields:
-            info.append(("Category", result.fields["t_category"]))
+        if "t_category" in result.extra:
+            info.append(("Category", result.extra["t_category"]))
 
-        if "t_sub_category" in result.fields:
-            info.append(("Subcategory", result.fields["t_sub_category"]))
+        if "t_sub_category" in result.extra:
+            info.append(("Subcategory", result.extra["t_sub_category"]))
 
-        if "verified" in result.fields:
-            verified = "Yes" if result.fields["verified"] else "No"
+        if "verified" in result.extra:
+            verified = "Yes" if result.extra["verified"] else "No"
             info.append(("Verified", verified))
 
-        details = self._fetch_details(result.fields.get("torrent_id"))
+        details = self._fetch_details(result.extra.get("torrent_id"))
         if not details:
-            return [DetailsSection("Information", fields=info)]
+            return [DetailsSection("Information", fields=tuple(info))]
 
         info.extend(self._format_details(details))
         return [
-            DetailsSection("Information", fields=info),
+            DetailsSection("Information", fields=tuple(info)),
             *self._format_files(details.get("files")),
             *self._format_trackers(details.get("trackers")),
         ]
@@ -412,7 +412,7 @@ class BitsearchProvider(BaseSearchProvider):
         if len(files) > self.MAX_DETAILS_FILES:
             more = len(files) - self.MAX_DETAILS_FILES
             items.append(f"...and {more} more")
-        return [DetailsSection(f"Files ({len(files)})", items=items)]
+        return [DetailsSection(f"Files ({len(files)})", items=tuple(items))]
 
     def _format_trackers(self, trackers: Any) -> list[DetailsSection]:
         """Format trackers section."""
@@ -423,7 +423,7 @@ class BitsearchProvider(BaseSearchProvider):
         urls = [t for t in trackers if isinstance(t, str) and t != "DHT"]
         if not urls:
             return []
-        return [DetailsSection("Trackers", items=urls)]
+        return [DetailsSection("Trackers", items=tuple(urls))]
 
     def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResult | None:
         try:
@@ -464,7 +464,7 @@ class BitsearchProvider(BaseSearchProvider):
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=[category] if category else None,
+                categories=(category,) if category else (),
                 seeders=parse_count(torrent.get("seeders")),
                 leechers=parse_count(torrent.get("leechers")),
                 # Search always returns 0 downloads, real count is
@@ -472,12 +472,14 @@ class BitsearchProvider(BaseSearchProvider):
                 downloads=None,
                 size=parse_count(torrent.get("size")),
                 files_count=None,
-                upload_date=self._parse_date(torrent.get("createdAt")),
+                upload_date=local_time(
+                    self._parse_date(torrent.get("createdAt"))
+                ),
                 page_url=(
                     f"{self.SITE_URL}/torrent/{urllib.parse.quote(str(tid))}"
                 ),
                 freeleech=True,  # Public tracker
-                fields=fields,
+                extra=fields,
             )
 
         except (KeyError, ValueError, TypeError):

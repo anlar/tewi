@@ -195,11 +195,11 @@ class DetailsSection(RemoteData):
 
     title: str
     # Rows of label and value
-    fields: list[tuple[str, str | DetailsLink]] = field(default_factory=list)
+    fields: tuple[tuple[str, str | DetailsLink], ...] = ()
     # List entries (e.g. files)
-    items: list[str] = field(default_factory=list)
+    items: tuple[str, ...] = ()
     # Paragraph, for long text (e.g. description)
-    text: str = ""
+    text: str | None = None
 
 
 @dataclass(frozen=True)
@@ -207,8 +207,9 @@ class SearchPreset:
     """Named preset for search with specific indexers and categories."""
 
     name: str
-    indexers: list[str] | None = None
-    categories: list[str] | None = None
+    # None selects all indexers/categories
+    indexers: tuple[str, ...] | None = None
+    categories: tuple[str, ...] | None = None
 
 
 @dataclass(frozen=True)
@@ -218,33 +219,30 @@ class SearchResult(RemoteData):
     Title is required. Info hash is lowercase 40-char hex (see
     `parse_info_hash`), or None if provider doesn't report it.
 
-    At least magnet_link or torrent_link required.
-
     Note: All size fields are in bytes.
-    The fields dict contains provider-specific additional metadata.
+    The extra dict contains provider-specific additional metadata.
     """
 
-    # Required fields (torrent)
     title: str
     info_hash: str | None
     magnet_link: str | None
     torrent_link: str | None
 
-    # Required fields (provider)
     provider: str
     provider_id: str
     provider_short: str
     # Plain text short tag of aggregator (e.g. "J"), shown after provider
     provider_source: str | None = None
 
-    # Optional fields - can be None if not available
-    categories: list[Category] | None = None
+    categories: tuple[Category, ...] = ()
     seeders: int | None = None
     leechers: int | None = None
     downloads: int | None = None  # Download/grabs count
     size: int | None = None  # bytes
     files_count: int | None = None
-    upload_date: datetime | None = None
+    upload_date: datetime | None = None  # Local time (see `local_time`)
     page_url: str | None = None  # Link to torrent page on provider site
     freeleech: bool = False
-    fields: dict[str, str] | None = None  # Provider-specific metadata
+
+    # Provider-specific metadata
+    extra: dict[str, object] = field(default_factory=dict)

@@ -17,7 +17,7 @@ from ..models import (
     SearchResult,
     StandardCategories,
 )
-from ..util import build_magnet_link, read_response
+from ..util import build_magnet_link, local_time, read_response
 
 
 class TPBProvider(BaseSearchProvider):
@@ -191,16 +191,16 @@ class TPBProvider(BaseSearchProvider):
         Returns:
             Sections with uploader details
         """
-        if not result.fields:
+        if not result.extra:
             return []
 
         uploader = []
 
-        if "username" in result.fields:
-            uploader.append(("Username", result.fields["username"]))
+        if "username" in result.extra:
+            uploader.append(("Username", result.extra["username"]))
 
-        if "status" in result.fields:
-            status = result.fields["status"]
+        if "status" in result.extra:
+            status = result.extra["status"]
 
             match status:
                 case "vip":
@@ -212,14 +212,14 @@ class TPBProvider(BaseSearchProvider):
 
             uploader.append(("Status", status))
 
-        sections = [DetailsSection("Uploader", fields=uploader)]
+        sections = [DetailsSection("Uploader", fields=tuple(uploader))]
 
-        imdb_code = result.fields.get("imdb")
+        imdb_code = result.extra.get("imdb")
         if imdb_code and self._IMDB_RE.fullmatch(imdb_code):
             imdb_url = f"https://www.imdb.com/title/{imdb_code}/"
             sections.append(
                 DetailsSection(
-                    "Movie", fields=[("IMDB", DetailsLink(imdb_url))]
+                    "Movie", fields=(("IMDB", DetailsLink(imdb_url)),)
                 )
             )
 
@@ -278,16 +278,16 @@ class TPBProvider(BaseSearchProvider):
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=categories,
+                categories=tuple(categories or ()),
                 seeders=parse_count(torrent.get("seeders")),
                 leechers=parse_count(torrent.get("leechers")),
                 downloads=None,
                 size=parse_count(torrent.get("size")),
                 files_count=files_count,
-                upload_date=upload_date,
+                upload_date=local_time(upload_date),
                 page_url=page_url,
                 freeleech=True,  # Public tracker
-                fields=fields,
+                extra=fields,
             )
 
         except (KeyError, ValueError, TypeError):

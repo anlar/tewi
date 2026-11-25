@@ -10,7 +10,7 @@ from ...util.log import log_time
 from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import Category, DetailsSection, SearchResult, StandardCategories
-from ..util import build_magnet_link, read_response
+from ..util import build_magnet_link, local_time, read_response
 
 
 class NyaaProvider(BaseSearchProvider):
@@ -164,21 +164,21 @@ class NyaaProvider(BaseSearchProvider):
         Returns:
             Sections with Nyaa-specific details
         """
-        if not result.fields:
+        if not result.extra:
             return []
 
         fields = [
-            (label, result.fields[key])
+            (label, result.extra[key])
             for key, label in (
                 ("nyaa_category", "Category"),
                 ("comments", "Comments"),
                 ("trusted", "Trusted"),
                 ("remake", "Remake"),
             )
-            if key in result.fields
+            if key in result.extra
         ]
 
-        return [DetailsSection("Information", fields=fields)]
+        return [DetailsSection("Information", fields=tuple(fields))]
 
     def _parse_item(
         self, item: ET.Element, ns: dict[str, str]
@@ -282,16 +282,16 @@ class NyaaProvider(BaseSearchProvider):
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=category,
+                categories=tuple(category or ()),
                 seeders=seeders,
                 leechers=leechers,
                 downloads=downloads,
                 size=size,
                 files_count=None,
-                upload_date=upload_date,
+                upload_date=local_time(upload_date),
                 page_url=page_url,
                 freeleech=True,  # Public tracker
-                fields=fields,
+                extra=fields,
             )
 
         except (KeyError, ValueError, TypeError, AttributeError):

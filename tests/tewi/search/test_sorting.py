@@ -33,7 +33,7 @@ def result(
         downloads=downloads,
         size=size,
         files_count=files,
-        categories=[category] if category else None,
+        categories=(category,) if category else (),
     )
 
 

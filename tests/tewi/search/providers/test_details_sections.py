@@ -135,7 +135,7 @@ def nyaa(payload: str, imdb: str) -> list[DetailsSection]:
         provider="Nyaa",
         provider_id="nyaa",
         provider_short="Nyaa",
-        fields={
+        extra={
             "nyaa_category": payload,
             "comments": payload,
             "trusted": payload,
