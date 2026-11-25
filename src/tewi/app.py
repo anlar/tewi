@@ -961,9 +961,29 @@ class MainApp(App):
     def handle_open_update_torrent_category_command(
         self, event: OpenUpdateTorrentCategoryCommand
     ) -> None:
-        categories = self.client.get_categories()
-        self.push_screen(
-            UpdateTorrentCategoryDialog(event.torrents, categories)
+        self.open_update_torrent_category(event.torrents)
+
+    @work(thread=True, group="torrent_action")
+    def open_update_torrent_category(self, torrents: list[Torrent]) -> None:
+        """Load categories in background thread and open category dialog.
+
+        Loading categories is a client call, which would block UI if done
+        in message handler.
+
+        Args:
+            torrents: Torrents to set category of
+        """
+        try:
+            categories = self.client.get_categories()
+        except Exception as e:
+            logger.warning(f"Failed to load categories: {e}")
+            self.post_message(
+                Notification(f"Failed to load categories:\n{e}", "warning")
+            )
+            return
+
+        self.call_from_thread(
+            self.push_screen, UpdateTorrentCategoryDialog(torrents, categories)
         )
 
     @log_time

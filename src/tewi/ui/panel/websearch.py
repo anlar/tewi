@@ -214,7 +214,7 @@ class TorrentWebSearch(Static):
                         short=True,
                     ),
                     up_date,
-                    r.seeders,
+                    r.seeders if r.seeders is not None else "-",
                     print_size(r.size, ndigits=0)
                     if r.size is not None
                     else "-",
@@ -226,8 +226,8 @@ class TorrentWebSearch(Static):
                 table.add_row(
                     source_text(r.provider, r.provider_source),
                     up_date,
-                    r.seeders,
-                    r.leechers,
+                    r.seeders if r.seeders is not None else "-",
+                    r.leechers if r.leechers is not None else "-",
                     r.downloads if r.downloads is not None else "-",
                     print_size(r.size) if r.size is not None else "-",
                     r.files_count if r.files_count is not None else "-",

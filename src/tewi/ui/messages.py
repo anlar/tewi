@@ -2,7 +2,7 @@ from dataclasses import dataclass
 
 from textual.message import Message
 
-from ..search.models import Category, SearchResult
+from ..search.models import Category
 from ..torrent.models import Torrent, TorrentFilePriority
 from .models import FilterOption, MarkState, PageState, SortKey, TagType
 
@@ -182,17 +182,6 @@ class TorrentLabelsUpdatedEvent(Message):
 
 
 @dataclass
-class TorrentEditedEvent(Message):
-    torrent_hash: str
-
-
-@dataclass
-class TorrentCategoryUpdatedEvent(Message):
-    torrent_hash: str
-    category: str | None
-
-
-@dataclass
 class SortOrderUpdatedEvent(Message):
     sort_keys: tuple[SortKey, ...]
     notify: bool = True
@@ -230,11 +219,6 @@ class MarksChangedEvent(Message):
 class SearchStateChangedEvent(Message):
     current: int | None = None
     total: int | None = None
-
-
-@dataclass
-class WebSearchCompletedEvent(Message):
-    results: list[SearchResult]
 
 
 # Common

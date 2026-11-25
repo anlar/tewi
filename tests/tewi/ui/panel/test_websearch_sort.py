@@ -12,7 +12,7 @@ from src.tewi.ui.messages import AddTorrentFromWebSearchCommand
 from src.tewi.ui.panel.websearch import TorrentWebSearch
 
 
-def result(title: str, seeders: int, size: int) -> SearchResult:
+def result(title: str, seeders: int | None, size: int) -> SearchResult:
     return SearchResult(
         title=title,
         info_hash=title,
@@ -115,5 +115,26 @@ def test_hidden_zero_seeder_result_does_not_change_selected_action():
             panel.action_add_torrent()
             await pilot.pause()
             assert app.added == ["magnet:?xt=urn:btih:visible"]
+
+    asyncio.run(run())
+
+
+def test_missing_peer_counts_are_shown_as_dash():
+    async def run() -> None:
+        app = WebSearchApp()
+        async with app.run_test(size=(120, 40)) as pilot:
+            panel = app.query_one(TorrentWebSearch)
+            panel.r_results = [result("Alpha", None, 1)]
+            await pilot.pause()
+
+            table = panel.query_one(DataTable)
+            # Columns: source, uploaded, seeders, leechers, ...
+            row = table.get_row_at(0)
+            assert row[2] == "-"
+            assert row[3] == "-"
+
+            await pilot.press("v")
+            await pilot.pause()
+            assert table.get_row_at(0)[2] == "-"
 
     asyncio.run(run())

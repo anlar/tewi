@@ -159,7 +159,6 @@ class SearchClient:
         bitmagnet_url: str | None,
         search_timeout: int,
         enabled_providers: list[str] | None = None,
-        hide_zero_seeders: bool = False,
     ):
         """Initialize search client with available providers.
 
@@ -175,7 +174,6 @@ class SearchClient:
                            requests and for the whole search
             enabled_providers: List of provider IDs to enable,
                              or None to enable all providers
-            hide_zero_seeders: Filter out results with zero seeders
         """
         self._providers: list[BaseSearchProvider] | None = None
         self._jackett_url = jackett_url
@@ -185,7 +183,6 @@ class SearchClient:
         self._prowlarr_api_key = prowlarr_api_key
         self._prowlarr_multi = prowlarr_multi
         self._bitmagnet_url = bitmagnet_url
-        self._hide_zero_seeders = hide_zero_seeders
         self._search_timeout = search_timeout
         self._enabled_providers = self._parse_enabled_providers(
             enabled_providers
