@@ -202,7 +202,7 @@ class BaseProviderIntegrationTest(ABC):
 
         for category in categories:
             assert category in valid_categories, (
-                f"Category '{category.full_name}' not in valid set"
+                f"Category '{category.full_path}' not in valid set"
             )
 
     @pytest.mark.xfail(

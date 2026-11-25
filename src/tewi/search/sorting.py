@@ -32,7 +32,7 @@ SEARCH_SORT_OPTIONS = (
         "Category",
         "c",
         lambda r: (
-            r.categories[0].full_name.casefold() if r.categories else None
+            r.categories[0].full_path.casefold() if r.categories else None
         ),
     ),
     SearchSortOption("name", "Name", "n", lambda r: r.title.casefold()),

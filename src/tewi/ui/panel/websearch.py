@@ -192,9 +192,9 @@ class TorrentWebSearch(Static):
             else:
                 up_date = "-"
 
-            # Display category full_name (first category if multiple)
+            # Display category full_path (first category if multiple)
             category_display = plain_text(
-                r.categories[0].full_name if r.categories else "-"
+                r.categories[0].full_path if r.categories else "-"
             )
 
             # Values from search providers (titles, Jackett/Prowlarr

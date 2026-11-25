@@ -158,7 +158,7 @@ class BaseSearchProvider(ABC):
             Sections with common details
         """
         if result.categories:
-            category = ", ".join(cat.full_name for cat in result.categories)
+            category = ", ".join(cat.full_path for cat in result.categories)
         else:
             category = "Unknown"
 

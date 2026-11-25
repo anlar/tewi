@@ -3,14 +3,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from ..util.misc import (
-    RemoteData,
-)
+from ..util.misc import RemoteData
 
 
 @dataclass(frozen=True)
 class Category:
-    """Represents a Jackett category with ID, name, and hierarchy support."""
+    """Torrent category (Newznab standard, used by Jackett and Prowlarr)."""
 
     id: int
     name: str
@@ -18,33 +16,31 @@ class Category:
 
     @property
     def full_path(self) -> str:
-        """Returns full hierarchical path like 'Console/XBox 360'."""
+        """Full hierarchical path like 'Books/EBook'."""
         if self.parent:
             return f"{self.parent.name}/{self.name}"
         return self.name
 
     @property
-    def full_name(self) -> str:
-        """Alias for full_path for backward compatibility."""
-        return self.full_path
-
-    @property
     def is_parent(self) -> bool:
-        """Returns True if this is a parent category (ID ends in 000)."""
+        """Whether this is a parent category (ID ends in 000)."""
         return self.id % 1000 == 0
 
 
 class StandardCategories:
     """Full list of categories.
 
-    Parent categories shouldn't change - they are used as parameters
-    for search providers (Prowlarr, Jackett).
+    Parent categories are the ones users select: in search dialog and by
+    name in search presets of config file. Every provider maps them to its
+    own categories or filters results by them, so their IDs and names
+    shouldn't change.
 
-    Sub-categories are only used to parse search results so they could
-    contain maximum set of categories.
+    Subcategories are only used for search results: providers map their
+    categories to the most specific one, which is shown in results and
+    matched by its parent when filtering, so the list can include every
+    known subcategory.
 
-    List built from Jackett categories with addition of missing categories
-    from Prowlarr.
+    Based on:
 
     * https://github.com/Jackett/Jackett/wiki/Jackett-Categories
     * https://github.com/Prowlarr/Prowlarr/blob/develop/src/NzbDrone.Core/Indexers/NewznabStandardCategory.cs
@@ -144,20 +140,19 @@ class StandardCategories:
     @classmethod
     def get_by_id(cls, id: int) -> Category | None:
         """Get category by ID."""
-        for attr_name in dir(cls):
-            attr = getattr(cls, attr_name)
-            if isinstance(attr, Category) and attr.id == id:
-                return attr
-        return None
+        return next(
+            (
+                c
+                for c in vars(cls).values()
+                if isinstance(c, Category) and c.id == id
+            ),
+            None,
+        )
 
     @classmethod
     def all_categories(cls) -> list[Category]:
-        """Get all categories."""
-        categories = []
-        for attr_name in dir(cls):
-            attr = getattr(cls, attr_name)
-            if isinstance(attr, Category):
-                categories.append(attr)
+        """Get all categories, sorted by ID."""
+        categories = [c for c in vars(cls).values() if isinstance(c, Category)]
         return sorted(categories, key=lambda c: c.id)
 
     @classmethod
@@ -168,7 +163,18 @@ class StandardCategories:
 
 @dataclass(frozen=True)
 class Indexer(RemoteData):
+    """Search target, selectable in search dialog and search presets.
+
+    Built-in providers have a single indexer with provider ID (e.g.
+    "tpb"). Jackett and Prowlarr list their configured indexers, or a
+    single one for all of them when not searched separately
+    ("jackett:all", "prowlarr:all").
+    """
+
+    # Provider ID, or aggregator prefix with its indexer ID (e.g.
+    # "jackett:1337x", "prowlarr:12"), used in search presets
     id: str
+    # Shown in search dialog
     name: str
     # Plain text name of aggregator (e.g. "Jackett"), shown after name
     source: str | None = None
@@ -188,9 +194,8 @@ class DetailsLink(RemoteData):
 class DetailsSection(RemoteData):
     """Section of search result details.
 
-    Text is shown literally, never parsed as markup, so values from search
-    providers are passed as received. Section shows fields, items and
-    text in this order, skipping empty ones.
+    Text is shown literally, never parsed as markup. Section shows fields,
+    items and text in this order, skipping empty ones.
     """
 
     title: str
@@ -218,9 +223,6 @@ class SearchResult(RemoteData):
 
     Title is required. Info hash is lowercase 40-char hex (see
     `parse_info_hash`), or None if provider doesn't report it.
-
-    Note: All size fields are in bytes.
-    The extra dict contains provider-specific additional metadata.
     """
 
     title: str
