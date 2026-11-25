@@ -152,7 +152,7 @@ class BaseSearchProvider(ABC):
             Markdown-formatted string with common details
         """
         md = "## General\n"
-        md += f"- **Provider:** {self.name}\n"
+        md += f"- **Provider:** {result.provider}\n"
 
         # Display categories with full names
         if result.categories:
@@ -170,8 +170,12 @@ class BaseSearchProvider(ABC):
             md += f"- **Size:** {print_size(result.size)}\n"
         else:
             md += "- **Size:** Unknown\n"
-        md += f"- **Seeders:** {result.seeders}\n"
-        md += f"- **Leechers:** {result.leechers}\n"
+
+        if result.seeders:
+            md += f"- **Seeders:** {result.seeders}\n"
+
+        if result.leechers:
+            md += f"- **Leechers:** {result.leechers}\n"
 
         if result.downloads:
             md += f"- **Downloads:** {result.downloads}\n"
