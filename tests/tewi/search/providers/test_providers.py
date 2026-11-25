@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2025 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Integration tests for torrent search providers.
 
 These tests make actual API calls to external services and may be slower

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2025 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Offline peer country lookup by IP address.
 
 Uses data file generated with ``package/build_geoip.py`` on release (it isn't

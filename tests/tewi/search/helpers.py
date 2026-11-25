@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Shared helpers for search tests."""
 
 from src.tewi.search.models import DetailsLink, DetailsSection

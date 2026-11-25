@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Tests for info panel (top status line)."""
 
 import asyncio

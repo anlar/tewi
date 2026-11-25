@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Tests for v1 info hash of qBittorrent torrents, used in magnet links."""
 
 import pytest

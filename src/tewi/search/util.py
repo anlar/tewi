@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2025 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Utility functions for torrent search operations."""
 
 import re

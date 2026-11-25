@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Masking of secrets in text written to log or shown in UI."""
 
 import re

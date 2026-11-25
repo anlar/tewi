@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Download GeoIP country data and convert it to Tewi data file.
 
 Data is "user-country" database from sapics/ip-location-db, published

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Regression tests for remote text in search result details.
 
 Details are shown literally, so text from search providers must stay in

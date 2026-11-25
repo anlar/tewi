@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2025 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.binding import Binding

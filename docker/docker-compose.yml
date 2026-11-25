@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2025 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # Control ports (RPC, web UI, search APIs) have no or default authentication,
 # so they are published on localhost only: Docker port publishing bypasses
 # host firewall (ufw, firewalld). BitTorrent peer ports are public by design.

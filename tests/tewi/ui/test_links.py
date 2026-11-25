@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Tests for handling links from remote sources (search providers).
 
 Links must be magnet or HTTP(S) only: other values could open local files

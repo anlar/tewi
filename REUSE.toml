@@ -1,0 +1,37 @@
+# Licensing of files which can't have header with it: binary and data files,
+# documentation. Grouped by year file was added.
+
+version = 1
+
+[[annotations]]
+path = [
+  "CHANGELOG.md",
+  "README.md",
+  "docs/images/tewi-logo.png",
+  "docs/images/tewi-screenshot-1.png",
+  "docs/images/tewi-screenshot-2.png",
+  "docs/images/tewi-screenshot-3.png",
+  "docs/images/tewi-screenshot-4.png",
+  "docs/images/tewi-screenshot-5.png",
+]
+SPDX-FileCopyrightText = "2024 Anton Larionov"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = [
+  "docker/magnets.txt",
+  "docs/images/tewi-screenshot-6.png",
+  "docs/images/tewi-screenshot-7.png",
+  "package/flatpak/*.png",
+  "package/flatpak/python3-tewi-dependencies.json",
+]
+SPDX-FileCopyrightText = "2025 Anton Larionov"
+SPDX-License-Identifier = "GPL-3.0-or-later"
+
+[[annotations]]
+path = [
+  "AGENTS.md",
+  "docs/images/tewi-screenshot-8.png",
+]
+SPDX-FileCopyrightText = "2026 Anton Larionov"
+SPDX-License-Identifier = "GPL-3.0-or-later"

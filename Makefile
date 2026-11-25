@@ -1,5 +1,9 @@
+# SPDX-FileCopyrightText: 2024 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 check:
 	uv run ruff check
+	uv run reuse lint
 
 test:
 	uv run python -m pytest -v

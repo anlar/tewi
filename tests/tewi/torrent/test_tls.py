@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Tests for TLS (HTTPS) connections to torrent client daemons.
 
 Clients are connected to local HTTPS server with self-signed certificate,

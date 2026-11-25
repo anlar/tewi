@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Unit tests for LimeTorrents provider (without LimeTorrents)."""
 
 from unittest.mock import patch

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2024 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 [build-system]
 requires = ["setuptools>=77.0"]
 build-backend = "setuptools.build_meta"
@@ -65,6 +68,7 @@ reportUnusedCallResult = false
 [dependency-groups]
 dev = [
   "pytest >= 7.2.1",
+  "reuse >= 6.0",
   "ruff >= 0.9",
   "textual-dev >= 1.7",
 ]

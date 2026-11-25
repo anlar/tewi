@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 """Country names by ISO 3166-1 alpha-2 code."""
 
 # Short English names. Besides ISO 3166-1 codes includes exceptionally

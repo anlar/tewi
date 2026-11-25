@@ -1,5 +1,8 @@
 #! /usr/bin/env sh
 
+# SPDX-FileCopyrightText: 2025 Anton Larionov
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 LIMIT=${1:-2}
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
