@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Tewi - Text-based interface for the Transmission BitTorrent daemon
 # Copyright (C) 2025  Anton Larionov
 #

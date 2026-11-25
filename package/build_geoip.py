@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 """Download GeoIP country data and convert it to Tewi data file.
 
 Data is "user-country" database from sapics/ip-location-db, published
