@@ -59,22 +59,35 @@ def _strip_control_chars_in(value):
         return strip_control_chars(value)
     if isinstance(value, list):
         return [_strip_control_chars_in(v) for v in value]
+    if isinstance(value, tuple):
+        return tuple(_strip_control_chars_in(v) for v in value)
     if isinstance(value, dict):
         return {k: _strip_control_chars_in(v) for k, v in value.items()}
     return value
 
 
-def strip_control_chars_in_fields(obj) -> None:
+def _strip_control_chars_in_fields(obj) -> None:
     """Strip control characters from text fields of (frozen) dataclass.
 
-    Handles str fields and lists or dicts of them, to be called from
-    `__post_init__` of objects holding remote data.
+    Handles str fields and lists, tuples or dicts of them.
     """
     for field in dataclasses.fields(obj):
         value = getattr(obj, field.name)
         clean = _strip_control_chars_in(value)
         if clean != value:
             object.__setattr__(obj, field.name, clean)
+
+
+class RemoteData:
+    """Base for dataclasses holding remote data (from torrent client or
+    search provider): control characters are removed from text fields
+    when object is created.
+
+    Subclasses with own `__post_init__` must call `super().__post_init__()`.
+    """
+
+    def __post_init__(self) -> None:
+        _strip_control_chars_in_fields(self)
 
 
 @log_time

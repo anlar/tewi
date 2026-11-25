@@ -1,8 +1,10 @@
 import base64
+import dataclasses
 
 import pytest
 
 from src.tewi.util.misc import (
+    RemoteData,
     is_http_url,
     is_safe_name,
     is_torrent_hash,
@@ -290,3 +292,38 @@ class TestParseCount:
     )
     def test_invalid_count_is_none(self, value):
         assert parse_count(value) is None
+
+
+@dataclasses.dataclass(frozen=True)
+class _Remote(RemoteData):
+    name: str
+    names: list[str]
+    pairs: list[tuple[str, int]]
+
+
+@dataclasses.dataclass(frozen=True)
+class _RemoteWithPostInit(RemoteData):
+    name: str
+    upper: str = ""
+
+    def __post_init__(self) -> None:
+        super().__post_init__()
+        object.__setattr__(self, "upper", self.name.upper())
+
+
+class TestRemoteData:
+    """Test cases for RemoteData base class."""
+
+    def test_control_chars_are_removed(self):
+        obj = _Remote("a\x1b[31mb", ["c\x07"], [("d\x1b", 1)])
+
+        assert obj == _Remote("a[31mb", ["c"], [("d", 1)])
+
+    def test_line_breaks_and_tabs_are_kept(self):
+        assert _Remote("a\n\tb", [], []).name == "a\n\tb"
+
+    def test_subclass_post_init_runs_after_cleaning(self):
+        obj = _RemoteWithPostInit("a\x1bb")
+
+        assert obj.name == "ab"
+        assert obj.upper == "AB"

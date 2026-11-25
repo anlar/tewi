@@ -4,8 +4,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from ..util.misc import (
+    RemoteData,
     normalize_torrent_hash,
-    strip_control_chars_in_fields,
 )
 
 
@@ -171,7 +171,7 @@ class StandardCategories:
 
 
 @dataclass(frozen=True)
-class Indexer:
+class Indexer(RemoteData):
     id: str
     name: str
     # Plain text name of aggregator (e.g. "Jackett"), shown after name
@@ -179,7 +179,7 @@ class Indexer:
 
 
 @dataclass(frozen=True)
-class DetailsLink:
+class DetailsLink(RemoteData):
     """Link in search result details, opened in browser when clicked.
 
     Only HTTP(S) URLs are opened (see App.open_url).
@@ -189,7 +189,7 @@ class DetailsLink:
 
 
 @dataclass(frozen=True)
-class DetailsSection:
+class DetailsSection(RemoteData):
     """Section of search result details.
 
     Text is shown literally, never parsed as markup, so values from search
@@ -216,7 +216,7 @@ class SearchPreset:
 
 
 @dataclass(frozen=True)
-class SearchResult:
+class SearchResult(RemoteData):
     """Data Transfer Object for web search results.
 
     Title is required.
@@ -253,8 +253,7 @@ class SearchResult:
     fields: dict[str, str] | None = None  # Provider-specific metadata
 
     def __post_init__(self) -> None:
-        # Text comes from search provider
-        strip_control_chars_in_fields(self)
+        super().__post_init__()
         # Blank hash means no hash, as hash is used as unique key of result
         if self.info_hash is not None and not self.info_hash.strip():
             object.__setattr__(self, "info_hash", None)

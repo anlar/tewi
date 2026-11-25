@@ -6,7 +6,7 @@ from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.widgets import Link
 
-from src.tewi.search.models import DetailsLink, DetailsSection
+from src.tewi.search.models import DetailsLink, DetailsSection, SearchResult
 from src.tewi.ui.dialog.search.details import TorrentDetailsWidget
 
 # OSC 2 (set window title) and CSI (set color) sequences
@@ -63,9 +63,18 @@ def render(app: DetailsApp, size: tuple[int, int] = (120, 40)):
 
 
 def test_control_chars_are_removed():
-    """Details come from search providers, partly not via SearchResult
-    (e.g. details loaded on demand), so escape sequences in them must not
-    reach the terminal."""
+    """Details come from search providers, so escape sequences in them
+    must not reach the terminal: DTOs remove them."""
+    result = SearchResult(
+        title=f"Title{CSI}",
+        info_hash=None,
+        magnet_link=None,
+        torrent_link=None,
+        provider="Provider",
+        provider_id="test",
+        provider_short="P",
+        page_url=f"https://example.org/{OSC}",
+    )
     app = DetailsApp(
         common=[DetailsSection(f"General{CSI}", fields=[("Size", f"1{CSI}")])],
         extended=[
@@ -75,8 +84,8 @@ def test_control_chars_are_removed():
             DetailsSection("Files", items=[f"a{OSC}.mkv"]),
             DetailsSection("Overview", text=f"Plot{OSC} text"),
         ],
-        title=f"Title{CSI}",
-        page_url=f"https://example.org/{OSC}",
+        title=result.title,
+        page_url=result.page_url,
     )
 
     lines, links = render(app)

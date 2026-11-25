@@ -3,11 +3,11 @@ from datetime import datetime, timedelta
 from enum import Enum, auto
 from typing import TypedDict
 
-from ..util.misc import strip_control_chars_in_fields
+from ..util.misc import RemoteData
 
 
 @dataclass(frozen=True)
-class Torrent:
+class Torrent(RemoteData):
     """Data Transfer Object for torrent list view (immutable).
 
     Note: All size fields are in bytes, all speed fields are in bytes/second.
@@ -43,10 +43,6 @@ class Torrent:
     category: str | None
     labels: list[str]
 
-    def __post_init__(self) -> None:
-        # Text comes from torrents, peers and trackers
-        strip_control_chars_in_fields(self)
-
 
 class TorrentFilePriority(Enum):
     NOT_DOWNLOADING = auto()
@@ -56,7 +52,7 @@ class TorrentFilePriority(Enum):
 
 
 @dataclass(frozen=True)
-class TorrentFile:
+class TorrentFile(RemoteData):
     """Data Transfer Object for torrent file information.
 
     Note: All size fields are in bytes.
@@ -67,10 +63,6 @@ class TorrentFile:
     size: int  # bytes
     completed: int  # bytes
     priority: TorrentFilePriority
-
-    def __post_init__(self) -> None:
-        # Text comes from torrents, peers and trackers
-        strip_control_chars_in_fields(self)
 
 
 class TorrentPeerState(Enum):
@@ -85,19 +77,15 @@ class TorrentPeerState(Enum):
 
 
 @dataclass(frozen=True)
-class TorrentCategory:
+class TorrentCategory(RemoteData):
     """Data Transfer Object for torrent categories (immutable)."""
 
     name: str
     save_path: str | None
 
-    def __post_init__(self) -> None:
-        # Text comes from torrents, peers and trackers
-        strip_control_chars_in_fields(self)
-
 
 @dataclass(frozen=True)
-class TorrentPeer:
+class TorrentPeer(RemoteData):
     """Data Transfer Object for peer information.
 
     Note: All speed fields are in bytes/second.
@@ -117,13 +105,9 @@ class TorrentPeer:
     dl_state: TorrentPeerState
     ul_state: TorrentPeerState
 
-    def __post_init__(self) -> None:
-        # Text comes from torrents, peers and trackers
-        strip_control_chars_in_fields(self)
-
 
 @dataclass(frozen=True)
-class TorrentTracker:
+class TorrentTracker(RemoteData):
     """Data Transfer Object for tracker information."""
 
     host: str
@@ -138,10 +122,6 @@ class TorrentTracker:
     next_announce: datetime | None = None
     last_scrape: datetime | None = None
     next_scrape: datetime | None = None
-
-    def __post_init__(self) -> None:
-        # Text comes from torrents, peers and trackers
-        strip_control_chars_in_fields(self)
 
 
 @dataclass(frozen=True)

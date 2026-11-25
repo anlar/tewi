@@ -9,7 +9,6 @@ from textual.widgets import Label, Link, Static
 
 from ....search.models import DetailsLink, DetailsSection
 from ....util.log import log_time
-from ....util.misc import strip_control_chars
 from ...messages import AddTorrentFromWebSearchCommand, Notification
 from ...util import plain_text, subtitle_keys
 
@@ -129,11 +128,8 @@ class TorrentDetailsWidget(Static):
             extended_sections: Provider-specific details (right column)
         """
         super().__init__()
-        # Not all details come from SearchResult, which strips control
-        # characters (e.g. details loaded on demand), so escape sequences
-        # in them would be passed to terminal
-        self.title = strip_control_chars(title)
-        self.page_url = strip_control_chars(page_url or "")
+        self.title = title
+        self.page_url = page_url or ""
         self.common_sections = common_sections
         self.extended_sections = extended_sections
 
@@ -171,7 +167,7 @@ class DetailsColumn(Vertical):
     """Column of search result details sections.
 
     Text comes from search providers, so it's shown literally (never
-    parsed as markup) and without control characters.
+    parsed as markup). Control characters are removed by DTOs.
     """
 
     @log_time
@@ -207,7 +203,7 @@ class DetailsColumn(Vertical):
     def value_widget(self, value: str | DetailsLink) -> Static:
         """Create widget showing field value, link is opened on click."""
         if isinstance(value, DetailsLink):
-            url = strip_control_chars(single_line(value.url))
+            url = single_line(value.url)
             return Link(url, url=url)
         return Static(plain_text(single_line(value)))
 
