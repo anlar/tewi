@@ -11,8 +11,14 @@ from ...ui.util import print_size
 from ...util.log import get_logger, log_time
 from ...util.misc import parse_count
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResult, StandardCategories
-from ..util import build_magnet_link, escape_markdown, read_response
+from ..models import (
+    Category,
+    DetailsLink,
+    DetailsSection,
+    SearchResult,
+    StandardCategories,
+)
+from ..util import build_magnet_link, read_response
 
 logger = get_logger()
 
@@ -109,32 +115,33 @@ class NekoBtProvider(BaseSearchProvider):
             results.append(result)
         return results
 
-    def details_extended(self, result: SearchResult) -> str:
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         if not result.fields:
-            return ""
+            return []
 
-        md = "## Information\n"
-
-        for key, label in (
-            ("audio", "Audio"),
-            ("subtitles", "Subtitles"),
-            ("uploader", "Uploader"),
-            ("groups", "Groups"),
-        ):
-            if key in result.fields:
-                md += f"- **{label}:** {result.fields[key]}\n"
+        info: list[tuple[str, str | DetailsLink]] = [
+            (label, result.fields[key])
+            for key, label in (
+                ("audio", "Audio"),
+                ("subtitles", "Subtitles"),
+                ("uploader", "Uploader"),
+                ("groups", "Groups"),
+            )
+            if key in result.fields
+        ]
 
         if result.fields.get("batch"):
-            md += "- **Batch:** Yes\n"
+            info.append(("Batch", "Yes"))
 
         torrent = self._fetch_json("torrents", result.fields.get("torrent_id"))
         media = self._fetch_json("media", result.fields.get("media_id"))
 
-        md += self._format_links(result, torrent, media)
+        sections = [DetailsSection("Information", fields=info)]
+        sections += self._format_links(result, torrent, media)
         if torrent:
-            md += self._format_files(torrent.get("files"))
+            sections += self._format_files(torrent.get("files"))
 
-        return md
+        return sections
 
     @log_time
     def _fetch_json(
@@ -171,7 +178,7 @@ class NekoBtProvider(BaseSearchProvider):
         result: SearchResult,
         torrent: dict[str, Any] | None,
         media: dict[str, Any] | None,
-    ) -> str:
+    ) -> list[DetailsSection]:
         """Format links to AniList (from torrent details), TVDB, TMDB and
         IMDB (from media details) pages."""
         links = []
@@ -195,32 +202,35 @@ class NekoBtProvider(BaseSearchProvider):
             links.append(("IMDB", f"https://www.imdb.com/title/{imdb}/"))
 
         if not links:
-            return ""
-        return "\n## Links\n" + "".join(
-            f"- **{name}:** {url}\n" for name, url in links
-        )
+            return []
+        return [
+            DetailsSection(
+                "Links",
+                fields=[(name, DetailsLink(url)) for name, url in links],
+            )
+        ]
 
-    def _format_files(self, files: Any) -> str:
+    def _format_files(self, files: Any) -> list[DetailsSection]:
         """Format files section, limited to MAX_DETAILS_FILES entries."""
         if not files or not isinstance(files, list):
-            return ""
+            return []
 
-        md = f"\n## Files ({len(files)})\n"
+        items = []
         for f in files[: self.MAX_DETAILS_FILES]:
             if not isinstance(f, dict):
                 continue
             path = f.get("path") or f.get("name")
             if not path:
                 continue
-            md += f"- {escape_markdown(path)}"
+            item = str(path)
             if isinstance(f.get("length"), int):
-                md += f" ({print_size(f['length'])})"
-            md += "\n"
+                item += f" ({print_size(f['length'])})"
+            items.append(item)
 
         if len(files) > self.MAX_DETAILS_FILES:
             more = len(files) - self.MAX_DETAILS_FILES
-            md += f"- ...and {more} more\n"
-        return md
+            items.append(f"...and {more} more")
+        return [DetailsSection(f"Files ({len(files)})", items=items)]
 
     def _parse_torrent(self, torrent: Any) -> SearchResult | None:
         """Parse torrent from search results."""
@@ -280,25 +290,25 @@ class NekoBtProvider(BaseSearchProvider):
 
         audio = self._langs(torrent.get("audio_lang"))
         if audio:
-            fields["audio"] = escape_markdown(", ".join(audio))
+            fields["audio"] = ", ".join(audio)
 
         subtitles = self._langs(torrent.get("fsub_lang")) + self._langs(
             torrent.get("sub_lang")
         )
         if subtitles:
             subtitles = list(dict.fromkeys(subtitles))
-            fields["subtitles"] = escape_markdown(", ".join(subtitles))
+            fields["subtitles"] = ", ".join(subtitles)
 
         uploader = torrent.get("uploader")
         if torrent.get("anonymous"):
             fields["uploader"] = "Anonymous"
         elif isinstance(uploader, dict) and uploader.get("display_name"):
-            fields["uploader"] = escape_markdown(uploader["display_name"])
+            fields["uploader"] = uploader["display_name"]
 
         groups = torrent.get("groups")
         if isinstance(groups, list):
             names = [
-                escape_markdown(g["display_name"])
+                g["display_name"]
                 for g in groups
                 if isinstance(g, dict) and g.get("display_name")
             ]

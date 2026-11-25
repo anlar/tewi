@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from ..util.misc import (
@@ -176,6 +176,34 @@ class Indexer:
     name: str
     # Plain text name of aggregator (e.g. "Jackett"), shown after name
     source: str = ""
+
+
+@dataclass(frozen=True)
+class DetailsLink:
+    """Link in search result details, opened in browser when clicked.
+
+    Only HTTP(S) URLs are opened (see App.open_url).
+    """
+
+    url: str
+
+
+@dataclass(frozen=True)
+class DetailsSection:
+    """Section of search result details.
+
+    Text is shown literally, never parsed as markup, so values from search
+    providers are passed as received. Section shows fields, items and
+    text in this order, skipping empty ones.
+    """
+
+    title: str
+    # Rows of label and value
+    fields: list[tuple[str, str | DetailsLink]] = field(default_factory=list)
+    # List entries (e.g. files)
+    items: list[str] = field(default_factory=list)
+    # Paragraph, for long text (e.g. description)
+    text: str = ""
 
 
 @dataclass(frozen=True)

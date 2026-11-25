@@ -10,8 +10,14 @@ from typing import Any
 from ...util.log import log_time
 from ...util.misc import parse_count
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResult, StandardCategories
-from ..util import build_magnet_link, escape_markdown, read_response
+from ..models import (
+    Category,
+    DetailsLink,
+    DetailsSection,
+    SearchResult,
+    StandardCategories,
+)
+from ..util import build_magnet_link, read_response
 
 
 class YTSProvider(BaseSearchProvider):
@@ -91,22 +97,26 @@ class YTSProvider(BaseSearchProvider):
 
         return self._process_movies(movies)
 
-    def details_extended(self, result: SearchResult) -> str:
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         """Generate YTS-specific details for right column.
 
         Args:
             result: Search result to format
 
         Returns:
-            Markdown-formatted string with movie details
+            Sections with movie details
         """
         if not result.fields:
-            return ""
+            return []
 
-        md = ""
-        md = self._add_movie_info(md, result.fields)
-        md = self._add_quality_info(md, result.fields)
-        return md
+        sections = [self._movie_section(result.fields)]
+        # Long text is shown as paragraph, not squeezed into field value
+        if result.fields.get("summary"):
+            sections.append(
+                DetailsSection("Summary", text=result.fields["summary"])
+            )
+        sections.append(self._quality_section(result.fields))
+        return sections
 
     def _has_movies_category(self, categories: list[Category] | None) -> bool:
         """Check if categories list includes Movies category.
@@ -357,21 +367,19 @@ class YTSProvider(BaseSearchProvider):
 
         return fields
 
-    def _add_movie_info(self, md: str, fields: dict[str, str]) -> str:
-        """Add movie information section to markdown."""
-        md += "## Movie\n"
+    def _movie_section(self, fields: dict[str, str]) -> DetailsSection:
+        """Build movie information section."""
         field_mappings = [
             ("year", "Year", None),
             ("runtime", "Runtime", None),
             ("genres", "Genres", None),
             ("language", "Language", None),
-            ("rating", "Rating", lambda v: f"{escape_markdown(v)}/10"),
-            ("summary", "Summary", None),
+            ("rating", "Rating", lambda v: f"{v}/10"),
             (
                 "imdb_code",
                 "IMDB",
                 lambda v: (
-                    f"https://www.imdb.com/title/{v}"
+                    DetailsLink(f"https://www.imdb.com/title/{v}")
                     if self._IMDB_RE.fullmatch(v)
                     else None
                 ),
@@ -380,25 +388,22 @@ class YTSProvider(BaseSearchProvider):
                 "yt_trailer_code",
                 "Trailer",
                 lambda v: (
-                    f"https://www.youtube.com/watch?v={v}"
+                    DetailsLink(f"https://www.youtube.com/watch?v={v}")
                     if self._YOUTUBE_ID_RE.fullmatch(v)
                     else None
                 ),
             ),
         ]
+        rows: list[tuple[str, str | DetailsLink]] = []
         for key, label, formatter in field_mappings:
             if key in fields:
-                if formatter:
-                    value = formatter(fields[key])
-                else:
-                    value = escape_markdown(fields[key])
+                value = formatter(fields[key]) if formatter else fields[key]
                 if value:
-                    md += f"- **{label}:** {value}\n"
-        return md
+                    rows.append((label, value))
+        return DetailsSection("Movie", fields=rows)
 
-    def _add_quality_info(self, md: str, fields: dict[str, str]) -> str:
-        """Add quality information section to markdown."""
-        md += "## Quality\n"
+    def _quality_section(self, fields: dict[str, str]) -> DetailsSection:
+        """Build quality information section."""
         field_mappings = [
             ("type", "Type"),
             ("quality", "Quality"),
@@ -407,8 +412,9 @@ class YTSProvider(BaseSearchProvider):
             ("audio_channels", "Audio Channels"),
             ("is_repack", "Repack"),
         ]
-        for key, label in field_mappings:
-            if key in fields:
-                md += f"- **{label}:** {escape_markdown(fields[key])}\n"
-
-        return md
+        rows = [
+            (label, fields[key])
+            for key, label in field_mappings
+            if key in fields
+        ]
+        return DetailsSection("Quality", fields=rows)

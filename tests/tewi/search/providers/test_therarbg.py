@@ -6,8 +6,9 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from src.tewi.search.models import StandardCategories
+from src.tewi.search.models import DetailsLink, StandardCategories
 from src.tewi.search.providers.therarbg import TheRarbgProvider
+from tests.tewi.search.helpers import details_fields, details_section
 
 HASH_JSON = "0123456789ABCDEF0123456789ABCDEF01234567"
 HASH_RSS = "fedcba9876543210fedcba9876543210fedcba98"
@@ -242,7 +243,7 @@ class TestParse:
             "https://therarbg.com/post-detail/a00001/"
             "example-show-s04-season-4-2025-1080p-webrip/"
         )
-        assert result.fields["tags"] == "1080p, \\[x\\]\\(http\\://evil\\)"
+        assert result.fields["tags"] == "1080p, [x](http://evil)"
 
     def test_json_result_without_hash_is_skipped(self, provider):
         assert provider._parse_torrent({**JSON_TORRENT, "h": None}) is None
@@ -308,22 +309,26 @@ class TestDetails:
         assert url == ("https://therarbg.com/post-detail/a00001/x/?format=json")
 
     def test_details_content(self, provider, result, mock_details):
-        md = provider.details_extended(result)
+        sections = provider.details_extended(result)
+        fields = details_fields(sections)
 
-        assert "- **Category:** TV\n" in md
-        assert "- **Uploader:** uploader1\n" in md
-        assert "- **Downloads:** 1234\n" in md
-        assert "- **Language:** English\n" in md
-        assert "- **IMDB:** https://www.imdb.com/title/tt0000001/\n" in md
-        assert "- **Last Checked:** 2026-11-18 22:59\n" in md
+        assert fields["Category"] == "TV"
+        assert fields["Uploader"] == "uploader1"
+        assert fields["Downloads"] == "1234"
+        assert fields["Language"] == "English"
+        assert fields["IMDB"] == DetailsLink(
+            "https://www.imdb.com/title/tt0000001/"
+        )
+        assert fields["Last Checked"] == "2026-11-18 22:59"
         # File count from list, as num_files could be 0
-        assert "## Files (2)\n" in md
-        assert "- S04/e1\\.mkv (1.02 kB)\n" in md
-        assert "- \\# README\n" in md
-        assert (
-            "- udp\\://tracker\\.example\\.org\\:1337 (5 seeders, 2 leechers)\n"
-        ) in md
-        assert "- udp\\://dead\\.example\\.org\\:80\n" in md
+        assert details_section(sections, "Files (2)").items == [
+            "S04/e1.mkv (1.02 kB)",
+            "# README",
+        ]
+        assert details_section(sections, "Trackers").items == [
+            "udp://tracker.example.org:1337 (5 seeders, 2 leechers)",
+            "udp://dead.example.org:80",
+        ]
 
     def test_invalid_imdb_is_skipped(self, provider, result, mock_details):
         response = mock_details.return_value.__enter__.return_value
@@ -331,16 +336,18 @@ class TestDetails:
             {**DETAILS, "imdb": "tt1 [x](http://evil)"}
         ).encode()
 
-        assert "IMDB" not in provider.details_extended(result)
+        sections = provider.details_extended(result)
+
+        assert "IMDB" not in details_fields(sections)
 
     def test_details_failure(self, provider, result, mock_details):
         response = mock_details.return_value.__enter__.return_value
         response.read.return_value = b"not json"
 
-        md = provider.details_extended(result)
+        sections = provider.details_extended(result)
 
-        assert "- **Category:** TV\n" in md
-        assert "## Files" not in md
+        assert details_fields(sections)["Category"] == "TV"
+        assert [s.title for s in sections] == ["Information"]
 
 
 class TestCounts:

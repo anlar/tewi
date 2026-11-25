@@ -10,8 +10,14 @@ from typing import Any
 from ...util.log import log_time
 from ...util.misc import parse_count
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResult, StandardCategories
-from ..util import build_magnet_link, escape_markdown, read_response
+from ..models import (
+    Category,
+    DetailsLink,
+    DetailsSection,
+    SearchResult,
+    StandardCategories,
+)
+from ..util import build_magnet_link, read_response
 
 
 class TPBProvider(BaseSearchProvider):
@@ -176,46 +182,48 @@ class TPBProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
 
-    def details_extended(self, result: SearchResult) -> str:
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         """Generate TPB-specific details for right column.
 
         Args:
             result: Search result to format
 
         Returns:
-            Markdown-formatted string with uploader details
+            Sections with uploader details
         """
         if not result.fields:
-            return ""
+            return []
 
-        md = "## Uploader\n"
+        uploader = []
 
         if "username" in result.fields:
-            username = escape_markdown(result.fields["username"])
-            md += f"- **Username:** {username}\n"
+            uploader.append(("Username", result.fields["username"]))
 
         if "status" in result.fields:
             status = result.fields["status"]
-            md += "- **Status:** "
 
             match status:
                 case "vip":
-                    md += "VIP Uploader\n"
+                    status = "VIP Uploader"
                 case "trusted":
-                    md += "Trusted Uploader\n"
+                    status = "Trusted Uploader"
                 case "member":
-                    md += "Member\n"
-                case _:
-                    md += f"{escape_markdown(status)}\n"
+                    status = "Member"
+
+            uploader.append(("Status", status))
+
+        sections = [DetailsSection("Uploader", fields=uploader)]
 
         imdb_code = result.fields.get("imdb")
         if imdb_code and self._IMDB_RE.fullmatch(imdb_code):
-            md += "## Movie\n"
-
             imdb_url = f"https://www.imdb.com/title/{imdb_code}/"
-            md += f"- **IMDB:** {imdb_url}\n"
+            sections.append(
+                DetailsSection(
+                    "Movie", fields=[("IMDB", DetailsLink(imdb_url))]
+                )
+            )
 
-        return md
+        return sections
 
     def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResult | None:
         """Parse a single torrent from TPB API response."""

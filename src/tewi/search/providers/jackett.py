@@ -11,12 +11,18 @@ from typing import Any
 from ...util.log import get_logger, log_time
 from ...util.misc import parse_count
 from ..base import BaseSearchProvider
-from ..models import Category, Indexer, SearchResult, StandardCategories
+from ..models import (
+    Category,
+    DetailsLink,
+    DetailsSection,
+    Indexer,
+    SearchResult,
+    StandardCategories,
+)
 from ..util import (
     MAX_ERROR_BODY_SIZE,
     build_magnet_link,
-    escape_markdown,
-    markdown_value,
+    details_value,
     read_response,
 )
 
@@ -152,7 +158,7 @@ class JackettProvider(BaseSearchProvider):
             data = self._fetch_results(url)
             return self._process_results(data)
 
-    def details_extended(self, result: SearchResult) -> str:
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         """Generate Jackett-specific details for right column.
 
         Prints all provider-specific fields from the search result.
@@ -162,21 +168,18 @@ class JackettProvider(BaseSearchProvider):
             result: Search result to format
 
         Returns:
-            Markdown-formatted string with Jackett details
+            Sections with Jackett details
         """
         if not result.fields:
-            return ""
+            return []
 
-        md = "## Indexer Info\n"
+        # All fields in sorted order for consistent display
+        fields = [
+            self._transform_field(key, result.fields[key])
+            for key in sorted(result.fields.keys())
+        ]
 
-        # Print all fields in sorted order for consistent display
-        for key in sorted(result.fields.keys()):
-            value = result.fields[key]
-            # Transform field for display
-            display_name, display_value = self._transform_field(key, value)
-            md += f"- **{escape_markdown(display_name)}:** {display_value}\n"
-
-        return md
+        return [DetailsSection("Indexer Info", fields=fields)]
 
     def fetch_from_indexer(
         self, query: str, indexer_id: str, categories: list[Category] | None
@@ -663,7 +666,9 @@ class JackettProvider(BaseSearchProvider):
             pass
         return codes
 
-    def _transform_field(self, key: str, value: str) -> tuple[str, str]:
+    def _transform_field(
+        self, key: str, value: str
+    ) -> tuple[str, str | DetailsLink]:
         """Transform field key and value for display.
 
         Applies transformations like converting IDs to URLs.
@@ -674,12 +679,12 @@ class JackettProvider(BaseSearchProvider):
             value: Field value
 
         Returns:
-            Tuple of (display_name, display_value), where value is
-            Markdown text (escaped, as it comes from indexer)
+            Tuple of (display_name, display_value), where value is link
+            for HTTP(S) URL
         """
         if key == "CategoryDesc":
-            return "Category", markdown_value(value)
+            return "Category", details_value(value)
         elif key == "Imdb" and value.isdigit():
-            return "IMDB", f"https://www.imdb.com/title/tt{value}/"
+            return "IMDB", DetailsLink(f"https://www.imdb.com/title/tt{value}/")
 
-        return key, markdown_value(value)
+        return key, details_value(value)

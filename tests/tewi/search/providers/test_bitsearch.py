@@ -8,6 +8,7 @@ import pytest
 
 from src.tewi.search.models import StandardCategories
 from src.tewi.search.providers.bitsearch import BitsearchProvider
+from tests.tewi.search.helpers import details_fields, details_section
 
 SEARCH_TORRENT = {
     "id": "6ae9ad00f20355a4b00411aa",
@@ -65,22 +66,25 @@ class TestDetails:
         )
 
     def test_details_content(self, provider, result, mock_urlopen):
-        md = provider.details_extended(result)
+        sections = provider.details_extended(result)
+        fields = details_fields(sections)
 
-        assert "- **Category:** Softwares\n" in md
-        assert "- **Subcategory:** Linux\n" in md
-        assert "- **Downloads:** 898\n" in md
-        assert "## Files (2)\n" in md
-        assert "- debian\\.iso (1.02 kB)\n" in md
-        assert "- \\# README\n" in md
-        assert "## Trackers\n" in md
-        assert "- udp\\://tracker\\.example\\.org\\:1337/announce\n" in md
-        assert "DHT" not in md
+        assert fields["Category"] == "Softwares"
+        assert fields["Subcategory"] == "Linux"
+        assert fields["Downloads"] == "898"
+        assert details_section(sections, "Files (2)").items == [
+            "debian.iso (1.02 kB)",
+            "# README",
+        ]
+        # "DHT" isn't tracker URL
+        assert details_section(sections, "Trackers").items == [
+            "udp://tracker.example.org:1337/announce"
+        ]
 
-    def test_remote_markdown_is_escaped(self, provider, result, mock_urlopen):
-        md = provider.details_extended(result)
+    def test_remote_text_is_kept_as_is(self, provider, result, mock_urlopen):
+        fields = details_fields(provider.details_extended(result))
 
-        assert "\\[x\\]\\(http\\://evil\\)" in md
+        assert fields["Tags"] == "debian, [x](http://evil)"
 
     def test_files_list_is_limited(self, provider, result, mock_urlopen):
         files = [{"path": f"f{i}"} for i in range(150)]
@@ -88,12 +92,12 @@ class TestDetails:
         response = mock_urlopen.return_value.__enter__.return_value
         response.read.return_value = json.dumps(details).encode()
 
-        md = provider.details_extended(result)
+        sections = provider.details_extended(result)
+        items = details_section(sections, "Files (150)").items
 
-        assert "## Files (150)\n" in md
-        assert "- f99\n" in md
-        assert "- f100\n" not in md
-        assert "- ...and 50 more\n" in md
+        assert len(items) == 101
+        assert items[99] == "f99"
+        assert items[-1] == "...and 50 more"
 
     def test_invalid_remote_values_are_skipped(
         self, provider, result, mock_urlopen
@@ -108,20 +112,20 @@ class TestDetails:
         response = mock_urlopen.return_value.__enter__.return_value
         response.read.return_value = json.dumps(details).encode()
 
-        md = provider.details_extended(result)
+        sections = provider.details_extended(result)
 
-        assert "Downloads" not in md
-        assert "- a\n" in md
+        assert "Downloads" not in details_fields(sections)
+        assert details_section(sections, "Files (1)").items == ["a"]
 
     def test_network_error_keeps_basic_details(
         self, provider, result, mock_urlopen
     ):
         mock_urlopen.side_effect = urllib.error.URLError("down")
 
-        md = provider.details_extended(result)
+        sections = provider.details_extended(result)
 
-        assert "- **Category:** Softwares\n" in md
-        assert "## Files" not in md
+        assert details_fields(sections)["Category"] == "Softwares"
+        assert [s.title for s in sections] == ["Information"]
 
 
 class TestParseTorrent:

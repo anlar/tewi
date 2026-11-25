@@ -10,14 +10,8 @@ from email.utils import parsedate_to_datetime
 
 from ...util.log import log_time
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResult, StandardCategories
-from ..util import (
-    build_magnet_link,
-    escape_markdown,
-    matches_query,
-    query_words,
-    read_response,
-)
+from ..models import Category, DetailsSection, SearchResult, StandardCategories
+from ..util import build_magnet_link, matches_query, query_words, read_response
 
 
 class LimeTorrentsProvider(BaseSearchProvider):
@@ -120,16 +114,15 @@ class LimeTorrentsProvider(BaseSearchProvider):
             results.append(result)
         return results
 
-    def details_extended(self, result: SearchResult) -> str:
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         if not result.fields:
-            return ""
+            return []
 
-        md = "## Information\n"
-
+        fields = []
         if "l_category" in result.fields:
-            md += f"- **Category:** {result.fields['l_category']}\n"
+            fields.append(("Category", result.fields["l_category"]))
 
-        return md
+        return [DetailsSection("Information", fields=fields)]
 
     def _parse_item(self, item: ET.Element) -> SearchResult | None:
         """Parse torrent from RSS feed item."""
@@ -161,7 +154,7 @@ class LimeTorrentsProvider(BaseSearchProvider):
             fields = {}
             category = item.findtext("category")
             if category:
-                fields["l_category"] = escape_markdown(category)
+                fields["l_category"] = category
             mapped = self.get_category(category)
 
             return SearchResult(

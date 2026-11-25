@@ -12,7 +12,7 @@ from textual.widgets import DataTable, Static
 from textual.worker import get_current_worker
 
 from ...search.base import BaseSearchProvider
-from ...search.models import SearchResult
+from ...search.models import DetailsSection, SearchResult
 from ...search.sorting import get_search_sort_option, sort_search_results
 from ...util.log import get_logger, log_time
 from ..dialog.search.details import TorrentDetailsDialog
@@ -337,8 +337,8 @@ class TorrentWebSearch(Static):
             result: Search result to show details for
         """
         try:
-            common_content = provider.details_common(result)
-            extended_content = provider.details_extended(result)
+            common_sections = provider.details_common(result)
+            extended_sections = provider.details_extended(result)
         except Exception as e:
             logger.warning(f"Failed to load search result details: {e}")
             self.post_message(
@@ -349,26 +349,29 @@ class TorrentWebSearch(Static):
         if get_current_worker().is_cancelled:
             return
         self.app.call_from_thread(
-            self.show_details, result, common_content, extended_content
+            self.show_details, result, common_sections, extended_sections
         )
 
     @log_time
     def show_details(
-        self, result: SearchResult, common_content: str, extended_content: str
+        self,
+        result: SearchResult,
+        common_sections: list[DetailsSection],
+        extended_sections: list[DetailsSection],
     ) -> None:
         """Show the details dialog.
 
         Args:
             result: Search result to show details for
-            common_content: Common details (left column)
-            extended_content: Provider-specific details (right column)
+            common_sections: Common details (left column)
+            extended_sections: Provider-specific details (right column)
         """
         self.app.push_screen(
             TorrentDetailsDialog(
                 result.title,
                 result.page_url,
-                common_content,
-                extended_content,
+                common_sections,
+                extended_sections,
                 result.page_url,
                 result.magnet_link,
                 result.torrent_link,

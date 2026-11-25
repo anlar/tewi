@@ -3,7 +3,8 @@
 from unittest.mock import patch
 
 from src.tewi.search.base import BaseSearchProvider
-from src.tewi.search.models import Category, SearchResult
+from src.tewi.search.models import Category, DetailsSection, SearchResult
+from tests.tewi.search.helpers import details_fields
 
 
 class _StubProvider(BaseSearchProvider):
@@ -25,8 +26,8 @@ class _StubProvider(BaseSearchProvider):
     ) -> list[SearchResult]:
         return []
 
-    def details_extended(self, result: SearchResult) -> str:
-        return ""
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
+        return []
 
 
 class TestBaseSearchProviderTimeout:
@@ -141,11 +142,11 @@ class TestDetailsCommon:
         )
 
     def test_size(self):
-        md = _StubProvider().details_common(self.result(1000))
+        sections = _StubProvider().details_common(self.result(1000))
 
-        assert "- **Size:** 1 kB\n" in md
+        assert details_fields(sections)["Size"] == "1 kB"
 
     def test_unknown_size(self):
-        md = _StubProvider().details_common(self.result(None))
+        sections = _StubProvider().details_common(self.result(None))
 
-        assert "- **Size:** Unknown\n" in md
+        assert details_fields(sections)["Size"] == "Unknown"

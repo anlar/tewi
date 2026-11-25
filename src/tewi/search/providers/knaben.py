@@ -11,8 +11,8 @@ from typing import Any
 from ...util.log import log_time
 from ...util.misc import parse_count
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResult, StandardCategories
-from ..util import build_magnet_link, escape_markdown, read_response
+from ..models import Category, DetailsSection, SearchResult, StandardCategories
+from ..util import build_magnet_link, read_response
 
 
 class KnabenProvider(BaseSearchProvider):
@@ -169,31 +169,29 @@ class KnabenProvider(BaseSearchProvider):
                 results.append(result)
         return results
 
-    def details_extended(self, result: SearchResult) -> str:
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         if not result.fields:
-            return ""
+            return []
 
-        md = "## Information\n"
-
-        if "tracker" in result.fields:
-            md += f"- **Tracker:** {result.fields['tracker']}\n"
-
-        if "k_category" in result.fields:
-            md += f"- **Category:** {result.fields['k_category']}\n"
-
-        if "live_seeders" in result.fields:
-            md += f"- **Live Seeders:** {result.fields['live_seeders']}\n"
-
-        if "live_peers" in result.fields:
-            md += f"- **Live Leechers:** {result.fields['live_peers']}\n"
-
-        if "last_seen" in result.fields:
-            md += f"- **Last Seen:** {result.fields['last_seen']}\n"
+        info = [
+            (label, str(result.fields[key]))
+            for key, label in (
+                ("tracker", "Tracker"),
+                ("k_category", "Category"),
+                ("live_seeders", "Live Seeders"),
+                ("live_peers", "Live Leechers"),
+                ("last_seen", "Last Seen"),
+            )
+            if key in result.fields
+        ]
+        sections = [DetailsSection("Information", fields=info)]
 
         if "description" in result.fields:
-            md += f"\n## Description\n{result.fields['description']}\n"
+            sections.append(
+                DetailsSection("Description", text=result.fields["description"])
+            )
 
-        return md
+        return sections
 
     def _parse_torrent(self, torrent: Any) -> SearchResult | None:
         try:
@@ -244,11 +242,11 @@ class KnabenProvider(BaseSearchProvider):
 
         tracker = torrent.get("tracker")
         if tracker:
-            fields["tracker"] = escape_markdown(tracker)
+            fields["tracker"] = tracker
 
         k_category = torrent.get("category")
         if k_category:
-            fields["k_category"] = escape_markdown(k_category)
+            fields["k_category"] = k_category
 
         if isinstance(torrent.get("liveSeeders"), int):
             fields["live_seeders"] = torrent["liveSeeders"]
@@ -278,7 +276,7 @@ class KnabenProvider(BaseSearchProvider):
             return None
 
     def _format_description(self, value: Any, title: Any) -> str | None:
-        """Convert HTML description to escaped Markdown.
+        """Convert HTML description to plain text.
 
         Line breaks are kept, consecutive empty lines are merged and long
         descriptions are truncated.
@@ -307,7 +305,7 @@ class KnabenProvider(BaseSearchProvider):
         if not lines or " ".join(lines).strip() == html.unescape(str(title)):
             return None
 
-        return self._join_description(self._truncate_description(lines))
+        return "\n".join(self._truncate_description(lines))
 
     def _truncate_description(self, lines: list[str]) -> list[str]:
         """Limit description to MAX_DESCRIPTION_LINES/CHARS.
@@ -333,26 +331,6 @@ class KnabenProvider(BaseSearchProvider):
 
         result[-1] = result[-1].rstrip() + "…"
         return result
-
-    def _join_description(self, lines: list[str]) -> str:
-        """Join escaped description lines as Markdown.
-
-        Empty lines separate paragraphs, other line breaks are kept as
-        hard breaks.
-
-        Args:
-            lines: Description lines, without consecutive empty lines
-
-        Returns:
-            Markdown text
-        """
-        md = ""
-        for i, line in enumerate(lines):
-            md += escape_markdown(line)
-            if i + 1 < len(lines):
-                next_empty = not lines[i + 1]
-                md += "\n" if not line or next_empty else "  \n"
-        return md
 
     def get_categories(self, category_ids: Any) -> list[Category]:
         """Map Knaben category IDs to StandardCategories.

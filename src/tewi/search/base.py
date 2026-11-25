@@ -4,7 +4,13 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from ..ui.util import print_size
-from .models import Category, Indexer, SearchResult
+from .models import (
+    Category,
+    DetailsLink,
+    DetailsSection,
+    Indexer,
+    SearchResult,
+)
 from .util import urlopen as _urlopen
 from .util import urlopen_post as _urlopen_post
 
@@ -120,14 +126,14 @@ class BaseSearchProvider(ABC):
         pass
 
     @abstractmethod
-    def details_extended(self, result: SearchResult) -> str:
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         """Generate provider-specific details for right column.
 
         Args:
             result: Search result to format
 
         Returns:
-            Markdown-formatted string with provider-specific details
+            Sections with provider-specific details
         """
 
     def indexers(self) -> list[Indexer]:
@@ -142,52 +148,52 @@ class BaseSearchProvider(ABC):
         """
         return [Indexer(self.id, self.name)]
 
-    def details_common(self, result: SearchResult) -> str:
+    def details_common(self, result: SearchResult) -> list[DetailsSection]:
         """Generate common torrent details for left column.
 
         Args:
             result: Search result to format
 
         Returns:
-            Markdown-formatted string with common details
+            Sections with common details
         """
-        md = "## General\n"
-        md += f"- **Provider:** {result.provider}\n"
-
-        # Display categories with full names
         if result.categories:
-            category_names = ", ".join(
-                cat.full_name for cat in result.categories
-            )
-            md += f"- **Category:** {category_names}\n"
+            category = ", ".join(cat.full_name for cat in result.categories)
         else:
-            md += "- **Category:** Unknown\n"
+            category = "Unknown"
 
-        md += f"- **Info Hash:** `{result.info_hash}`\n"
+        general = DetailsSection(
+            "General",
+            fields=[
+                ("Provider", result.provider),
+                ("Category", category),
+                ("Info Hash", result.info_hash or "Unknown"),
+            ],
+        )
 
-        md += "## Statistics\n"
+        stats: list[tuple[str, str | DetailsLink]] = []
         if result.size is not None:
-            md += f"- **Size:** {print_size(result.size)}\n"
+            stats.append(("Size", print_size(result.size)))
         else:
-            md += "- **Size:** Unknown\n"
+            stats.append(("Size", "Unknown"))
 
         if result.seeders:
-            md += f"- **Seeders:** {result.seeders}\n"
+            stats.append(("Seeders", str(result.seeders)))
 
         if result.leechers:
-            md += f"- **Leechers:** {result.leechers}\n"
+            stats.append(("Leechers", str(result.leechers)))
 
         if result.downloads:
-            md += f"- **Downloads:** {result.downloads}\n"
+            stats.append(("Downloads", str(result.downloads)))
 
         if result.files_count is not None:
-            md += f"- **Files:** {result.files_count}\n"
+            stats.append(("Files", str(result.files_count)))
 
         if result.upload_date:
             date_str = result.upload_date.strftime("%Y-%m-%d %H:%M")
-            md += f"- **Uploaded:** {date_str}\n"
+            stats.append(("Uploaded", date_str))
 
         if result.freeleech:
-            md += "- **Freeleech:** Yes\n"
+            stats.append(("Freeleech", "Yes"))
 
-        return md
+        return [general, DetailsSection("Statistics", fields=stats)]

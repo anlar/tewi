@@ -10,8 +10,14 @@ from ...ui.util import print_size
 from ...util.log import get_logger, log_time
 from ...util.misc import parse_count
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResult, StandardCategories
-from ..util import build_magnet_link, escape_markdown, read_response
+from ..models import (
+    Category,
+    DetailsLink,
+    DetailsSection,
+    SearchResult,
+    StandardCategories,
+)
+from ..util import build_magnet_link, read_response
 
 logger = get_logger()
 
@@ -320,27 +326,32 @@ class BitsearchProvider(BaseSearchProvider):
                 results.append(result)
         return results
 
-    def details_extended(self, result: SearchResult) -> str:
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         if not result.fields:
-            return ""
+            return []
 
-        md = "## Information\n"
+        info: list[tuple[str, str | DetailsLink]] = []
 
         if "t_category" in result.fields:
-            md += f"- **Category:** {result.fields['t_category']}\n"
+            info.append(("Category", result.fields["t_category"]))
 
         if "t_sub_category" in result.fields:
-            md += f"- **Subcategory:** {result.fields['t_sub_category']}\n"
+            info.append(("Subcategory", result.fields["t_sub_category"]))
 
         if "verified" in result.fields:
             verified = "Yes" if result.fields["verified"] else "No"
-            md += f"- **Verified:** {verified}\n"
+            info.append(("Verified", verified))
 
         details = self._fetch_details(result.fields.get("torrent_id"))
-        if details:
-            md += self._format_details(details)
+        if not details:
+            return [DetailsSection("Information", fields=info)]
 
-        return md
+        info.extend(self._format_details(details))
+        return [
+            DetailsSection("Information", fields=info),
+            *self._format_files(details.get("files")),
+            *self._format_trackers(details.get("trackers")),
+        ]
 
     @log_time
     def _fetch_details(self, torrent_id: str | None) -> dict[str, Any] | None:
@@ -370,54 +381,49 @@ class BitsearchProvider(BaseSearchProvider):
         torrent = data.get("torrent")
         return torrent if isinstance(torrent, dict) else None
 
-    def _format_details(self, details: dict[str, Any]) -> str:
-        """Format torrent details as Markdown sections."""
-        md = ""
+    def _format_details(self, details: dict[str, Any]) -> list[tuple[str, str]]:
+        """Format information fields from torrent details."""
+        fields = []
 
         downloads = details.get("downloads")
         if isinstance(downloads, int) and downloads > 0:
-            md += f"- **Downloads:** {downloads}\n"
+            fields.append(("Downloads", str(downloads)))
 
         tags = details.get("tags")
         if tags and isinstance(tags, list):
-            tags_str = ", ".join(escape_markdown(t) for t in tags)
-            md += f"- **Tags:** {tags_str}\n"
+            fields.append(("Tags", ", ".join(str(t) for t in tags)))
 
-        md += self._format_files(details.get("files"))
-        md += self._format_trackers(details.get("trackers"))
-        return md
+        return fields
 
-    def _format_files(self, files: Any) -> str:
+    def _format_files(self, files: Any) -> list[DetailsSection]:
         """Format files section, limited to MAX_DETAILS_FILES entries."""
         if not files or not isinstance(files, list):
-            return ""
+            return []
 
-        md = f"\n## Files ({len(files)})\n"
+        items = []
         for f in files[: self.MAX_DETAILS_FILES]:
             if not isinstance(f, dict) or not f.get("path"):
                 continue
-            md += f"- {escape_markdown(f['path'])}"
+            item = str(f["path"])
             if isinstance(f.get("size"), int):
-                md += f" ({print_size(f['size'])})"
-            md += "\n"
+                item += f" ({print_size(f['size'])})"
+            items.append(item)
 
         if len(files) > self.MAX_DETAILS_FILES:
             more = len(files) - self.MAX_DETAILS_FILES
-            md += f"- ...and {more} more\n"
-        return md
+            items.append(f"...and {more} more")
+        return [DetailsSection(f"Files ({len(files)})", items=items)]
 
-    def _format_trackers(self, trackers: Any) -> str:
+    def _format_trackers(self, trackers: Any) -> list[DetailsSection]:
         """Format trackers section."""
         if not trackers or not isinstance(trackers, list):
-            return ""
+            return []
 
         # "DHT" is listed as tracker, but it isn't URL
         urls = [t for t in trackers if isinstance(t, str) and t != "DHT"]
         if not urls:
-            return ""
-        return "\n## Trackers\n" + "".join(
-            f"- {escape_markdown(t)}\n" for t in urls
-        )
+            return []
+        return [DetailsSection("Trackers", items=urls)]
 
     def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResult | None:
         try:

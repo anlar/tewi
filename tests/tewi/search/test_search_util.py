@@ -4,14 +4,12 @@ import urllib.error
 from unittest.mock import MagicMock, patch
 
 import pytest
-from markdown_it import MarkdownIt
 
-from src.tewi.search.models import StandardCategories
+from src.tewi.search.models import DetailsLink, StandardCategories
 from src.tewi.search.util import (
     build_magnet_link,
+    details_value,
     detect_category_from_name,
-    escape_markdown,
-    markdown_value,
     matches_query,
     query_words,
     urlopen,
@@ -384,76 +382,31 @@ class TestUrlopen:
         assert call_kwargs["timeout"] == 30
 
 
-class TestEscapeMarkdown:
-    @staticmethod
-    def render(md: str) -> list:
-        """Parse Markdown the same way as Textual Markdown widget."""
-        tokens = MarkdownIt("gfm-like").parse(md)
-        return [c for t in tokens if t.children for c in t.children]
-
-    @pytest.mark.parametrize(
-        "text",
-        [
-            "# heading",
-            "[x](http://evil) **bold** `code` <b>",
-            "https://i.imgur.com/x.jpeg",
-            "see http://a.b/c and ftp://x.org/f",
-            "<https://x.org/a?b=c#d>",
-            "HTTPS://X.ORG",
-            "mailto:a@b.org",
-            "www.imdb.com/title",
-            "12:30 a\\b",
-        ],
-    )
-    def test_rendered_as_plain_text(self, text):
-        tokens = self.render(escape_markdown(text))
-
-        assert all(t.type in ("text", "text_special") for t in tokens)
-        assert "".join(t.content for t in tokens) == text
-
-    def test_single_line(self):
-        assert escape_markdown("a\nb\x07") == "a b"
-
-
-class TestMarkdownValue:
-    render = staticmethod(TestEscapeMarkdown.render)
-
+class TestDetailsValue:
     @pytest.mark.parametrize(
         "url",
         [
             "https://www.themoviedb.org/movie/278",
             "http://jackett:9117/dl/x/?jackett_apikey=k&path=a_b%20c",
             "HTTPS://X.ORG/a?b=c#d",
+            "https://www.imdb.com/)[x](https://evil",
         ],
     )
-    def test_safe_url_is_linked_as_is(self, url):
-        tokens = self.render(markdown_value(f" {url} "))
-
-        assert tokens[0].type == "link_open"
-        assert tokens[0].attrs["href"].lower() == url.lower()
-        assert [t.type for t in tokens] == ["link_open", "text", "link_close"]
+    def test_http_url_is_link(self, url):
+        assert details_value(f" {url} ") == DetailsLink(url)
 
     @pytest.mark.parametrize(
-        "text",
+        "value",
         [
-            "https://www.imdb.com/)[x](https://evil",
-            "https://a.org/<b>",
-            "https://a.org/`x`",
             "https://a.org/a b",
-            "https://a.org/\\[x]",
             "ftp://a.org/f",
+            "file:///etc/passwd",
             "plain [x](https://evil) text",
             42,
         ],
     )
-    def test_other_value_is_plain_text(self, text):
-        tokens = self.render(markdown_value(text))
-
-        assert all(t.type in ("text", "text_special") for t in tokens)
-        assert "".join(t.content for t in tokens) == str(text)
-
-    def test_single_line_without_control_chars(self):
-        assert markdown_value("a\nb\x1b") == "a b"
+    def test_other_value_is_text(self, value):
+        assert details_value(value) == str(value)
 
 
 class TestMatchesQuery:

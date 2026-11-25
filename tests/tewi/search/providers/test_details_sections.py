@@ -1,15 +1,15 @@
-"""Regression tests for Markdown injection in search result details.
+"""Regression tests for remote text in search result details.
 
-Details are shown in Markdown widget, so text from search providers must
-not add headings, list items or links with misleading text.
+Details are shown literally, so text from search providers must stay in
+values: it must not add sections or links with misleading text. Only
+provider-built links and HTTP(S) URLs are shown as links.
 """
 
 from unittest.mock import patch
 
 import pytest
-from markdown_it import MarkdownIt
 
-from src.tewi.search.models import SearchResult
+from src.tewi.search.models import DetailsLink, DetailsSection, SearchResult
 from src.tewi.search.providers.bitmagnet import BitmagnetProvider
 from src.tewi.search.providers.jackett import JackettProvider
 from src.tewi.search.providers.nyaa import NyaaProvider
@@ -30,29 +30,28 @@ PAYLOAD = (
 LINK_PAYLOAD = "tt0111161/) [Trailer](https://evil.example/t"
 
 
-def render(md: str) -> tuple[list[str], list[str]]:
-    """Parse Markdown the same way as Textual Markdown widget.
-
-    Returns:
-        Tuple of (headings, link targets)
-    """
-    tokens = MarkdownIt("gfm-like").parse(md)
-    headings = [
-        tokens[i + 1].content
-        for i, t in enumerate(tokens)
-        if t.type == "heading_open"
+def links(sections: list[DetailsSection]) -> list[str]:
+    """URLs of all links in sections."""
+    return [
+        value.url
+        for s in sections
+        for _, value in s.fields
+        if isinstance(value, DetailsLink)
     ]
-    links = [
-        c.attrs["href"]
-        for t in tokens
-        if t.children
-        for c in t.children
-        if c.type == "link_open"
-    ]
-    return headings, links
 
 
-def jackett(payload: str, imdb: str) -> str:
+def texts(sections: list[DetailsSection]) -> list[str]:
+    """All text values in sections: field values, items and paragraphs."""
+    result = []
+    for s in sections:
+        result += [v for _, v in s.fields if isinstance(v, str)]
+        result += s.items
+        if s.text:
+            result.append(s.text)
+    return result
+
+
+def jackett(payload: str, imdb: str) -> list[DetailsSection]:
     provider = JackettProvider("http://jackett", "key")
     result = provider._parse_result(
         {
@@ -68,7 +67,7 @@ def jackett(payload: str, imdb: str) -> str:
     return provider.details_extended(result)
 
 
-def prowlarr(payload: str, imdb: str) -> str:
+def prowlarr(payload: str, imdb: str) -> list[DetailsSection]:
     provider = ProwlarrProvider("http://prowlarr", "key")
     result = provider._parse_result(
         {
@@ -84,7 +83,7 @@ def prowlarr(payload: str, imdb: str) -> str:
     return provider.details_extended(result)
 
 
-def tpb(payload: str, imdb: str) -> str:
+def tpb(payload: str, imdb: str) -> list[DetailsSection]:
     provider = TPBProvider()
     result = provider._parse_torrent(
         {
@@ -101,7 +100,7 @@ def tpb(payload: str, imdb: str) -> str:
     return provider.details_extended(result)
 
 
-def yts(payload: str, imdb: str) -> str:
+def yts(payload: str, imdb: str) -> list[DetailsSection]:
     provider = YTSProvider()
     result = provider._parse_torrent(
         {
@@ -127,7 +126,7 @@ def yts(payload: str, imdb: str) -> str:
     return provider.details_extended(result)
 
 
-def nyaa(payload: str, imdb: str) -> str:
+def nyaa(payload: str, imdb: str) -> list[DetailsSection]:
     result = SearchResult(
         title="Title",
         info_hash=HASH,
@@ -146,7 +145,7 @@ def nyaa(payload: str, imdb: str) -> str:
     return NyaaProvider().details_extended(result)
 
 
-def bitmagnet(payload: str, imdb: str) -> str:
+def bitmagnet(payload: str, imdb: str) -> list[DetailsSection]:
     provider = BitmagnetProvider("http://bitmagnet")
     result = provider._parse_torrent_item(
         {
@@ -186,14 +185,13 @@ DETAILS = [jackett, prowlarr, tpb, yts, nyaa, bitmagnet]
 
 
 @pytest.mark.parametrize("details", DETAILS)
-def test_remote_text_does_not_add_headings_or_links(details):
-    md = details(PAYLOAD, LINK_PAYLOAD)
-    headings, links = render(md)
+def test_remote_text_does_not_add_sections_or_links(details):
+    sections = details(PAYLOAD, LINK_PAYLOAD)
 
-    assert "Verified" not in headings
-    assert not any("evil" in link for link in links)
-    # Payload is still shown, as plain text
-    assert "Nice release" in md
+    assert "Verified" not in [s.title for s in sections]
+    assert not any("evil" in url for url in links(sections))
+    # Payload is still shown, as text
+    assert any("Nice release" in text for text in texts(sections))
 
 
 @pytest.mark.parametrize(
@@ -212,9 +210,7 @@ def test_remote_text_does_not_add_headings_or_links(details):
     ],
 )
 def test_valid_links_are_kept(details, imdb, expected):
-    _, links = render(details("text", imdb))
-
-    assert expected in links
+    assert expected in links(details("text", imdb))
 
 
 @pytest.mark.parametrize(
@@ -225,7 +221,18 @@ def test_valid_links_are_kept(details, imdb, expected):
         (bitmagnet, "https://www.themoviedb.org/movie/278"),
     ],
 )
-def test_safe_urls_from_provider_are_linked(details, expected):
-    _, links = render(details("text", "1"))
+def test_http_urls_from_provider_are_linked(details, expected):
+    assert expected in links(details("text", "1"))
 
-    assert expected in links
+
+@pytest.mark.parametrize(
+    "details, title, field",
+    [(yts, "Summary", "Summary"), (bitmagnet, "Overview", "Overview")],
+)
+def test_long_text_is_paragraph(details, title, field):
+    """Long text is shown as paragraph, not squeezed into field value."""
+    sections = details("Long text", "1")
+
+    [section] = [s for s in sections if s.title == title]
+    assert section.text == "Long text"
+    assert all(label != field for s in sections for label, _ in s.fields)

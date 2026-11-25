@@ -9,7 +9,7 @@ from typing import Any
 from ...util.log import log_time
 from ...util.misc import parse_count
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResult
+from ..models import Category, DetailsSection, SearchResult
 from ..util import build_magnet_link, detect_category_from_name, read_response
 
 
@@ -86,24 +86,23 @@ class TorrentsCsvProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
 
-    def details_extended(self, result: SearchResult) -> str:
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         """Generate TorrentsCSV-specific details for right column.
 
         Args:
             result: Search result to format
 
         Returns:
-            Markdown-formatted string with statistics
+            Sections with statistics
         """
         if not result.fields:
-            return ""
+            return []
 
-        md = "## Information\n"
-
+        fields = []
         if "scraped_date" in result.fields:
-            md += f"- **Last Scraped:** {result.fields['scraped_date']}\n"
+            fields.append(("Last Scraped", result.fields["scraped_date"]))
 
-        return md
+        return [DetailsSection("Information", fields=fields)]
 
     def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResult | None:
         """Parse a single torrent from TorrentsCSV API response."""

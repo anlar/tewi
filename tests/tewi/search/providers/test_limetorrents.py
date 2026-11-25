@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import pytest
 
-from src.tewi.search.models import StandardCategories
+from src.tewi.search.models import DetailsSection, StandardCategories
 from src.tewi.search.providers.limetorrents import LimeTorrentsProvider
 
 HASH = "0123456789ABCDEF0123456789ABCDEF01234567"
@@ -204,6 +204,10 @@ class TestDetails:
         set_feed(mock_urlopen, feed(item(category="Other - E-books")))
         [result] = provider.search("example")
 
-        md = provider.details_extended(result)
+        sections = provider.details_extended(result)
 
-        assert md == "## Information\n- **Category:** Other \\- E\\-books\n"
+        assert sections == [
+            DetailsSection(
+                "Information", fields=[("Category", "Other - E-books")]
+            )
+        ]

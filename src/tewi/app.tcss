@@ -718,14 +718,49 @@ TorrentDetailsWidget > .details-title {
     text-align: center;
     color: $text-accent;
     height: auto;
+    border-bottom: solid $primary 75%;
 }
 
 TorrentDetailsWidget .details-block {
     height: auto;
+    margin-top: 1;
 }
 
 TorrentDetailsWidget .details-column {
     width: 1fr;
+    height: auto;
+    padding: 0 1;
+}
+
+TorrentDetailsWidget .details-section {
+    text-style: bold;
+    color: $text-primary;
+    margin: 1 0;
+}
+
+/* Full margin is set, as margin-top would reset bottom margin too */
+TorrentDetailsWidget .details-section:first-child {
+    margin: 0 0 1 0;
+}
+
+/* Rows of label and value: values are aligned and wrapped after labels */
+TorrentDetailsWidget .details-fields {
+    grid-size: 2;
+    grid-columns: auto 1fr;
+    grid-rows: auto;
+    grid-gutter: 0 1;
+    height: auto;
+    padding-left: 2;
+}
+
+TorrentDetailsWidget .details-label {
+    text-style: bold;
+}
+
+TorrentDetailsWidget .details-items,
+TorrentDetailsWidget .details-text {
+    height: auto;
+    padding-left: 2;
 }
 
 TorrentDetailsWidget .details-link {

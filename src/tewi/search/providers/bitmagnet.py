@@ -10,13 +10,14 @@ from typing import Any
 from ...util.log import get_logger, log_time
 from ...util.misc import parse_count
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResult, StandardCategories
-from ..util import (
-    MAX_ERROR_BODY_SIZE,
-    escape_markdown,
-    markdown_value,
-    read_response,
+from ..models import (
+    Category,
+    DetailsLink,
+    DetailsSection,
+    SearchResult,
+    StandardCategories,
 )
+from ..util import MAX_ERROR_BODY_SIZE, details_value, read_response
 
 logger = get_logger()
 
@@ -216,7 +217,7 @@ class BitmagnetProvider(BaseSearchProvider):
         # Process and return results
         return self._process_results(data)
 
-    def details_extended(self, result: SearchResult) -> str:
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         """Generate Bitmagnet-specific details for right column.
 
         Prints extended metadata from the search result. Attempts to fetch
@@ -226,10 +227,10 @@ class BitmagnetProvider(BaseSearchProvider):
             result: Search result to format
 
         Returns:
-            Markdown-formatted string with Bitmagnet details
+            Sections with Bitmagnet details
         """
         if not result.fields:
-            return ""
+            return []
 
         # Try to fetch additional torrent details
         fields = dict(result.fields) if result.fields else {}
@@ -243,15 +244,16 @@ class BitmagnetProvider(BaseSearchProvider):
 
         sections = [
             self._format_content_section(fields),
+            self._format_overview_section(fields),
             self._format_video_section(fields),
             self._format_release_section(fields),
             self._format_links_section(fields),
             self._format_timestamps_section(fields),
         ]
 
-        return "".join(s for s in sections if s)
+        return [s for s in sections if s]
 
-    def _format_content_section(self, fields: dict) -> str:
+    def _format_content_section(self, fields: dict) -> DetailsSection | None:
         """Format content metadata section including sources and tags."""
         field_defs = [
             ("content_type", "Content Type"),
@@ -266,14 +268,20 @@ class BitmagnetProvider(BaseSearchProvider):
             ("rating", "Rating"),
             ("popularity", "Popularity"),
             ("adult", "Adult"),
-            ("overview", "Overview"),
             ("file_types", "File Types"),
             ("tag_names", "Tags"),
             ("sources", "Sources"),
         ]
         return self._format_field_section("Content", fields, field_defs)
 
-    def _format_video_section(self, fields: dict) -> str:
+    def _format_overview_section(self, fields: dict) -> DetailsSection | None:
+        """Format overview as paragraph, as it's long text."""
+        overview = fields.get("overview")
+        if not overview:
+            return None
+        return DetailsSection("Overview", text=str(overview))
+
+    def _format_video_section(self, fields: dict) -> DetailsSection | None:
         """Format video metadata section."""
         field_defs = [
             ("video_resolution", "Resolution"),
@@ -284,7 +292,7 @@ class BitmagnetProvider(BaseSearchProvider):
         ]
         return self._format_field_section("Video", fields, field_defs)
 
-    def _format_release_section(self, fields: dict) -> str:
+    def _format_release_section(self, fields: dict) -> DetailsSection | None:
         """Format release metadata section."""
         field_defs = [
             ("release_group", "Release Group"),
@@ -293,26 +301,18 @@ class BitmagnetProvider(BaseSearchProvider):
         ]
         return self._format_field_section("Release", fields, field_defs)
 
-    def _format_links_section(self, fields: dict) -> str:
+    def _format_links_section(self, fields: dict) -> DetailsSection | None:
         """Format external links section."""
         links_data = fields.get("external_links")
-        if not links_data:
-            return ""
 
         # links_data is a list of tuples: [(name, url), ...]
-        if not isinstance(links_data, list):
-            return ""
+        if not links_data or not isinstance(links_data, list):
+            return None
 
-        lines = []
-        for name, url in links_data:
-            name, url = escape_markdown(name), markdown_value(url)
-            lines.append(f"- **{name}:** {url}\n")
+        links = [(str(name), details_value(url)) for name, url in links_data]
+        return DetailsSection("Links", fields=links)
 
-        if lines:
-            return "\n## Links\n" + "".join(lines)
-        return ""
-
-    def _format_timestamps_section(self, fields: dict) -> str:
+    def _format_timestamps_section(self, fields: dict) -> DetailsSection | None:
         """Format timestamps section."""
         field_defs = [
             ("item_created_at", "Item Created"),
@@ -327,7 +327,7 @@ class BitmagnetProvider(BaseSearchProvider):
         title: str,
         fields: dict,
         field_defs: list[tuple[str, str]],
-    ) -> str:
+    ) -> DetailsSection | None:
         """Format a section with field definitions.
 
         Args:
@@ -336,19 +336,17 @@ class BitmagnetProvider(BaseSearchProvider):
             field_defs: List of (field_key, field_label) tuples
 
         Returns:
-            Formatted section or empty string
+            Section, or None if it has no fields
         """
-        lines = []
-        for field_key, field_label in field_defs:
-            value = fields.get(field_key)
-            if value:
-                value = escape_markdown(value)
-                lines.append(f"- **{field_label}:** {value}\n")
+        rows: list[tuple[str, str | DetailsLink]] = [
+            (field_label, str(fields[field_key]))
+            for field_key, field_label in field_defs
+            if fields.get(field_key)
+        ]
 
-        if lines:
-            prefix = "\n" if title != "Content" else ""
-            return f"{prefix}## {title}\n" + "".join(lines)
-        return ""
+        if rows:
+            return DetailsSection(title, fields=rows)
+        return None
 
     def _validate_config(self, bitmagnet_url: str | None) -> str | None:
         """Validate configuration and return error message if invalid.

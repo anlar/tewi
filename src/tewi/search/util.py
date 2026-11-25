@@ -6,8 +6,8 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-from ..util.misc import is_torrent_hash, strip_control_chars
-from .models import Category, StandardCategories
+from ..util.misc import is_http_url, is_torrent_hash
+from .models import Category, DetailsLink, StandardCategories
 
 # User-Agent string to imitate a popular browser
 USER_AGENT = (
@@ -102,50 +102,21 @@ def read_response(response: Any) -> bytes:
     return data
 
 
-# ":" is escaped so URLs in remote text are not auto-linked: they would be
-# linked only up to the first escaped character (e.g. "https://www")
-_MARKDOWN_SPECIAL_RE = re.compile(r"([\\`*_{}\[\]()<>#+\-.!|~&:])")
+def details_value(value: object) -> str | DetailsLink:
+    """Format remote value for search result details.
 
-
-def escape_markdown(value: object) -> str:
-    """Escape remote text for display in Markdown widget.
-
-    Text from search providers could contain Markdown syntax (e.g. links
-    or headings), which would change rendered details. URLs are shown as
-    plain text, not links.
-
-    Args:
-        value: Text to escape
-
-    Returns:
-        Single-line text with Markdown special characters escaped
-    """
-    text = strip_control_chars(str(value).replace("\n", " "))
-    return _MARKDOWN_SPECIAL_RE.sub(r"\\\1", text)
-
-
-# HTTP(S) URL without characters which could start Markdown syntax around
-# it (e.g. "https://x/)[text](https://other"), so it's auto-linked as is
-_SAFE_URL_RE = re.compile(r"https?://[^\s\\`*\[\](){}<>|]+", re.IGNORECASE)
-
-
-def markdown_value(value: object) -> str:
-    """Format remote value for display in Markdown widget.
-
-    Safe HTTP(S) URLs are kept as is, so they are shown as links (opened
-    by App.open_url, which accepts only HTTP(S) URLs). Other values,
-    including URLs with Markdown syntax, are escaped as plain text.
+    HTTP(S) URLs are shown as links, other values as text.
 
     Args:
         value: Value to format
 
     Returns:
-        Single-line Markdown text
+        Link for HTTP(S) URL, otherwise value as text
     """
-    text = strip_control_chars(str(value)).strip()
-    if _SAFE_URL_RE.fullmatch(text):
-        return text
-    return escape_markdown(value)
+    text = str(value).strip()
+    if is_http_url(text):
+        return DetailsLink(text)
+    return text
 
 
 _NON_WORD_RE = re.compile(r"[\W_]+")

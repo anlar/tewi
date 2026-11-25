@@ -9,12 +9,18 @@ from typing import Any
 from ...util.log import get_logger, log_time
 from ...util.misc import parse_count
 from ..base import BaseSearchProvider
-from ..models import Category, Indexer, SearchResult, StandardCategories
+from ..models import (
+    Category,
+    DetailsLink,
+    DetailsSection,
+    Indexer,
+    SearchResult,
+    StandardCategories,
+)
 from ..util import (
     MAX_ERROR_BODY_SIZE,
     build_magnet_link,
-    escape_markdown,
-    markdown_value,
+    details_value,
     read_response,
 )
 
@@ -144,7 +150,7 @@ class ProwlarrProvider(BaseSearchProvider):
         data = self._fetch_results(url)
         return self._process_results(data)
 
-    def details_extended(self, result: SearchResult) -> str:
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         """Generate Prowlarr-specific details for right column.
 
         Prints all provider-specific fields from the search result.
@@ -153,23 +159,21 @@ class ProwlarrProvider(BaseSearchProvider):
             result: Search result to format
 
         Returns:
-            Markdown-formatted string with Prowlarr details
+            Sections with Prowlarr details
         """
         if not result.fields:
-            return ""
+            return []
 
-        md = "## Indexer Info\n"
-
-        # Print all fields in sorted order for consistent display
+        # All fields in sorted order for consistent display
+        fields: list[tuple[str, str | DetailsLink]] = []
         for key in sorted(result.fields.keys()):
             value = result.fields[key]
             # Transform field for display
             display_name, display_value = self._transform_field(key, value)
             if display_name:
-                name = escape_markdown(display_name)
-                md += f"- **{name}:** {markdown_value(display_value)}\n"
+                fields.append((display_name, details_value(display_value)))
 
-        return md
+        return [DetailsSection("Indexer Info", fields=fields)]
 
     def _validate_config(
         self, prowlarr_url: str | None, api_key: str | None

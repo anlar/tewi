@@ -11,7 +11,7 @@ from src.tewi.search.manager import (
     merge_results,
     resolve_provider_aliases,
 )
-from src.tewi.search.models import SearchResult
+from src.tewi.search.models import DetailsSection, SearchResult
 
 VALID_HASH = "a" * 40
 
@@ -45,8 +45,8 @@ class FakeProvider(BaseSearchProvider):
     def search(self, query, categories=None, indexers=None):
         return self.results
 
-    def details_extended(self, result: SearchResult) -> str:
-        return ""
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
+        return []
 
 
 class StalledProvider(FakeProvider):

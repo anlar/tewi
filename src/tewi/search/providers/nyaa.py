@@ -9,8 +9,8 @@ from datetime import datetime
 from ...util.log import log_time
 from ...util.misc import parse_count
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResult, StandardCategories
-from ..util import build_magnet_link, escape_markdown, read_response
+from ..models import Category, DetailsSection, SearchResult, StandardCategories
+from ..util import build_magnet_link, read_response
 
 
 class NyaaProvider(BaseSearchProvider):
@@ -155,30 +155,30 @@ class NyaaProvider(BaseSearchProvider):
         except ET.ParseError as e:
             raise Exception(f"Failed to parse RSS feed: {e}")
 
-    def details_extended(self, result: SearchResult) -> str:
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         """Generate Nyaa-specific details for right column.
 
         Args:
             result: Search result to format
 
         Returns:
-            Markdown-formatted string with Nyaa-specific details
+            Sections with Nyaa-specific details
         """
         if not result.fields:
-            return ""
+            return []
 
-        md = "## Information\n"
+        fields = [
+            (label, result.fields[key])
+            for key, label in (
+                ("nyaa_category", "Category"),
+                ("comments", "Comments"),
+                ("trusted", "Trusted"),
+                ("remake", "Remake"),
+            )
+            if key in result.fields
+        ]
 
-        for key, label in (
-            ("nyaa_category", "Category"),
-            ("comments", "Comments"),
-            ("trusted", "Trusted"),
-            ("remake", "Remake"),
-        ):
-            if key in result.fields:
-                md += f"- **{label}:** {escape_markdown(result.fields[key])}\n"
-
-        return md
+        return [DetailsSection("Information", fields=fields)]
 
     def _parse_item(
         self, item: ET.Element, ns: dict[str, str]

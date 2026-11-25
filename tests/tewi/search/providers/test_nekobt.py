@@ -8,8 +8,9 @@ from urllib.parse import parse_qs, urlparse
 
 import pytest
 
-from src.tewi.search.models import StandardCategories
+from src.tewi.search.models import DetailsLink, StandardCategories
 from src.tewi.search.providers.nekobt import NekoBtProvider
+from tests.tewi.search.helpers import details_fields, details_section
 
 HASH = "0123456789abcdef0123456789abcdef01234567"
 MAGNET = f"magnet:?xt=urn:btih:{HASH}&dn=Example&tr=udp://t.example"
@@ -271,40 +272,50 @@ class TestDetails:
         ]
 
     def test_content(self, provider, result):
-        md = provider.details_extended(result)
+        sections = provider.details_extended(result)
+        fields = details_fields(sections)
 
-        assert "- **Audio:** ja, en\n" in md
-        assert "- **Subtitles:** en, de\n" in md
-        assert "- **Uploader:** uploader1\n" in md
-        assert "- **Groups:** Group, \\[x\\]\\(http\\://evil\\)\n" in md
-        assert "- **Batch:** Yes\n" in md
-        assert "- **AniList:** https://anilist.co/anime/2001\n" in md
-        assert "- **TVDB:** https://thetvdb.com/dereferrer/series/3001\n" in md
-        assert "- **TMDB:** https://www.themoviedb.org/tv/4001\n" in md
-        assert "- **IMDB:** https://www.imdb.com/title/tt0000001/\n" in md
-        assert "## Files (2)\n" in md
-        assert "- Example/Example \\- 01\\.mkv (1 kB)\n" in md
-        assert "- \\# README\n" in md
+        assert fields["Audio"] == "ja, en"
+        assert fields["Subtitles"] == "en, de"
+        assert fields["Uploader"] == "uploader1"
+        assert fields["Groups"] == "Group, [x](http://evil)"
+        assert fields["Batch"] == "Yes"
+        assert fields["AniList"] == DetailsLink("https://anilist.co/anime/2001")
+        assert fields["TVDB"] == DetailsLink(
+            "https://thetvdb.com/dereferrer/series/3001"
+        )
+        assert fields["TMDB"] == DetailsLink(
+            "https://www.themoviedb.org/tv/4001"
+        )
+        assert fields["IMDB"] == DetailsLink(
+            "https://www.imdb.com/title/tt0000001/"
+        )
+        assert details_section(sections, "Files (2)").items == [
+            "Example/Example - 01.mkv (1 kB)",
+            "# README",
+        ]
         # Remote Markdown description and media info aren't shown
-        assert "Remote" not in md
-        assert "Unique ID" not in md
+        assert "Remote" not in repr(sections)
+        assert "Unique ID" not in repr(sections)
 
     def test_anonymous_uploader(self, provider, mock_urlopen):
         set_responses(mock_urlopen, search(torrent(anonymous=True)))
         [result] = provider.search("example")
 
-        md = provider.details_extended(result)
+        sections = provider.details_extended(result)
 
-        assert "- **Uploader:** Anonymous\n" in md
-        assert "uploader1" not in md
+        assert details_fields(sections)["Uploader"] == "Anonymous"
+        assert "uploader1" not in repr(sections)
 
     def test_movie_tmdb_link(self, provider, mock_urlopen):
         set_responses(mock_urlopen, search(torrent(media_id="m1002")))
         [result] = provider.search("example")
 
-        md = provider.details_extended(result)
+        fields = details_fields(provider.details_extended(result))
 
-        assert "- **TMDB:** https://www.themoviedb.org/movie/4001\n" in md
+        assert fields["TMDB"] == DetailsLink(
+            "https://www.themoviedb.org/movie/4001"
+        )
 
     def test_invalid_ids_are_skipped(self, provider, result, mock_urlopen):
         set_responses(
@@ -319,22 +330,22 @@ class TestDetails:
             },
         )
 
-        md = provider.details_extended(result)
+        sections = provider.details_extended(result)
 
-        assert "## Links" not in md
-        assert "anilist.co" not in md
-        assert "imdb.com" not in md
+        assert details_section(sections, "Links") is None
+        assert "anilist.co" not in repr(sections)
+        assert "imdb.com" not in repr(sections)
 
     def test_files_are_limited(self, provider, result, mock_urlopen):
         files = [{"path": f"e{i}.mkv"} for i in range(105)]
         set_responses(mock_urlopen, torrent_data={"data": {"files": files}})
 
-        md = provider.details_extended(result)
+        sections = provider.details_extended(result)
+        items = details_section(sections, "Files (105)").items
 
-        assert "## Files (105)\n" in md
-        assert "- e99\\.mkv\n" in md
-        assert "e100" not in md
-        assert "- ...and 5 more\n" in md
+        assert len(items) == 101
+        assert items[99] == "e99.mkv"
+        assert items[-1] == "...and 5 more"
 
     @pytest.mark.parametrize(
         "torrent_data, media_data, expected, unexpected",
@@ -343,12 +354,12 @@ class TestDetails:
                 {"error": True, "message": "Torrent not found."},
                 MEDIA_DETAILS,
                 ["TVDB"],
-                ["AniList", "## Files"],
+                ["AniList", "Files (2)"],
             ),
             (
                 TORRENT_DETAILS,
                 b"not json",
-                ["AniList", "## Files"],
+                ["AniList", "Files (2)"],
                 ["TVDB"],
             ),
         ],
@@ -367,14 +378,17 @@ class TestDetails:
             mock_urlopen, torrent_data=torrent_data, media_data=media_data
         )
 
-        md = provider.details_extended(result)
+        sections = provider.details_extended(result)
+        fields = details_fields(sections)
+        # Field labels and section titles
+        names = set(fields) | {s.title for s in sections}
 
         # Details from search are still shown
-        assert "- **Uploader:** uploader1\n" in md
-        for text in expected:
-            assert text in md
-        for text in unexpected:
-            assert text not in md
+        assert fields["Uploader"] == "uploader1"
+        for name in expected:
+            assert name in names
+        for name in unexpected:
+            assert name not in names
 
     def test_without_media(self, provider, mock_urlopen):
         set_responses(mock_urlopen, search(torrent(media_id=None)))

@@ -7,6 +7,7 @@ import pytest
 
 from src.tewi.search.models import StandardCategories
 from src.tewi.search.providers.knaben import KnabenProvider
+from tests.tewi.search.helpers import details_fields, details_section
 
 HIT = {
     "bytes": 5922042,
@@ -117,30 +118,32 @@ class TestParseTorrent:
 
 class TestDetails:
     def test_details(self, provider, result):
-        md = provider.details_extended(result)
+        fields = details_fields(provider.details_extended(result))
 
-        assert "- **Tracker:** The Pirate Bay\n" in md
-        assert "- **Category:** Books / EBooks\n" in md
-        assert "- **Live Seeders:** 6\n" in md
-        assert "- **Last Seen:** 2026-11-19 23:16\n" in md
+        assert fields["Tracker"] == "The Pirate Bay"
+        assert fields["Category"] == "Books / EBooks"
+        assert fields["Live Seeders"] == "6"
+        assert fields["Last Seen"] == "2026-11-19 23:16"
 
-    def test_description_is_escaped(self, provider, result):
-        md = provider.details_extended(result)
+    def test_description_is_text(self, provider, result):
+        sections = provider.details_extended(result)
 
-        assert "Uploader\\: uploader1  \nRené \\[x\\]\\(http\\://evil\\)" in md
-        assert "<br>" not in md
+        assert details_section(sections, "Description").text == (
+            "Uploader: uploader1\nRené [x](http://evil)"
+        )
 
     def test_description_same_as_title_is_hidden(self, provider):
         result = provider._parse_torrent({**HIT, "description": HIT["title"]})
+        sections = provider.details_extended(result)
 
-        assert "## Description" not in provider.details_extended(result)
+        assert details_section(sections, "Description") is None
 
     @pytest.mark.parametrize(
         "description, expected",
         [
-            # <br> and newlines are kept as hard breaks
-            ("a<br>b<BR/>c", "a  \nb  \nc"),
-            ("a\r\nb\rc\nd", "a  \nb  \nc  \nd"),
+            # <br> and newlines are kept as line breaks
+            ("a<br>b<BR/>c", "a\nb\nc"),
+            ("a\r\nb\rc\nd", "a\nb\nc\nd"),
             # Empty lines separate paragraphs and are merged
             ("a\r\n\r\n\r\n  \r\nb", "a\n\nb"),
             ("<br><br>a  b<br><br>", "a b"),
@@ -156,24 +159,24 @@ class TestDetails:
         lines = [f"line {i}" for i in range(provider.MAX_DESCRIPTION_LINES)]
         description = "\n".join([*lines, "extra"])
 
-        md = provider._format_description(description, "title")
+        text = provider._format_description(description, "title")
 
-        assert md.endswith(f"line {provider.MAX_DESCRIPTION_LINES - 1}…")
-        assert "extra" not in md
+        assert text.endswith(f"line {provider.MAX_DESCRIPTION_LINES - 1}…")
+        assert "extra" not in text
 
     def test_description_with_max_lines_is_not_truncated(self, provider):
         lines = [f"line {i}" for i in range(provider.MAX_DESCRIPTION_LINES)]
 
-        md = provider._format_description("\n".join(lines), "title")
+        text = provider._format_description("\n".join(lines), "title")
 
-        assert not md.endswith("…")
+        assert not text.endswith("…")
 
     def test_description_chars_are_truncated(self, provider):
         description = "a" * (provider.MAX_DESCRIPTION_CHARS - 2) + "\nbbbbb"
 
-        md = provider._format_description(description, "title")
+        text = provider._format_description(description, "title")
 
-        assert md.endswith("  \nbb…")
+        assert text.endswith("\nbb…")
 
 
 class TestSearch:

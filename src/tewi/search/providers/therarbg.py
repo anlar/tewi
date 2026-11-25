@@ -13,14 +13,14 @@ from ...ui.util import print_size
 from ...util.log import get_logger, log_time
 from ...util.misc import parse_count
 from ..base import BaseSearchProvider
-from ..models import Category, SearchResult, StandardCategories
-from ..util import (
-    build_magnet_link,
-    escape_markdown,
-    matches_query,
-    query_words,
-    read_response,
+from ..models import (
+    Category,
+    DetailsLink,
+    DetailsSection,
+    SearchResult,
+    StandardCategories,
 )
+from ..util import build_magnet_link, matches_query, query_words, read_response
 
 logger = get_logger()
 
@@ -185,26 +185,31 @@ class TheRarbgProvider(BaseSearchProvider):
                 results.append(result)
         return results
 
-    def details_extended(self, result: SearchResult) -> str:
+    def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         if not result.fields:
-            return ""
+            return []
 
-        md = "## Information\n"
+        info: list[tuple[str, str | DetailsLink]] = []
 
         if "r_category" in result.fields:
-            md += f"- **Category:** {result.fields['r_category']}\n"
+            info.append(("Category", result.fields["r_category"]))
 
         if "uploader" in result.fields:
-            md += f"- **Uploader:** {result.fields['uploader']}\n"
+            info.append(("Uploader", result.fields["uploader"]))
 
         if "tags" in result.fields:
-            md += f"- **Tags:** {result.fields['tags']}\n"
+            info.append(("Tags", result.fields["tags"]))
 
         details = self._fetch_details(result.fields.get("torrent_id"))
-        if details:
-            md += self._format_details(details)
+        if not details:
+            return [DetailsSection("Information", fields=info)]
 
-        return md
+        info.extend(self._format_details(details))
+        return [
+            DetailsSection("Information", fields=info),
+            *self._format_files(details.get("files")),
+            *self._format_trackers(details.get("trackers")),
+        ]
 
     @log_time
     def _fetch_details(self, torrent_id: str | None) -> dict[str, Any] | None:
@@ -232,68 +237,69 @@ class TheRarbgProvider(BaseSearchProvider):
 
         return data if isinstance(data, dict) else None
 
-    def _format_details(self, details: dict[str, Any]) -> str:
-        """Format torrent details as Markdown sections."""
-        md = ""
+    def _format_details(
+        self, details: dict[str, Any]
+    ) -> list[tuple[str, str | DetailsLink]]:
+        """Format information fields from torrent details."""
+        fields: list[tuple[str, str | DetailsLink]] = []
 
         downloads = details.get("downloads")
         if isinstance(downloads, int) and downloads > 0:
-            md += f"- **Downloads:** {downloads}\n"
+            fields.append(("Downloads", str(downloads)))
 
         language = details.get("language")
         if language and isinstance(language, str):
-            md += f"- **Language:** {escape_markdown(language)}\n"
+            fields.append(("Language", language))
 
         imdb = details.get("imdb")
         if isinstance(imdb, str) and self._IMDB_RE.fullmatch(imdb):
-            md += f"- **IMDB:** https://www.imdb.com/title/{imdb}/\n"
+            imdb_url = f"https://www.imdb.com/title/{imdb}/"
+            fields.append(("IMDB", DetailsLink(imdb_url)))
 
         last_checked = self._parse_iso_date(details.get("last_checked"))
         if last_checked:
             checked = last_checked.strftime("%Y-%m-%d %H:%M")
-            md += f"- **Last Checked:** {checked}\n"
+            fields.append(("Last Checked", checked))
 
-        md += self._format_files(details.get("files"))
-        md += self._format_trackers(details.get("trackers"))
-        return md
+        return fields
 
-    def _format_files(self, files: Any) -> str:
+    def _format_files(self, files: Any) -> list[DetailsSection]:
         """Format files section, limited to MAX_DETAILS_FILES entries."""
         if not files or not isinstance(files, list):
-            return ""
+            return []
 
-        md = f"\n## Files ({len(files)})\n"
+        items = []
         for f in files[: self.MAX_DETAILS_FILES]:
             if not isinstance(f, dict):
                 continue
             path = f.get("full_location") or f.get("name")
             if not path:
                 continue
-            md += f"- {escape_markdown(path)}"
+            item = str(path)
             if isinstance(f.get("size"), int):
-                md += f" ({print_size(f['size'])})"
-            md += "\n"
+                item += f" ({print_size(f['size'])})"
+            items.append(item)
 
         if len(files) > self.MAX_DETAILS_FILES:
             more = len(files) - self.MAX_DETAILS_FILES
-            md += f"- ...and {more} more\n"
-        return md
+            items.append(f"...and {more} more")
+        return [DetailsSection(f"Files ({len(files)})", items=items)]
 
-    def _format_trackers(self, trackers: Any) -> str:
+    def _format_trackers(self, trackers: Any) -> list[DetailsSection]:
         """Format trackers section with seeders/leechers reported by them."""
         if not trackers or not isinstance(trackers, list):
-            return ""
+            return []
 
-        md = ""
+        items = []
         for t in trackers:
             if not isinstance(t, dict) or not t.get("tracker"):
                 continue
-            md += f"- {escape_markdown(t['tracker'])}"
+            item = str(t["tracker"])
             seeders, leechers = t.get("seeders"), t.get("leechers")
             if isinstance(seeders, int) and isinstance(leechers, int):
-                md += f" ({seeders} seeders, {leechers} leechers)"
-            md += "\n"
-        return f"\n## Trackers\n{md}" if md else ""
+                item += f" ({seeders} seeders, {leechers} leechers)"
+            items.append(item)
+        return [DetailsSection("Trackers", items=items)] if items else []
 
     def _parse_torrent(self, torrent: Any) -> SearchResult | None:
         """Parse torrent from JSON search results."""
@@ -308,15 +314,15 @@ class TheRarbgProvider(BaseSearchProvider):
 
             category = torrent.get("c")
             if category:
-                fields["r_category"] = escape_markdown(category)
+                fields["r_category"] = category
 
             uploader = torrent.get("u")
             if uploader:
-                fields["uploader"] = escape_markdown(uploader)
+                fields["uploader"] = uploader
 
             tags = torrent.get("tg")
             if tags and isinstance(tags, list):
-                fields["tags"] = ", ".join(escape_markdown(t) for t in tags)
+                fields["tags"] = ", ".join(str(t) for t in tags)
 
             upload_date = None
             if isinstance(torrent.get("a"), int):
@@ -361,7 +367,7 @@ class TheRarbgProvider(BaseSearchProvider):
 
             category = item.findtext("category")
             if category:
-                fields["r_category"] = escape_markdown(category)
+                fields["r_category"] = category
 
             seeders = None
             seeders_match = self._SEEDERS_RE.search(
