@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any
 
 from ...util.log import log_time
-from ...util.misc import parse_count
+from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import (
     Category,
@@ -232,7 +232,7 @@ class TPBProvider(BaseSearchProvider):
             if not title:
                 return None
 
-            info_hash = torrent.get("info_hash")
+            info_hash = parse_info_hash(torrent.get("info_hash"))
             if not info_hash:
                 return None
 

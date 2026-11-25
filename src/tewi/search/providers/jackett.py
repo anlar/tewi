@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from ...util.log import get_logger, log_time
-from ...util.misc import parse_count
+from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import (
     Category,
@@ -469,7 +469,7 @@ class JackettProvider(BaseSearchProvider):
             if not title:
                 return None
 
-            info_hash = result.get("InfoHash")
+            info_hash = parse_info_hash(result.get("InfoHash"))
 
             # Extract both link types
             magnet_link = self._extract_magnet_link(title, info_hash, result)
@@ -510,8 +510,9 @@ class JackettProvider(BaseSearchProvider):
         Priority: MagnetUri field → Generated from InfoHash → None
 
         Args:
-            result: Result dict from Jackett API
+            title: Torrent title (to add to generated magnet link)
             info_hash: Torrent info hash (may be None)
+            result: Result dict from Jackett API
 
         Returns:
             Magnet URI string or None if unavailable

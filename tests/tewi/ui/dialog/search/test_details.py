@@ -67,7 +67,7 @@ def test_control_chars_are_removed():
     must not reach the terminal: DTOs remove them."""
     result = SearchResult(
         title=f"Title{CSI}",
-        info_hash=None,
+        info_hash="a" * 40,
         magnet_link=None,
         torrent_link=None,
         provider="Provider",

@@ -7,7 +7,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 from ...util.log import log_time
-from ...util.misc import parse_count
+from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import Category, DetailsSection, SearchResult, StandardCategories
 from ..util import build_magnet_link, read_response
@@ -201,10 +201,11 @@ class NyaaProvider(BaseSearchProvider):
             title = title_elem.text
 
             # Extract info hash
-            hash_elem = item.find("nyaa:infoHash", ns)
-            if hash_elem is None or not hash_elem.text:
+            info_hash = parse_info_hash(
+                item.findtext("nyaa:infoHash", None, ns)
+            )
+            if not info_hash:
                 return None
-            info_hash = hash_elem.text
 
             # Extract torrent link
             link_elem = item.find("link")

@@ -8,7 +8,7 @@ from typing import Any
 
 from ...ui.util import print_size
 from ...util.log import get_logger, log_time
-from ...util.misc import parse_count
+from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import (
     Category,
@@ -431,7 +431,7 @@ class BitsearchProvider(BaseSearchProvider):
             if not title:
                 return None
 
-            info_hash = torrent.get("infohash")
+            info_hash = parse_info_hash(torrent.get("infohash"))
             if not info_hash:
                 return None
 

@@ -233,7 +233,9 @@ class TestParse:
     def test_json_result(self, result):
         assert result.title == JSON_TORRENT["n"]
         assert result.info_hash == HASH_JSON.lower()
-        assert result.magnet_link.startswith(f"magnet:?xt=urn:btih:{HASH_JSON}")
+        assert result.magnet_link.startswith(
+            f"magnet:?xt=urn:btih:{HASH_JSON.lower()}"
+        )
         assert result.categories == [StandardCategories.TV]
         assert result.seeders == 278
         assert result.leechers == 87

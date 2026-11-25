@@ -9,6 +9,7 @@ from datetime import datetime
 from email.utils import parsedate_to_datetime
 
 from ...util.log import log_time
+from ...util.misc import parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import Category, DetailsSection, SearchResult, StandardCategories
 from ..util import build_magnet_link, matches_query, query_words, read_response
@@ -136,7 +137,7 @@ class LimeTorrentsProvider(BaseSearchProvider):
                 return None
             # Titles are escaped twice
             title = html.unescape(title)
-            info_hash = hash_match.group(1)
+            info_hash = parse_info_hash(hash_match.group(1))
 
             seeders, leechers = None, None
             peers_match = self._PEERS_RE.search(

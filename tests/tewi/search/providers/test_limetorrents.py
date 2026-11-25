@@ -68,7 +68,9 @@ class TestSearch:
 
         assert result.title == "Example Show S01 1080p"
         assert result.info_hash == HASH.lower()
-        assert result.magnet_link.startswith(f"magnet:?xt=urn:btih:{HASH}")
+        assert result.magnet_link.startswith(
+            f"magnet:?xt=urn:btih:{HASH.lower()}"
+        )
         assert result.torrent_link is None
         assert result.page_url == (
             "https://www.limetorrents.fun/Example-Show-torrent-1000001.html"

@@ -42,3 +42,34 @@ class TestApiKeyInHeader:
         assert API_KEY not in url
         assert "query=ubuntu" in url
         assert headers == {"X-Api-Key": API_KEY}
+
+
+class TestParseResultInfoHash:
+    HASH = "C12FE1C06BBA254A9DC9F519B335AA7C1367A88A"
+
+    @staticmethod
+    def parse(provider, **fields):
+        return provider._parse_result(
+            {
+                "title": "Title",
+                "downloadUrl": "http://prowlarr/dl",
+                "indexerFlags": [],
+                **fields,
+            }
+        )
+
+    def test_hash_is_normalized(self, provider):
+        result = self.parse(provider, infoHash=self.HASH)
+
+        assert result.info_hash == self.HASH.lower()
+
+    @pytest.mark.parametrize("info_hash", [None, "", "abc"])
+    def test_result_without_valid_hash_is_kept(self, provider, info_hash):
+        result = self.parse(provider, infoHash=info_hash)
+
+        assert result.info_hash is None
+        assert result.magnet_link is None
+        assert result.torrent_link == "http://prowlarr/dl"
+
+    def test_result_without_links_is_skipped(self, provider):
+        assert self.parse(provider, downloadUrl=None) is None

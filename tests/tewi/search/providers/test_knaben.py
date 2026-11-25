@@ -83,7 +83,7 @@ class TestParseTorrent:
         result = provider._parse_torrent({**HIT, "magnetUrl": None})
 
         assert result.magnet_link.startswith(
-            "magnet:?xt=urn:btih:0123456789ABCDEF0123456789ABCDEF01234567"
+            "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567"
         )
 
     def test_invalid_date_is_ignored(self, provider):

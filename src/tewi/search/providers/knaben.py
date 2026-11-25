@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Any
 
 from ...util.log import log_time
-from ...util.misc import parse_count
+from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import Category, DetailsSection, SearchResult, StandardCategories
 from ..util import build_magnet_link, read_response
@@ -201,7 +201,7 @@ class KnabenProvider(BaseSearchProvider):
             # Some trackers return titles with HTML entities
             title = html.unescape(title)
 
-            info_hash = torrent.get("hash")
+            info_hash = parse_info_hash(torrent.get("hash"))
             if not info_hash:
                 return None
 

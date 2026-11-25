@@ -11,7 +11,7 @@ from typing import Any
 
 from ...ui.util import print_size
 from ...util.log import get_logger, log_time
-from ...util.misc import parse_count
+from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import (
     Category,
@@ -305,7 +305,7 @@ class TheRarbgProvider(BaseSearchProvider):
         """Parse torrent from JSON search results."""
         try:
             title = torrent.get("n")
-            info_hash = torrent.get("h")
+            info_hash = parse_info_hash(torrent.get("h"))
             tid = torrent.get("pk")
             if not title or not info_hash or not tid:
                 return None
@@ -355,7 +355,7 @@ class TheRarbgProvider(BaseSearchProvider):
         """Parse torrent from RSS feed item."""
         try:
             title = item.findtext("title")
-            info_hash = item.findtext("guid")
+            info_hash = parse_info_hash(item.findtext("guid"))
             link = item.findtext("link") or ""
             # Link format: https://therarbg.com/post-detail/<id>/<slug>/
             match = re.search(r"/post-detail/([^/]+)/", link)

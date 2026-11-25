@@ -11,6 +11,7 @@ from src.tewi.util.misc import (
     is_torrent_link,
     normalize_torrent_hash,
     parse_count,
+    parse_info_hash,
 )
 
 # Names with shell syntax, which "compgen -W" in bash completion would
@@ -327,3 +328,25 @@ class TestRemoteData:
 
         assert obj.name == "ab"
         assert obj.upper == "AB"
+
+
+class TestParseInfoHash:
+    """Test cases for parse_info_hash function."""
+
+    HEX = "c12fe1c06bba254a9dc9f519b335aa7c1367a88a"
+
+    def test_hex_is_lowercased(self):
+        assert parse_info_hash(self.HEX.upper()) == self.HEX
+        assert parse_info_hash(f" {self.HEX} ") == self.HEX
+
+    def test_base32_is_converted_to_hex(self):
+        base32 = base64.b32encode(bytes.fromhex(self.HEX)).decode()
+
+        assert parse_info_hash(base32) == self.HEX
+
+    @pytest.mark.parametrize(
+        "value",
+        [None, "", "   ", "abc", HEX + "&tr=udp://attacker:1", 42, [HEX]],
+    )
+    def test_invalid_hash_is_none(self, value):
+        assert parse_info_hash(value) is None

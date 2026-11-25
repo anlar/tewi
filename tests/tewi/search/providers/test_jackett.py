@@ -107,3 +107,30 @@ def test_grouped_mode_does_not_request_metadata(monkeypatch):
 
     assert [indexer.id for indexer in provider.indexers()] == ["jackett:all"]
     urlopen.assert_not_called()
+
+
+class TestParseResultInfoHash:
+    HASH = "C12FE1C06BBA254A9DC9F519B335AA7C1367A88A"
+
+    @staticmethod
+    def parse(**fields):
+        provider = JackettProvider("http://jackett", "key")
+        return provider._parse_result(
+            {"Title": "Title", "Link": "http://jackett/dl/1", **fields}
+        )
+
+    def test_hash_is_normalized(self):
+        result = self.parse(InfoHash=self.HASH)
+
+        assert result.info_hash == self.HASH.lower()
+
+    @pytest.mark.parametrize("info_hash", [None, "", "abc"])
+    def test_result_without_valid_hash_is_kept(self, info_hash):
+        result = self.parse(InfoHash=info_hash)
+
+        assert result.info_hash is None
+        assert result.magnet_link is None
+        assert result.torrent_link == "http://jackett/dl/1"
+
+    def test_result_without_links_is_skipped(self):
+        assert self.parse(Link=None) is None

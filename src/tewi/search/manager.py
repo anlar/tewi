@@ -5,7 +5,6 @@ from concurrent.futures import ThreadPoolExecutor, wait
 from dataclasses import replace
 
 from ..util.log import get_logger
-from ..util.misc import is_torrent_hash
 from .base import BaseSearchProvider
 from .models import Category, Indexer, SearchResult
 from .providers import (
@@ -423,24 +422,12 @@ class SearchClient:
         for idx in sorted(results_by_provider.keys()):
             all_results.extend(results_by_provider[idx])
 
-        # Skip results with malformed info hash (it's used to build magnet
-        # links and as result key)
-        all_results = [
-            r
-            for r in all_results
-            if not r.info_hash or is_torrent_hash(r.info_hash)
-        ]
-
         # Group duplicates by info_hash (in provider order)
         groups: dict[str, list[SearchResult]] = {}
         for result in all_results:
-            # Use info_hash as key; fall back to title:size for results without
-            if result.info_hash:
-                hash_key = result.info_hash
-            else:
-                # Deduplicate by title + size when hash unavailable
-                hash_key = f"__no_hash__{result.title}:{result.size}"
-            groups.setdefault(hash_key, []).append(result)
+            # Results without hash are deduplicated by title and size
+            key = result.info_hash or f"__no_hash__{result.title}:{result.size}"
+            groups.setdefault(key, []).append(result)
 
         all_results = [merge_results(group) for group in groups.values()]
 

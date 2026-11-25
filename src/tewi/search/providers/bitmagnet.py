@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any
 
 from ...util.log import get_logger, log_time
-from ...util.misc import parse_count
+from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import (
     Category,
@@ -619,7 +619,7 @@ class BitmagnetProvider(BaseSearchProvider):
 
             # Extract required fields
             title = torrent.get("name")
-            info_hash = torrent.get("infoHash")
+            info_hash = parse_info_hash(torrent.get("infoHash"))
             magnet_link = torrent.get("magnetUri")
 
             if not title:

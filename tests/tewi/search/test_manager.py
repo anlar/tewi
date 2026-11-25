@@ -1,6 +1,5 @@
 """Tests for search manager."""
 
-import base64
 import threading
 import time
 from datetime import datetime, timezone
@@ -71,43 +70,6 @@ def search(results: list[SearchResult]) -> list[SearchResult]:
     found, errors = client.search("query", None, None)
     assert errors == []
     return found
-
-
-class TestSearchInfoHashValidation:
-    def test_results_with_valid_or_missing_hash_are_kept(self):
-        found = search(
-            [
-                result("hex", VALID_HASH),
-                result("base32", "A" * 32),
-                result("no hash", None),
-            ]
-        )
-
-        assert [r.title for r in found] == ["hex", "base32", "no hash"]
-
-    def test_results_with_malformed_hash_are_skipped(self):
-        found = search(
-            [
-                result("injected", VALID_HASH + "&tr=udp://attacker:1"),
-                result("short", "abc"),
-                result("valid", VALID_HASH),
-            ]
-        )
-
-        assert [r.title for r in found] == ["valid"]
-
-    def test_same_hash_in_different_forms_is_deduplicated(self):
-        hex_hash = "c12fe1c06bba254a9dc9f519b335aa7c1367a88a"
-        base32 = base64.b32encode(bytes.fromhex(hex_hash)).decode()
-        found = search(
-            [
-                result("upper", hex_hash.upper()),
-                result("lower", hex_hash),
-                result("base32", base32),
-            ]
-        )
-
-        assert [(r.title, r.info_hash) for r in found] == [("upper", hex_hash)]
 
 
 class TestMergeResults:
@@ -192,13 +154,34 @@ class TestMergeResults:
             [
                 result("first", VALID_HASH, seeders=1, downloads=None),
                 result("other", "b" * 40, seeders=2),
-                result("second", VALID_HASH.upper(), seeders=9, downloads=4),
+                result("second", VALID_HASH, seeders=9, downloads=4),
             ]
         )
 
         assert [(r.title, r.seeders, r.downloads) for r in found] == [
             ("first", 9, 4),
             ("other", 2, None),
+        ]
+
+
+class TestSearchWithoutHash:
+    def test_results_without_hash_are_kept(self):
+        found = search([result("a", None, size=1), result("b", VALID_HASH)])
+
+        assert [r.title for r in found] == ["a", "b"]
+
+    def test_results_without_hash_are_deduplicated_by_title_and_size(self):
+        found = search(
+            [
+                result("a", None, size=1, seeders=1),
+                result("a", None, size=1, seeders=5),
+                result("a", None, size=2),
+            ]
+        )
+
+        assert [(r.title, r.size, r.seeders) for r in found] == [
+            ("a", 1, 5),
+            ("a", 2, None),
         ]
 
 

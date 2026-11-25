@@ -127,6 +127,23 @@ def normalize_torrent_hash(text: str) -> str:
     return value.lower()
 
 
+def parse_info_hash(value: object) -> str | None:
+    """Parse BitTorrent v1 info hash from remote source.
+
+    Sources write the same hash in different forms (hex in any case or
+    Base32), so it's normalized: the same torrent gets the same hash.
+
+    Args:
+        value: Info hash as received (40-char hex or 32-char Base32)
+
+    Returns:
+        Lowercase 40-char hex hash, or None if value isn't a valid hash
+    """
+    if not isinstance(value, str) or not is_torrent_hash(value):
+        return None
+    return normalize_torrent_hash(value)
+
+
 def parse_count(value: object) -> int | None:
     """Convert count from remote source to int.
 

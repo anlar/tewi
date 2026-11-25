@@ -5,7 +5,6 @@ from datetime import datetime
 
 from ..util.misc import (
     RemoteData,
-    normalize_torrent_hash,
 )
 
 
@@ -216,7 +215,8 @@ class SearchPreset:
 class SearchResult(RemoteData):
     """Data Transfer Object for web search results.
 
-    Title is required.
+    Title is required. Info hash is lowercase 40-char hex (see
+    `parse_info_hash`), or None if provider doesn't report it.
 
     At least magnet_link or torrent_link required.
 
@@ -248,15 +248,3 @@ class SearchResult(RemoteData):
     page_url: str | None = None  # Link to torrent page on provider site
     freeleech: bool = False
     fields: dict[str, str] | None = None  # Provider-specific metadata
-
-    def __post_init__(self) -> None:
-        super().__post_init__()
-        # Blank hash means no hash, as hash is used as unique key of result
-        if self.info_hash is not None and not self.info_hash.strip():
-            object.__setattr__(self, "info_hash", None)
-        # Providers return hash in different forms (hex in upper or lower
-        # case, Base32), while the same hash must give the same key
-        elif self.info_hash is not None:
-            object.__setattr__(
-                self, "info_hash", normalize_torrent_hash(self.info_hash)
-            )
