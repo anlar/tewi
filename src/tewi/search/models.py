@@ -9,13 +9,13 @@ from ..util.misc import (
 )
 
 
+@dataclass(frozen=True)
 class Category:
     """Represents a Jackett category with ID, name, and hierarchy support."""
 
-    def __init__(self, id: int, name: str, parent: Category | None = None):
-        self.id = id
-        self.name = name
-        self.parent = parent
+    id: int
+    name: str
+    parent: Category | None = None
 
     @property
     def full_path(self) -> str:
@@ -33,9 +33,6 @@ class Category:
     def is_parent(self) -> bool:
         """Returns True if this is a parent category (ID ends in 000)."""
         return self.id % 1000 == 0
-
-    def __repr__(self) -> str:
-        return f"Category(id={self.id}, name='{self.name}')"
 
 
 class StandardCategories:

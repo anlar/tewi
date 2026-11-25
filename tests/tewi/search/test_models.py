@@ -1,3 +1,5 @@
+import dataclasses
+
 import pytest
 
 from src.tewi.search.models import (
@@ -5,6 +7,7 @@ from src.tewi.search.models import (
     DetailsSection,
     Indexer,
     SearchResult,
+    StandardCategories,
 )
 
 
@@ -77,3 +80,13 @@ class TestControlCharsAreRemoved:
         section = DetailsSection("Links", fields=[("IMDB", link)])
 
         assert section.fields == [("IMDB", link)]
+
+
+class TestCategory:
+    def test_is_immutable(self):
+        with pytest.raises(dataclasses.FrozenInstanceError):
+            StandardCategories.TV.name = "Other"
+
+    def test_full_path(self):
+        assert StandardCategories.TV_ANIME.full_path == "TV/Anime"
+        assert StandardCategories.TV.full_path == "TV"
