@@ -738,8 +738,10 @@ TorrentDetailsWidget .details-section {
     margin: 1 0;
 }
 
-/* Full margin is set, as margin-top would reset bottom margin too */
-TorrentDetailsWidget .details-section:first-child {
+/* Section titles are the only Labels in column (first-of-type, as
+   first-child isn't supported by older Textual). Full margin is set, as
+   margin-top would reset bottom margin too */
+TorrentDetailsWidget .details-section:first-of-type {
     margin: 0 0 1 0;
 }
 
