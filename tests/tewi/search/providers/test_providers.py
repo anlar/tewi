@@ -338,7 +338,7 @@ class TestKnabenProviderIntegration(BaseProviderIntegrationTest):
         return "debian"
 
     def get_valid_categories(self) -> set:
-        # All categories that KnabenProvider.get_categories() can return
+        # All categories that KnabenProvider._get_categories() can return
         provider = self.get_provider()
         return set(provider.CATEGORY_MAP.values()) | set(
             provider.SUBCATEGORY_MAP.values()

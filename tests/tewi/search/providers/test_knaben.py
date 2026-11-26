@@ -4,6 +4,7 @@
 """Unit tests for Knaben provider (without Knaben)."""
 
 import json
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -89,6 +90,21 @@ class TestParseTorrent:
             "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567"
         )
 
+    @pytest.mark.parametrize(
+        "magnet",
+        [
+            "magnet:?xt=urn:btih:" + "f" * 40,
+            # Hash with extra characters
+            "magnet:?xt=urn:btih:0123456789ABCDEF0123456789ABCDEF01234567ff",
+        ],
+    )
+    def test_magnet_for_other_torrent_is_rebuilt(self, provider, magnet):
+        result = provider._parse_torrent({**HIT, "magnetUrl": magnet})
+
+        assert result.magnet_link.startswith(
+            "magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567&"
+        )
+
     def test_invalid_date_is_ignored(self, provider):
         result = provider._parse_torrent({**HIT, "date": 123})
 
@@ -98,7 +114,14 @@ class TestParseTorrent:
         "category_ids, expected",
         [
             ([9001000, 9000000], [StandardCategories.BOOKS_EBOOK]),
-            ([4004000], [StandardCategories.PC]),  # PC/Unix
+            ([4004000, 4000000], [StandardCategories.PC_ISO]),  # PC/Unix
+            # Anime/Music is in Audio too
+            (
+                [6007000, 6000000, 1000000],
+                [StandardCategories.AUDIO_OTHER, StandardCategories.TV_ANIME],
+            ),
+            # Deeper ID is mapped by subcategory (XXX/Hentai/Games)
+            ([5004003, 5004000], [StandardCategories.XXX_OTHER]),
             ([1000000, 1001045], [StandardCategories.AUDIO_MP3]),  # genre
             # Anime results are often in Movies/Other too
             (
@@ -116,7 +139,7 @@ class TestParseTorrent:
         ],
     )
     def test_categories(self, provider, category_ids, expected):
-        assert provider.get_categories(category_ids) == expected
+        assert provider._get_categories(category_ids) == expected
 
 
 class TestDetails:
@@ -126,7 +149,9 @@ class TestDetails:
         assert fields["Tracker"] == "The Pirate Bay"
         assert fields["Category"] == "Books / EBooks"
         assert fields["Live Seeders"] == "6"
-        assert fields["Last Seen"] == "2026-11-19 23:16"
+        # UTC date is shown in local time
+        last_seen = datetime.fromisoformat(HIT["lastSeen"]).astimezone()
+        assert fields["Last Seen"] == last_seen.strftime("%Y-%m-%d %H:%M")
 
     def test_description_is_text(self, provider, result):
         sections = provider.details_extended(result)
@@ -234,6 +259,24 @@ class TestSearch:
 
         with pytest.raises(Exception, match="Failed to parse API response"):
             provider.search("example")
+
+    @pytest.mark.parametrize("data", [[], {}, {"hits": "x"}])
+    def test_invalid_hits(self, provider, mock_urlopen, data):
+        response = mock_urlopen.return_value.__enter__.return_value
+        response.read.return_value = json.dumps(data).encode()
+
+        with pytest.raises(Exception, match="invalid hits"):
+            provider.search("example")
+
+    def test_invalid_hit_does_not_fail_search(self, provider, mock_urlopen):
+        response = mock_urlopen.return_value.__enter__.return_value
+        response.read.return_value = json.dumps(
+            {"hits": ["x", {**HIT, "hash": "B" * 40, "title": ["x"]}, HIT]}
+        ).encode()
+
+        results = provider.search("example")
+
+        assert [r.info_hash for r in results] == [HIT["hash"].lower()]
 
 
 class TestCounts:

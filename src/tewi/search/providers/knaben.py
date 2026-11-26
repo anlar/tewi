@@ -11,11 +11,13 @@ import urllib.parse
 from datetime import datetime
 from typing import Any
 
-from ...util.log import log_time
+from ...util.log import get_logger, log_time
 from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import Category, DetailsSection, SearchResult, StandardCategories
 from ..util import build_magnet_link, local_time, read_response
+
+logger = get_logger()
 
 
 class KnabenProvider(BaseSearchProvider):
@@ -51,12 +53,15 @@ class KnabenProvider(BaseSearchProvider):
         10000000: StandardCategories.OTHER,  # Other
     }
 
-    # Subcategory mapping, for subcategories more specific than category
+    # Subcategory mapping, for subcategories more specific than category,
+    # based on Jackett's Knaben.cs. Results of cross-category subcategories
+    # (e.g. Anime/Music) also have IDs of other category (e.g. Audio).
     SUBCATEGORY_MAP = {
         1001000: StandardCategories.AUDIO_MP3,  # Audio/MP3
         1002000: StandardCategories.AUDIO_LOSSLESS,  # Audio/Lossless
         1003000: StandardCategories.AUDIO_AUDIOBOOK,  # Audio/Audiobook
         1004000: StandardCategories.AUDIO_VIDEO,  # Audio/Video
+        1005000: StandardCategories.AUDIO_OTHER,  # Audio/Radio
         1006000: StandardCategories.AUDIO_OTHER,  # Audio/Other
         2001000: StandardCategories.TV_HD,  # TV/HD
         2002000: StandardCategories.TV_SD,  # TV/SD
@@ -64,6 +69,7 @@ class KnabenProvider(BaseSearchProvider):
         2004000: StandardCategories.TV_DOCUMENTARY,  # TV/Documentary
         2005000: StandardCategories.TV_FOREIGN,  # TV/Foreign
         2006000: StandardCategories.TV_SPORT,  # TV/Sport
+        2007000: StandardCategories.TV_OTHER,  # TV/Cartoon
         2008000: StandardCategories.TV_OTHER,  # TV/Other
         3001000: StandardCategories.MOVIES_HD,  # Movies/HD
         3002000: StandardCategories.MOVIES_SD,  # Movies/SD
@@ -76,9 +82,15 @@ class KnabenProvider(BaseSearchProvider):
         4001000: StandardCategories.PC_GAMES,  # PC/Games
         4002000: StandardCategories.PC_0DAY,  # PC/Software
         4003000: StandardCategories.PC_MAC,  # PC/Mac
+        4004000: StandardCategories.PC_ISO,  # PC/Unix
         5001000: StandardCategories.XXX,  # XXX/Video
         5002000: StandardCategories.XXX_IMAGESET,  # XXX/ImageSet
+        5003000: StandardCategories.XXX_OTHER,  # XXX/Games
+        5004000: StandardCategories.XXX_OTHER,  # XXX/Hentai
         5005000: StandardCategories.XXX_OTHER,  # XXX/Other
+        6005000: StandardCategories.AUDIO_VIDEO,  # Anime/Music Video
+        6006000: StandardCategories.BOOKS_OTHER,  # Anime/Literature
+        6007000: StandardCategories.AUDIO_OTHER,  # Anime/Music
         7001000: StandardCategories.CONSOLE_PS4,  # Console/PS4
         7002000: StandardCategories.CONSOLE_PS3,  # Console/PS3
         7005000: StandardCategories.CONSOLE_PSVITA,  # Console/PS Vita
@@ -92,6 +104,7 @@ class KnabenProvider(BaseSearchProvider):
         7015000: StandardCategories.CONSOLE_OTHER,  # Console/Other
         8001000: StandardCategories.PC_MOBILE_ANDROID,  # Mobile/Android
         8002000: StandardCategories.PC_MOBILE_IOS,  # Mobile/IOS
+        8003000: StandardCategories.PC_MOBILE_OTHER,  # Mobile/PC Other
         9001000: StandardCategories.BOOKS_EBOOK,  # Books/EBooks
         9002000: StandardCategories.BOOKS_COMICS,  # Books/Comics
         9003000: StandardCategories.BOOKS_MAGS,  # Books/Magazines
@@ -162,15 +175,11 @@ class KnabenProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
 
-        if not isinstance(data, dict):
-            return []
+        hits = data.get("hits") if isinstance(data, dict) else None
+        if not isinstance(hits, list):
+            raise Exception("Failed to parse API response: invalid hits")
 
-        results = []
-        for torrent in data.get("hits") or []:
-            result = self._parse_torrent(torrent)
-            if result:
-                results.append(result)
-        return results
+        return [r for t in hits if (r := self._parse_torrent(t))]
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         if not result.extra:
@@ -197,6 +206,9 @@ class KnabenProvider(BaseSearchProvider):
         return sections
 
     def _parse_torrent(self, torrent: Any) -> SearchResult | None:
+        if not isinstance(torrent, dict):
+            return None
+
         try:
             title = torrent.get("title")
             if not title or not isinstance(title, str):
@@ -208,18 +220,12 @@ class KnabenProvider(BaseSearchProvider):
             if not info_hash:
                 return None
 
-            magnet_link = torrent.get("magnetUrl")
-            if not isinstance(magnet_link, str) or not magnet_link.startswith(
-                "magnet:"
-            ):
-                magnet_link = build_magnet_link(info_hash=info_hash, name=title)
-
-            categories = self.get_categories(torrent.get("categoryId"))
+            categories = self._get_categories(torrent.get("categoryId"))
 
             return SearchResult(
                 title=title,
                 info_hash=info_hash,
-                magnet_link=magnet_link,
+                magnet_link=self._magnet_link(torrent, info_hash, title),
                 torrent_link=torrent.get("link") or None,
                 provider=self.name,
                 provider_id=self.id,
@@ -236,8 +242,24 @@ class KnabenProvider(BaseSearchProvider):
                 extra=self._build_fields(torrent),
             )
 
-        except (AttributeError, KeyError, ValueError, TypeError):
+        except Exception:
+            logger.exception(
+                "Knaben: skipping invalid search result "
+                f"{torrent.get('hash')!r}"
+            )
             return None
+
+    def _magnet_link(
+        self, torrent: dict[str, Any], info_hash: str, title: str
+    ) -> str:
+        """Use magnet link from API (it has trackers) if it's for torrent."""
+        magnet = torrent.get("magnetUrl")
+        prefix = f"magnet:?xt=urn:btih:{info_hash}".lower()
+        if isinstance(magnet, str) and (
+            magnet.lower() == prefix or magnet.lower().startswith(prefix + "&")
+        ):
+            return magnet
+        return build_magnet_link(info_hash=info_hash, name=title)
 
     def _build_fields(self, torrent: dict[str, Any]) -> dict[str, Any]:
         """Build provider-specific fields shown in details."""
@@ -259,7 +281,9 @@ class KnabenProvider(BaseSearchProvider):
 
         last_seen = self._parse_date(torrent.get("lastSeen"))
         if last_seen:
-            fields["last_seen"] = last_seen.strftime("%Y-%m-%d %H:%M")
+            fields["last_seen"] = local_time(last_seen).strftime(
+                "%Y-%m-%d %H:%M"
+            )
 
         description = self._format_description(
             torrent.get("description"), torrent.get("title")
@@ -335,7 +359,7 @@ class KnabenProvider(BaseSearchProvider):
         result[-1] = result[-1].rstrip() + "…"
         return result
 
-    def get_categories(self, category_ids: Any) -> list[Category]:
+    def _get_categories(self, category_ids: Any) -> list[Category]:
         """Map Knaben category IDs to StandardCategories.
 
         Results could have several categories (e.g. from different
