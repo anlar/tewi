@@ -5,7 +5,6 @@
 
 import html
 import json
-import re
 import urllib.error
 import urllib.parse
 from datetime import datetime
@@ -15,7 +14,12 @@ from ...util.log import get_logger, log_time
 from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import Category, DetailsSection, SearchResult, StandardCategories
-from ..util import build_magnet_link, local_time, read_response
+from ..util import (
+    build_magnet_link,
+    format_description,
+    local_time,
+    read_response,
+)
 
 logger = get_logger()
 
@@ -30,10 +34,6 @@ class KnabenProvider(BaseSearchProvider):
 
     # Max number of results requested (API allows up to 300)
     RESULTS_LIMIT = 100
-
-    # Max size of description shown in details
-    MAX_DESCRIPTION_LINES = 30
-    MAX_DESCRIPTION_CHARS = 2000
 
     # Knaben category IDs are hierarchical: top-level categories are
     # multiples of 1000000, subcategories of 1000 (deeper IDs, like music
@@ -125,9 +125,6 @@ class KnabenProvider(BaseSearchProvider):
         StandardCategories.BOOKS: {9000000},
         StandardCategories.OTHER: {10000000},
     }
-
-    _HTML_BR_RE = re.compile(r"<br\s*/?>", re.IGNORECASE)
-    _HTML_TAG_RE = re.compile(r"<[^>]+>")
 
     @property
     def id(self) -> str:
@@ -285,7 +282,7 @@ class KnabenProvider(BaseSearchProvider):
                 "%Y-%m-%d %H:%M"
             )
 
-        description = self._format_description(
+        description = format_description(
             torrent.get("description"), torrent.get("title")
         )
         if description:
@@ -301,63 +298,6 @@ class KnabenProvider(BaseSearchProvider):
             return datetime.fromisoformat(value.replace("Z", "+00:00"))
         except ValueError:
             return None
-
-    def _format_description(self, value: Any, title: Any) -> str | None:
-        """Convert HTML description to plain text.
-
-        Line breaks are kept, consecutive empty lines are merged and long
-        descriptions are truncated.
-
-        Args:
-            value: HTML description
-            title: Torrent title
-
-        Returns:
-            Description, or None if it is empty or repeats the title
-        """
-        if not value or not isinstance(value, str):
-            return None
-
-        text = self._HTML_BR_RE.sub("\n", value)
-        text = html.unescape(self._HTML_TAG_RE.sub(" ", text))
-
-        lines: list[str] = []
-        for line in text.splitlines():
-            line = " ".join(line.split())
-            if line or (lines and lines[-1]):
-                lines.append(line)
-        while lines and not lines[-1]:
-            lines.pop()
-
-        if not lines or " ".join(lines).strip() == html.unescape(str(title)):
-            return None
-
-        return "\n".join(self._truncate_description(lines))
-
-    def _truncate_description(self, lines: list[str]) -> list[str]:
-        """Limit description to MAX_DESCRIPTION_LINES/CHARS.
-
-        Args:
-            lines: Description lines
-
-        Returns:
-            Lines, ending with ellipsis if description was truncated
-        """
-        result: list[str] = []
-        chars = 0
-        for line in lines:
-            if len(result) == self.MAX_DESCRIPTION_LINES:
-                break
-            if chars + len(line) > self.MAX_DESCRIPTION_CHARS:
-                result.append(line[: self.MAX_DESCRIPTION_CHARS - chars])
-                break
-            result.append(line)
-            chars += len(line)
-        else:
-            return result
-
-        result[-1] = result[-1].rstrip() + "…"
-        return result
 
     def _get_categories(self, category_ids: Any) -> list[Category]:
         """Map Knaben category IDs to StandardCategories.

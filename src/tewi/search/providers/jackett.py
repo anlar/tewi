@@ -4,10 +4,10 @@
 """Jackett torrent search provider implementation."""
 
 import json
+import re
 import urllib.error
 import urllib.parse
 import xml.etree.ElementTree as ET
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
 from typing import Any
 
@@ -26,6 +26,7 @@ from ..util import (
     MAX_ERROR_BODY_SIZE,
     build_magnet_link,
     details_value,
+    format_description,
     local_time,
     read_response,
 )
@@ -40,6 +41,11 @@ class JackettProvider(BaseSearchProvider):
     through a single API. Requires local Jackett instance.
     Documentation: https://github.com/Jackett/Jackett
     """
+
+    # Indexer search status in results (ManualSearchResultIndexerStatus)
+    INDEXER_OK = 2
+
+    _API_KEY_RE = re.compile(r"([?&]apikey=)[^&]*")
 
     def __init__(
         self,
@@ -137,7 +143,8 @@ class JackettProvider(BaseSearchProvider):
             List of SearchResult objects
 
         Raises:
-            Exception: If API request fails or not configured
+            Exception: If API request fails, all indexers failed or not
+                configured
         """
         if self._config_error:
             raise Exception(self._config_error)
@@ -145,22 +152,13 @@ class JackettProvider(BaseSearchProvider):
         if not query or not query.strip():
             return []
 
-        # If multi_indexer is disabled, always use "all" endpoint
-        if not self.multi_indexer:
-            url = self._build_search_url(query, "all", categories)
-            data = self._fetch_results(url)
-            return self._process_results(data)
+        # Without multi_indexer, single "all" indexer is selected
+        if not self.multi_indexer or (indexers and "all" in indexers):
+            indexers = None
 
-        # If specific indexers selected that differ from all indexers,
-        # search each individually
-        # (Jackett can search only on 1 or all indexers)
-        if self._should_search_multiple_indexers(indexers):
-            return self._search_multiple_indexers(query, categories, indexers)
-        else:
-            # Search all indexers
-            url = self._build_search_url(query, "all", categories)
-            data = self._fetch_results(url)
-            return self._process_results(data)
+        url = self._build_search_url(query, categories, indexers)
+        data = self._fetch_results(url)
+        return self._process_results(data)
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         """Generate Jackett-specific details for right column.
@@ -181,17 +179,16 @@ class JackettProvider(BaseSearchProvider):
         fields = [
             self._transform_field(key, result.extra[key])
             for key in sorted(result.extra.keys())
+            if key != "Description"
         ]
+        sections = [DetailsSection("Indexer Info", fields=tuple(fields))]
 
-        return [DetailsSection("Indexer Info", fields=tuple(fields))]
-
-    def fetch_from_indexer(
-        self, query: str, indexer_id: str, categories: list[Category] | None
-    ) -> list[SearchResult]:
-        """Helper for parallel execution."""
-        url = self._build_search_url(query, indexer_id, categories)
-        data = self._fetch_results(url)
-        return self._process_results(data)
+        # Long text is shown as paragraph, not squeezed into field value
+        if "Description" in result.extra:
+            sections.append(
+                DetailsSection("Description", text=result.extra["Description"])
+            )
+        return sections
 
     def _validate_config(
         self, jackett_url: str | None, api_key: str | None
@@ -304,99 +301,33 @@ class JackettProvider(BaseSearchProvider):
                 )
         return sorted(indexers, key=lambda indexer: indexer.name.lower())
 
-    def _should_search_multiple_indexers(
-        self, indexers: list[str] | None
-    ) -> bool:
-        """Check if selected indexers differ from all available indexers.
-
-        Args:
-            indexers: List of indexer IDs (without 'jackett:' prefix),
-                     or None to search all indexers
-
-        Returns:
-            True if specific indexers are selected and they differ from all
-            available indexers, False otherwise
-        """
-        # No indexers selected means search all
-        if not indexers or len(indexers) == 0:
-            return False
-
-        # Get all available indexers
-        all_indexers = self.indexers()
-        if not all_indexers:
-            return False
-
-        # Extract indexer IDs without 'jackett:' prefix
-        all_indexer_ids = set()
-        for indexer in all_indexers:
-            # Remove 'jackett:' prefix from ID
-            indexer_id = indexer.id.replace("jackett:", "", 1)
-            all_indexer_ids.add(indexer_id)
-
-        # Compare selected indexers with all indexers
-        selected_set = set(indexers)
-        return selected_set != all_indexer_ids
-
-    def _search_multiple_indexers(
+    def _build_search_url(
         self,
         query: str,
         categories: list[Category] | None,
-        indexers: list[str],
-    ) -> list[SearchResult]:
-        """Search multiple indexers individually and combine results.
-
-        Args:
-            query: Search term
-            categories: Category IDs to filter by (optional)
-            indexers: List of indexer IDs to search
-
-        Returns:
-            Combined list of SearchResult objects from all indexers
-        """
-        all_results = []
-
-        with ThreadPoolExecutor(max_workers=len(indexers)) as executor:
-            futures = {
-                executor.submit(
-                    self.fetch_from_indexer, query, indexer_id, categories
-                ): indexer_id
-                for indexer_id in indexers
-            }
-
-            for future in as_completed(futures):
-                indexer_id = futures[future]
-                try:
-                    all_results.extend(future.result())
-                except Exception as e:
-                    logger.warning(
-                        f"Jackett indexer '{indexer_id}' failed: {e}"
-                    )
-
-        return all_results
-
-    def _build_search_url(
-        self, query: str, indexers: str, categories: list[Category] | None
+        indexers: list[str] | None,
     ) -> str:
         """Build Jackett API search URL.
 
         Args:
             query: Search term
-            indexers: Indexer ID or 'all'
+            categories: Categories to filter by (optional)
+            indexers: Indexer IDs to search, or None for all
 
         Returns:
             Complete URL with parameters
         """
         base_url = self.jackett_url.rstrip("/")
-        endpoint = f"{base_url}/api/v2.0/indexers/{indexers}/results"
-        params = {
-            "apikey": self.api_key,
-            "Query": query.strip(),
-        }
+        endpoint = f"{base_url}/api/v2.0/indexers/all/results"
+        params = [("apikey", self.api_key), ("Query", query.strip())]
 
-        # Add category filter if specified
-        if categories:
-            # Jackett accepts comma-separated category IDs (as strings)
-            params["Category"] = ",".join(str(cat.id) for cat in categories)
+        # Jackett binds repeated parameter to category list, while single
+        # comma-separated value is ignored
+        params += [("Category", str(c.id)) for c in categories or []]
+
+        # Jackett splits comma-separated indexer IDs
+        if indexers:
+            params.append(("Tracker[]", ",".join(indexers)))
 
         return f"{endpoint}?{urllib.parse.urlencode(params)}"
 
@@ -413,7 +344,9 @@ class JackettProvider(BaseSearchProvider):
             Exception: If request fails or response invalid
         """
         try:
-            logger.debug(f"Jackett: requesting URL: {url}")
+            # API key is accepted only in URL query, so it's not logged
+            masked_url = self._API_KEY_RE.sub(r"\1***", url)
+            logger.debug(f"Jackett: requesting URL: {masked_url}")
             with self.urlopen(url) as response:
                 return json.loads(read_response(response).decode("utf-8"))
         except urllib.error.HTTPError as e:
@@ -439,7 +372,7 @@ class JackettProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse Jackett response: {e}")
 
-    def _process_results(self, data: dict) -> list[SearchResult]:
+    def _process_results(self, data: Any) -> list[SearchResult]:
         """Process API response and convert to SearchResult list.
 
         Args:
@@ -447,19 +380,50 @@ class JackettProvider(BaseSearchProvider):
 
         Returns:
             List of SearchResult objects
+
+        Raises:
+            Exception: If response is invalid or all indexers failed
         """
-        results_data = data.get("Results", [])
-        if not results_data:
-            return []
+        results = data.get("Results") if isinstance(data, dict) else None
+        if not isinstance(results, list):
+            raise Exception("Failed to parse Jackett response: no results")
 
-        results = []
-        for result_dict in results_data:
-            result = self._parse_result(result_dict)
-            if result:
-                results.append(result)
-        return results
+        self._check_indexers(data.get("Indexers"), has_results=bool(results))
+        return [r for d in results if (r := self._parse_result(d))]
 
-    def _parse_result(self, result: dict[str, Any]) -> SearchResult | None:
+    def _check_indexers(self, indexers: Any, has_results: bool) -> None:
+        """Log indexers that failed to search.
+
+        Args:
+            indexers: Indexers search status from Jackett response
+            has_results: Whether any indexer returned results
+
+        Raises:
+            Exception: If all indexers failed
+        """
+        if not isinstance(indexers, list):
+            return
+
+        failed = []
+        for indexer in indexers:
+            if not isinstance(indexer, dict):
+                continue
+            if indexer.get("Status") in (self.INDEXER_OK, "OK"):
+                continue
+            # Error is exception text with stack trace
+            lines = str(indexer.get("Error") or "").strip().splitlines()
+            error = lines[0] if lines else "unknown error"
+            failed.append(
+                f"{indexer.get('Name') or indexer.get('ID')}: {error}"
+            )
+
+        for error in failed:
+            logger.warning(f"Jackett indexer failed: {error}")
+
+        if failed and len(failed) == len(indexers) and not has_results:
+            raise Exception(f"All indexers failed ({'; '.join(failed)})")
+
+    def _parse_result(self, result: Any) -> SearchResult | None:
         """Parse a single result from Jackett API response.
 
         Args:
@@ -468,6 +432,9 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             SearchResult or None if parsing fails
         """
+        if not isinstance(result, dict):
+            return None
+
         try:
             title = result.get("Title")
             if not title:
@@ -494,6 +461,7 @@ class JackettProvider(BaseSearchProvider):
                 provider_id=self.id,
                 categories=tuple(self._map_jackett_category(result) or ()),
                 seeders=parse_count(result.get("Seeders")),
+                # Search results API reports leechers as peers
                 leechers=parse_count(result.get("Peers")),
                 downloads=parse_count(result.get("Grabs")),
                 size=parse_count(result.get("Size")),
@@ -503,7 +471,11 @@ class JackettProvider(BaseSearchProvider):
                 freeleech=result.get("DownloadVolumeFactor") == 0,
                 extra=self._build_fields(result),
             )
-        except (KeyError, ValueError, TypeError):
+        except Exception:
+            logger.exception(
+                "Jackett: skipping invalid search result "
+                f"{result.get('Title')!r}"
+            )
             return None
 
     def _extract_magnet_link(
@@ -561,8 +533,9 @@ class JackettProvider(BaseSearchProvider):
         Returns:
             Provider name string (plain text)
         """
-        tracker_id = result.get("TrackerId", "Unknown")
-        tracker = result.get("Tracker", tracker_id)
+        tracker = str(
+            result.get("Tracker") or result.get("TrackerId") or "Unknown"
+        )
         return tracker[:5] if short else tracker
 
     def _build_fields(self, result: dict[str, Any]) -> dict[str, object]:
@@ -582,6 +555,7 @@ class JackettProvider(BaseSearchProvider):
         excluded_fields = {
             "Title",  # -> title
             "Category",  # -> category (via _map_jackett_category)
+            "CategoryDesc",  # -> category
             "Seeders",  # -> seeders
             "Peers",  # -> leechers
             "Grabs",  # -> downloads
@@ -593,10 +567,17 @@ class JackettProvider(BaseSearchProvider):
             "Tracker",  # -> provider (via _build_provider_name)
             "TrackerId",  # -> provider (via _build_provider_name)
             "Details",  # -> page_url
-            "Comments",  # -> page_url (fallback)
+            "Comments",  # old Jackett name of Details
             "Link",  # -> torrent_link
             "Guid",  # ignore
             "FirstSeen",  # ignore
+            "DownloadVolumeFactor",  # -> freeleech
+            "UploadVolumeFactor",  # always 1 for public trackers
+            "Gain",  # Jackett UI sorting value
+            "Description",  # added as text below
+            # Jackett proxy links contain API key
+            "Poster",
+            "BlackholeLink",
         }
 
         fields = {}
@@ -609,12 +590,17 @@ class JackettProvider(BaseSearchProvider):
             if value is None or value == "" or value == []:
                 continue
 
-            # Convert to string representation
-            if isinstance(value, (list, dict)):
-                # For complex types, convert to string
-                fields[key] = str(value)
+            if isinstance(value, list):
+                fields[key] = ", ".join(str(v) for v in value)
             else:
                 fields[key] = str(value)
+
+        # Some indexers return HTML description
+        description = format_description(
+            result.get("Description"), result.get("Title")
+        )
+        if description:
+            fields["Description"] = description
 
         return fields
 
@@ -687,9 +673,7 @@ class JackettProvider(BaseSearchProvider):
             Tuple of (display_name, display_value), where value is link
             for HTTP(S) URL
         """
-        if key == "CategoryDesc":
-            return "Category", details_value(value)
-        elif key == "Imdb" and value.isdigit():
+        if key == "Imdb" and value.isdigit():
             return "IMDB", DetailsLink(f"https://www.imdb.com/title/tt{value}/")
 
         return key, details_value(value)

@@ -65,6 +65,12 @@ handle multi-line list body as single line.
 - Fix YTS search failing completely on single invalid result, and link to movie page built from movie ID not opening
 - Add source type (BluRay, WEB) to YTS result titles, to distinguish torrents of the same quality, and map 480p ones to Movies/SD category
 - Update YTS domain to yts.pw and magnet link trackers to ones recommended by YTS
+- Fix Jackett search with several categories selected not filtering by category
+- Search selected Jackett indexers with single request instead of one request per indexer
+- Show error when all Jackett indexers failed to search instead of no results, and log failed indexers
+- Fix Jackett search failing completely on single invalid result
+- Don't log Jackett API key and don't show Jackett links containing it (poster, blackhole) in search result details
+- Hide Jackett internal fields (category duplicate, volume factors, gain) in search result details and show HTML description as text
 
 ### Removed
 

@@ -11,9 +11,12 @@ import pytest
 
 from src.tewi.search.models import DetailsLink, StandardCategories
 from src.tewi.search.util import (
+    MAX_DESCRIPTION_CHARS,
+    MAX_DESCRIPTION_LINES,
     build_magnet_link,
     details_value,
     detect_category_from_name,
+    format_description,
     local_time,
     matches_query,
     query_words,
@@ -483,3 +486,51 @@ class TestMatchesQuery:
     )
     def test_matches(self, query, title, expected):
         assert matches_query(title, query_words(query)) is expected
+
+
+class TestFormatDescription:
+    @pytest.mark.parametrize(
+        "description, expected",
+        [
+            # <br> and newlines are kept as line breaks
+            ("a<br>b<BR/>c", "a\nb\nc"),
+            ("a\r\nb\rc\nd", "a\nb\nc\nd"),
+            # Empty lines separate paragraphs and are merged
+            ("a\r\n\r\n\r\n  \r\nb", "a\n\nb"),
+            ("<br><br>a  b<br><br>", "a b"),
+            # Other tags are removed, entities are unescaped
+            ("<b>a</b><p>b", "a b"),
+            ("Ren&eacute; [x](http://evil)", "René [x](http://evil)"),
+            ("<br>  <br>", None),
+            (None, None),
+            (123, None),
+        ],
+    )
+    def test_lines(self, description, expected):
+        assert format_description(description, "title") == expected
+
+    def test_same_as_title(self):
+        assert format_description("Ren&eacute;<br>", "Ren&eacute;") is None
+
+    def test_lines_are_truncated(self):
+        lines = [f"line {i}" for i in range(MAX_DESCRIPTION_LINES)]
+        description = "\n".join([*lines, "extra"])
+
+        text = format_description(description)
+
+        assert text.endswith(f"line {MAX_DESCRIPTION_LINES - 1}…")
+        assert "extra" not in text
+
+    def test_max_lines_are_not_truncated(self):
+        lines = [f"line {i}" for i in range(MAX_DESCRIPTION_LINES)]
+
+        text = format_description("\n".join(lines))
+
+        assert not text.endswith("…")
+
+    def test_chars_are_truncated(self):
+        description = "a" * (MAX_DESCRIPTION_CHARS - 2) + "\nbbbbb"
+
+        text = format_description(description)
+
+        assert text.endswith("\nbb…")

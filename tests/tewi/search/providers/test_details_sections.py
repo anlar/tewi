@@ -64,7 +64,8 @@ def jackett(payload: str, imdb: str) -> list[DetailsSection]:
             "Description": payload,
             payload: payload,
             "Imdb": imdb,
-            "Poster": "https://img.example/poster.jpg",
+            # Poster is hidden (Jackett proxy link has API key)
+            "Homepage": "https://img.example/poster.jpg",
         }
     )
     return provider.details_extended(result)

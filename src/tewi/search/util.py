@@ -3,6 +3,7 @@
 
 """Utility functions for torrent search operations."""
 
+import html
 import re
 import urllib.error
 import urllib.parse
@@ -165,6 +166,73 @@ def details_value(value: object) -> str | DetailsLink:
     if is_http_url(text):
         return DetailsLink(text)
     return text
+
+
+# Max size of description shown in search result details
+MAX_DESCRIPTION_LINES = 30
+MAX_DESCRIPTION_CHARS = 2000
+
+_HTML_BR_RE = re.compile(r"<br\s*/?>", re.IGNORECASE)
+_HTML_TAG_RE = re.compile(r"<[^>]+>")
+
+
+def format_description(value: object, title: object = None) -> str | None:
+    """Convert HTML description from provider to plain text.
+
+    Line breaks are kept, consecutive empty lines are merged and long
+    descriptions are truncated to MAX_DESCRIPTION_LINES/CHARS.
+
+    Args:
+        value: HTML description
+        title: Torrent title, description repeating it isn't shown
+
+    Returns:
+        Description, or None if it is empty or repeats the title
+    """
+    if not value or not isinstance(value, str):
+        return None
+
+    text = _HTML_BR_RE.sub("\n", value)
+    text = html.unescape(_HTML_TAG_RE.sub(" ", text))
+
+    lines: list[str] = []
+    for line in text.splitlines():
+        line = " ".join(line.split())
+        if line or (lines and lines[-1]):
+            lines.append(line)
+    while lines and not lines[-1]:
+        lines.pop()
+
+    if not lines or " ".join(lines).strip() == html.unescape(str(title)):
+        return None
+
+    return "\n".join(_truncate_description(lines))
+
+
+def _truncate_description(lines: list[str]) -> list[str]:
+    """Limit description to MAX_DESCRIPTION_LINES/CHARS.
+
+    Args:
+        lines: Description lines
+
+    Returns:
+        Lines, ending with ellipsis if description was truncated
+    """
+    result: list[str] = []
+    chars = 0
+    for line in lines:
+        if len(result) == MAX_DESCRIPTION_LINES:
+            break
+        if chars + len(line) > MAX_DESCRIPTION_CHARS:
+            result.append(line[: MAX_DESCRIPTION_CHARS - chars])
+            break
+        result.append(line)
+        chars += len(line)
+    else:
+        return result
+
+    result[-1] = result[-1].rstrip() + "…"
+    return result
 
 
 _NON_WORD_RE = re.compile(r"[\W_]+")
