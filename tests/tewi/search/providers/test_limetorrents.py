@@ -102,6 +102,10 @@ class TestSearch:
                 "https://www.limetorrents.fun/Done%20Already-torrent-1000004.html",
                 "https://www.limetorrents.fun/Done%20Already-torrent-1000004.html",
             ),
+            (
+                " https://www.limetorrents.fun/Example-torrent-1000005.html\n",
+                "https://www.limetorrents.fun/Example-torrent-1000005.html",
+            ),
             ("javascript:alert(1)", None),
             ("", None),
         ],
@@ -147,6 +151,16 @@ class TestSearch:
 
         assert provider.search("example") == []
 
+    def test_counts_with_separator(self, provider, mock_urlopen):
+        set_feed(
+            mock_urlopen,
+            feed(item(description="Seeds: 1,413 , Leechers 1,122")),
+        )
+
+        [result] = provider.search("example")
+
+        assert (result.seeders, result.leechers) == (1413, 1122)
+
     def test_missing_peers_and_size(self, provider, mock_urlopen):
         set_feed(mock_urlopen, feed(item(description="", size="")))
 
@@ -164,7 +178,7 @@ class TestCategories:
             ("Movies", StandardCategories.MOVIES),
             ("TV shows", StandardCategories.TV),
             ("TV shows - Classics", StandardCategories.TV),
-            ("Anime.", StandardCategories.TV_ANIME),
+            ("Anime", StandardCategories.TV_ANIME),
             ("Games - Other", StandardCategories.PC_GAMES),
             ("Games - Wii", StandardCategories.CONSOLE_WII),
             ("Applications - Windows", StandardCategories.PC),
@@ -177,34 +191,29 @@ class TestCategories:
         ],
     )
     def test_mapping(self, provider, category, expected):
-        assert provider.get_category(category) == expected
+        assert provider._get_category(category) == expected
 
-    def test_filter(self, provider, mock_urlopen):
-        set_feed(
-            mock_urlopen,
-            feed(
-                item(),
-                item("Example Anime", "Anime.", "C" * 40),
-                item("Example Game", "Games - PC", "D" * 40),
-                item("Example Unknown", "Unknown", "E" * 40),
-            ),
-        )
-
-        results = provider.search("example", [StandardCategories.TV_HD])
-
-        # Subcategory selects whole parent category
-        assert [r.info_hash for r in results] == [HASH.lower(), "c" * 40]
-
-    def test_no_filter(self, provider, mock_urlopen):
+    def test_results_are_not_filtered(self, provider, mock_urlopen):
         set_feed(
             mock_urlopen,
             feed(item(), item("Example Unknown", "Unknown", "E" * 40)),
         )
 
-        assert len(provider.search("example")) == 2
+        # Results are filtered by search manager
+        results = provider.search("example", [StandardCategories.TV])
+
+        assert len(results) == 2
 
 
 class TestDetails:
+    def test_anime_label_dot_is_stripped(self, provider, mock_urlopen):
+        set_feed(mock_urlopen, feed(item(category="Anime.")))
+
+        [result] = provider.search("example")
+
+        assert result.categories == (StandardCategories.TV_ANIME,)
+        assert result.extra["l_category"] == "Anime"
+
     def test_details(self, provider, mock_urlopen):
         set_feed(mock_urlopen, feed(item(category="Other - E-books")))
         [result] = provider.search("example")

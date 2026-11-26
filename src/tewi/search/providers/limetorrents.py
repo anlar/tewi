@@ -11,8 +11,8 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 from email.utils import parsedate_to_datetime
 
-from ...util.log import log_time
-from ...util.misc import parse_info_hash
+from ...util.log import get_logger, log_time
+from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import Category, DetailsSection, SearchResult, StandardCategories
 from ..util import (
@@ -23,12 +23,15 @@ from ..util import (
     read_response,
 )
 
+logger = get_logger()
+
 
 class LimeTorrentsProvider(BaseSearchProvider):
     """Search provider for LimeTorrents (general torrents).
 
     The site has no API. Search uses search RSS feed, which returns up to
-    40 results without sorting or category filtering.
+    40 newest results without sorting or category filtering (results are
+    filtered by search manager).
     """
 
     RSS_URL = "https://www.limetorrents.fun/searchrss/"
@@ -61,7 +64,8 @@ class LimeTorrentsProvider(BaseSearchProvider):
         "E-books": StandardCategories.BOOKS_EBOOK,
     }
 
-    _PEERS_RE = re.compile(r"Seeds:\s*(\d+)\s*,\s*Leechers\s*(\d+)")
+    # Counts could have thousands separator, as on site pages
+    _PEERS_RE = re.compile(r"Seeds:\s*([\d,]+)\s*,\s*Leechers\s*([\d,]+)")
     # Info hash is available in .torrent file link only
     _HASH_RE = re.compile(r"/torrent/([0-9A-Fa-f]{40})\.torrent")
 
@@ -107,22 +111,14 @@ class LimeTorrentsProvider(BaseSearchProvider):
         if root.tag != "rss":
             raise Exception(f"Failed to parse RSS feed: unexpected {root.tag}")
 
-        # Feed has no category filter, so results are filtered locally
-        parents = {(c.parent or c) for c in categories or []}
+        # Search also returns fuzzy matches (e.g. "Exemplar" for "example")
         words = query_words(query)
-
-        results = []
-        for item in root.findall("./channel/item"):
-            result = self._parse_item(item)
-            if not result:
-                continue
-            # Search also returns fuzzy matches (e.g. "Exemplar" for "example")
-            if not matches_query(result.title, words):
-                continue
-            if parents and not self._in_categories(result, parents):
-                continue
-            results.append(result)
-        return results
+        items = root.findall("./channel/item")
+        return [
+            r
+            for i in items
+            if (r := self._parse_item(i)) and matches_query(r.title, words)
+        ]
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         if not result.extra:
@@ -153,19 +149,15 @@ class LimeTorrentsProvider(BaseSearchProvider):
                 item.findtext("description") or ""
             )
             if peers_match:
-                seeders = int(peers_match.group(1))
-                leechers = int(peers_match.group(2))
-
-            size = None
-            size_text = item.findtext("size")
-            if size_text and size_text.isdigit():
-                size = int(size_text)
+                seeders = parse_count(peers_match.group(1).replace(",", ""))
+                leechers = parse_count(peers_match.group(2).replace(",", ""))
 
             fields = {}
-            category = item.findtext("category")
+            # Anime category label has trailing dot ("Anime.")
+            category = (item.findtext("category") or "").strip().rstrip(".")
             if category:
                 fields["l_category"] = category
-            mapped = self.get_category(category)
+            mapped = self._get_category(category)
 
             return SearchResult(
                 title=title,
@@ -180,7 +172,7 @@ class LimeTorrentsProvider(BaseSearchProvider):
                 seeders=seeders,
                 leechers=leechers,
                 downloads=None,
-                size=size,
+                size=parse_count(item.findtext("size")),
                 files_count=None,
                 upload_date=local_time(
                     self._parse_date(item.findtext("pubDate"))
@@ -190,7 +182,11 @@ class LimeTorrentsProvider(BaseSearchProvider):
                 extra=fields,
             )
 
-        except (AttributeError, KeyError, ValueError, TypeError):
+        except Exception:
+            logger.exception(
+                "LimeTorrents: skipping invalid RSS item "
+                f"{item.findtext('title')!r}"
+            )
             return None
 
     def _page_url(self, link: str | None) -> str | None:
@@ -205,9 +201,10 @@ class LimeTorrentsProvider(BaseSearchProvider):
         Returns:
             Encoded link, or None if it isn't HTTP(S) link
         """
-        if not link or not link.startswith(("https://", "http://")):
+        link = (link or "").strip()
+        if not link.startswith(("https://", "http://")):
             return None
-        return urllib.parse.quote(link.strip(), safe=":/%()-._~")
+        return urllib.parse.quote(link, safe=":/%()-._~")
 
     def _parse_date(self, value: str | None) -> datetime | None:
         """Parse RSS date (e.g. "02 Nov 2026 07:30:12 +0200")."""
@@ -218,22 +215,14 @@ class LimeTorrentsProvider(BaseSearchProvider):
         except (TypeError, ValueError):
             return None
 
-    def get_category(self, category: str | None) -> Category | None:
+    def _get_category(self, category: str | None) -> Category | None:
         """Map LimeTorrents category label to StandardCategories.
 
-        Labels are "Category - Subcategory" or just "Category" (anime
-        category label also has trailing dot, e.g. "Anime.").
+        Labels are "Category - Subcategory" or just "Category".
         """
         if not category:
             return None
 
-        category = category.strip().rstrip(".")
         if category in self.SUBCATEGORY_MAP:
             return self.SUBCATEGORY_MAP[category]
         return self.CATEGORY_MAP.get(category.split(" - ")[0])
-
-    def _in_categories(
-        self, result: SearchResult, parents: set[Category]
-    ) -> bool:
-        """Check that result belongs to one of selected parent categories."""
-        return any((c.parent or c) in parents for c in result.categories)
