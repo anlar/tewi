@@ -9,16 +9,25 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.tewi.search.models import DetailsLink, StandardCategories
+from src.tewi.search.models import (
+    DetailsLink,
+    DetailsSection,
+    StandardCategories,
+)
 from src.tewi.search.util import (
     MAX_DESCRIPTION_CHARS,
     MAX_DESCRIPTION_LINES,
+    MAX_DETAILS_FILES,
     build_magnet_link,
     details_value,
     detect_category_from_name,
     format_description,
+    format_files,
+    imdb_link,
     local_time,
     matches_query,
+    parse_iso_date,
+    provider_magnet_link,
     query_words,
     urlopen,
     urlopen_post,
@@ -534,3 +543,115 @@ class TestFormatDescription:
         text = format_description(description)
 
         assert text.endswith("\nbb…")
+
+
+class TestParseIsoDate:
+    @pytest.mark.parametrize(
+        "value, expected",
+        [
+            (
+                "2026-11-12T09:03:50.401Z",
+                datetime(2026, 11, 12, 9, 3, 50, 401000, timezone.utc),
+            ),
+            (
+                "2026-11-12T09:03:50+02:00",
+                datetime(
+                    2026, 11, 12, 9, 3, 50, tzinfo=timezone(timedelta(hours=2))
+                ),
+            ),
+            (" 2026-11-12 ", datetime(2026, 11, 12)),
+            ("not a date", None),
+            ("", None),
+            (None, None),
+            (1767225600, None),
+        ],
+    )
+    def test_parse(self, value, expected):
+        assert parse_iso_date(value) == expected
+
+
+class TestImdbLink:
+    @pytest.mark.parametrize(
+        "value, expected",
+        [
+            ("tt0111161", "https://www.imdb.com/title/tt0111161"),
+            (" tt11540908 ", "https://www.imdb.com/title/tt11540908"),
+            # Number is padded to 7 digits
+            (111161, "https://www.imdb.com/title/tt0111161"),
+            ("111161", "https://www.imdb.com/title/tt0111161"),
+            (11540908, "https://www.imdb.com/title/tt11540908"),
+        ],
+    )
+    def test_link(self, value, expected):
+        assert imdb_link(value) == DetailsLink(expected)
+
+    @pytest.mark.parametrize(
+        "value",
+        [0, "0", -1, True, None, "", "tt", "tt1 [x](http://evil)", "nm0000001"],
+    )
+    def test_invalid(self, value):
+        assert imdb_link(value) is None
+
+
+class TestFormatFiles:
+    def test_files(self):
+        files = [
+            {"path": "a/1.mkv", "size": 1000},
+            {"name": "2.mkv", "size": "2000"},
+            {"path": "", "name": "3.mkv"},
+            {"path": None},
+            "x",
+        ]
+
+        assert format_files(files, ("path", "name"), "size") == [
+            DetailsSection(
+                "Files (5)", items=("a/1.mkv (1 kB)", "2.mkv (2 kB)", "3.mkv")
+            )
+        ]
+
+    def test_files_are_limited(self):
+        files = [{"path": f"{i}"} for i in range(MAX_DETAILS_FILES + 5)]
+
+        [section] = format_files(files, ("path",), "size")
+
+        assert section.title == f"Files ({MAX_DETAILS_FILES + 5})"
+        assert len(section.items) == MAX_DETAILS_FILES + 1
+        assert section.items[-1] == "...and 5 more"
+
+    def test_total_of_incomplete_list(self):
+        [section] = format_files([{"path": "a"}], ("path",), "size", 10)
+
+        assert section.title == "Files (10)"
+        assert section.items == ("a", "...and 9 more")
+
+    @pytest.mark.parametrize("files", [None, [], {"path": "a"}, "a"])
+    def test_no_files(self, files):
+        assert format_files(files, ("path",), "size", 10) == []
+
+
+class TestProviderMagnetLink:
+    MAGNET = f"magnet:?xt=urn:btih:{HASH}&dn=Name&tr=udp://t.example"
+
+    @pytest.mark.parametrize(
+        "magnet",
+        [MAGNET, MAGNET.upper(), f" {MAGNET} ", f"magnet:?xt=urn:btih:{HASH}"],
+    )
+    def test_provider_magnet_is_used(self, magnet):
+        assert provider_magnet_link(magnet, HASH, "Name") == magnet.strip()
+
+    @pytest.mark.parametrize(
+        "magnet",
+        [
+            None,
+            123,
+            "",
+            "magnet:?xt=urn:btih:" + "f" * 40,
+            # Hash with extra characters
+            f"magnet:?xt=urn:btih:{HASH}ff&dn=Name",
+            f"https://example.org/{HASH}",
+        ],
+    )
+    def test_magnet_for_other_torrent_is_built(self, magnet):
+        assert provider_magnet_link(magnet, HASH, "Name") == (
+            build_magnet_link(HASH, "Name")
+        )

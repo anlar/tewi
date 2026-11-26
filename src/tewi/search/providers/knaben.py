@@ -7,7 +7,6 @@ import html
 import json
 import urllib.error
 import urllib.parse
-from datetime import datetime
 from typing import Any
 
 from ...util.log import get_logger, log_time
@@ -15,9 +14,10 @@ from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import Category, DetailsSection, SearchResult, StandardCategories
 from ..util import (
-    build_magnet_link,
     format_description,
     local_time,
+    parse_iso_date,
+    provider_magnet_link,
     read_response,
 )
 
@@ -222,7 +222,9 @@ class KnabenProvider(BaseSearchProvider):
             return SearchResult(
                 title=title,
                 info_hash=info_hash,
-                magnet_link=self._magnet_link(torrent, info_hash, title),
+                magnet_link=provider_magnet_link(
+                    torrent.get("magnetUrl"), info_hash, title
+                ),
                 torrent_link=torrent.get("link") or None,
                 provider=self.name,
                 provider_id=self.id,
@@ -233,7 +235,7 @@ class KnabenProvider(BaseSearchProvider):
                 downloads=parse_count(torrent.get("grabs")),
                 size=parse_count(torrent.get("bytes")),
                 files_count=None,
-                upload_date=local_time(self._parse_date(torrent.get("date"))),
+                upload_date=local_time(parse_iso_date(torrent.get("date"))),
                 page_url=torrent.get("details") or None,
                 freeleech=True,  # Public trackers
                 extra=self._build_fields(torrent),
@@ -245,18 +247,6 @@ class KnabenProvider(BaseSearchProvider):
                 f"{torrent.get('hash')!r}"
             )
             return None
-
-    def _magnet_link(
-        self, torrent: dict[str, Any], info_hash: str, title: str
-    ) -> str:
-        """Use magnet link from API (it has trackers) if it's for torrent."""
-        magnet = torrent.get("magnetUrl")
-        prefix = f"magnet:?xt=urn:btih:{info_hash}".lower()
-        if isinstance(magnet, str) and (
-            magnet.lower() == prefix or magnet.lower().startswith(prefix + "&")
-        ):
-            return magnet
-        return build_magnet_link(info_hash=info_hash, name=title)
 
     def _build_fields(self, torrent: dict[str, Any]) -> dict[str, Any]:
         """Build provider-specific fields shown in details."""
@@ -276,7 +266,7 @@ class KnabenProvider(BaseSearchProvider):
         if isinstance(torrent.get("livePeers"), int):
             fields["live_peers"] = torrent["livePeers"]
 
-        last_seen = self._parse_date(torrent.get("lastSeen"))
+        last_seen = parse_iso_date(torrent.get("lastSeen"))
         if last_seen:
             fields["last_seen"] = local_time(last_seen).strftime(
                 "%Y-%m-%d %H:%M"
@@ -289,15 +279,6 @@ class KnabenProvider(BaseSearchProvider):
             fields["description"] = description
 
         return fields
-
-    def _parse_date(self, value: Any) -> datetime | None:
-        """Parse ISO 8601 date string returned by API."""
-        if not value or not isinstance(value, str):
-            return None
-        try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError:
-            return None
 
     def _get_categories(self, category_ids: Any) -> list[Category]:
         """Map Knaben category IDs to StandardCategories.

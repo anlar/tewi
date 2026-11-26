@@ -5,10 +5,8 @@
 
 import json
 import urllib.error
-from datetime import datetime
 from typing import Any
 
-from ...util.format import print_size
 from ...util.log import get_logger, log_time
 from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
@@ -19,7 +17,15 @@ from ..models import (
     SearchResult,
     StandardCategories,
 )
-from ..util import MAX_ERROR_BODY_SIZE, details_value, local_time, read_response
+from ..util import (
+    MAX_DETAILS_FILES,
+    MAX_ERROR_BODY_SIZE,
+    details_value,
+    format_files,
+    local_time,
+    parse_iso_date,
+    read_response,
+)
 
 logger = get_logger()
 
@@ -34,9 +40,6 @@ class BitmagnetProvider(BaseSearchProvider):
 
     # Max number of results
     RESULTS_LIMIT = 100
-
-    # Max number of files listed in details
-    MAX_DETAILS_FILES = 100
 
     # GraphQL query for search, facets filter results by content type
     SEARCH_QUERY = """query Search(
@@ -298,7 +301,13 @@ class BitmagnetProvider(BaseSearchProvider):
         details = self._fetch_details(result.info_hash)
         if details:
             fields.update(self._parse_content_details(details.get("content")))
-            files = self._format_files(details.get("files"), result.files_count)
+            # Files query total count is limited by requested number of files
+            files = format_files(
+                self._dig(details.get("files"), "items"),
+                ("path",),
+                "size",
+                result.files_count,
+            )
 
         overview = None
         # Long text is shown as paragraph, not squeezed into field value
@@ -435,7 +444,7 @@ class BitmagnetProvider(BaseSearchProvider):
         try:
             data = self._graphql(
                 self.DETAILS_QUERY,
-                {"infoHash": info_hash, "filesLimit": self.MAX_DETAILS_FILES},
+                {"infoHash": info_hash, "filesLimit": MAX_DETAILS_FILES},
             )
         except Exception as e:
             logger.warning(f"Bitmagnet: failed to fetch details: {e}")
@@ -489,9 +498,7 @@ class BitmagnetProvider(BaseSearchProvider):
                 downloads=None,
                 size=parse_count(torrent.get("size")),
                 files_count=parse_count(torrent.get("filesCount")),
-                upload_date=local_time(
-                    self._parse_date(item.get("publishedAt"))
-                ),
+                upload_date=local_time(parse_iso_date(item.get("publishedAt"))),
                 page_url=(
                     f"{self.bitmagnet_url.rstrip('/')}/webui/torrents/"
                     f"permalink/{info_hash}"
@@ -556,7 +563,7 @@ class BitmagnetProvider(BaseSearchProvider):
             (torrent, "createdAt", "torrent_created_at"),
             (torrent, "updatedAt", "torrent_updated_at"),
         ):
-            date = self._parse_date(source.get(value))
+            date = parse_iso_date(source.get(value))
             if date:
                 fields[key] = local_time(date).strftime("%Y-%m-%d %H:%M")
 
@@ -675,47 +682,6 @@ class BitmagnetProvider(BaseSearchProvider):
         """Get peers count of item, or of torrent if item has none."""
         count = parse_count(item.get(key))
         return count if count is not None else parse_count(torrent.get(key))
-
-    def _format_files(
-        self, files: Any, files_count: int | None
-    ) -> list[DetailsSection]:
-        """Format files section, limited to MAX_DETAILS_FILES entries.
-
-        Args:
-            files: Files query result
-            files_count: Number of files from search result (files query
-                total count is limited by requested number of files)
-
-        Returns:
-            Files section, or empty list if there are no files
-        """
-        items = self._dig(files, "items")
-        if not isinstance(items, list) or not items:
-            return []
-
-        lines = []
-        for f in items:
-            if not isinstance(f, dict) or not f.get("path"):
-                continue
-            line = str(f["path"])
-            size = parse_count(f.get("size"))
-            if size is not None:
-                line += f" ({print_size(size)})"
-            lines.append(line)
-
-        total = max(files_count or 0, len(items))
-        if total > len(items):
-            lines.append(f"...and {total - len(items)} more")
-        return [DetailsSection(f"Files ({total})", items=tuple(lines))]
-
-    def _parse_date(self, value: Any) -> datetime | None:
-        """Parse ISO 8601 date returned by API."""
-        if not value or not isinstance(value, str):
-            return None
-        try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError:
-            return None
 
     def _dig(self, data: Any, *keys: str) -> Any:
         """Get nested value from dictionaries, or None if it's missing."""

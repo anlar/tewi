@@ -343,7 +343,7 @@ class TestDetails:
         assert fields["Downloads"] == "1234"
         assert fields["Language"] == "English"
         assert fields["IMDB"] == DetailsLink(
-            "https://www.imdb.com/title/tt0000001/"
+            "https://www.imdb.com/title/tt0000001"
         )
         assert fields["Last Checked"] == "2026-11-18 22:59"
         # File count from list, as num_files could be 0

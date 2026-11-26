@@ -27,7 +27,9 @@ from ..util import (
     build_magnet_link,
     details_value,
     format_description,
+    imdb_link,
     local_time,
+    parse_iso_date,
     read_response,
 )
 
@@ -466,7 +468,9 @@ class JackettProvider(BaseSearchProvider):
                 downloads=parse_count(result.get("Grabs")),
                 size=parse_count(result.get("Size")),
                 files_count=parse_count(result.get("Files")),
-                upload_date=local_time(self._parse_upload_date(result)),
+                upload_date=local_time(
+                    parse_iso_date(result.get("PublishDate"))
+                ),
                 page_url=result.get("Details"),
                 freeleech=result.get("DownloadVolumeFactor") == 0,
                 extra=self._build_fields(result),
@@ -502,24 +506,6 @@ class JackettProvider(BaseSearchProvider):
             return build_magnet_link(info_hash=info_hash, name=title)
 
         return None
-
-    def _parse_upload_date(self, result: dict[str, Any]) -> datetime | None:
-        """Parse upload date from result.
-
-        Args:
-            result: Result dict from Jackett API
-
-        Returns:
-            datetime object or None if parsing fails
-        """
-        publish_date = result.get("PublishDate")
-        if not publish_date:
-            return None
-
-        try:
-            return datetime.fromisoformat(publish_date.replace("Z", "+00:00"))
-        except (ValueError, AttributeError):
-            return None
 
     def _build_provider_name(
         self, result: dict[str, Any], short: bool = False
@@ -673,10 +659,7 @@ class JackettProvider(BaseSearchProvider):
             Tuple of (display_name, display_value), where value is link
             for HTTP(S) URL
         """
-        if key == "Imdb" and value.isdigit() and int(value):
-            # IMDB IDs have at least 7 digits
-            return "IMDB", DetailsLink(
-                f"https://www.imdb.com/title/tt{int(value):07d}/"
-            )
+        if key == "Imdb" and (link := imdb_link(value)):
+            return "IMDB", link
 
         return key, details_value(value)

@@ -6,10 +6,8 @@
 import json
 import urllib.error
 import urllib.parse
-from datetime import datetime
 from typing import Any
 
-from ...util.format import print_size
 from ...util.log import get_logger, log_time
 from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
@@ -20,7 +18,13 @@ from ..models import (
     SearchResult,
     StandardCategories,
 )
-from ..util import build_magnet_link, local_time, read_response
+from ..util import (
+    build_magnet_link,
+    format_files,
+    local_time,
+    parse_iso_date,
+    read_response,
+)
 
 logger = get_logger()
 
@@ -35,9 +39,6 @@ class BitsearchProvider(BaseSearchProvider):
     API_URL = "https://bitsearch.eu/api/v1/search"
     DETAILS_URL = "https://bitsearch.eu/api/v1/torrent"
     SITE_URL = "https://bitsearch.eu"
-
-    # Max number of files listed in details
-    MAX_DETAILS_FILES = 100
 
     # Category mapping from Bitsearch API to StandardCategories
     CATEGORY_MAP = {
@@ -344,7 +345,7 @@ class BitsearchProvider(BaseSearchProvider):
             message = None
         message = f"HTTP {error.code}: {message or error.reason}"
 
-        reset = self._parse_date((error.headers or {}).get("X-RateLimit-Reset"))
+        reset = parse_iso_date((error.headers or {}).get("X-RateLimit-Reset"))
         if error.code == 429 and reset:
             message += f" (resets at {local_time(reset):%Y-%m-%d %H:%M})"
         return message
@@ -372,7 +373,7 @@ class BitsearchProvider(BaseSearchProvider):
         info.extend(self._format_details(details))
         return [
             DetailsSection("Information", fields=tuple(info)),
-            *self._format_files(details.get("files")),
+            *format_files(details.get("files"), ("path",), "size"),
             *self._format_trackers(details.get("trackers")),
         ]
 
@@ -417,25 +418,6 @@ class BitsearchProvider(BaseSearchProvider):
             fields.append(("Tags", ", ".join(str(t) for t in tags)))
 
         return fields
-
-    def _format_files(self, files: Any) -> list[DetailsSection]:
-        """Format files section, limited to MAX_DETAILS_FILES entries."""
-        if not files or not isinstance(files, list):
-            return []
-
-        items = []
-        for f in files[: self.MAX_DETAILS_FILES]:
-            if not isinstance(f, dict) or not f.get("path"):
-                continue
-            item = str(f["path"])
-            if isinstance(f.get("size"), int):
-                item += f" ({print_size(f['size'])})"
-            items.append(item)
-
-        if len(files) > self.MAX_DETAILS_FILES:
-            more = len(files) - self.MAX_DETAILS_FILES
-            items.append(f"...and {more} more")
-        return [DetailsSection(f"Files ({len(files)})", items=tuple(items))]
 
     def _format_trackers(self, trackers: Any) -> list[DetailsSection]:
         """Format trackers section."""
@@ -501,7 +483,7 @@ class BitsearchProvider(BaseSearchProvider):
                 size=parse_count(torrent.get("size")),
                 files_count=None,
                 upload_date=local_time(
-                    self._parse_date(torrent.get("createdAt"))
+                    parse_iso_date(torrent.get("createdAt"))
                 ),
                 page_url=(
                     f"{self.SITE_URL}/torrent/{urllib.parse.quote(str(tid))}"
@@ -515,15 +497,6 @@ class BitsearchProvider(BaseSearchProvider):
                 "Bitsearch: skipping invalid search result "
                 f"{torrent.get('infohash')!r}"
             )
-            return None
-
-    def _parse_date(self, value: str | None) -> datetime | None:
-        """Parse ISO 8601 date string returned by API."""
-        if not value or not isinstance(value, str):
-            return None
-        try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError:
             return None
 
     def _get_category(self, cat: Any, sub_cat: Any) -> Category | None:

@@ -4,7 +4,6 @@
 """The Pirate Bay torrent search provider implementation."""
 
 import json
-import re
 import urllib.error
 import urllib.parse
 from datetime import datetime
@@ -15,12 +14,11 @@ from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import (
     Category,
-    DetailsLink,
     DetailsSection,
     SearchResult,
     StandardCategories,
 )
-from ..util import build_magnet_link, local_time, read_response
+from ..util import build_magnet_link, imdb_link, local_time, read_response
 
 logger = get_logger()
 
@@ -104,8 +102,6 @@ class TPBProvider(BaseSearchProvider):
         500: StandardCategories.XXX,
         600: StandardCategories.OTHER,
     }
-
-    _IMDB_RE = re.compile(r"tt\d+")
 
     @property
     def id(self) -> str:
@@ -208,14 +204,9 @@ class TPBProvider(BaseSearchProvider):
 
         sections = [DetailsSection("Uploader", fields=tuple(uploader))]
 
-        imdb_code = result.extra.get("imdb")
-        if imdb_code:
-            imdb_url = f"https://www.imdb.com/title/{imdb_code}/"
-            sections.append(
-                DetailsSection(
-                    "Movie", fields=(("IMDB", DetailsLink(imdb_url)),)
-                )
-            )
+        imdb = imdb_link(result.extra.get("imdb"))
+        if imdb:
+            sections.append(DetailsSection("Movie", fields=(("IMDB", imdb),)))
 
         return sections
 
@@ -261,7 +252,7 @@ class TPBProvider(BaseSearchProvider):
                 fields["status"] = status
 
             imdb = torrent.get("imdb")
-            if imdb and self._IMDB_RE.fullmatch(imdb):
+            if imdb_link(imdb):
                 fields["imdb"] = imdb
 
             return SearchResult(

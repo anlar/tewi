@@ -328,7 +328,7 @@ class TestDetails:
             "https://www.themoviedb.org/tv/4001"
         )
         assert fields["IMDB"] == DetailsLink(
-            "https://www.imdb.com/title/tt0000001/"
+            "https://www.imdb.com/title/tt0000001"
         )
         assert details_section(sections, "Files (2)").items == (
             "Example/Example - 01.mkv (1 kB)",

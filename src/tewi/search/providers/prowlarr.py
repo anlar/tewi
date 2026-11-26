@@ -24,7 +24,9 @@ from ..util import (
     MAX_ERROR_BODY_SIZE,
     build_magnet_link,
     details_value,
+    imdb_link,
     local_time,
+    parse_iso_date,
     read_response,
 )
 
@@ -173,7 +175,7 @@ class ProwlarrProvider(BaseSearchProvider):
         for key in sorted(result.extra.keys()):
             field = self._transform_field(key, result.extra[key])
             if field:
-                fields.append((field[0], details_value(field[1])))
+                fields.append(field)
 
         # Most fields are often empty (e.g. IDs are 0)
         if not fields:
@@ -440,7 +442,9 @@ class ProwlarrProvider(BaseSearchProvider):
                 downloads=parse_count(result.get("grabs")),
                 size=parse_count(result.get("size")),
                 files_count=parse_count(result.get("files")),
-                upload_date=local_time(self._parse_publish_date(result)),
+                upload_date=local_time(
+                    parse_iso_date(result.get("publishDate"))
+                ),
                 page_url=self._str(result.get("infoUrl")) or None,
                 freeleech="freeleech" in flags,
                 extra=self._build_fields(result),
@@ -487,24 +491,6 @@ class ProwlarrProvider(BaseSearchProvider):
     def _str(self, value: Any) -> str:
         """Get string value from response, or empty string."""
         return value.strip() if isinstance(value, str) else ""
-
-    def _parse_publish_date(self, result: dict[str, Any]) -> datetime | None:
-        """Parse publish date from result.
-
-        Args:
-            result: Result dict from Prowlarr API
-
-        Returns:
-            datetime object or None if parsing fails
-        """
-        publish_date = result.get("publishDate")
-        if not publish_date:
-            return None
-
-        try:
-            return datetime.fromisoformat(publish_date.replace("Z", "+00:00"))
-        except (ValueError, AttributeError):
-            return None
 
     def _build_provider_name(
         self, result: dict[str, Any], short: bool = False
@@ -620,7 +606,9 @@ class ProwlarrProvider(BaseSearchProvider):
 
         return categories if categories else []
 
-    def _transform_field(self, key: str, value: str) -> tuple[str, str] | None:
+    def _transform_field(
+        self, key: str, value: str
+    ) -> tuple[str, str | DetailsLink] | None:
         """Transform field key and value for display.
 
         Args:
@@ -628,17 +616,13 @@ class ProwlarrProvider(BaseSearchProvider):
             value: Field value
 
         Returns:
-            Tuple of (display name, display value), or None to hide field
+            Tuple of (display name, display value), where value is link
+            for HTTP(S) URL, or None to hide field
         """
         if key == "imdbId":
-            if not value.isdigit() or not int(value):
-                return None
-            # IMDB IDs have at least 7 digits
-            return "IMDB", f"https://www.imdb.com/title/tt{int(value):07d}/"
+            link = imdb_link(value)
+            return ("IMDB", link) if link else None
         if key in ("tmdbId", "tvMazeId", "tvdbId") and value == "0":
             return None
-        if key == "indexerFlags":
-            return "Indexer Flags", value
-        if key == "posterUrl":
-            return "Poster", value
-        return key, value
+        labels = {"indexerFlags": "Indexer Flags", "posterUrl": "Poster"}
+        return labels.get(key, key), details_value(value)

@@ -9,11 +9,9 @@ import urllib.error
 import urllib.parse
 import xml.etree.ElementTree as ET
 from collections.abc import Iterable
-from datetime import datetime
 from email.utils import parsedate_to_datetime
 from typing import Any
 
-from ...util.format import print_size
 from ...util.log import get_logger, log_time
 from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
@@ -26,8 +24,11 @@ from ..models import (
 )
 from ..util import (
     build_magnet_link,
+    format_files,
+    imdb_link,
     local_time,
     matches_query,
+    parse_iso_date,
     parse_timestamp,
     query_words,
     read_response,
@@ -53,9 +54,6 @@ class TheRarbgProvider(BaseSearchProvider):
 
     # Max number of results requested from each source
     RESULTS_LIMIT = 100
-
-    # Max number of files listed in details
-    MAX_DETAILS_FILES = 100
 
     # Trackers from magnet links on the site (results have info hash only)
     TRACKERS = [
@@ -100,7 +98,6 @@ class TheRarbgProvider(BaseSearchProvider):
 
     _SEEDERS_RE = re.compile(r"(\d+) seeders")
     _NON_WORD_RE = re.compile(r"[\W_]+")
-    _IMDB_RE = re.compile(r"tt\d+")
 
     @property
     def id(self) -> str:
@@ -234,7 +231,9 @@ class TheRarbgProvider(BaseSearchProvider):
         info.extend(self._format_details(details))
         return [
             DetailsSection("Information", fields=tuple(info)),
-            *self._format_files(details.get("files")),
+            *format_files(
+                details.get("files"), ("full_location", "name"), "size"
+            ),
             *self._format_trackers(details.get("trackers")),
         ]
 
@@ -278,39 +277,16 @@ class TheRarbgProvider(BaseSearchProvider):
         if language and isinstance(language, str):
             fields.append(("Language", language))
 
-        imdb = details.get("imdb")
-        if isinstance(imdb, str) and self._IMDB_RE.fullmatch(imdb):
-            imdb_url = f"https://www.imdb.com/title/{imdb}/"
-            fields.append(("IMDB", DetailsLink(imdb_url)))
+        imdb = imdb_link(details.get("imdb"))
+        if imdb:
+            fields.append(("IMDB", imdb))
 
-        last_checked = self._parse_iso_date(details.get("last_checked"))
+        last_checked = parse_iso_date(details.get("last_checked"))
         if last_checked:
             checked = last_checked.strftime("%Y-%m-%d %H:%M")
             fields.append(("Last Checked", checked))
 
         return fields
-
-    def _format_files(self, files: Any) -> list[DetailsSection]:
-        """Format files section, limited to MAX_DETAILS_FILES entries."""
-        if not files or not isinstance(files, list):
-            return []
-
-        items = []
-        for f in files[: self.MAX_DETAILS_FILES]:
-            if not isinstance(f, dict):
-                continue
-            path = f.get("full_location") or f.get("name")
-            if not path:
-                continue
-            item = str(path)
-            if isinstance(f.get("size"), int):
-                item += f" ({print_size(f['size'])})"
-            items.append(item)
-
-        if len(files) > self.MAX_DETAILS_FILES:
-            more = len(files) - self.MAX_DETAILS_FILES
-            items.append(f"...and {more} more")
-        return [DetailsSection(f"Files ({len(files)})", items=tuple(items))]
 
     def _format_trackers(self, trackers: Any) -> list[DetailsSection]:
         """Format trackers section with seeders/leechers reported by them."""
@@ -453,15 +429,6 @@ class TheRarbgProvider(BaseSearchProvider):
         slug = self._NON_WORD_RE.sub("-", title.lower()).strip("-") or "x"
         tid = urllib.parse.quote(str(tid))
         return f"{self.SITE_URL}/post-detail/{tid}/{urllib.parse.quote(slug)}/"
-
-    def _parse_iso_date(self, value: Any) -> datetime | None:
-        """Parse ISO 8601 date string returned by API."""
-        if not value or not isinstance(value, str):
-            return None
-        try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError:
-            return None
 
     def _get_categories(self, category: Any) -> tuple[Category, ...]:
         """Map TheRARBG category name to StandardCategories."""

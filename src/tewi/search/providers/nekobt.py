@@ -9,7 +9,6 @@ import urllib.error
 import urllib.parse
 from typing import Any
 
-from ...util.format import print_size
 from ...util.log import get_logger, log_time
 from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
@@ -20,7 +19,13 @@ from ..models import (
     SearchResult,
     StandardCategories,
 )
-from ..util import build_magnet_link, parse_timestamp, read_response
+from ..util import (
+    format_files,
+    imdb_link,
+    parse_timestamp,
+    provider_magnet_link,
+    read_response,
+)
 
 logger = get_logger()
 
@@ -38,9 +43,6 @@ class NekoBtProvider(BaseSearchProvider):
     # Max number of results (API allows up to 100)
     RESULTS_LIMIT = 100
 
-    # Max number of files listed in details
-    MAX_DETAILS_FILES = 100
-
     # Media ID prefix mapping to StandardCategories ("s" - series,
     # "m" - movie); torrent category isn't used by nekoBT. Torrents without
     # media are anime, as in nekoBT Torznab API.
@@ -51,7 +53,6 @@ class NekoBtProvider(BaseSearchProvider):
 
     _MEDIA_ID_RE = re.compile(r"([sm])\d+")
     _TORRENT_ID_RE = re.compile(r"\d+")
-    _IMDB_RE = re.compile(r"tt\d+")
 
     @property
     def id(self) -> str:
@@ -156,7 +157,9 @@ class NekoBtProvider(BaseSearchProvider):
         sections = [DetailsSection("Information", fields=tuple(info))]
         sections += self._format_links(result, torrent, media)
         if torrent:
-            sections += self._format_files(torrent.get("files"))
+            sections += format_files(
+                torrent.get("files"), ("path", "name"), "length"
+            )
 
         return sections
 
@@ -214,9 +217,9 @@ class NekoBtProvider(BaseSearchProvider):
         if tmdb:
             kind = "movie" if self._is_movie(result) else "tv"
             links.append(("TMDB", f"https://www.themoviedb.org/{kind}/{tmdb}"))
-        imdb = media.get("imdbId")
-        if isinstance(imdb, str) and self._IMDB_RE.fullmatch(imdb):
-            links.append(("IMDB", f"https://www.imdb.com/title/{imdb}/"))
+        imdb = imdb_link(media.get("imdbId"))
+        if imdb:
+            links.append(("IMDB", imdb.url))
 
         if not links:
             return []
@@ -226,28 +229,6 @@ class NekoBtProvider(BaseSearchProvider):
                 fields=tuple((name, DetailsLink(url)) for name, url in links),
             )
         ]
-
-    def _format_files(self, files: Any) -> list[DetailsSection]:
-        """Format files section, limited to MAX_DETAILS_FILES entries."""
-        if not files or not isinstance(files, list):
-            return []
-
-        items = []
-        for f in files[: self.MAX_DETAILS_FILES]:
-            if not isinstance(f, dict):
-                continue
-            path = f.get("path") or f.get("name")
-            if not path:
-                continue
-            item = str(path)
-            if isinstance(f.get("length"), int):
-                item += f" ({print_size(f['length'])})"
-            items.append(item)
-
-        if len(files) > self.MAX_DETAILS_FILES:
-            more = len(files) - self.MAX_DETAILS_FILES
-            items.append(f"...and {more} more")
-        return [DetailsSection(f"Files ({len(files)})", items=tuple(items))]
 
     def _parse_torrent(self, torrent: Any) -> SearchResult | None:
         """Parse torrent from search results."""
@@ -281,7 +262,9 @@ class NekoBtProvider(BaseSearchProvider):
             return SearchResult(
                 title=title,
                 info_hash=info_hash,
-                magnet_link=self._magnet_link(torrent, info_hash, title),
+                magnet_link=provider_magnet_link(
+                    torrent.get("magnet"), info_hash, title
+                ),
                 torrent_link=None,
                 provider=self.name,
                 provider_id=self.id,
@@ -342,18 +325,6 @@ class NekoBtProvider(BaseSearchProvider):
             fields["batch"] = True
 
         return fields
-
-    def _magnet_link(
-        self, torrent: dict[str, Any], info_hash: str, title: str
-    ) -> str:
-        """Use magnet link from API (it has trackers) if it's for torrent."""
-        magnet = torrent.get("magnet")
-        prefix = f"magnet:?xt=urn:btih:{info_hash}".lower()
-        if isinstance(magnet, str) and (
-            magnet.lower() == prefix or magnet.lower().startswith(prefix + "&")
-        ):
-            return magnet
-        return build_magnet_link(info_hash=info_hash, name=title)
 
     def _error_message(self, error: urllib.error.HTTPError) -> str:
         """Get error message from API error response."""

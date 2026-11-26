@@ -12,8 +12,9 @@ from datetime import datetime
 from http.client import HTTPResponse
 from typing import Any
 
+from ..util.format import print_size
 from ..util.misc import is_http_url, is_torrent_hash, parse_count
-from .models import Category, DetailsLink, StandardCategories
+from .models import Category, DetailsLink, DetailsSection, StandardCategories
 
 # User-Agent string to imitate a popular browser
 USER_AGENT = (
@@ -151,6 +152,25 @@ def parse_timestamp(value: object) -> datetime | None:
         return None
 
 
+def parse_iso_date(value: object) -> datetime | None:
+    """Parse optional ISO 8601 date in provider response.
+
+    Args:
+        value: Date as ISO 8601 string ("Z" suffix is UTC)
+
+    Returns:
+        Date (naive, if value has no time zone), or None if value isn't
+        a valid date
+    """
+    if not value or not isinstance(value, str):
+        return None
+
+    try:
+        return datetime.fromisoformat(value.strip().replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
 def details_value(value: object) -> str | DetailsLink:
     """Format remote value for search result details.
 
@@ -166,6 +186,75 @@ def details_value(value: object) -> str | DetailsLink:
     if is_http_url(text):
         return DetailsLink(text)
     return text
+
+
+_IMDB_ID_RE = re.compile(r"tt\d+")
+
+
+def imdb_link(value: object) -> DetailsLink | None:
+    """Build IMDB page link from IMDB ID in provider response.
+
+    Args:
+        value: IMDB ID (e.g. "tt0111161"), or its number as int or digit
+            string (e.g. 111161)
+
+    Returns:
+        Link, or None if value isn't a valid IMDB ID
+    """
+    if isinstance(value, str) and _IMDB_ID_RE.fullmatch(value.strip()):
+        return DetailsLink(f"https://www.imdb.com/title/{value.strip()}")
+
+    number = parse_count(value)
+    if not number:
+        return None
+    # IMDB IDs have at least 7 digits
+    return DetailsLink(f"https://www.imdb.com/title/tt{number:07d}")
+
+
+# Max number of files listed in search result details
+MAX_DETAILS_FILES = 100
+
+
+def format_files(
+    files: object,
+    path_keys: tuple[str, ...],
+    size_key: str,
+    total: int | None = None,
+) -> list[DetailsSection]:
+    """Format torrent files from provider as search result details section.
+
+    Up to MAX_DETAILS_FILES files are listed.
+
+    Args:
+        files: List of file objects from provider
+        path_keys: Keys of file path, first non-empty one is used
+        size_key: Key of file size in bytes
+        total: Number of files, if files list is incomplete
+
+    Returns:
+        Files section, or empty list if there are no files
+    """
+    if not files or not isinstance(files, list):
+        return []
+
+    lines = []
+    for f in files[:MAX_DETAILS_FILES]:
+        if not isinstance(f, dict):
+            continue
+        path = next((f[key] for key in path_keys if f.get(key)), None)
+        if not path:
+            continue
+        line = str(path)
+        size = parse_count(f.get(size_key))
+        if size is not None:
+            line += f" ({print_size(size)})"
+        lines.append(line)
+
+    total = max(total or 0, len(files))
+    listed = min(len(files), MAX_DETAILS_FILES)
+    if total > listed:
+        lines.append(f"...and {total - listed} more")
+    return [DetailsSection(f"Files ({total})", items=tuple(lines))]
 
 
 # Max size of description shown in search result details
@@ -298,6 +387,31 @@ def build_magnet_link(
             magnet += f"&tr={encoded_tracker}"
 
     return magnet
+
+
+def provider_magnet_link(magnet: object, info_hash: str, name: str) -> str:
+    """Use magnet link from provider if it's for torrent, or build one.
+
+    Provider magnet link could have trackers, but it's used only for the
+    same info hash, as it could be for other torrent.
+
+    Args:
+        magnet: Magnet link from provider
+        info_hash: Torrent info hash
+        name: Torrent name, for built magnet link
+
+    Returns:
+        Magnet link
+
+    Raises:
+        ValueError: If info hash isn't valid (see `build_magnet_link`)
+    """
+    prefix = f"magnet:?xt=urn:btih:{info_hash}".lower()
+    if isinstance(magnet, str):
+        link = magnet.strip()
+        if link.lower() == prefix or link.lower().startswith(prefix + "&"):
+            return link
+    return build_magnet_link(info_hash=info_hash, name=name)
 
 
 def detect_category_from_name(name: str) -> Category | None:

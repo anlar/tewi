@@ -19,7 +19,7 @@ from ..models import (
     SearchResult,
     StandardCategories,
 )
-from ..util import build_magnet_link, parse_timestamp, read_response
+from ..util import build_magnet_link, imdb_link, parse_timestamp, read_response
 
 logger = get_logger()
 
@@ -68,7 +68,6 @@ class YTSProvider(BaseSearchProvider):
     # Torrent source type to display name
     TYPE_NAMES = {"bluray": "BluRay", "web": "WEB"}
 
-    _IMDB_RE = re.compile(r"tt\d+")
     _YOUTUBE_ID_RE = re.compile(r"[\w-]+")
 
     @property
@@ -307,11 +306,7 @@ class YTSProvider(BaseSearchProvider):
             (
                 "imdb_code",
                 "IMDB",
-                lambda v: (
-                    DetailsLink(f"https://www.imdb.com/title/{v}")
-                    if self._IMDB_RE.fullmatch(v)
-                    else None
-                ),
+                imdb_link,
             ),
             (
                 "yt_trailer_code",

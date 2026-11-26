@@ -250,7 +250,7 @@ class TestSearch:
         [section] = provider.details_extended(result)
 
         assert section.fields == (
-            ("IMDB", DetailsLink("https://www.imdb.com/title/tt0111161/")),
+            ("IMDB", DetailsLink("https://www.imdb.com/title/tt0111161")),
             ("Indexer Flags", "freeleech, internal"),
             ("Poster", DetailsLink("https://img.example/poster.jpg")),
         )
