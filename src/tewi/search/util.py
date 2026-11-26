@@ -11,7 +11,7 @@ from datetime import datetime
 from http.client import HTTPResponse
 from typing import Any
 
-from ..util.misc import is_http_url, is_torrent_hash
+from ..util.misc import is_http_url, is_torrent_hash, parse_count
 from .models import Category, DetailsLink, StandardCategories
 
 # User-Agent string to imitate a popular browser
@@ -128,6 +128,26 @@ def local_time(value: datetime | None) -> datetime | None:
         Timezone-aware date in local time zone, or None
     """
     return value.astimezone() if value else None
+
+
+def parse_timestamp(value: object) -> datetime | None:
+    """Parse optional date from unix timestamp in provider response.
+
+    Args:
+        value: Unix timestamp as int or digit string
+
+    Returns:
+        Date in local time zone, or None if value isn't a valid
+        timestamp
+    """
+    timestamp = parse_count(value)
+    if not timestamp:
+        return None
+
+    try:
+        return local_time(datetime.fromtimestamp(timestamp))
+    except (OverflowError, OSError, ValueError):
+        return None
 
 
 def details_value(value: object) -> str | DetailsLink:

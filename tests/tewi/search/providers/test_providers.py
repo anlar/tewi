@@ -262,6 +262,7 @@ class TestYTSProviderIntegration(BaseProviderIntegrationTest):
     def get_valid_categories(self) -> set:
         return {
             StandardCategories.MOVIES,
+            StandardCategories.MOVIES_SD,
             StandardCategories.MOVIES_HD,
             StandardCategories.MOVIES_UHD,
             StandardCategories.MOVIES_3D,

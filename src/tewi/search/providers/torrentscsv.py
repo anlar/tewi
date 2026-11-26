@@ -16,7 +16,7 @@ from ..models import Category, DetailsSection, SearchResult
 from ..util import (
     build_magnet_link,
     detect_category_from_name,
-    local_time,
+    parse_timestamp,
     read_response,
 )
 
@@ -189,7 +189,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
 
             # Build provider-specific fields
             fields: dict[str, object] = {}
-            scraped_date = self._parse_timestamp(torrent.get("scraped_date"))
+            scraped_date = parse_timestamp(torrent.get("scraped_date"))
             if scraped_date:
                 fields["scraped_date"] = scraped_date
 
@@ -207,7 +207,7 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 downloads=parse_count(torrent.get("completed")),
                 size=parse_count(torrent.get("size_bytes")),
                 files_count=None,
-                upload_date=self._parse_timestamp(torrent.get("created_unix")),
+                upload_date=parse_timestamp(torrent.get("created_unix")),
                 page_url=None,
                 freeleech=True,  # Public tracker
                 extra=fields,
@@ -218,23 +218,4 @@ class TorrentsCsvProvider(BaseSearchProvider):
                 "Torrents-CSV: skipping invalid search result "
                 f"{torrent.get('infohash')!r}"
             )
-            return None
-
-    def _parse_timestamp(self, value: object) -> datetime | None:
-        """Parse optional date from unix timestamp in API response.
-
-        Args:
-            value: Unix timestamp as int or digit string
-
-        Returns:
-            Date in local time zone, or None if value isn't a valid
-            timestamp
-        """
-        timestamp = parse_count(value)
-        if not timestamp:
-            return None
-
-        try:
-            return local_time(datetime.fromtimestamp(timestamp))
-        except (OverflowError, OSError, ValueError):
             return None

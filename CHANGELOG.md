@@ -61,6 +61,10 @@ handle multi-line list body as single line.
 - Fix Nyaa search with several categories selected searching only the first one, TV search not finding Live Action, and searching all categories when Nyaa has none of selected ones
 - Label Nyaa own category as "Nyaa Category" in search result details, to distinguish it from common "Category"
 - Load up to 100 Torrents-CSV search results (4 pages) instead of 25, as API ignores requested page size
+- Fix YTS being searched when Movies category isn't selected
+- Fix YTS search failing completely on single invalid result, and link to movie page built from movie ID not opening
+- Add source type (BluRay, WEB) to YTS result titles, to distinguish torrents of the same quality, and map 480p ones to Movies/SD category
+- Update YTS domain to yts.pw and magnet link trackers to ones recommended by YTS
 
 ### Removed
 
