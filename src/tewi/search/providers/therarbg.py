@@ -8,6 +8,7 @@ import re
 import urllib.error
 import urllib.parse
 import xml.etree.ElementTree as ET
+from collections.abc import Iterable
 from datetime import datetime
 from email.utils import parsedate_to_datetime
 from typing import Any
@@ -27,6 +28,7 @@ from ..util import (
     build_magnet_link,
     local_time,
     matches_query,
+    parse_timestamp,
     query_words,
     read_response,
 )
@@ -40,6 +42,9 @@ class TheRarbgProvider(BaseSearchProvider):
     The site has no documented API. Search uses JSON version of the site
     search page, which is sorted and contains leechers, but misses some
     torrents. It's supplemented by search RSS feed, which contains them.
+
+    Both sources filter by single category only (the last one, if several
+    are requested), so they are searched for each category separately.
     """
 
     SITE_URL = "https://therarbg.com"
@@ -52,21 +57,36 @@ class TheRarbgProvider(BaseSearchProvider):
     # Max number of files listed in details
     MAX_DETAILS_FILES = 100
 
+    # Trackers from magnet links on the site (results have info hash only)
+    TRACKERS = [
+        "udp://tracker.opentrackr.org:1337/announce",
+        "udp://open.stealth.si:80/announce",
+        "udp://tracker.therarbg.to:6969/announce",
+        "udp://exodus.desync.com:6969/announce",
+        "udp://tracker.torrent.eu.org:451/announce",
+        "udp://open.demonii.com:1337/announce",
+        "udp://explodie.org:6969/announce",
+        "https://ht.therarbg.to/announce",
+    ]
+
     # Category mapping from TheRARBG to StandardCategories
     CATEGORY_MAP = {
         "Movies": StandardCategories.MOVIES,
         "TV": StandardCategories.TV,
+        "TV shows": StandardCategories.TV,
         "Games": StandardCategories.PC_GAMES,
         "Music": StandardCategories.AUDIO,
         "Apps": StandardCategories.PC,
         "Documentaries": StandardCategories.TV_DOCUMENTARY,
         "Anime": StandardCategories.TV_ANIME,
         "Books": StandardCategories.BOOKS,
+        "E-books": StandardCategories.BOOKS_EBOOK,
         "Other": StandardCategories.OTHER,
         "XXX": StandardCategories.XXX,
     }
 
     # TheRARBG categories containing results of StandardCategories parent
+    # (search by TV and Books includes TV shows and E-books)
     PARENT_TO_RARBG_CATEGORIES = {
         StandardCategories.CONSOLE: {"Games"},
         StandardCategories.MOVIES: {"Movies"},
@@ -105,42 +125,54 @@ class TheRarbgProvider(BaseSearchProvider):
             return []
 
         query = query.strip()
-        rarbg_categories = self._convert_categories_to_rarbg(categories)
+        # None searches all categories
+        rarbg_categories: list[str | None] = [
+            *self._convert_categories_to_rarbg(categories)
+        ] or [None]
 
-        results = self._search_json(query, rarbg_categories)
+        # JSON results go first, so they are kept for duplicates, as they
+        # have leechers
+        results: dict[str, SearchResult] = {}
+        for category in rarbg_categories:
+            self._merge(results, self._search_json(query, category))
         try:
-            rss_results = self._search_rss(query, rarbg_categories)
+            for category in rarbg_categories:
+                self._merge(results, self._search_rss(query, category))
         except Exception as e:
             # RSS only supplements JSON search results
             logger.warning(f"TheRARBG: failed to search RSS: {e}")
-            rss_results = []
-
-        known = {r.info_hash for r in results}
-        results += [r for r in rss_results if r.info_hash not in known]
 
         # Search also returns fuzzy matches (e.g. "Exemplar" for "example")
         words = query_words(query)
-        return [r for r in results if matches_query(r.title, words)]
+        return [r for r in results.values() if matches_query(r.title, words)]
+
+    def _merge(
+        self, results: dict[str, SearchResult], new: Iterable[SearchResult]
+    ) -> None:
+        """Add new results by info hash, keeping already added ones."""
+        for result in new:
+            results.setdefault(result.info_hash, result)
 
     def _search_json(
-        self, query: str, rarbg_categories: list[str]
+        self, query: str, category: str | None
     ) -> list[SearchResult]:
         """Search JSON version of site search page.
 
         Args:
             query: Search query
-            rarbg_categories: TheRARBG categories, or empty list for all
+            category: TheRARBG category, or None for all
 
         Returns:
             Parsed search results
         """
-        params: list[tuple[str, Any]] = [
-            ("keywords", query),
-            ("format", "json"),
-            ("order", "-se"),
-            ("page_size", self.RESULTS_LIMIT),
-        ]
-        params += [("category", c) for c in rarbg_categories]
+        params: dict[str, Any] = {
+            "keywords": query,
+            "format": "json",
+            "order": "-se",
+            "page_size": self.RESULTS_LIMIT,
+        }
+        if category:
+            params["category"] = category
         url = f"{self.SEARCH_URL}?{urllib.parse.urlencode(params)}"
 
         try:
@@ -151,48 +183,34 @@ class TheRarbgProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
 
-        if not isinstance(data, dict):
-            return []
+        torrents = data.get("results") if isinstance(data, dict) else None
+        if not isinstance(torrents, list):
+            raise Exception("Failed to parse API response: invalid results")
 
-        results = []
-        for torrent in data.get("results") or []:
-            result = self._parse_torrent(torrent)
-            if result:
-                results.append(result)
-        return results
+        return [r for t in torrents if (r := self._parse_torrent(t))]
 
     def _search_rss(
-        self, query: str, rarbg_categories: list[str]
+        self, query: str, category: str | None
     ) -> list[SearchResult]:
         """Search RSS feed.
 
-        Feed filters by single category only, so for several categories
-        all results are requested and filtered locally.
-
         Args:
             query: Search query
-            rarbg_categories: TheRARBG categories, or empty list for all
+            category: TheRARBG category, or None for all
 
         Returns:
             Parsed search results
         """
         params: dict[str, Any] = {"q": query, "limit": self.RESULTS_LIMIT}
-        if len(rarbg_categories) == 1:
-            params["category"] = rarbg_categories[0]
+        if category:
+            params["category"] = category
         url = f"{self.RSS_URL}?{urllib.parse.urlencode(params)}"
 
         with self.urlopen(url) as response:
             root = ET.fromstring(read_response(response))  # noqa: S314
 
-        results = []
-        for item in root.findall("./channel/item"):
-            category = item.findtext("category")
-            if rarbg_categories and category not in rarbg_categories:
-                continue
-            result = self._parse_rss_item(item)
-            if result:
-                results.append(result)
-        return results
+        items = root.findall("./channel/item")
+        return [r for i in items if (r := self._parse_rss_item(i))]
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         if not result.extra:
@@ -312,6 +330,9 @@ class TheRarbgProvider(BaseSearchProvider):
 
     def _parse_torrent(self, torrent: Any) -> SearchResult | None:
         """Parse torrent from JSON search results."""
+        if not isinstance(torrent, dict):
+            return None
+
         try:
             title = torrent.get("n")
             info_hash = parse_info_hash(torrent.get("h"))
@@ -333,31 +354,30 @@ class TheRarbgProvider(BaseSearchProvider):
             if tags and isinstance(tags, list):
                 fields["tags"] = ", ".join(str(t) for t in tags)
 
-            upload_date = None
-            if isinstance(torrent.get("a"), int):
-                upload_date = datetime.fromtimestamp(torrent["a"])
-
             return SearchResult(
                 title=title,
                 info_hash=info_hash,
-                magnet_link=build_magnet_link(info_hash=info_hash, name=title),
+                magnet_link=self._magnet_link(info_hash, title),
                 torrent_link=None,
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=tuple(self._get_categories(category) or ()),
+                categories=self._get_categories(category),
                 seeders=parse_count(torrent.get("se")),
                 leechers=parse_count(torrent.get("le")),
                 downloads=None,
                 size=parse_count(torrent.get("s")),
                 files_count=None,
-                upload_date=local_time(upload_date),
+                upload_date=parse_timestamp(torrent.get("a")),
                 page_url=self._page_url(tid, title),
                 freeleech=True,  # Public tracker
                 extra=fields,
             )
 
-        except (AttributeError, KeyError, ValueError, TypeError):
+        except Exception:
+            logger.exception(
+                f"TheRARBG: skipping invalid search result {torrent.get('h')!r}"
+            )
             return None
 
     def _parse_rss_item(self, item: ET.Element) -> SearchResult | None:
@@ -385,11 +405,10 @@ class TheRarbgProvider(BaseSearchProvider):
             if seeders_match:
                 seeders = int(seeders_match.group(1))
 
-            size = None
             enclosure = item.find("enclosure")
-            length = enclosure.get("length") if enclosure is not None else None
-            if length and length.isdigit():
-                size = int(length)
+            size = parse_count(
+                enclosure.get("length") if enclosure is not None else None
+            )
 
             upload_date = None
             pub_date = item.findtext("pubDate")
@@ -399,12 +418,12 @@ class TheRarbgProvider(BaseSearchProvider):
             return SearchResult(
                 title=title,
                 info_hash=info_hash,
-                magnet_link=build_magnet_link(info_hash=info_hash, name=title),
+                magnet_link=self._magnet_link(info_hash, title),
                 torrent_link=None,
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=tuple(self._get_categories(category) or ()),
+                categories=self._get_categories(category),
                 seeders=seeders,
                 # Feed has no leechers
                 leechers=None,
@@ -417,8 +436,17 @@ class TheRarbgProvider(BaseSearchProvider):
                 extra=fields,
             )
 
-        except (AttributeError, KeyError, ValueError, TypeError):
+        except Exception:
+            logger.exception(
+                f"TheRARBG: skipping invalid RSS item {item.findtext('guid')!r}"
+            )
             return None
+
+    def _magnet_link(self, info_hash: str, title: str) -> str:
+        """Build magnet link with site trackers."""
+        return build_magnet_link(
+            info_hash=info_hash, name=title, trackers=self.TRACKERS
+        )
 
     def _page_url(self, tid: str, title: str) -> str:
         """Build torrent page URL."""
@@ -435,10 +463,10 @@ class TheRarbgProvider(BaseSearchProvider):
         except ValueError:
             return None
 
-    def _get_categories(self, category: Any) -> list[Category] | None:
+    def _get_categories(self, category: Any) -> tuple[Category, ...]:
         """Map TheRARBG category name to StandardCategories."""
         mapped = self.CATEGORY_MAP.get(category)
-        return [mapped] if mapped else None
+        return (mapped,) if mapped else ()
 
     def _convert_categories_to_rarbg(
         self, categories: list[Category] | None
@@ -458,9 +486,7 @@ class TheRarbgProvider(BaseSearchProvider):
         rarbg_categories: set[str] = set()
         for category in categories:
             parent = category.parent or category
-            rarbg_ids = self.PARENT_TO_RARBG_CATEGORIES.get(parent)
-            if not rarbg_ids:
-                return []
-            rarbg_categories |= rarbg_ids
-
+            rarbg_categories |= self.PARENT_TO_RARBG_CATEGORIES.get(
+                parent, set()
+            )
         return sorted(rarbg_categories)

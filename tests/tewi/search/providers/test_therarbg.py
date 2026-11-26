@@ -178,6 +178,28 @@ class TestSearch:
 
         assert [r.info_hash for r in results] == [HASH_JSON.lower()]
 
+    def test_invalid_results_are_raised(self, provider, mock_urlopen):
+        mock_responses(mock_urlopen, json_data={"results": "x"})
+
+        with pytest.raises(Exception, match="invalid results"):
+            provider.search("example")
+
+    def test_invalid_result_is_skipped(self, provider, mock_urlopen):
+        mock_responses(
+            mock_urlopen,
+            json_data={
+                "results": [
+                    "x",
+                    {**JSON_TORRENT, "h": "C" * 40, "n": ["example"]},
+                    JSON_TORRENT,
+                ]
+            },
+        )
+
+        results = provider.search("example")
+
+        assert [r.info_hash for r in results] == [HASH_JSON.lower()]
+
     def test_json_failure_is_raised(self, provider, mock_urlopen):
         mock_urlopen.side_effect = None
         response = mock_urlopen.return_value.__enter__.return_value
@@ -212,23 +234,17 @@ class TestCategoryFilter:
         assert request_params(mock_urlopen, 1)["category"] == ["Movies"]
 
     def test_several_categories_request(self, provider, mock_urlopen):
-        mock_responses(
-            mock_urlopen,
-            rss_data=rss(
-                rss_item("C" * 40, category="TV"),
-                rss_item("D" * 40, category="Movies"),
-            ),
-        )
+        mock_responses(mock_urlopen, rss_data=rss(rss_item("C" * 40)))
 
         results = provider.search("example", [StandardCategories.TV])
 
-        assert request_params(mock_urlopen, 0)["category"] == [
-            "Anime",
-            "Documentaries",
-            "TV",
+        # Site filters by last category only, so each one is searched
+        categories = [
+            request_params(mock_urlopen, i)["category"] for i in range(6)
         ]
-        # RSS filters by single category only, so it's filtered locally
-        assert "category" not in request_params(mock_urlopen, 1)
+        assert categories == [["Anime"], ["Documentaries"], ["TV"]] * 2
+        assert mock_urlopen.call_count == 6
+        # Duplicates from several requests are merged
         assert [r.info_hash for r in results] == [HASH_JSON.lower(), "c" * 40]
 
 
@@ -238,6 +254,9 @@ class TestParse:
         assert result.info_hash == HASH_JSON.lower()
         assert result.magnet_link.startswith(
             f"magnet:?xt=urn:btih:{HASH_JSON.lower()}"
+        )
+        assert "&tr=udp://tracker.therarbg.to:6969/announce" in (
+            result.magnet_link
         )
         assert result.categories == (StandardCategories.TV,)
         assert result.seeders == 278
@@ -290,13 +309,15 @@ class TestParse:
             ("Anime", StandardCategories.TV_ANIME),
             ("Documentaries", StandardCategories.TV_DOCUMENTARY),
             ("Apps", StandardCategories.PC),
+            ("TV shows", StandardCategories.TV),
+            ("E-books", StandardCategories.BOOKS_EBOOK),
         ],
     )
     def test_category(self, provider, category, expected):
-        assert provider._get_categories(category) == [expected]
+        assert provider._get_categories(category) == (expected,)
 
     def test_unknown_category(self, provider):
-        assert provider._get_categories("Unknown") is None
+        assert provider._get_categories("Unknown") == ()
 
 
 class TestDetails:
