@@ -71,6 +71,11 @@ handle multi-line list body as single line.
 - Fix Jackett search failing completely on single invalid result
 - Don't log Jackett API key and don't show Jackett links containing it (poster, blackhole) in search result details
 - Hide Jackett internal fields (category duplicate, volume factors, gain) in search result details and show HTML description as text
+- Fix Bitmagnet search ignoring selected categories, which left few results after filtering
+- Map Bitmagnet games to PC/Games, ebooks to Books/EBook, and torrents of unknown content to Other instead of hiding them when categories are selected
+- Load up to 100 Bitmagnet search results instead of 50
+- Load Bitmagnet search result details by exact info hash instead of searching it as text, and show torrent files in them
+- Fix Bitmagnet search failing completely on single invalid result, show its timestamps in local time and episodes without duplication
 
 ### Removed
 

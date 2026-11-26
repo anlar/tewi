@@ -153,35 +153,34 @@ def bitmagnet(payload: str, imdb: str) -> list[DetailsSection]:
     provider = BitmagnetProvider("http://bitmagnet")
     result = provider._parse_torrent_item(
         {
+            "infoHash": HASH,
             "contentType": payload,
             "releaseGroup": payload,
             "videoCodec": payload,
             "languages": [{"name": payload}],
             "torrent": {
                 "name": "Title",
-                "infoHash": HASH,
                 "magnetUri": f"magnet:?xt=urn:btih:{HASH}",
                 "tagNames": [payload],
             },
         }
     )
-    content = provider._parse_content_details(
-        {
-            "title": payload,
-            "overview": payload,
-            "releaseDate": payload,
-            "originalLanguage": {"name": payload},
-            "externalLinks": [
-                {"metadataSource": {"name": payload}, "url": payload},
-                {"metadataSource": {"name": "IMDb"}, "url": imdb},
-                {
-                    "metadataSource": {"name": "TMDB"},
-                    "url": "https://www.themoviedb.org/movie/278",
-                },
-            ],
-        }
-    )
-    with patch.object(provider, "_fetch_content_details", return_value=content):
+    content = {
+        "title": payload,
+        "overview": payload,
+        "releaseDate": payload,
+        "originalLanguage": {"name": payload},
+        "externalLinks": [
+            {"metadataSource": {"name": payload}, "url": payload},
+            {"metadataSource": {"name": "IMDb"}, "url": imdb},
+            {
+                "metadataSource": {"name": "TMDB"},
+                "url": "https://www.themoviedb.org/movie/278",
+            },
+        ],
+    }
+    details = {"content": content, "files": None}
+    with patch.object(provider, "_fetch_details", return_value=details):
         return provider.details_extended(result)
 
 

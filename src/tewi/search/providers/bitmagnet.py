@@ -5,11 +5,10 @@
 
 import json
 import urllib.error
-import urllib.parse
-import urllib.request
 from datetime import datetime
 from typing import Any
 
+from ...util.format import print_size
 from ...util.log import get_logger, log_time
 from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
@@ -30,37 +29,40 @@ class BitmagnetProvider(BaseSearchProvider):
 
     Bitmagnet provides access to DHT-crawled torrents via GraphQL API.
     Documentation: https://bitmagnet.io
-    Available endpoints: https://bitmagnet.io/guides/endpoints.html
+    Schema: https://github.com/bitmagnet-io/bitmagnet/tree/main/graphql
     """
 
-    # GraphQL query for search, search term is passed as $query variable
-    GRAPHQL_QUERY = """query Search($query: String!) {
+    # Max number of results
+    RESULTS_LIMIT = 100
+
+    # Max number of files listed in details
+    MAX_DETAILS_FILES = 100
+
+    # GraphQL query for search, facets filter results by content type
+    SEARCH_QUERY = """query Search(
+  $query: String!
+  $limit: Int!
+  $facets: TorrentContentFacetsInput
+) {
   torrentContent {
     search(
       input: {
         queryString: $query
-        offset: 0
-        limit: 50
-        orderBy: { field: seeders, descending: true }
+        limit: $limit
+        orderBy: [{ field: seeders, descending: true }]
+        facets: $facets
       }
     ) {
       items {
-        id
         infoHash
         contentType
         contentSource
         contentId
-        title
         languages {
-          id
           name
         }
         episodes {
           label
-          seasons {
-            season
-            episodes
-          }
         }
         videoResolution
         videoSource
@@ -74,26 +76,19 @@ class BitmagnetProvider(BaseSearchProvider):
         createdAt
         updatedAt
         torrent {
-          infoHash
           name
           size
-          filesCount
           seeders
           leechers
+          filesCount
           magnetUri
-          hasFilesInfo
-          singleFile
-          extension
-          fileType
           fileTypes
-          filesStatus
           tagNames
           createdAt
           updatedAt
           sources {
             key
             name
-            importId
             seeders
             leechers
           }
@@ -103,26 +98,17 @@ class BitmagnetProvider(BaseSearchProvider):
   }
 }"""
 
-    # GraphQL query template for fetching torrent details by info hash
-    GRAPHQL_DETAILS_QUERY = """query Details($infoHash: String!) {
+    # GraphQL query for torrent details: content metadata and files
+    DETAILS_QUERY = """query Details($infoHash: Hash20!, $filesLimit: Int!) {
   torrentContent {
-    search(
-      input: {
-        queryString: $infoHash
-      }
-    ) {
+    search(input: { infoHashes: [$infoHash], limit: 1 }) {
       items {
-        infoHash
         content {
-          type
-          source
-          id
           title
           releaseDate
           releaseYear
           adult
           originalLanguage {
-            id
             name
           }
           originalTitle
@@ -133,7 +119,6 @@ class BitmagnetProvider(BaseSearchProvider):
           voteCount
           externalLinks {
             metadataSource {
-              key
               name
             }
             url
@@ -142,22 +127,86 @@ class BitmagnetProvider(BaseSearchProvider):
       }
     }
   }
+  torrent {
+    files(
+      input: {
+        infoHashes: [$infoHash]
+        limit: $filesLimit
+        orderBy: [{ field: path }]
+      }
+    ) {
+      items {
+        path
+        size
+      }
+    }
+  }
 }"""
 
-    # Mapping of Bitmagnet ContentType enum to StandardCategories
-    # Source: https://github.com/bitmagnet-io/bitmagnet/blob/main/internal/protobuf/bitmagnet.proto
-    CONTENT_TYPE_CATEGORY_MAP = {
-        "movie": StandardCategories.MOVIES,  # 1
-        "tv_show": StandardCategories.TV,  # 2
-        "music": StandardCategories.AUDIO,  # 3
-        "ebook": StandardCategories.BOOKS,  # 4
-        "comic": StandardCategories.BOOKS_COMICS,  # 5
-        "audiobook": StandardCategories.AUDIO_AUDIOBOOK,  # 6
-        "game": StandardCategories.PC,  # 7
-        "software": StandardCategories.PC,  # 8
-        "xxx": StandardCategories.XXX,  # 9
-        # "unknown" (0) -> not in map, returns empty list
+    # Mapping of Bitmagnet ContentType to StandardCategories (None is
+    # unknown content type), based on Jackett's bitmagnet.yml
+    CONTENT_TYPE_CATEGORY_MAP: dict[str | None, Category] = {
+        "movie": StandardCategories.MOVIES,
+        "tv_show": StandardCategories.TV,
+        "music": StandardCategories.AUDIO,
+        "ebook": StandardCategories.BOOKS_EBOOK,
+        "comic": StandardCategories.BOOKS_COMICS,
+        "audiobook": StandardCategories.AUDIO_AUDIOBOOK,
+        "game": StandardCategories.PC_GAMES,
+        "software": StandardCategories.PC,
+        "xxx": StandardCategories.XXX,
+        None: StandardCategories.OTHER,
     }
+
+    # Search result fields shown in details: (item key, field key)
+    ITEM_FIELDS = [
+        ("contentType", "content_type"),
+        ("contentSource", "content_source"),
+        ("contentId", "content_id"),
+        ("releaseGroup", "release_group"),
+        ("videoResolution", "video_resolution"),
+        ("videoSource", "video_source"),
+        ("videoCodec", "video_codec"),
+        ("video3d", "video_3d"),
+        ("videoModifier", "video_modifier"),
+    ]
+
+    # Details sections fields: (field key, label)
+    CONTENT_FIELDS = [
+        ("content_type", "Content Type"),
+        ("content_source", "Content Source"),
+        ("content_id", "Content ID"),
+        ("content_title", "Title"),
+        ("original_title", "Original Title"),
+        ("release_year", "Release Year"),
+        ("release_date", "Release Date"),
+        ("original_language", "Original Language"),
+        ("runtime", "Runtime"),
+        ("rating", "Rating"),
+        ("popularity", "Popularity"),
+        ("adult", "Adult"),
+        ("file_types", "File Types"),
+        ("tag_names", "Tags"),
+        ("sources", "Sources"),
+    ]
+    VIDEO_FIELDS = [
+        ("video_resolution", "Resolution"),
+        ("video_source", "Source"),
+        ("video_codec", "Codec"),
+        ("video_3d", "3D"),
+        ("video_modifier", "Modifier"),
+    ]
+    RELEASE_FIELDS = [
+        ("release_group", "Release Group"),
+        ("languages", "Languages"),
+        ("episodes", "Episodes"),
+    ]
+    TIMESTAMP_FIELDS = [
+        ("item_created_at", "Item Created"),
+        ("item_updated_at", "Item Updated"),
+        ("torrent_created_at", "Torrent Created"),
+        ("torrent_updated_at", "Torrent Updated"),
+    ]
 
     def __init__(
         self, bitmagnet_url: str | None = None, timeout: int | None = None
@@ -188,14 +237,14 @@ class BitmagnetProvider(BaseSearchProvider):
     def search(
         self,
         query: str,
-        categories: list | None = None,
+        categories: list[Category] | None = None,
         indexers: list[str] | None = None,
     ) -> list[SearchResult]:
         """Search Bitmagnet for torrents via GraphQL API.
 
         Args:
             query: Search term
-            categories: Category objects to filter by (not used by Bitmagnet)
+            categories: Categories to filter by (optional)
             indexers: Indexer IDs (not used by Bitmagnet)
 
         Returns:
@@ -210,21 +259,30 @@ class BitmagnetProvider(BaseSearchProvider):
         if not query or not query.strip():
             return []
 
-        # Build GraphQL query
-        query_body = self._build_graphql_query(query.strip())
+        content_types = self._content_types(categories)
+        if content_types == []:
+            return []
 
-        # Fetch results from GraphQL endpoint
-        url = f"{self.bitmagnet_url.rstrip('/')}/graphql"
-        data = self._fetch_results(url, query_body)
+        variables: dict[str, Any] = {
+            "query": query.strip(),
+            "limit": self.RESULTS_LIMIT,
+            "facets": None,
+        }
+        if content_types:
+            variables["facets"] = {"contentType": {"filter": content_types}}
 
-        # Process and return results
-        return self._process_results(data)
+        data = self._graphql(self.SEARCH_QUERY, variables)
+        items = self._dig(data, "torrentContent", "search", "items")
+        if not isinstance(items, list):
+            raise Exception("Failed to parse Bitmagnet response: no items")
+
+        return [r for i in items if (r := self._parse_torrent_item(i))]
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         """Generate Bitmagnet-specific details for right column.
 
-        Prints extended metadata from the search result. Attempts to fetch
-        additional content details from GraphQL API.
+        Shows metadata from the search result and fetches content
+        metadata and files from GraphQL API.
 
         Args:
             result: Search result to format
@@ -235,121 +293,28 @@ class BitmagnetProvider(BaseSearchProvider):
         if not result.extra:
             return []
 
-        # Try to fetch additional torrent details
         fields = dict(result.extra)
-        try:
-            content_details = self._fetch_content_details(result.info_hash)
-            if content_details:
-                # Merge additional fields from content details
-                fields.update(content_details)
-        except Exception as e:
-            logger.debug(f"Bitmagnet: failed to fetch content details: {e}")
+        files: list[DetailsSection] = []
+        details = self._fetch_details(result.info_hash)
+        if details:
+            fields.update(self._parse_content_details(details.get("content")))
+            files = self._format_files(details.get("files"), result.files_count)
+
+        overview = None
+        # Long text is shown as paragraph, not squeezed into field value
+        if fields.get("overview"):
+            overview = DetailsSection("Overview", text=str(fields["overview"]))
 
         sections = [
-            self._format_content_section(fields),
-            self._format_overview_section(fields),
-            self._format_video_section(fields),
-            self._format_release_section(fields),
-            self._format_links_section(fields),
-            self._format_timestamps_section(fields),
+            self._format_section("Content", fields, self.CONTENT_FIELDS),
+            overview,
+            self._format_section("Video", fields, self.VIDEO_FIELDS),
+            self._format_section("Release", fields, self.RELEASE_FIELDS),
+            self._format_links(fields.get("external_links")),
+            *files,
+            self._format_section("Timestamps", fields, self.TIMESTAMP_FIELDS),
         ]
-
         return [s for s in sections if s]
-
-    def _format_content_section(self, fields: dict) -> DetailsSection | None:
-        """Format content metadata section including sources and tags."""
-        field_defs = [
-            ("content_type", "Content Type"),
-            ("content_source", "Content Source"),
-            ("content_id", "Content ID"),
-            ("content_title", "Title"),
-            ("original_title", "Original Title"),
-            ("release_year", "Release Year"),
-            ("release_date", "Release Date"),
-            ("original_language", "Original Language"),
-            ("runtime", "Runtime"),
-            ("rating", "Rating"),
-            ("popularity", "Popularity"),
-            ("adult", "Adult"),
-            ("file_types", "File Types"),
-            ("tag_names", "Tags"),
-            ("sources", "Sources"),
-        ]
-        return self._format_field_section("Content", fields, field_defs)
-
-    def _format_overview_section(self, fields: dict) -> DetailsSection | None:
-        """Format overview as paragraph, as it's long text."""
-        overview = fields.get("overview")
-        if not overview:
-            return None
-        return DetailsSection("Overview", text=str(overview))
-
-    def _format_video_section(self, fields: dict) -> DetailsSection | None:
-        """Format video metadata section."""
-        field_defs = [
-            ("video_resolution", "Resolution"),
-            ("video_source", "Source"),
-            ("video_codec", "Codec"),
-            ("video_3d", "3D"),
-            ("video_modifier", "Modifier"),
-        ]
-        return self._format_field_section("Video", fields, field_defs)
-
-    def _format_release_section(self, fields: dict) -> DetailsSection | None:
-        """Format release metadata section."""
-        field_defs = [
-            ("release_group", "Release Group"),
-            ("languages", "Languages"),
-            ("episodes", "Episodes"),
-        ]
-        return self._format_field_section("Release", fields, field_defs)
-
-    def _format_links_section(self, fields: dict) -> DetailsSection | None:
-        """Format external links section."""
-        links_data = fields.get("external_links")
-
-        # links_data is a list of tuples: [(name, url), ...]
-        if not links_data or not isinstance(links_data, list):
-            return None
-
-        links = [(str(name), details_value(url)) for name, url in links_data]
-        return DetailsSection("Links", fields=tuple(links))
-
-    def _format_timestamps_section(self, fields: dict) -> DetailsSection | None:
-        """Format timestamps section."""
-        field_defs = [
-            ("item_created_at", "Item Created"),
-            ("item_updated_at", "Item Updated"),
-            ("torrent_created_at", "Torrent Created"),
-            ("torrent_updated_at", "Torrent Updated"),
-        ]
-        return self._format_field_section("Timestamps", fields, field_defs)
-
-    def _format_field_section(
-        self,
-        title: str,
-        fields: dict,
-        field_defs: list[tuple[str, str]],
-    ) -> DetailsSection | None:
-        """Format a section with field definitions.
-
-        Args:
-            title: Section title
-            fields: Field values dict
-            field_defs: List of (field_key, field_label) tuples
-
-        Returns:
-            Section, or None if it has no fields
-        """
-        rows: list[tuple[str, str | DetailsLink]] = [
-            (field_label, str(fields[field_key]))
-            for field_key, field_label in field_defs
-            if fields.get(field_key)
-        ]
-
-        if rows:
-            return DetailsSection(title, fields=tuple(rows))
-        return None
 
     def _validate_config(self, bitmagnet_url: str | None) -> str | None:
         """Validate configuration and return error message if invalid.
@@ -367,53 +332,50 @@ class BitmagnetProvider(BaseSearchProvider):
             )
         return None
 
-    def _build_graphql_query(self, query: str) -> dict:
-        """Build GraphQL query body with search term as variable.
+    def _content_types(
+        self, categories: list[Category] | None
+    ) -> list[str | None] | None:
+        """Convert categories to Bitmagnet content types to search.
 
         Args:
-            query: Search term
+            categories: Selected categories
 
         Returns:
-            Dictionary with query and variables fields for POST body
+            Content types (None is unknown type), None to search all, or
+            empty list if Bitmagnet has none of selected categories
         """
-        return {"query": self.GRAPHQL_QUERY, "variables": {"query": query}}
+        if not categories:
+            return None
 
-    def _fetch_results(self, url: str, query_body: dict) -> dict:
-        """Fetch and parse JSON results from Bitmagnet GraphQL API.
+        parents = {c.parent or c for c in categories}
+        return [
+            content_type
+            for content_type, category in self.CONTENT_TYPE_CATEGORY_MAP.items()
+            if (category.parent or category) in parents
+        ]
+
+    def _graphql(self, query: str, variables: dict[str, Any]) -> dict:
+        """Send GraphQL request to Bitmagnet.
 
         Args:
-            url: GraphQL endpoint URL
-            query_body: GraphQL query dictionary
+            query: GraphQL query
+            variables: Query variables
 
         Returns:
-            Parsed JSON data as dict
+            Response data
 
         Raises:
-            Exception: If request fails or response invalid
+            Exception: If request fails, response is invalid or has errors
         """
+        url = f"{self.bitmagnet_url.rstrip('/')}/graphql"
+        body = json.dumps({"query": query, "variables": variables})
+
         try:
-            # Convert query body to JSON
-            post_data = json.dumps(query_body).encode("utf-8")
-
             logger.debug(f"Bitmagnet: requesting URL: {url}")
-            with self.urlopen_post(url, data=post_data) as response:
-                response_data = json.loads(
-                    read_response(response).decode("utf-8")
-                )
-
-            # Check for GraphQL errors
-            if "errors" in response_data:
-                error_msgs = [
-                    err.get("message", "Unknown error")
-                    for err in response_data["errors"]
-                ]
-                raise Exception(f"GraphQL error: {'; '.join(error_msgs)}")
-
-            return response_data
-
+            with self.urlopen_post(url, data=body.encode()) as response:
+                data = json.loads(read_response(response).decode("utf-8"))
         except urllib.error.HTTPError as e:
             # Read error response body for more details
-            error_body = ""
             try:
                 if e.fp:
                     error_body = e.fp.read(MAX_ERROR_BODY_SIZE).decode(
@@ -432,7 +394,6 @@ class BitmagnetProvider(BaseSearchProvider):
                     "Bitmagnet GraphQL endpoint not found (check URL)"
                 )
             raise Exception(f"HTTP error {e.code}: {e.reason}")
-
         except urllib.error.URLError as e:
             raise Exception(
                 f"Cannot connect to Bitmagnet at {self.bitmagnet_url}: "
@@ -441,220 +402,77 @@ class BitmagnetProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse Bitmagnet response: {e}")
 
-    def _fetch_content_details(self, info_hash: str) -> dict[str, Any] | None:
-        """Fetch detailed content metadata for a torrent by info hash.
+        if not isinstance(data, dict):
+            raise Exception("Failed to parse Bitmagnet response: not object")
+
+        errors = data.get("errors")
+        if errors:
+            messages = [
+                str(e.get("message") or "unknown error")
+                if isinstance(e, dict)
+                else str(e)
+                for e in errors
+            ]
+            raise Exception(f"GraphQL error: {'; '.join(messages)}")
+
+        result = data.get("data")
+        return result if isinstance(result, dict) else {}
+
+    @log_time
+    def _fetch_details(self, info_hash: str | None) -> dict[str, Any] | None:
+        """Fetch content metadata and files of torrent.
 
         Args:
             info_hash: Torrent info hash
 
         Returns:
-            Dictionary of additional fields or None if fetch fails
+            Dictionary with "content" and "files", or None if they could
+            not be loaded
         """
-        if self._config_error:
+        if not info_hash:
             return None
 
         try:
-            query_body = {
-                "query": self.GRAPHQL_DETAILS_QUERY,
-                "variables": {"infoHash": info_hash},
-            }
-
-            url = f"{self.bitmagnet_url.rstrip('/')}/graphql"
-            post_data = json.dumps(query_body).encode("utf-8")
-
-            logger.debug(f"Bitmagnet: fetching content details for {info_hash}")
-            with self.urlopen_post(url, data=post_data) as response:
-                response_data = json.loads(
-                    read_response(response).decode("utf-8")
-                )
-
-            # Navigate to content object
-            items = (
-                response_data.get("data", {})
-                .get("torrentContent", {})
-                .get("search", {})
-                .get("items", [])
+            data = self._graphql(
+                self.DETAILS_QUERY,
+                {"infoHash": info_hash, "filesLimit": self.MAX_DETAILS_FILES},
             )
-
-            if not items or not items[0].get("content"):
-                return None
-
-            content = items[0]["content"]
-            return self._parse_content_details(content)
-
         except Exception as e:
-            logger.debug(f"Bitmagnet: error fetching content details: {e}")
+            logger.warning(f"Bitmagnet: failed to fetch details: {e}")
             return None
 
-    def _parse_content_details(self, content: dict[str, Any]) -> dict[str, Any]:
-        """Parse content details into displayable fields.
+        items = self._dig(data, "torrentContent", "search", "items")
+        item = items[0] if isinstance(items, list) and items else None
+        return {
+            "content": self._dig(item, "content"),
+            "files": self._dig(data, "torrent", "files"),
+        }
 
-        Args:
-            content: Content object from GraphQL response
-
-        Returns:
-            Dictionary of formatted fields (mostly strings, but may include
-            lists for complex fields like external_links)
-        """
-        fields: dict[str, Any] = {}
-
-        # Extract various field types
-        self._parse_simple_content_fields(content, fields)
-        self._parse_numeric_content_fields(content, fields)
-        self._parse_additional_content_fields(content, fields)
-
-        return fields
-
-    def _parse_simple_content_fields(
-        self, content: dict[str, Any], fields: dict[str, Any]
-    ) -> None:
-        """Parse simple string fields from content."""
-        simple_fields = [
-            ("title", "content_title"),
-            ("originalTitle", "original_title"),
-            ("overview", "overview"),
-        ]
-
-        for source_key, target_key in simple_fields:
-            value = content.get(source_key)
-            if value:
-                fields[target_key] = value
-
-    def _parse_numeric_content_fields(
-        self, content: dict[str, Any], fields: dict[str, Any]
-    ) -> None:
-        """Parse numeric fields from content."""
-        if content.get("releaseYear"):
-            fields["release_year"] = str(content["releaseYear"])
-
-        if content.get("runtime"):
-            fields["runtime"] = f"{content['runtime']} min"
-
-        if content.get("voteAverage"):
-            avg = content["voteAverage"]
-            count = content.get("voteCount", 0)
-            fields["rating"] = f"{avg:.1f}/10 ({count} votes)"
-
-        if content.get("popularity"):
-            fields["popularity"] = f"{content['popularity']:.1f}"
-
-    def _parse_additional_content_fields(
-        self, content: dict[str, Any], fields: dict[str, Any]
-    ) -> None:
-        """Parse additional fields from content."""
-        # Boolean fields
-        if content.get("adult"):
-            fields["adult"] = "Yes"
-
-        # Release date
-        if content.get("releaseDate"):
-            fields["release_date"] = content["releaseDate"]
-
-        # Original language
-        orig_lang = content.get("originalLanguage")
-        if orig_lang and isinstance(orig_lang, dict):
-            lang_name = orig_lang.get("name")
-            if lang_name:
-                fields["original_language"] = lang_name
-
-        # External links - store as list of tuples for separate section
-        ext_links = content.get("externalLinks", [])
-        if ext_links:
-            link_tuples = []
-            for link in ext_links:
-                if not isinstance(link, dict):
-                    continue
-                url = link.get("url")
-                meta_source = link.get("metadataSource", {})
-                source_name = meta_source.get("name", "Link")
-                if url:
-                    link_tuples.append((source_name, url))
-
-            if link_tuples:
-                # Store as list for _format_links_section to process
-                fields["external_links"] = link_tuples
-
-    def _process_results(self, data: dict) -> list[SearchResult]:
-        """Process API response and convert to SearchResult list.
-
-        Args:
-            data: Parsed GraphQL JSON response
-
-        Returns:
-            List of SearchResult objects
-        """
-        if not data or "data" not in data:
-            return []
-
-        # Navigate GraphQL response structure
-        items = (
-            data.get("data", {})
-            .get("torrentContent", {})
-            .get("search", {})
-            .get("items", [])
-        )
-
-        if not items:
-            return []
-
-        results = []
-        for item in items:
-            result = self._parse_torrent_item(item)
-            if result:
-                results.append(result)
-
-        return results
-
-    def _parse_torrent_item(self, item: dict[str, Any]) -> SearchResult | None:
+    def _parse_torrent_item(self, item: Any) -> SearchResult | None:
         """Parse a single torrent item from Bitmagnet GraphQL response.
 
         Args:
-            item: Single item dict from GraphQL response
+            item: Single item from GraphQL response
 
         Returns:
-            SearchResult or None if parsing fails
+            SearchResult or None if item is invalid
         """
+        if not isinstance(item, dict):
+            return None
+
         try:
-            # Extract torrent object (required)
             torrent = item.get("torrent")
-            if not torrent:
+            if not isinstance(torrent, dict):
                 return None
 
-            # Extract required fields
             title = torrent.get("name")
-            info_hash = parse_info_hash(torrent.get("infoHash"))
+            info_hash = parse_info_hash(item.get("infoHash"))
             magnet_link = torrent.get("magnetUri")
-
-            if not title:
+            if not title or not info_hash or not magnet_link:
                 return None
 
-            if not info_hash:
-                return None
-
-            if not magnet_link:
-                return None
-
-            # Extract optional numeric fields
-            # Prefer item-level seeders/leechers over torrent-level
-            seeders = parse_count(item.get("seeders") or torrent.get("seeders"))
-            leechers = parse_count(
-                item.get("leechers") or torrent.get("leechers")
-            )
-            size = parse_count(torrent.get("size"))
-            files_count = parse_count(torrent.get("filesCount"))
-
-            # Parse upload date
-            upload_date = self._parse_publish_date(item)
-
-            # Build extended metadata fields
-            fields = self._build_fields(item)
-
-            # Detect category from contentType
-            categories = self._detect_category(item)
-
-            page_url = (
-                f"{self.bitmagnet_url.rstrip('/')}/webui/torrents/"
-                f"permalink/{info_hash}"
+            category = self.CONTENT_TYPE_CATEGORY_MAP.get(
+                item.get("contentType")
             )
 
             return SearchResult(
@@ -665,309 +483,244 @@ class BitmagnetProvider(BaseSearchProvider):
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=tuple(categories or ()),
-                seeders=seeders,
-                leechers=leechers,
+                categories=(category,) if category else (),
+                seeders=self._peers(item, torrent, "seeders"),
+                leechers=self._peers(item, torrent, "leechers"),
                 downloads=None,
-                size=size,
-                files_count=files_count,
-                upload_date=local_time(upload_date),
-                page_url=page_url,
+                size=parse_count(torrent.get("size")),
+                files_count=parse_count(torrent.get("filesCount")),
+                upload_date=local_time(
+                    self._parse_date(item.get("publishedAt"))
+                ),
+                page_url=(
+                    f"{self.bitmagnet_url.rstrip('/')}/webui/torrents/"
+                    f"permalink/{info_hash}"
+                ),
                 freeleech=True,  # Public
-                extra=fields,
+                extra=self._build_fields(item, torrent),
             )
 
-        except (KeyError, ValueError, TypeError) as e:
-            logger.warning(f"Bitmagnet: failed to parse item: {e}")
+        except Exception:
+            logger.exception(
+                "Bitmagnet: skipping invalid search result "
+                f"{item.get('infoHash')!r}"
+            )
             return None
 
-    def _parse_publish_date(self, item: dict[str, Any]) -> datetime | None:
-        """Parse publish date from item.
+    def _build_fields(
+        self, item: dict[str, Any], torrent: dict[str, Any]
+    ) -> dict[str, str]:
+        """Build provider-specific fields shown in details.
 
         Args:
-            item: Item dict from Bitmagnet GraphQL response
+            item: Item from GraphQL response
+            torrent: Torrent of item
 
         Returns:
-            datetime object or None if parsing fails
+            Dictionary of non-empty fields, as strings
         """
-        publish_date = item.get("publishedAt")
-        if not publish_date:
-            return None
+        fields = {
+            key: str(item[source])
+            for source, key in self.ITEM_FIELDS
+            if item.get(source)
+        }
 
-        try:
-            # Handle ISO 8601 format with Z timezone
-            return datetime.fromisoformat(publish_date.replace("Z", "+00:00"))
-        except (ValueError, AttributeError):
-            return None
-
-    def _detect_category(self, item: dict[str, Any]) -> list[Category]:
-        """Detect category from Bitmagnet contentType field.
-
-        Maps Bitmagnet ContentType enum to StandardCategories using
-        CONTENT_TYPE_CATEGORY_MAP. Unknown or missing types return
-        empty list.
-
-        Args:
-            item: Item dict from Bitmagnet GraphQL response
-
-        Returns:
-            List containing detected category, or empty list if unknown
-        """
-        content_type = item.get("contentType")
-        if not content_type:
-            return []
-
-        content_type_lower = content_type.lower()
-        category = self.CONTENT_TYPE_CATEGORY_MAP.get(content_type_lower)
-
-        return [category] if category else []
-
-    def _build_fields(self, item: dict[str, Any]) -> dict[str, object]:
-        """Build provider-specific fields dict from extended metadata.
-
-        Args:
-            item: Item dict from Bitmagnet GraphQL response
-
-        Returns:
-            Dictionary of provider-specific fields
-        """
-        torrent = item.get("torrent", {})
-        fields: dict[str, str] = {}
-
-        # Extract all field types
-        self._extract_content_fields(item, fields)
-        self._extract_video_fields(item, fields)
-        self._extract_timestamp_fields(item, torrent, fields)
-        self._extract_list_fields(torrent, fields)
-        self._extract_complex_fields(item, torrent, fields)
-
-        return fields
-
-    def _extract_content_fields(
-        self, item: dict[str, Any], fields: dict[str, str]
-    ) -> None:
-        """Extract content metadata fields."""
-        field_map = [
-            ("contentType", "content_type"),
-            ("contentSource", "content_source"),
-            ("contentId", "content_id"),
-        ]
-        self._extract_simple_fields(item, fields, field_map)
-
-    def _extract_video_fields(
-        self, item: dict[str, Any], fields: dict[str, str]
-    ) -> None:
-        """Extract video metadata fields."""
-        field_map = [
-            ("releaseGroup", "release_group"),
-            ("videoResolution", "video_resolution"),
-            ("videoSource", "video_source"),
-            ("videoCodec", "video_codec"),
-            ("video3d", "video_3d"),
-            ("videoModifier", "video_modifier"),
-        ]
-        self._extract_simple_fields(item, fields, field_map)
-
-    def _extract_timestamp_fields(
-        self,
-        item: dict[str, Any],
-        torrent: dict[str, Any],
-        fields: dict[str, str],
-    ) -> None:
-        """Extract and format timestamp fields from item and torrent."""
-        item_field_map = [
-            ("createdAt", "item_created_at"),
-            ("updatedAt", "item_updated_at"),
-        ]
-        torrent_field_map = [
-            ("createdAt", "torrent_created_at"),
-            ("updatedAt", "torrent_updated_at"),
-        ]
-
-        # Extract and format item timestamps
-        for source_key, target_key in item_field_map:
-            value = item.get(source_key)
-            if value:
-                formatted = self._format_timestamp(value)
-                if formatted:
-                    fields[target_key] = formatted
-
-        # Extract and format torrent timestamps
-        for source_key, target_key in torrent_field_map:
-            value = torrent.get(source_key)
-            if value:
-                formatted = self._format_timestamp(value)
-                if formatted:
-                    fields[target_key] = formatted
-
-    def _extract_list_fields(
-        self, torrent: dict[str, Any], fields: dict[str, str]
-    ) -> None:
-        """Extract list fields that need joining."""
-        list_field_map = [
+        for source, key in (
             ("fileTypes", "file_types"),
             ("tagNames", "tag_names"),
+        ):
+            values = torrent.get(source)
+            if isinstance(values, list) and values:
+                fields[key] = ", ".join(str(v) for v in values)
+
+        languages = [
+            str(lang["name"])
+            for lang in item.get("languages") or []
+            if isinstance(lang, dict) and lang.get("name")
         ]
-        for source_key, target_key in list_field_map:
-            value = torrent.get(source_key, [])
-            if value:
-                fields[target_key] = ", ".join(value)
-
-    def _extract_complex_fields(
-        self,
-        item: dict[str, Any],
-        torrent: dict[str, Any],
-        fields: dict[str, str],
-    ) -> None:
-        """Extract complex fields with custom formatting."""
-        languages = self._format_languages(item.get("languages", []))
         if languages:
-            fields["languages"] = languages
+            fields["languages"] = ", ".join(languages)
 
-        episodes = self._format_episodes(item.get("episodes"))
+        # Label lists seasons and episodes, e.g. "S01E01-E05, S03"
+        episodes = self._dig(item, "episodes", "label")
         if episodes:
-            fields["episodes"] = episodes
+            fields["episodes"] = str(episodes)
 
-        sources = self._format_sources(torrent.get("sources", []))
+        sources = self._format_sources(torrent.get("sources"))
         if sources:
             fields["sources"] = sources
 
-    def _extract_simple_fields(
-        self,
-        source: dict[str, Any],
-        fields: dict[str, str],
-        field_map: list[tuple[str, str]],
-    ) -> None:
-        """Extract simple string fields from source to fields dict."""
-        for source_key, target_key in field_map:
-            value = source.get(source_key)
-            if value:
-                fields[target_key] = value
+        for source, value, key in (
+            (item, "createdAt", "item_created_at"),
+            (item, "updatedAt", "item_updated_at"),
+            (torrent, "createdAt", "torrent_created_at"),
+            (torrent, "updatedAt", "torrent_updated_at"),
+        ):
+            date = self._parse_date(source.get(value))
+            if date:
+                fields[key] = local_time(date).strftime("%Y-%m-%d %H:%M")
 
-    def _format_languages(self, languages: list[dict]) -> str:
-        """Format languages list to comma-separated string.
+        return fields
 
-        Args:
-            languages: List of language dicts with 'name' field
-
-        Returns:
-            Comma-separated language names or empty string
-        """
-        if not languages:
-            return ""
-
-        names = []
-        for lang in languages:
-            if isinstance(lang, dict) and "name" in lang:
-                names.append(lang["name"])
-
-        return ", ".join(names) if names else ""
-
-    def _format_episodes(self, episodes: dict | None) -> str:
-        """Format episodes dict to readable string.
+    def _format_sources(self, sources: Any) -> str:
+        """Format torrent sources with their peer counts.
 
         Args:
-            episodes: Episodes dict with 'label' and 'seasons' fields
+            sources: Sources from GraphQL response
 
         Returns:
-            Formatted episode string or empty string
+            Sources, e.g. "DHT (S:5/L:1)", or empty string
         """
-        if not episodes:
+        if not isinstance(sources, list):
             return ""
 
         parts = []
-
-        # Add label if present
-        label = episodes.get("label")
-        if label:
-            parts.append(label)
-
-        # Format seasons
-        seasons = episodes.get("seasons", [])
-        if seasons:
-            season_parts = []
-            for season in seasons:
-                season_num = season.get("season")
-                episode_list = season.get("episodes", [])
-
-                if season_num is not None and episode_list:
-                    # Format as S01E01-E05
-                    if len(episode_list) == 1:
-                        season_parts.append(
-                            f"S{season_num:02d}E{episode_list[0]:02d}"
-                        )
-                    else:
-                        first_ep = min(episode_list)
-                        last_ep = max(episode_list)
-                        season_parts.append(
-                            f"S{season_num:02d}E{first_ep:02d}-E{last_ep:02d}"
-                        )
-
-            if season_parts:
-                parts.append(f"({', '.join(season_parts)})")
-
-        return " ".join(parts) if parts else ""
-
-    def _format_sources(self, sources: list[dict]) -> str:
-        """Format sources list to detailed string.
-
-        Args:
-            sources: List of source dicts with 'name', 'key', etc.
-
-        Returns:
-            Formatted source information or empty string
-        """
-        if not sources:
-            return ""
-
-        source_parts = []
         for source in sources:
             if not isinstance(source, dict):
                 continue
+            name = source.get("name") or source.get("key")
+            if not name:
+                continue
+            peers = [
+                f"{label}:{source[key]}"
+                for key, label in (("seeders", "S"), ("leechers", "L"))
+                if source.get(key) is not None
+            ]
+            parts.append(f"{name} ({'/'.join(peers)})" if peers else name)
+        return ", ".join(str(p) for p in parts)
 
-            name = source.get("name", "")
-            key = source.get("key", "")
-            seeders = source.get("seeders")
-            leechers = source.get("leechers")
-
-            # Build source entry with available data
-            parts = []
-            if name:
-                parts.append(name)
-            elif key:
-                parts.append(key)
-
-            # Add peer counts if available
-            peer_info = []
-            if seeders is not None:
-                peer_info.append(f"S:{seeders}")
-            if leechers is not None:
-                peer_info.append(f"L:{leechers}")
-
-            if peer_info:
-                parts.append(f"({'/'.join(peer_info)})")
-
-            if parts:
-                source_parts.append(" ".join(parts))
-
-        return ", ".join(source_parts) if source_parts else ""
-
-    def _format_timestamp(self, timestamp: str) -> str:
-        """Format ISO 8601 timestamp to human-readable format.
+    def _parse_content_details(self, content: Any) -> dict[str, Any]:
+        """Parse content metadata into displayable fields.
 
         Args:
-            timestamp: ISO 8601 timestamp string
+            content: Content object from GraphQL response
 
         Returns:
-            Formatted timestamp string or empty string if parsing fails
+            Dictionary of fields, as strings, except external_links,
+            which is list of (name, url)
         """
-        if not timestamp:
-            return ""
+        if not isinstance(content, dict):
+            return {}
 
+        fields: dict[str, Any] = {}
+        for source, key in (
+            ("title", "content_title"),
+            ("originalTitle", "original_title"),
+            ("overview", "overview"),
+            ("releaseYear", "release_year"),
+            ("releaseDate", "release_date"),
+        ):
+            if content.get(source):
+                fields[key] = str(content[source])
+
+        if content.get("runtime"):
+            fields["runtime"] = f"{content['runtime']} min"
+
+        vote_average = content.get("voteAverage")
+        if isinstance(vote_average, int | float) and vote_average:
+            votes = parse_count(content.get("voteCount")) or 0
+            fields["rating"] = f"{vote_average:.1f}/10 ({votes} votes)"
+
+        popularity = content.get("popularity")
+        if isinstance(popularity, int | float) and popularity:
+            fields["popularity"] = f"{popularity:.1f}"
+
+        if content.get("adult"):
+            fields["adult"] = "Yes"
+
+        language = self._dig(content, "originalLanguage", "name")
+        if language:
+            fields["original_language"] = str(language)
+
+        links = [
+            (str(self._dig(link, "metadataSource", "name") or "Link"), url)
+            for link in content.get("externalLinks") or []
+            if isinstance(link, dict) and (url := link.get("url"))
+        ]
+        if links:
+            fields["external_links"] = links
+
+        return fields
+
+    def _format_section(
+        self, title: str, fields: dict[str, Any], defs: list[tuple[str, str]]
+    ) -> DetailsSection | None:
+        """Format section with fields present in details.
+
+        Args:
+            title: Section title
+            fields: Field values
+            defs: List of (field key, label)
+
+        Returns:
+            Section, or None if it has no fields
+        """
+        rows: list[tuple[str, str | DetailsLink]] = [
+            (label, str(fields[key])) for key, label in defs if fields.get(key)
+        ]
+        return DetailsSection(title, fields=tuple(rows)) if rows else None
+
+    def _format_links(self, links: Any) -> DetailsSection | None:
+        """Format external links section."""
+        if not links or not isinstance(links, list):
+            return None
+        return DetailsSection(
+            "Links",
+            fields=tuple((name, details_value(url)) for name, url in links),
+        )
+
+    def _peers(
+        self, item: dict[str, Any], torrent: dict[str, Any], key: str
+    ) -> int | None:
+        """Get peers count of item, or of torrent if item has none."""
+        count = parse_count(item.get(key))
+        return count if count is not None else parse_count(torrent.get(key))
+
+    def _format_files(
+        self, files: Any, files_count: int | None
+    ) -> list[DetailsSection]:
+        """Format files section, limited to MAX_DETAILS_FILES entries.
+
+        Args:
+            files: Files query result
+            files_count: Number of files from search result (files query
+                total count is limited by requested number of files)
+
+        Returns:
+            Files section, or empty list if there are no files
+        """
+        items = self._dig(files, "items")
+        if not isinstance(items, list) or not items:
+            return []
+
+        lines = []
+        for f in items:
+            if not isinstance(f, dict) or not f.get("path"):
+                continue
+            line = str(f["path"])
+            size = parse_count(f.get("size"))
+            if size is not None:
+                line += f" ({print_size(size)})"
+            lines.append(line)
+
+        total = max(files_count or 0, len(items))
+        if total > len(items):
+            lines.append(f"...and {total - len(items)} more")
+        return [DetailsSection(f"Files ({total})", items=tuple(lines))]
+
+    def _parse_date(self, value: Any) -> datetime | None:
+        """Parse ISO 8601 date returned by API."""
+        if not value or not isinstance(value, str):
+            return None
         try:
-            # Parse ISO 8601 format with Z timezone
-            dt = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-            # Format as: 2025-12-16 14:30
-            return dt.strftime("%Y-%m-%d %H:%M")
-        except (ValueError, AttributeError):
-            return timestamp  # Return original if parsing fails
+            return datetime.fromisoformat(value.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+
+    def _dig(self, data: Any, *keys: str) -> Any:
+        """Get nested value from dictionaries, or None if it's missing."""
+        for key in keys:
+            if not isinstance(data, dict):
+                return None
+            data = data.get(key)
+        return data
