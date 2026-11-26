@@ -58,6 +58,8 @@ handle multi-line list body as single line.
 - Fix TPB search with several categories selected searching only the first one
 - Fix TPB search failing completely on single invalid result
 - Fix TPB search by category returning few results when other categories of the same TPB group (e.g. Movies for TV) took the result limit, and not finding PC and Mac games
+- Fix Nyaa search with several categories selected searching only the first one, TV search not finding Live Action, and searching all categories when Nyaa has none of selected ones
+- Label Nyaa own category as "Nyaa Category" in search result details, to distinguish it from common "Category"
 
 ### Removed
 

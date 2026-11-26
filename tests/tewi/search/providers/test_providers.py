@@ -408,8 +408,7 @@ class TestNyaaProviderIntegration(BaseProviderIntegrationTest):
         return "anime"
 
     def get_valid_categories(self) -> set:
-        # Nyaa categories are now mapped to Jackett categories based on
-        # categoryId
+        # Nyaa categoryId is mapped to Standard categories
         return {
             # Anime categories
             StandardCategories.TV_ANIME,
