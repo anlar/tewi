@@ -55,6 +55,9 @@ handle multi-line list body as single line.
 - Fix duplicate web search results from different providers, which weren't merged when providers wrote the same info hash in different case or in Base32
 - Show web search result details as plain text instead of Markdown
 - Show all statistics in web search result details, with `-` for empty values
+- Fix TPB search with several categories selected searching only the first one
+- Fix TPB search failing completely on single invalid result
+- Fix TPB search by category returning few results when other categories of the same TPB group (e.g. Movies for TV) took the result limit, and not finding PC and Mac games
 
 ### Removed
 

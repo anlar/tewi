@@ -10,7 +10,7 @@ import urllib.parse
 from datetime import datetime
 from typing import Any
 
-from ...util.log import log_time
+from ...util.log import get_logger, log_time
 from ...util.misc import parse_count, parse_info_hash
 from ..base import BaseSearchProvider
 from ..models import (
@@ -22,6 +22,8 @@ from ..models import (
 )
 from ..util import build_magnet_link, local_time, read_response
 
+logger = get_logger()
+
 
 class TPBProvider(BaseSearchProvider):
     """Search provider for The Pirate Bay (via apibay.org)."""
@@ -32,65 +34,65 @@ class TPBProvider(BaseSearchProvider):
     # Based on Jackett's thepiratebay.yml category mappings
     TPB_CATEGORY_MAP = {
         # Audio categories (100-199)
-        100: [StandardCategories.AUDIO],
-        101: [StandardCategories.AUDIO],
-        102: [StandardCategories.AUDIO_AUDIOBOOK],
-        103: [StandardCategories.AUDIO],
-        104: [StandardCategories.AUDIO_LOSSLESS],
-        199: [StandardCategories.AUDIO_OTHER],
+        100: StandardCategories.AUDIO,
+        101: StandardCategories.AUDIO,
+        102: StandardCategories.AUDIO_AUDIOBOOK,
+        103: StandardCategories.AUDIO,
+        104: StandardCategories.AUDIO_LOSSLESS,
+        199: StandardCategories.AUDIO_OTHER,
         # Video categories (200-299)
-        200: [StandardCategories.MOVIES],
-        201: [StandardCategories.MOVIES],
-        202: [StandardCategories.MOVIES_DVD],
-        203: [StandardCategories.AUDIO_VIDEO],
-        204: [StandardCategories.MOVIES_OTHER],
-        205: [StandardCategories.TV],
-        206: [StandardCategories.TV_OTHER],
-        207: [StandardCategories.MOVIES_HD],
-        208: [StandardCategories.TV_HD],
-        209: [StandardCategories.MOVIES_3D],
-        210: [StandardCategories.MOVIES_SD],
-        211: [StandardCategories.MOVIES_UHD],
-        212: [StandardCategories.TV_UHD],
-        299: [StandardCategories.MOVIES_OTHER],
+        200: StandardCategories.MOVIES,
+        201: StandardCategories.MOVIES,
+        202: StandardCategories.MOVIES_DVD,
+        203: StandardCategories.AUDIO_VIDEO,
+        204: StandardCategories.MOVIES_OTHER,
+        205: StandardCategories.TV,
+        206: StandardCategories.TV_OTHER,
+        207: StandardCategories.MOVIES_HD,
+        208: StandardCategories.TV_HD,
+        209: StandardCategories.MOVIES_3D,
+        210: StandardCategories.MOVIES_SD,
+        211: StandardCategories.MOVIES_UHD,
+        212: StandardCategories.TV_UHD,
+        299: StandardCategories.MOVIES_OTHER,
         # Applications (300-399)
-        300: [StandardCategories.PC],
-        301: [StandardCategories.PC],
-        302: [StandardCategories.PC_MAC],
-        303: [StandardCategories.PC],
-        304: [StandardCategories.PC_MOBILE_OTHER],
-        305: [StandardCategories.PC_MOBILE_IOS],
-        306: [StandardCategories.PC_MOBILE_ANDROID],
-        399: [StandardCategories.PC],
+        300: StandardCategories.PC,
+        301: StandardCategories.PC,
+        302: StandardCategories.PC_MAC,
+        303: StandardCategories.PC,
+        304: StandardCategories.PC_MOBILE_OTHER,
+        305: StandardCategories.PC_MOBILE_IOS,
+        306: StandardCategories.PC_MOBILE_ANDROID,
+        399: StandardCategories.PC,
         # Games (400-499)
-        400: [StandardCategories.CONSOLE],
-        401: [StandardCategories.PC_GAMES],
-        402: [StandardCategories.PC_MAC],
-        403: [StandardCategories.CONSOLE_PS4],
-        404: [StandardCategories.CONSOLE_XBOX],
-        405: [StandardCategories.CONSOLE_WII],
-        406: [StandardCategories.CONSOLE_OTHER],
-        407: [StandardCategories.CONSOLE_OTHER],
-        408: [StandardCategories.CONSOLE_OTHER],
-        499: [StandardCategories.CONSOLE_OTHER],
+        400: StandardCategories.CONSOLE,
+        401: StandardCategories.PC_GAMES,
+        402: StandardCategories.PC_MAC,
+        403: StandardCategories.CONSOLE_PS4,
+        404: StandardCategories.CONSOLE_XBOX,
+        405: StandardCategories.CONSOLE_WII,
+        406: StandardCategories.CONSOLE_OTHER,
+        407: StandardCategories.CONSOLE_OTHER,
+        408: StandardCategories.CONSOLE_OTHER,
+        499: StandardCategories.CONSOLE_OTHER,
         # Adult content (500-599)
-        500: [StandardCategories.XXX],
-        501: [StandardCategories.XXX],
-        502: [StandardCategories.XXX_DVD],
-        503: [StandardCategories.XXX_IMAGESET],
-        504: [StandardCategories.XXX],
-        505: [StandardCategories.XXX_X264],
-        506: [StandardCategories.XXX],
-        507: [StandardCategories.XXX_UHD],
-        599: [StandardCategories.XXX_OTHER],
+        500: StandardCategories.XXX,
+        501: StandardCategories.XXX,
+        502: StandardCategories.XXX_DVD,
+        503: StandardCategories.XXX_IMAGESET,
+        504: StandardCategories.XXX,
+        505: StandardCategories.XXX_X264,
+        506: StandardCategories.XXX,
+        507: StandardCategories.XXX_UHD,
+        599: StandardCategories.XXX_OTHER,
         # Other/Books (600-699)
-        600: [StandardCategories.OTHER],
-        601: [StandardCategories.BOOKS_EBOOK],
-        602: [StandardCategories.BOOKS_COMICS],
-        603: [StandardCategories.BOOKS],
-        604: [StandardCategories.BOOKS],
-        605: [StandardCategories.BOOKS],
-        699: [StandardCategories.BOOKS_OTHER],
+        600: StandardCategories.OTHER,
+        601: StandardCategories.BOOKS_EBOOK,
+        602: StandardCategories.BOOKS_COMICS,
+        603: StandardCategories.BOOKS,
+        604: StandardCategories.BOOKS,
+        605: StandardCategories.BOOKS,
+        699: StandardCategories.BOOKS_OTHER,
     }
 
     # Fallback parent categories by range
@@ -101,18 +103,6 @@ class TPBProvider(BaseSearchProvider):
         400: StandardCategories.CONSOLE,
         500: StandardCategories.XXX,
         600: StandardCategories.OTHER,
-    }
-
-    # Map Standard parent category IDs to TPB codes
-    STD_TO_TPB_MAP = {
-        1000: 400,  # Console -> Games
-        2000: 200,  # Movies -> Video
-        3000: 100,  # Audio -> Audio
-        4000: 300,  # PC -> Applications
-        5000: 200,  # TV -> Video
-        6000: 500,  # XXX -> Porn
-        7000: 600,  # Books -> Other
-        8000: 600,  # Other -> Other
     }
 
     _IMDB_RE = re.compile(r"tt\d+")
@@ -140,24 +130,24 @@ class TPBProvider(BaseSearchProvider):
 
         Args:
             query: Search term
-            categories: Category IDs to filter by (optional)
+            categories: Categories to filter by (optional)
             indexers: Indexer IDs (ignored - not a meta-provider)
 
         Returns:
             List of SearchResult objects
 
         Raises:
-            Exception: If API request fails
+            Exception: If API request fails or response can't be parsed
         """
         if not query or not query.strip():
             return []
 
-        # Convert Standard category IDs to TPB category codes
-        tpb_category = self._convert_categories_to_tpb(categories)
+        # Category 0 searches all categories
+        tpb_categories = self._convert_categories_to_tpb(categories) or [0]
 
         params = {
             "q": query.strip(),
-            "cat": tpb_category,
+            "cat": ",".join(str(c) for c in tpb_categories),
         }
 
         url = f"{self.API_URL}?{urllib.parse.urlencode(params)}"
@@ -165,25 +155,26 @@ class TPBProvider(BaseSearchProvider):
         try:
             with self.urlopen(url) as response:
                 data = json.loads(read_response(response).decode("utf-8"))
-
-            # API returns [{"name": "No results returned"}] when no results
-            if not data or (
-                len(data) == 1 and data[0].get("name") == "No results returned"
-            ):
-                return []
-
-            results = []
-            for torrent in data:
-                result = self._parse_torrent(torrent)
-                if result:
-                    results.append(result)
-
-            return results
-
         except urllib.error.URLError as e:
             raise Exception(f"Network error: {e}")
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
+
+        # API returns single item with [{"id": "0"}] when no results
+        if (
+            len(data) == 1
+            and isinstance(data[0], dict)
+            and data[0].get("id") == "0"
+        ):
+            return []
+
+        results = []
+        for torrent in data:
+            result = self._parse_torrent(torrent)
+            if result:
+                results.append(result)
+
+        return results
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         """Generate TPB-specific details for right column.
@@ -218,7 +209,7 @@ class TPBProvider(BaseSearchProvider):
         sections = [DetailsSection("Uploader", fields=tuple(uploader))]
 
         imdb_code = result.extra.get("imdb")
-        if imdb_code and self._IMDB_RE.fullmatch(imdb_code):
+        if imdb_code:
             imdb_url = f"https://www.imdb.com/title/{imdb_code}/"
             sections.append(
                 DetailsSection(
@@ -228,8 +219,11 @@ class TPBProvider(BaseSearchProvider):
 
         return sections
 
-    def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResult | None:
+    def _parse_torrent(self, torrent: Any) -> SearchResult | None:
         """Parse a single torrent from TPB API response."""
+        if not isinstance(torrent, dict):
+            return None
+
         try:
             title = torrent.get("name")
             if not title:
@@ -240,7 +234,7 @@ class TPBProvider(BaseSearchProvider):
                 return None
 
             category_code = int(torrent.get("category", 0))
-            categories = self._get_category(category_code)
+            category = self._get_category(category_code)
 
             # Parse upload date from unix timestamp
             upload_date = None
@@ -250,14 +244,11 @@ class TPBProvider(BaseSearchProvider):
 
             # Construct page URL from torrent ID
             page_url = None
-            torrent_id = torrent.get("id")
+            torrent_id = parse_count(torrent.get("id"))
             if torrent_id:
                 page_url = (
                     f"https://thepiratebay.org/description.php?id={torrent_id}"
                 )
-
-            # Get files_count if available
-            files_count = parse_count(torrent.get("num_files"))
 
             # Build provider-specific fields
             fields = {}
@@ -270,7 +261,7 @@ class TPBProvider(BaseSearchProvider):
                 fields["status"] = status
 
             imdb = torrent.get("imdb")
-            if imdb:
+            if imdb and self._IMDB_RE.fullmatch(imdb):
                 fields["imdb"] = imdb
 
             return SearchResult(
@@ -281,50 +272,61 @@ class TPBProvider(BaseSearchProvider):
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=tuple(categories or ()),
+                categories=(category,) if category else (),
                 seeders=parse_count(torrent.get("seeders")),
                 leechers=parse_count(torrent.get("leechers")),
                 downloads=None,
                 size=parse_count(torrent.get("size")),
-                files_count=files_count,
+                files_count=parse_count(torrent.get("num_files")),
                 upload_date=local_time(upload_date),
                 page_url=page_url,
                 freeleech=True,  # Public tracker
                 extra=fields,
             )
 
-        except (KeyError, ValueError, TypeError):
+        except Exception:
+            logger.exception(
+                f"TPB: skipping invalid search result {torrent.get('id')!r}"
+            )
             return None
 
     def _convert_categories_to_tpb(
         self, categories: list[Category] | None
-    ) -> int:
-        """Convert Standard categories to TPB category code.
+    ) -> list[int]:
+        """Convert Standard categories to TPB category codes to search.
 
-        TPB uses category codes: 100 (Audio), 200 (Video), 300 (Apps),
-        400 (Games), 500 (Porn), 600 (Other)
+        Selected parent categories are searched by all TPB codes mapped to
+        them or their subcategories. Range codes (e.g. 200 for Video) search
+        the whole range, including other categories (e.g. TV for Movies),
+        which would take API result limit, so they are only used for
+        categories without other codes (e.g. 600 for Other).
 
         Args:
-            categories: List of Category objects
+            categories: Selected categories
 
         Returns:
-            TPB category code (0 for all categories)
+            Sorted TPB category codes, or empty list to search all
+            categories
         """
         if not categories:
-            return 0
+            return []
 
-        # Try to find a matching parent category
+        tpb_categories: set[int] = set()
         for category in categories:
-            # Get parent category ID (first digit * 1000)
-            parent_id = (category.id // 1000) * 1000
-            if parent_id in self.STD_TO_TPB_MAP:
-                return self.STD_TO_TPB_MAP[parent_id]
+            parent = category.parent or category
+            codes = {
+                code
+                for code, tpb_category in self.TPB_CATEGORY_MAP.items()
+                if (tpb_category.parent or tpb_category) == parent
+            }
+            if not codes:
+                return []
+            tpb_categories |= {code for code in codes if code % 100} or codes
 
-        # Default to all categories
-        return 0
+        return sorted(tpb_categories)
 
-    def _get_category(self, code: int) -> list[Category] | None:
-        """Map TPB category code to Standard Category list.
+    def _get_category(self, code: int) -> Category | None:
+        """Map TPB category code to Standard category.
 
         Based on Jackett's thepiratebay.yml category mappings:
         https://github.com/Jackett/Jackett/blob/master/src/Jackett.Common/Definitions/thepiratebay.yml
@@ -333,16 +335,9 @@ class TPBProvider(BaseSearchProvider):
             code: TPB category code (e.g., 101, 207, etc.)
 
         Returns:
-            List of matching Standard Category objects
+            Matching Standard category, or None if code is unknown
         """
-        # Try exact match first
-        if code in self.TPB_CATEGORY_MAP:
-            return self.TPB_CATEGORY_MAP[code]
-
-        # Fallback to parent category by range
-        parent_code = (code // 100) * 100
-        if parent_code in self.TPB_PARENT_MAP:
-            return [self.TPB_PARENT_MAP[parent_code]]
-
-        # No match found
-        return None
+        # Try exact match first, then fall back to parent category by range
+        return self.TPB_CATEGORY_MAP.get(code) or self.TPB_PARENT_MAP.get(
+            (code // 100) * 100
+        )
