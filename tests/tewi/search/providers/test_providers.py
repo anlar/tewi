@@ -75,6 +75,17 @@ class BaseProviderIntegrationTest(ABC):
         """
         pass
 
+    def requires_magnet(self) -> bool:
+        """Return whether results should have magnet links.
+
+        Meta-providers (Jackett, Prowlarr) could return only torrent link,
+        or magnet link via their proxy (HTTP link redirecting to magnet).
+
+        Returns:
+            bool: True if results should have magnet links
+        """
+        return True
+
     def validate_result_list(self, results):
         """Validate that result list is not None and not empty.
 
@@ -96,7 +107,14 @@ class BaseProviderIntegrationTest(ABC):
         )
         assert result.title is not None, "Title should not be None"
         assert len(result.title) > 0, "Title should not be empty"
-        assert result.magnet_link is not None, "Magnet link should not be None"
+        if self.requires_magnet():
+            assert result.magnet_link is not None, (
+                "Magnet link should not be None"
+            )
+        else:
+            assert result.magnet_link or result.torrent_link, (
+                "Magnet or torrent link should not be None"
+            )
 
     def validate_info_hash(self, info_hash: str | None):
         """Validate info hash format (40 lowercase hex characters) if
@@ -127,9 +145,10 @@ class BaseProviderIntegrationTest(ABC):
         assert "xt=urn:btih:" in magnet_link, (
             "Magnet link should contain 'xt=urn:btih:'"
         )
-        assert info_hash.lower() in magnet_link.lower(), (
-            "Magnet link should contain the info hash"
-        )
+        if info_hash:
+            assert info_hash.lower() in magnet_link.lower(), (
+                "Magnet link should contain the info hash"
+            )
 
         # Check tracker requirements
         if self.requires_trackers():
@@ -238,7 +257,10 @@ class BaseProviderIntegrationTest(ABC):
             self.validate_info_hash(result.info_hash)
 
             # Validate magnet link
-            self.validate_magnet_link(result.magnet_link, result.info_hash)
+            if self.requires_magnet() or (result.magnet_link or "").startswith(
+                "magnet:"
+            ):
+                self.validate_magnet_link(result.magnet_link, result.info_hash)
 
             # Validate metadata
             self.validate_metadata(result)
@@ -435,18 +457,20 @@ class TestNyaaProviderIntegration(BaseProviderIntegrationTest):
 class TestJackettProviderIntegration(BaseProviderIntegrationTest):
     """Integration tests for Jackett provider.
 
-    Note: Requires local Jackett instance running at configured URL
-    with valid API key. Uses environment variables for configuration.
+    Note: Requires local Jackett instance (default is Docker container)
+    and its API key in TEST_JACKETT_API_KEY (set by Makefile from the
+    container). URL can be set in TEST_JACKETT_URL.
     """
 
     def get_provider(self):
         import os
 
         jackett_url = os.environ.get(
-            "TEST_JACKETT_URL", "http://localhost:9117"
+            "TEST_JACKETT_URL", "http://localhost:9075"
         )
-        api_key = os.environ.get(
-            "TEST_JACKETT_API_KEY", "f1xu4r8lcgagvewavd7533gxndhag842"
+        api_key = os.environ.get("TEST_JACKETT_API_KEY")
+        assert api_key, (
+            "Set TEST_JACKETT_API_KEY (Makefile reads it from container)"
         )
         return JackettProvider(jackett_url, api_key)
 
@@ -459,6 +483,9 @@ class TestJackettProviderIntegration(BaseProviderIntegrationTest):
 
     def requires_trackers(self) -> bool:
         # Jackett may or may not have trackers depending on indexer
+        return False
+
+    def requires_magnet(self) -> bool:
         return False
 
     def test_missing_config(self):
@@ -479,18 +506,20 @@ class TestJackettProviderIntegration(BaseProviderIntegrationTest):
 class TestProwlarrProviderIntegration(BaseProviderIntegrationTest):
     """Integration tests for Prowlarr provider.
 
-    Note: Requires local Prowlarr instance running at configured URL
-    with valid API key. Uses environment variables for configuration.
+    Note: Requires local Prowlarr instance (default is Docker container)
+    and its API key in TEST_PROWLARR_API_KEY (set by Makefile from the
+    container). URL can be set in TEST_PROWLARR_URL.
     """
 
     def get_provider(self):
         import os
 
         prowlarr_url = os.environ.get(
-            "TEST_PROWLARR_URL", "http://localhost:9696"
+            "TEST_PROWLARR_URL", "http://localhost:9076"
         )
-        api_key = os.environ.get(
-            "TEST_PROWLARR_API_KEY", "c81e8a868440446cac29e4b2f6b5bd5f"
+        api_key = os.environ.get("TEST_PROWLARR_API_KEY")
+        assert api_key, (
+            "Set TEST_PROWLARR_API_KEY (Makefile reads it from container)"
         )
         return ProwlarrProvider(prowlarr_url, api_key)
 
@@ -503,6 +532,9 @@ class TestProwlarrProviderIntegration(BaseProviderIntegrationTest):
 
     def requires_trackers(self) -> bool:
         # Prowlarr may or may not have trackers depending on indexer
+        return False
+
+    def requires_magnet(self) -> bool:
         return False
 
     def test_missing_config(self):
@@ -523,15 +555,15 @@ class TestProwlarrProviderIntegration(BaseProviderIntegrationTest):
 class TestBitmagnetProviderIntegration(BaseProviderIntegrationTest):
     """Integration tests for Bitmagnet provider.
 
-    Note: Requires local Bitmagnet instance running at configured URL.
-    Uses environment variable for configuration.
+    Note: Requires local Bitmagnet instance (default is Docker
+    container). URL can be set in TEST_BITMAGNET_URL.
     """
 
     def get_provider(self):
         import os
 
         bitmagnet_url = os.environ.get(
-            "TEST_BITMAGNET_URL", "http://localhost:3333"
+            "TEST_BITMAGNET_URL", "http://localhost:9077"
         )
         return BitmagnetProvider(bitmagnet_url)
 

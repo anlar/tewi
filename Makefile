@@ -5,6 +5,14 @@ check:
 	uv run ruff check
 	uv run reuse lint
 
+# API keys of search provider containers for integration tests (empty if
+# containers aren't running)
+JACKETT_API_KEY = $(shell docker exec tewi-jackett-dev sed -n 's/.*"APIKey": *"\([^"]*\)".*/\1/p' /config/Jackett/ServerConfig.json 2>/dev/null)
+PROWLARR_API_KEY = $(shell docker exec tewi-prowlarr-dev sed -n 's|.*<ApiKey>\(.*\)</ApiKey>.*|\1|p' /config/config.xml 2>/dev/null)
+
+test test-all: export TEST_JACKETT_API_KEY ?= $(JACKETT_API_KEY)
+test test-all: export TEST_PROWLARR_API_KEY ?= $(PROWLARR_API_KEY)
+
 test:
 	uv run python -m pytest -v
 
