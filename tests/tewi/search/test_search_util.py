@@ -36,6 +36,16 @@ class TestDetectCategoryFromName:
             == StandardCategories.TV
         )
 
+        assert (
+            detect_category_from_name("Some_Name_S05E19E20")
+            == StandardCategories.TV
+        )
+
+    @pytest.mark.parametrize("name", ["Plus25", "Class 2024", "Bass2024"])
+    def test_no_tv_inside_word(self, name):
+        """Test season pattern isn't matched inside words and years."""
+        assert detect_category_from_name(name) != StandardCategories.TV
+
     def test_detect_audio_by_extension(self):
         """Test detection of audio category by file extension."""
         assert (

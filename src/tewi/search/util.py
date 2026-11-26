@@ -223,8 +223,8 @@ def detect_category_from_name(name: str) -> Category | None:
     """
     name_lower = name.lower()
 
-    # TV: contains season and episode - S01, S01E01
-    if re.search(r"s\d{2}(e\d{2})?", name_lower):
+    # TV: contains season and episode as separate token - S01, S01E01
+    if re.search(r"(?<![a-z0-9])s\d{2}(?!\d)", name_lower):
         return StandardCategories.TV
 
     # AUDIO: Check for audio file extensions and keywords
