@@ -7,7 +7,6 @@ import json
 import re
 import urllib.error
 import urllib.parse
-from datetime import datetime
 from typing import Any
 
 from ...util.format import print_size
@@ -21,7 +20,7 @@ from ..models import (
     SearchResult,
     StandardCategories,
 )
-from ..util import build_magnet_link, local_time, read_response
+from ..util import build_magnet_link, parse_timestamp, read_response
 
 logger = get_logger()
 
@@ -43,7 +42,8 @@ class NekoBtProvider(BaseSearchProvider):
     MAX_DETAILS_FILES = 100
 
     # Media ID prefix mapping to StandardCategories ("s" - series,
-    # "m" - movie); torrent category isn't used by nekoBT
+    # "m" - movie); torrent category isn't used by nekoBT. Torrents without
+    # media are anime, as in nekoBT Torznab API.
     CATEGORY_MAP = {
         "s": StandardCategories.TV_ANIME,
         "m": StandardCategories.MOVIES,
@@ -75,7 +75,8 @@ class NekoBtProvider(BaseSearchProvider):
         if not query or not query.strip():
             return []
 
-        # API has no movies/series filter, so results are filtered locally
+        # API has no movies/series filter, results are filtered by search
+        # manager
         parents = {(c.parent or c) for c in categories or []}
         supported = {(c.parent or c) for c in self.CATEGORY_MAP.values()}
         if parents and not parents & supported:
@@ -84,10 +85,28 @@ class NekoBtProvider(BaseSearchProvider):
         # Movies are rarely among the most seeded torrents, so for movies
         # only search relevance order is used to get them in results
         movies_only = parents == {StandardCategories.MOVIES}
+        torrents = self._fetch_torrents(
+            query.strip(), "best" if movies_only else "seeders"
+        )
+        return [r for t in torrents if (r := self._parse_torrent(t))]
+
+    def _fetch_torrents(self, query: str, sort_by: str) -> list[Any]:
+        """Fetch torrents matching query from search API.
+
+        Args:
+            query: Search term
+            sort_by: Sort order
+
+        Returns:
+            Torrents from API response
+
+        Raises:
+            Exception: If API request fails or response can't be parsed
+        """
         params = {
-            "query": query.strip(),
+            "query": query,
             "limit": self.RESULTS_LIMIT,
-            "sort_by": "best" if movies_only else "seeders",
+            "sort_by": sort_by,
         }
         query_string = urllib.parse.urlencode(params)
         url = f"{self.API_URL}/torrents/search?{query_string}"
@@ -106,17 +125,12 @@ class NekoBtProvider(BaseSearchProvider):
             message = data.get("message") if isinstance(data, dict) else None
             raise Exception(f"API error: {message or 'unknown error'}")
 
-        results = []
-        for torrent in (data.get("data") or {}).get("results") or []:
-            result = self._parse_torrent(torrent)
-            if not result:
-                continue
-            if parents and not any(
-                (c.parent or c) in parents for c in result.categories
-            ):
-                continue
-            results.append(result)
-        return results
+        torrents = data.get("data")
+        if isinstance(torrents, dict):
+            torrents = torrents.get("results")
+        if not isinstance(torrents, list):
+            raise Exception("Failed to parse API response: invalid results")
+        return torrents
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         if not result.extra:
@@ -237,6 +251,9 @@ class NekoBtProvider(BaseSearchProvider):
 
     def _parse_torrent(self, torrent: Any) -> SearchResult | None:
         """Parse torrent from search results."""
+        if not isinstance(torrent, dict):
+            return None
+
         try:
             title = torrent.get("title")
             info_hash = parse_info_hash(torrent.get("infohash"))
@@ -251,18 +268,15 @@ class NekoBtProvider(BaseSearchProvider):
             fields = self._build_fields(torrent)
             fields["torrent_id"] = tid
 
-            category = None
+            category = StandardCategories.TV_ANIME
             media_id = torrent.get("media_id")
             media_match = self._MEDIA_ID_RE.fullmatch(str(media_id or ""))
             if media_match:
                 fields["media_id"] = media_id
                 category = self.CATEGORY_MAP[media_match.group(1)]
 
-            upload_date = None
-            if isinstance(torrent.get("uploaded_at"), int):
-                upload_date = datetime.fromtimestamp(
-                    torrent["uploaded_at"] / 1000
-                )
+            # Unix timestamp in milliseconds, as int or digit string
+            uploaded_at = parse_count(torrent.get("uploaded_at"))
 
             return SearchResult(
                 title=title,
@@ -272,19 +286,25 @@ class NekoBtProvider(BaseSearchProvider):
                 provider=self.name,
                 provider_id=self.id,
                 provider_short=self.short_name,
-                categories=(category,) if category else (),
+                categories=(category,),
                 seeders=parse_count(torrent.get("seeders")),
                 leechers=parse_count(torrent.get("leechers")),
                 downloads=parse_count(torrent.get("completed")),
                 size=parse_count(torrent.get("filesize")),
                 files_count=None,
-                upload_date=local_time(upload_date),
+                upload_date=parse_timestamp(
+                    uploaded_at // 1000 if uploaded_at else None
+                ),
                 page_url=f"{self.SITE_URL}/torrents/{tid}",
                 freeleech=True,  # Public tracker
                 extra=fields,
             )
 
-        except (AttributeError, KeyError, ValueError, TypeError):
+        except Exception:
+            logger.exception(
+                "nekoBT: skipping invalid search result "
+                f"{torrent.get('infohash')!r}"
+            )
             return None
 
     def _build_fields(self, torrent: dict[str, Any]) -> dict[str, Any]:
@@ -329,7 +349,9 @@ class NekoBtProvider(BaseSearchProvider):
         """Use magnet link from API (it has trackers) if it's for torrent."""
         magnet = torrent.get("magnet")
         prefix = f"magnet:?xt=urn:btih:{info_hash}".lower()
-        if isinstance(magnet, str) and magnet.lower().startswith(prefix):
+        if isinstance(magnet, str) and (
+            magnet.lower() == prefix or magnet.lower().startswith(prefix + "&")
+        ):
             return magnet
         return build_magnet_link(info_hash=info_hash, name=title)
 

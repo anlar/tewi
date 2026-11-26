@@ -176,6 +176,33 @@ class TestSearch:
             provider.search("example")
 
     @pytest.mark.parametrize(
+        "data",
+        [{"error": False}, {"error": False, "data": {"results": "x"}}],
+    )
+    def test_invalid_results(self, provider, mock_urlopen, data):
+        set_responses(mock_urlopen, data)
+
+        with pytest.raises(Exception, match="invalid results"):
+            provider.search("example")
+
+    def test_invalid_torrent_does_not_fail_search(self, provider, mock_urlopen):
+        set_responses(
+            mock_urlopen,
+            search("x", torrent(infohash="b" * 40, title=["x"]), torrent()),
+        )
+
+        assert [r.info_hash for r in provider.search("example")] == [HASH]
+
+    def test_upload_date_as_string(self, provider, mock_urlopen):
+        set_responses(
+            mock_urlopen, search(torrent(uploaded_at="1789156573473"))
+        )
+
+        [result] = provider.search("example")
+
+        assert result.upload_date.year == 2026
+
+    @pytest.mark.parametrize(
         "kwargs",
         [
             {"infohash": None},
@@ -191,8 +218,17 @@ class TestSearch:
 
         assert provider.search("example") == []
 
-    def test_magnet_for_other_torrent_is_rebuilt(self, provider, mock_urlopen):
-        other = "magnet:?xt=urn:btih:" + "f" * 40
+    @pytest.mark.parametrize(
+        "other",
+        [
+            "magnet:?xt=urn:btih:" + "f" * 40,
+            # Hash with extra characters
+            f"magnet:?xt=urn:btih:{HASH}ff&tr=udp://t.example",
+        ],
+    )
+    def test_magnet_for_other_torrent_is_rebuilt(
+        self, provider, mock_urlopen, other
+    ):
         set_responses(mock_urlopen, search(torrent(magnet=other)))
 
         [result] = provider.search("example")
@@ -206,7 +242,8 @@ class TestSearch:
 
         [result] = provider.search("example")
 
-        assert result.categories == ()
+        # Torrents without media are anime
+        assert result.categories == (StandardCategories.TV_ANIME,)
         assert result.seeders is None
         assert result.size is None
         assert result.upload_date is None
@@ -232,14 +269,14 @@ class TestCategories:
     def test_movies(self, provider, mock_urlopen, mixed):
         results = provider.search("example", [StandardCategories.MOVIES])
 
-        assert [r.info_hash for r in results] == ["b" * 40]
+        # Results are filtered by search manager
+        assert len(results) == 2
         # Movies are rarely among most seeded torrents
         assert request_params(mock_urlopen)["sort_by"] == ["best"]
 
     def test_tv_subcategory(self, provider, mock_urlopen, mixed):
-        results = provider.search("example", [StandardCategories.TV_HD])
+        provider.search("example", [StandardCategories.TV_HD])
 
-        assert [r.info_hash for r in results] == [HASH]
         assert request_params(mock_urlopen)["sort_by"] == ["seeders"]
 
     def test_movies_and_tv(self, provider, mock_urlopen, mixed):
