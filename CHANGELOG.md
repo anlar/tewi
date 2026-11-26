@@ -76,6 +76,12 @@ handle multi-line list body as single line.
 - Load up to 100 Bitmagnet search results instead of 50
 - Load Bitmagnet search result details by exact info hash instead of searching it as text, and show torrent files in them
 - Fix Bitmagnet search failing completely on single invalid result, show its timestamps in local time and episodes without duplication
+- Fix Prowlarr search failing completely on single invalid result, and skipping results without indexer flags
+- Skip Usenet results and indexers in Prowlarr search, as only torrents can be added
+- Add Prowlarr results by Prowlarr download link instead of magnet link built from info hash, which has no trackers, so private torrents couldn't start
+- Show Prowlarr search error message (e.g. all indexers unavailable) instead of HTTP status only
+- Hide internal Prowlarr fields (protocol, comments link same as torrent page, zero IDs) in search result details, and don't show empty indexer info
+- Fix IMDB links of Jackett and Prowlarr search results for IDs shorter than 7 digits
 
 ### Removed
 

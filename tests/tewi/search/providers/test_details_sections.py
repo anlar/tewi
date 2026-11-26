@@ -200,8 +200,8 @@ def test_remote_text_does_not_add_sections_or_links(details):
 @pytest.mark.parametrize(
     "details, imdb, expected",
     [
-        (jackett, "111161", "https://www.imdb.com/title/tt111161/"),
-        (prowlarr, "111161", "https://www.imdb.com/title/tt111161/"),
+        (jackett, "111161", "https://www.imdb.com/title/tt0111161/"),
+        (prowlarr, "111161", "https://www.imdb.com/title/tt0111161/"),
         (tpb, "tt0111161", "https://www.imdb.com/title/tt0111161/"),
         (yts, "tt0111161", "https://www.imdb.com/title/tt0111161"),
         (yts, "tt0111161", "https://www.youtube.com/watch?v=tt0111161"),

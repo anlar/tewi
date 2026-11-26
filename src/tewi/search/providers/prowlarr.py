@@ -145,8 +145,8 @@ class ProwlarrProvider(BaseSearchProvider):
         if not query or not query.strip():
             return []
 
-        # If multi_indexer is disabled, ignore indexers parameter and search all
-        if not self.multi_indexer:
+        # Without multi_indexer, single "all" indexer is selected
+        if not self.multi_indexer or (indexers and "all" in indexers):
             indexers = None
 
         # Build URL with optional indexer and category filtering
@@ -171,12 +171,13 @@ class ProwlarrProvider(BaseSearchProvider):
         # All fields in sorted order for consistent display
         fields: list[tuple[str, str | DetailsLink]] = []
         for key in sorted(result.extra.keys()):
-            value = result.extra[key]
-            # Transform field for display
-            display_name, display_value = self._transform_field(key, value)
-            if display_name:
-                fields.append((display_name, details_value(display_value)))
+            field = self._transform_field(key, result.extra[key])
+            if field:
+                fields.append((field[0], details_value(field[1])))
 
+        # Most fields are often empty (e.g. IDs are 0)
+        if not fields:
+            return []
         return [DetailsSection("Indexer Info", fields=tuple(fields))]
 
     def _validate_config(
@@ -232,7 +233,7 @@ class ProwlarrProvider(BaseSearchProvider):
         """
         return {"X-Api-Key": self.api_key}
 
-    def _fetch_indexers(self, url: str) -> list:
+    def _fetch_indexers(self, url: str) -> Any:
         """Fetch and parse JSON indexers list from Prowlarr API.
 
         Args:
@@ -260,35 +261,41 @@ class ProwlarrProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse Prowlarr JSON response: {e}")
 
-    def _process_indexers(self, data: list) -> list[Indexer]:
+    def _process_indexers(self, data: Any) -> list[Indexer]:
         """Process indexers JSON response.
+
+        Only enabled torrent indexers supporting search are included.
 
         Args:
             data: Parsed JSON data from indexers endpoint
 
         Returns:
             List of Indexer objects
+
+        Raises:
+            ValueError: If response isn't list of indexers
         """
+        if not isinstance(data, list):
+            raise ValueError("Unexpected Prowlarr indexers response")
+
         indexers = []
-
-        # Sort indexers by name
-        indexers_data = sorted(data, key=lambda x: x.get("name", ""))
-
-        for indexer in indexers_data:
+        for indexer in data:
+            if not isinstance(indexer, dict):
+                continue
             indexer_id = indexer.get("id")
             indexer_name = indexer.get("name")
-            # Only include enabled indexers with valid ID and Name
-            enable = indexer.get("enable", False)
-            if indexer_id and indexer_name and enable:
-                # Prefix with prowlarr: to distinguish from other providers
-                full_id = f"prowlarr:{indexer_id}"
-                indexers.append(
-                    Indexer(
-                        full_id,
-                        indexer_name,
-                        "Prowlarr",
-                    )
-                )
+            if (
+                not indexer_id
+                or not indexer_name
+                or not indexer.get("enable")
+                or indexer.get("protocol") == "usenet"
+                or indexer.get("supportsSearch") is False
+            ):
+                continue
+            # Prefix with prowlarr: to distinguish from other providers
+            indexers.append(
+                Indexer(f"prowlarr:{indexer_id}", str(indexer_name), "Prowlarr")
+            )
         return indexers
 
     def _build_search_url(
@@ -327,7 +334,7 @@ class ProwlarrProvider(BaseSearchProvider):
 
         return f"{endpoint}?{urllib.parse.urlencode(params_list)}"
 
-    def _fetch_results(self, url: str) -> list:
+    def _fetch_results(self, url: str) -> Any:
         """Fetch and parse JSON results from Prowlarr API.
 
         Args:
@@ -358,7 +365,12 @@ class ProwlarrProvider(BaseSearchProvider):
                 pass
             if e.code in (401, 403):
                 raise Exception("Invalid Prowlarr API key")
-            raise Exception(f"HTTP error {e.code}: {e.reason}")
+            # Search failure (e.g. all indexers unavailable) has message
+            try:
+                message = json.loads(error_body).get("message")
+            except (ValueError, AttributeError):
+                message = None
+            raise Exception(f"HTTP error {e.code}: {message or e.reason}")
         except urllib.error.URLError as e:
             raise Exception(
                 f"Cannot connect to Prowlarr at {self.prowlarr_url}: {e.reason}"
@@ -366,48 +378,52 @@ class ProwlarrProvider(BaseSearchProvider):
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse Prowlarr response: {e}")
 
-    def _process_results(self, data: list) -> list[SearchResult]:
+    def _process_results(self, data: Any) -> list[SearchResult]:
         """Process API response and convert to SearchResult list.
 
         Args:
-            data: Parsed JSON response as list
+            data: Parsed JSON response
 
         Returns:
             List of SearchResult objects
+
+        Raises:
+            Exception: If response isn't list of results
         """
-        if not data:
-            return []
+        if not isinstance(data, list):
+            raise Exception("Failed to parse Prowlarr response: not a list")
 
-        results = []
-        for result_dict in data:
-            result = self._parse_result(result_dict)
-            if result:
-                results.append(result)
-        return results
+        return [r for d in data if (r := self._parse_result(d))]
 
-    def _parse_result(self, result: dict[str, Any]) -> SearchResult | None:
+    def _parse_result(self, result: Any) -> SearchResult | None:
         """Parse a single result from Prowlarr API response.
 
         Args:
             result: Single result dict from Prowlarr API
 
         Returns:
-            SearchResult or None if parsing fails
+            SearchResult or None if it's invalid or not a torrent
         """
+        if not isinstance(result, dict):
+            return None
+
         try:
-            title = result.get("title")
-            if not title:
+            title = self._str(result.get("title"))
+            # Usenet indexers return NZB files
+            if not title or result.get("protocol") == "usenet":
                 return None
 
             info_hash = parse_info_hash(result.get("infoHash"))
-
-            # Extract both link types
-            torrent_link = self._extract_torrent_link(result)
-            magnet_link = self._extract_magnet_link(title, info_hash, result)
+            magnet_link, torrent_link = self._extract_links(
+                title, info_hash, result
+            )
 
             # Skip result only if we have NEITHER link type
             if not magnet_link and not torrent_link:
                 return None
+
+            flags = result.get("indexerFlags")
+            flags = flags if isinstance(flags, list) else []
 
             return SearchResult(
                 title=title,
@@ -425,66 +441,52 @@ class ProwlarrProvider(BaseSearchProvider):
                 size=parse_count(result.get("size")),
                 files_count=parse_count(result.get("files")),
                 upload_date=local_time(self._parse_publish_date(result)),
-                page_url=result.get("infoUrl"),
-                freeleech="freeleech" in result.get("indexerFlags"),
+                page_url=self._str(result.get("infoUrl")) or None,
+                freeleech="freeleech" in flags,
                 extra=self._build_fields(result),
             )
-        except (KeyError, ValueError, TypeError):
+        except Exception:
+            logger.exception(
+                "Prowlarr: skipping invalid search result "
+                f"{result.get('title')!r}"
+            )
             return None
 
-    def _extract_torrent_link(self, result: dict[str, Any]) -> str | None:
-        """Extract torrent link from result.
-
-        Priority:
-          1. guid field (if .torrent)
-          2. downloadUrl
-          3. None
-
-        Args:
-            result: Result dict from Prowlarr API
-
-        Returns:
-            Torrent link string or None if unavailable
-        """
-        guid = result.get("guid")
-        if guid and guid.endswith(".torrent"):
-            return guid
-        else:
-            return result.get("downloadUrl")
-
-    def _extract_magnet_link(
+    def _extract_links(
         self, title: str, info_hash: str | None, result: dict[str, Any]
-    ) -> str | None:
-        """Extract or generate magnet link from result.
+    ) -> tuple[str | None, str | None]:
+        """Extract magnet and torrent links from result.
 
-        Priority:
-          1. guid field (if magnet)
-          2. magnetUrl
-          3. Generated from infoHash
-          4. None
+        Magnet link is magnet from guid, or Prowlarr magnetUrl (proxy link
+        redirecting to magnet). Torrent link is Prowlarr downloadUrl (proxy
+        link, which also works for private trackers), or .torrent link from
+        guid. Magnet link built from info hash has no trackers, so it's
+        used only without other links, as private torrents need trackers.
 
         Args:
-            title: Torrent title (to add to generated magnet link)
+            title: Torrent title (to add to built magnet link)
             info_hash: Torrent info hash (may be None)
             result: Result dict from Prowlarr API
 
         Returns:
-            Magnet URI string or None if unavailable
+            Tuple of (magnet link, torrent link), each may be None
         """
-        # Prowlarr puts the actual magnet link in 'guid' field
-        guid = result.get("guid")
-        if guid and guid.startswith("magnet:"):
-            return guid
+        guid = self._str(result.get("guid"))
+        magnet_link = (
+            guid if guid.startswith("magnet:") else None
+        ) or self._str(result.get("magnetUrl"))
+        torrent_link = self._str(result.get("downloadUrl")) or (
+            guid if guid.endswith(".torrent") else None
+        )
 
-        magnet_link = result.get("magnetUrl")
-        if magnet_link:
-            return magnet_link
+        if not magnet_link and not torrent_link and info_hash:
+            magnet_link = build_magnet_link(info_hash=info_hash, name=title)
 
-        # Generate magnet from info hash if available
-        if info_hash:
-            return build_magnet_link(info_hash=info_hash, name=title)
+        return magnet_link or None, torrent_link or None
 
-        return None
+    def _str(self, value: Any) -> str:
+        """Get string value from response, or empty string."""
+        return value.strip() if isinstance(value, str) else ""
 
     def _parse_publish_date(self, result: dict[str, Any]) -> datetime | None:
         """Parse publish date from result.
@@ -516,7 +518,7 @@ class ProwlarrProvider(BaseSearchProvider):
         Returns:
             Provider name string (plain text)
         """
-        indexer = result.get("indexer", "Unknown")
+        indexer = str(result.get("indexer") or "Unknown")
         return indexer[:5] if short else indexer
 
     def _build_fields(self, result: dict[str, Any]) -> dict[str, object]:
@@ -542,14 +544,16 @@ class ProwlarrProvider(BaseSearchProvider):
             "grabs",  # -> downloads
             "size",  # -> size
             "files",  # -> files_count
-            "magnetUrl",  # -> torrent_link
+            "magnetUrl",  # -> magnet_link
             "infoHash",  # -> info_hash
             "publishDate",  # -> upload_date
             "indexer",  # -> provider
             "indexerId",  # -> provider
             "infoUrl",  # -> page_url
-            "guid",  # -> magnet_link (actual magnet)
+            "guid",  # -> magnet_link or torrent_link
             "downloadUrl",  # -> torrent_link
+            "protocol",  # only torrents are shown
+            "id",  # internal field
             "sortTitle",  # internal field
             "age",  # -> publish_date
             "ageHours",  # -> publish_date
@@ -566,16 +570,17 @@ class ProwlarrProvider(BaseSearchProvider):
             if value is None or value == "" or value == []:
                 continue
 
-            # Convert to string representation
             if isinstance(value, list):
-                # skip, if flags contains only freelech
+                # Freeleech flag is shown as main field
                 if key == "indexerFlags" and set(value) == {"freeleech"}:
                     continue
-                else:
-                    # For complex types, convert to string
-                    fields[key] = ",".join(value)
+                fields[key] = ", ".join(str(v) for v in value)
             else:
-                fields[key] = value
+                fields[key] = str(value)
+
+        # Comments page is often the same as torrent page
+        if fields.get("commentUrl") == result.get("infoUrl"):
+            fields.pop("commentUrl", None)
 
         return fields
 
@@ -618,29 +623,22 @@ class ProwlarrProvider(BaseSearchProvider):
     def _transform_field(self, key: str, value: str) -> tuple[str, str] | None:
         """Transform field key and value for display.
 
-        Applies transformations like converting IDs to URLs.
-        This is a universal mechanism for enhancing field display.
-
         Args:
             key: Field name from Prowlarr response
             value: Field value
 
         Returns:
-            Tuple of (display_name, display_value)
+            Tuple of (display name, display value), or None to hide field
         """
         if key == "imdbId":
-            if str(value).isdigit() and int(value):
-                return "IMDB", f"https://www.imdb.com/title/tt{value}/"
-            else:
-                return None, None
-        elif key in ["tmdbId", "tvMazeId", "tvdbId"]:
-            if not value:
-                return None, None
-        elif key in ["protocol"]:
-            return key.capitalize(), value
-        elif key == "indexerFlags":
+            if not value.isdigit() or not int(value):
+                return None
+            # IMDB IDs have at least 7 digits
+            return "IMDB", f"https://www.imdb.com/title/tt{int(value):07d}/"
+        if key in ("tmdbId", "tvMazeId", "tvdbId") and value == "0":
+            return None
+        if key == "indexerFlags":
             return "Indexer Flags", value
-        elif key == "posterUrl":
+        if key == "posterUrl":
             return "Poster", value
-
         return key, value

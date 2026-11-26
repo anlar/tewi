@@ -673,7 +673,10 @@ class JackettProvider(BaseSearchProvider):
             Tuple of (display_name, display_value), where value is link
             for HTTP(S) URL
         """
-        if key == "Imdb" and value.isdigit():
-            return "IMDB", DetailsLink(f"https://www.imdb.com/title/tt{value}/")
+        if key == "Imdb" and value.isdigit() and int(value):
+            # IMDB IDs have at least 7 digits
+            return "IMDB", DetailsLink(
+                f"https://www.imdb.com/title/tt{int(value):07d}/"
+            )
 
         return key, details_value(value)
