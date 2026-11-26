@@ -29,6 +29,7 @@ class BitsearchProvider(BaseSearchProvider):
     """Search provider for Bitsearch (general torrents).
 
     API documentation: https://bitsearch.eu/api
+    API is limited to 200 requests per day per IP address.
     """
 
     API_URL = "https://bitsearch.eu/api/v1/search"
@@ -40,6 +41,7 @@ class BitsearchProvider(BaseSearchProvider):
 
     # Category mapping from Bitsearch API to StandardCategories
     CATEGORY_MAP = {
+        1: StandardCategories.OTHER,  # Other
         2: StandardCategories.MOVIES,  # Movies
         3: StandardCategories.TV,  # TV
         4: StandardCategories.TV_ANIME,  # Anime
@@ -240,13 +242,13 @@ class BitsearchProvider(BaseSearchProvider):
         },
     }
 
-    # Bitsearch categories containing results of StandardCategories parent.
-    # Results from "Other" subcategories (e.g. Other/Video for Movies) are
-    # not included.
     # Max number of category requests per search, to save API rate limit.
     # Larger selections are searched in all categories at once.
     MAX_CATEGORY_REQUESTS = 3
 
+    # Bitsearch categories containing results of StandardCategories parent.
+    # Results from "Other" subcategories (e.g. Other/Video for Movies) are
+    # not included.
     PARENT_TO_BS_CATEGORIES = {
         StandardCategories.CONSOLE: {6},
         StandardCategories.MOVIES: {2},
@@ -314,20 +316,38 @@ class BitsearchProvider(BaseSearchProvider):
         try:
             with self.urlopen(url) as response:
                 data = json.loads(read_response(response).decode("utf-8"))
+        except urllib.error.HTTPError as e:
+            raise Exception(f"API error: {self._error_message(e)}")
         except urllib.error.URLError as e:
             raise Exception(f"Network error: {e}")
         except json.JSONDecodeError as e:
             raise Exception(f"Failed to parse API response: {e}")
 
-        if not data.get("success"):
-            return []
+        if not isinstance(data, dict) or not data.get("success"):
+            message = data.get("message") if isinstance(data, dict) else None
+            raise Exception(f"API error: {message or 'unknown error'}")
 
-        results = []
-        for torrent in data.get("results") or []:
-            result = self._parse_torrent(torrent)
-            if result:
-                results.append(result)
-        return results
+        torrents = data.get("results")
+        if not isinstance(torrents, list):
+            raise Exception("Failed to parse API response: invalid results")
+
+        return [r for t in torrents if (r := self._parse_torrent(t))]
+
+    def _error_message(self, error: urllib.error.HTTPError) -> str:
+        """Get error message from API error response.
+
+        For exceeded rate limit, time of its reset is added.
+        """
+        try:
+            message = json.loads(error.read().decode("utf-8")).get("message")
+        except (OSError, ValueError, AttributeError):
+            message = None
+        message = f"HTTP {error.code}: {message or error.reason}"
+
+        reset = self._parse_date((error.headers or {}).get("X-RateLimit-Reset"))
+        if error.code == 429 and reset:
+            message += f" (resets at {local_time(reset):%Y-%m-%d %H:%M})"
+        return message
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
         if not result.extra:
@@ -428,7 +448,11 @@ class BitsearchProvider(BaseSearchProvider):
             return []
         return [DetailsSection("Trackers", items=tuple(urls))]
 
-    def _parse_torrent(self, torrent: dict[str, Any]) -> SearchResult | None:
+    def _parse_torrent(self, torrent: Any) -> SearchResult | None:
+        """Parse torrent from search results."""
+        if not isinstance(torrent, dict):
+            return None
+
         try:
             title = torrent.get("title")
             if not title:
@@ -445,17 +469,18 @@ class BitsearchProvider(BaseSearchProvider):
             cat = torrent.get("category")
             sub_cat = torrent.get("subCategory")
 
-            category = self.get_category(cat, sub_cat)
+            category = self._get_category(cat, sub_cat)
 
             # Build provider-specific fields
-            fields = {}
+            fields: dict[str, Any] = {"torrent_id": tid}
 
-            fields["torrent_id"] = tid
-            fields["verified"] = torrent.get("verified")
+            if isinstance(torrent.get("verified"), bool):
+                fields["verified"] = torrent["verified"]
 
-            if cat:
-                fields["t_category"] = self.get_bs_category(cat)
-            sub_cat_name = self.get_bs_subcategory(cat, sub_cat)
+            cat_name = self.CATEGORY_NAMES.get(cat)
+            if cat_name:
+                fields["t_category"] = cat_name
+            sub_cat_name = self.SUBCATEGORY_NAMES.get(cat, {}).get(sub_cat)
             if sub_cat_name:
                 fields["t_sub_category"] = sub_cat_name
 
@@ -485,7 +510,11 @@ class BitsearchProvider(BaseSearchProvider):
                 extra=fields,
             )
 
-        except (KeyError, ValueError, TypeError):
+        except Exception:
+            logger.exception(
+                "Bitsearch: skipping invalid search result "
+                f"{torrent.get('infohash')!r}"
+            )
             return None
 
     def _parse_date(self, value: str | None) -> datetime | None:
@@ -497,36 +526,11 @@ class BitsearchProvider(BaseSearchProvider):
         except ValueError:
             return None
 
-    def get_category(
-        self, cat: int | None, sub_cat: int | None
-    ) -> Category | None:
+    def _get_category(self, cat: Any, sub_cat: Any) -> Category | None:
         """Map Bitsearch category and subcategory IDs to StandardCategories."""
-
-        if cat is None:
-            return None
-
-        # Check if category has subcategories and subcategory is provided
-        if cat in self.SUBCATEGORY_MAP and sub_cat is not None:
-            category = self.SUBCATEGORY_MAP[cat].get(sub_cat)
-            if category:
-                return category
-
-        # For category 1 (Other), fallback to OTHER if subcategory not found
-        if cat == 1:
-            return StandardCategories.OTHER
-
-        # Use main category mapping
-        return self.CATEGORY_MAP.get(cat)
-
-    def get_bs_category(self, cat: int) -> str | None:
-        """Get Bitsearch category name by category ID."""
-        return self.CATEGORY_NAMES.get(cat)
-
-    def get_bs_subcategory(self, cat: int, sub_cat: int) -> str | None:
-        """Get Bitsearch subcategory name by category and subcategory ID."""
-        if cat in self.SUBCATEGORY_NAMES:
-            return self.SUBCATEGORY_NAMES[cat].get(sub_cat)
-        return None
+        return self.SUBCATEGORY_MAP.get(cat, {}).get(
+            sub_cat
+        ) or self.CATEGORY_MAP.get(cat)
 
     def _convert_categories_to_bs(
         self, categories: list[Category] | None

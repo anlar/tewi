@@ -3,8 +3,10 @@
 
 """Unit tests for Bitsearch provider (without Bitsearch)."""
 
+import io
 import json
 import urllib.error
+from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -144,6 +146,11 @@ class TestParseTorrent:
     def test_missing_id_is_skipped(self, provider):
         assert provider._parse_torrent({**SEARCH_TORRENT, "id": None}) is None
 
+    def test_missing_verified_is_not_shown(self, provider):
+        result = provider._parse_torrent({**SEARCH_TORRENT, "verified": None})
+
+        assert "verified" not in result.extra
+
     def test_invalid_date_is_ignored(self, provider):
         result = provider._parse_torrent({**SEARCH_TORRENT, "createdAt": 123})
 
@@ -163,7 +170,7 @@ class TestParseTorrent:
         ],
     )
     def test_category(self, provider, cat, sub_cat, expected):
-        assert provider.get_category(cat, sub_cat) == expected
+        assert provider._get_category(cat, sub_cat) == expected
 
 
 class TestCategoryFilter:
@@ -226,6 +233,80 @@ class TestCategoryFilter:
 
         url = mock_urlopen.call_args.args[0]
         assert "category" not in url
+
+
+class TestSearchErrors:
+    def set_response(self, mock, data) -> None:
+        response = mock.return_value.__enter__.return_value
+        response.read.return_value = json.dumps(data).encode()
+
+    def test_api_error(self, provider, mock_urlopen):
+        self.set_response(
+            mock_urlopen, {"success": False, "message": "Something failed"}
+        )
+
+        with pytest.raises(Exception, match="API error: Something failed"):
+            provider.search("example")
+
+    @pytest.mark.parametrize(
+        "data", [[], {"success": True}, {"success": True, "results": "x"}]
+    )
+    def test_invalid_results(self, provider, mock_urlopen, data):
+        self.set_response(mock_urlopen, data)
+
+        with pytest.raises(Exception, match="API error|invalid results"):
+            provider.search("example")
+
+    def test_http_error_message(self, provider, mock_urlopen):
+        body = (
+            b'{"success":false,"message":"The \\"q\\" parameter is required"}'
+        )
+        mock_urlopen.side_effect = urllib.error.HTTPError(
+            "url", 400, "Bad Request", {}, io.BytesIO(body)
+        )
+
+        with pytest.raises(
+            Exception, match='API error: HTTP 400: The "q" parameter'
+        ):
+            provider.search("example")
+
+    def test_rate_limit_reset_is_shown(self, provider, mock_urlopen):
+        reset = "2026-11-27T00:00:00.000Z"
+        mock_urlopen.side_effect = urllib.error.HTTPError(
+            "url",
+            429,
+            "Too Many Requests",
+            {"X-RateLimit-Reset": reset},
+            io.BytesIO(b"rate limited"),
+        )
+        local_reset = datetime.fromisoformat(reset.replace("Z", "+00:00"))
+
+        with pytest.raises(Exception) as error:
+            provider.search("example")
+
+        assert str(error.value) == (
+            "API error: HTTP 429: Too Many Requests (resets at "
+            f"{local_reset.astimezone():%Y-%m-%d %H:%M})"
+        )
+
+    def test_invalid_torrent_does_not_fail_search(self, provider, mock_urlopen):
+        self.set_response(
+            mock_urlopen,
+            {
+                "success": True,
+                "results": [
+                    "x",
+                    {**SEARCH_TORRENT, "infohash": "B" * 40, "category": []},
+                    SEARCH_TORRENT,
+                ],
+            },
+        )
+
+        results = provider.search("example")
+
+        assert [r.info_hash for r in results] == [
+            SEARCH_TORRENT["infohash"].lower()
+        ]
 
 
 class TestCounts:
