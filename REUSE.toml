@@ -22,8 +22,6 @@ path = [
   "docker/magnets.txt",
   "docs/images/tewi-screenshot-6.png",
   "docs/images/tewi-screenshot-7.png",
-  "package/flatpak/*.png",
-  "package/flatpak/python3-tewi-dependencies.json",
 ]
 SPDX-FileCopyrightText = "2025 Anton Larionov"
 SPDX-License-Identifier = "GPL-3.0-or-later"

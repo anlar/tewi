@@ -12,6 +12,5 @@ __pycache__
 *.svg
 .aider*
 release-notes.md
-.flatpak-builder
 src/tewi/util/geoip.dat.gz
 uv.lock

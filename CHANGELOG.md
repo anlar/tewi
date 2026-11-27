@@ -89,6 +89,7 @@ handle multi-line list body as single line.
 - **Breaking:** Remove `--debug` option and `debugpy` dev dependency
 - Remove Torrentz2 search provider, as its site is shut down; `torrentz2` provider ID is now an alias for `bitsearch`, which serves the same torrent database
 - **Breaking:** Remove hidden `--limit-torrents` option and `limit_torrents` config option, which had no effect
+- Remove unmaintained Flatpak manifest
 
 ## [4.0.0] - 2026-11-06 - Lucky Handshake
 
