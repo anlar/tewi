@@ -548,26 +548,6 @@ refresh_interval = 10
             "refresh_interval": 10,
         }
 
-    def test_with_limit_torrents(self):
-        """Test ui section with limit_torrents."""
-        config_text = """
-[ui]
-view_mode = compact
-page_size = 50
-limit_torrents = 100
-"""
-        parser = configparser.ConfigParser()
-        parser.read_string(config_text)
-        config = {}
-
-        _load_ui_section(parser, config)
-
-        assert config == {
-            "view_mode": "compact",
-            "page_size": 50,
-            "limit_torrents": 100,
-        }
-
     def test_with_all_options(self):
         """Test ui section with all options including behavior options."""
         config_text = """
@@ -575,7 +555,6 @@ limit_torrents = 100
 view_mode = oneline
 page_size = 25
 refresh_interval = 15
-limit_torrents = 50
 """
         parser = configparser.ConfigParser()
         parser.read_string(config_text)
@@ -587,7 +566,6 @@ limit_torrents = 50
             "view_mode": "oneline",
             "page_size": 25,
             "refresh_interval": 15,
-            "limit_torrents": 50,
         }
 
     def test_invalid_refresh_interval(self, capsys):
@@ -610,25 +588,6 @@ refresh_interval = not_a_number
         assert (
             "Warning: Invalid refresh_interval value in config" in captured.err
         )
-
-    def test_invalid_limit_torrents(self, capsys):
-        """Test handling of invalid limit_torrents value."""
-        config_text = """
-[ui]
-page_size = 30
-limit_torrents = abc
-"""
-        parser = configparser.ConfigParser()
-        parser.read_string(config_text)
-        config = {}
-
-        _load_ui_section(parser, config)
-
-        # Should only include page_size
-        assert config == {"page_size": 30}
-        # Check that warning was printed
-        captured = capsys.readouterr()
-        assert "Warning: Invalid limit_torrents value in config" in captured.err
 
     def test_badge_options(self):
         """Test ui section with badge display options."""

@@ -610,7 +610,7 @@ class QBittorrentClient(BaseClient):
 
         # Parse files, peers, and trackers
         files_data = self.client.torrents.files(torrent_hash=torrent.hash)
-        files = [self._file_to_dto(f, torrent.hash) for f in files_data]
+        files = [self._file_to_dto(f) for f in files_data]
 
         # Get peers
         try:
@@ -652,7 +652,7 @@ class QBittorrentClient(BaseClient):
         )
 
     @log_time
-    def _file_to_dto(self, file: Dictionary, torrent_hash: str) -> TorrentFile:
+    def _file_to_dto(self, file: Dictionary) -> TorrentFile:
         """Convert qBittorrent file to TorrentFile."""
 
         match file.priority:

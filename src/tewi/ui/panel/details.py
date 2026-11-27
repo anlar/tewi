@@ -878,7 +878,6 @@ class TorrentInfoPanel(ScrollableContainer):
         def flatten_tree(
             node: dict[str, Any],
             prefix: str = "",
-            is_last: bool = True,
             depth: int = 0,
             current_path: str = "",
         ) -> tuple[list[int], int]:
@@ -961,7 +960,7 @@ class TorrentInfoPanel(ScrollableContainer):
                     # Pass folder path with trailing slash for next level
                     next_path = f"{item_path}/"
                     child_file_ids, child_selected = flatten_tree(
-                        subtree, new_prefix, is_last_item, depth + 1, next_path
+                        subtree, new_prefix, depth + 1, next_path
                     )
 
                     if child_file_ids and child_selected == len(child_file_ids):

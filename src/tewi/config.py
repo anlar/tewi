@@ -243,9 +243,6 @@ def _load_ui_section(parser: configparser.ConfigParser, config: dict) -> None:
     val = _get_int_option(parser, "ui", "refresh_interval")
     if val is not None:
         config["refresh_interval"] = val
-    val = _get_int_option(parser, "ui", "limit_torrents")
-    if val is not None:
-        config["limit_torrents"] = val
     val = _get_string_option(parser, "ui", "filter")
     if val:
         config["filter"] = val

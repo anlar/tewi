@@ -217,7 +217,6 @@ class MainApp(App):
         view_mode: str,
         refresh_interval: int,
         page_size: int,
-        limit_torrents: int,
         test_mode: int,
         version: str,
         jackett_url: str,
@@ -254,7 +253,6 @@ class MainApp(App):
 
         self.view_mode = view_mode
         self.refresh_interval = refresh_interval
-        self.limit_torrents = limit_torrents
         self.page_size = page_size
         self.test_mode = test_mode
         self.badge_max_count = badge_max_count
@@ -262,10 +260,6 @@ class MainApp(App):
 
         self.tewi_version = version
         self.initial_search_query = search_query
-        self.jackett_url = jackett_url
-        self.jackett_api_key = jackett_api_key
-        self.prowlarr_url = prowlarr_url
-        self.prowlarr_api_key = prowlarr_api_key
         self.search_hide_zero_seeders = search_hide_zero_seeders
         self.search_default_mode = search_default_mode
         self.search_presets = search_presets or []
@@ -1696,9 +1690,6 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
 
     # Hidden
     p.add_argument(
-        "--limit-torrents", type=int, default=None, help=argparse.SUPPRESS
-    )
-    p.add_argument(
         "--test-mode", type=int, default=None, help=argparse.SUPPRESS
     )
 
@@ -1891,7 +1882,6 @@ def create_app():
             custom_themes=custom_themes,
             refresh_interval=args.refresh_interval,
             page_size=args.page_size,
-            limit_torrents=args.limit_torrents,
             test_mode=args.test_mode,
             version=tewi_version,
             jackett_url=args.jackett_url,
