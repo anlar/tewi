@@ -12,6 +12,7 @@ lint.select = [
     "N",  # pep8-naming
     "C90", # McCabe complexity (default: 10)
     "S",  # flake8-bandit (security)
+    "UP", # pyupgrade (modern syntax)
 ]
 
 lint.ignore = [

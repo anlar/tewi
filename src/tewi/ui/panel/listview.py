@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import math
-from typing import ClassVar, Optional
+from typing import ClassVar
 
 from rich.segment import Segment
 from rich.style import Style
@@ -301,8 +301,8 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
 
     # Highlighted item index on current page. Changes repaint only lines of
     # old and new highlighted items (see watch_index).
-    index = reactive[Optional[int]](None, init=False, repaint=False)
-    hover_index = reactive[Optional[int]](None, init=False, repaint=False)
+    index = reactive[int | None](None, init=False, repaint=False)
+    hover_index = reactive[int | None](None, init=False, repaint=False)
 
     r_torrents: list[Torrent] | None = reactive(None)
 
@@ -468,7 +468,7 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
             self.renderer.queue_width = width
             self._item_cache.clear()
 
-    def validate_index(self, index: Optional[int]) -> Optional[int]:
+    def validate_index(self, index: int | None) -> int | None:
         """Clamp index to current page; highlight first item by default."""
         if not self.page_torrents:
             return None
@@ -581,7 +581,7 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         height = len(self.page_torrents) * self.renderer.height
         self.virtual_size = Size(self.scrollable_content_region.width, height)
 
-    def _refresh_item(self, idx: Optional[int]) -> None:
+    def _refresh_item(self, idx: int | None) -> None:
         if idx is not None:
             height = self.renderer.height
             self.refresh_lines(idx * height, height)
@@ -595,15 +595,13 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
                 force=True,
             )
 
-    def watch_index(
-        self, old_index: Optional[int], new_index: Optional[int]
-    ) -> None:
+    def watch_index(self, old_index: int | None, new_index: int | None) -> None:
         self._refresh_item(old_index)
         self._refresh_item(new_index)
         self._scroll_to_cursor()
 
     def watch_hover_index(
-        self, old_index: Optional[int], new_index: Optional[int]
+        self, old_index: int | None, new_index: int | None
     ) -> None:
         self._refresh_item(old_index)
         self._refresh_item(new_index)
@@ -621,7 +619,7 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
 
     # Mouse
 
-    def _item_at(self, event: events.MouseEvent) -> Optional[int]:
+    def _item_at(self, event: events.MouseEvent) -> int | None:
         offset = event.get_content_offset(self)
         if offset is None:
             return None
@@ -1100,7 +1098,7 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
     # Common helpers
 
     @log_time
-    def torrent_idx(self, torrent) -> Optional[int]:
+    def torrent_idx(self, torrent) -> int | None:
         return next(
             (
                 idx
@@ -1111,11 +1109,11 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         )
 
     @log_time
-    def get_hl_torrent(self) -> Optional[Torrent]:
+    def get_hl_torrent(self) -> Torrent | None:
         if self.index is not None and self.index < len(self.page_torrents):
             return self.page_torrents[self.index]
 
     @log_time
-    def get_hl_torrent_id(self) -> Optional[str]:
+    def get_hl_torrent_id(self) -> str | None:
         if (hl_torrent := self.get_hl_torrent()) is not None:
             return hl_torrent.hash

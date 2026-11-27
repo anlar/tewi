@@ -5,10 +5,11 @@ import logging
 import re
 import textwrap
 import time
+from collections.abc import Callable
 from functools import wraps
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Callable, ParamSpec, TypeVar
+from typing import ParamSpec, TypeVar
 
 from platformdirs import user_log_dir
 

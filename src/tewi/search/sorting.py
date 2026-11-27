@@ -3,8 +3,8 @@
 
 """Sort web search results by the columns shown in the results table."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable
 
 from .models import SearchResult
 
