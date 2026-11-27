@@ -315,7 +315,7 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
     def __init__(
         self,
         id: str,
-        page_size: str,
+        page_size: int,
         view_mode: str,
         capability_set_priority: bool,
         capability_label: bool,
@@ -384,7 +384,7 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
     def update_page(
         self,
         torrents: list[Torrent],
-        hl_torrent_id: int = None,
+        hl_torrent_id: str | None = None,
         force: bool = False,
     ) -> None:
         if hl_torrent_id is None:

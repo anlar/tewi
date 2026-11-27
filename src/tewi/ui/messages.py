@@ -1,6 +1,7 @@
 # SPDX-FileCopyrightText: 2025 Anton Larionov
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from collections.abc import Callable
 from dataclasses import dataclass
 
 from textual.message import Message
@@ -237,6 +238,7 @@ class Notification(Message):
 class Confirm(Message):
     message: str
     description: str
-    check_quit: bool
+    # Called with dialog result: True if confirmed
+    check_quit: Callable[[bool | None], None]
     # Shown literally below description (e.g. torrent names)
     items: list[str] | None = None

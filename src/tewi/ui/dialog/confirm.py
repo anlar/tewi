@@ -25,7 +25,7 @@ class ConfirmDialog(ModalScreen[bool]):
     def __init__(
         self,
         message: str,
-        description: str = None,
+        description: str | None = None,
         items: list[str] | None = None,
     ) -> None:
         """
@@ -59,7 +59,7 @@ class ConfirmWidget(Static):
     def __init__(
         self,
         message: str,
-        description: str = None,
+        description: str | None = None,
         items: list[str] | None = None,
     ) -> None:
         self.message = message

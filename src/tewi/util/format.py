@@ -15,7 +15,7 @@ FORMAT_CACHE_SIZE = 20000
 @log_time
 @lru_cache(maxsize=FORMAT_CACHE_SIZE)
 def print_size(
-    num: int,
+    num: float,
     suffix: str = "B",
     size_bytes: int = 1000,
     ndigits: int = 2,
@@ -45,7 +45,7 @@ def print_size(
 @log_time
 @lru_cache(maxsize=FORMAT_CACHE_SIZE)
 def print_speed(
-    num: int,
+    num: float,
     print_secs: bool = False,
     suffix: str = "B",
     speed_bytes: int = 1000,

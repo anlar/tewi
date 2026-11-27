@@ -53,7 +53,7 @@ class TorrentWebSearch(Static):
     ]
 
     r_query: str = reactive("")
-    r_search_status: str = reactive(False)
+    r_search_status: str = reactive("")
     # always update to trigger focus setup and label updates
     # to cover case when search executes on the same query twice
     r_results: list[SearchResult] = reactive(list, always_update=True)

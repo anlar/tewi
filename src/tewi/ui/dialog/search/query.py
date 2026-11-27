@@ -26,7 +26,7 @@ class WebSearchQueryDialog(ModalScreen[None]):
     @log_time
     def __init__(
         self,
-        initial_query: str = None,
+        initial_query: str | None = None,
         initial_indexers: list[str] | None = None,
         initial_categories: list | None = None,
         presets: list[SearchPreset] | None = None,
@@ -65,7 +65,7 @@ class WebSearchQueryWidget(Static):
     @log_time
     def __init__(
         self,
-        initial_query: str = None,
+        initial_query: str | None = None,
         initial_indexers: list[str] | None = None,
         initial_categories: list | None = None,
         presets: list[SearchPreset] | None = None,
