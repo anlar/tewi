@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from collections import Counter
+from collections.abc import Callable
 from enum import Enum
-from typing import NamedTuple
+from typing import Any, NamedTuple
 
 from ..torrent.base import ClientCapability
 from ..torrent.models import Torrent
@@ -29,7 +30,7 @@ class SortOrder(NamedTuple):
     name: str
     key_asc: str
     key_desc: str
-    sort_func: None
+    sort_func: Callable[[Torrent], Any]
 
 
 sort_orders = [
@@ -88,7 +89,7 @@ class FilterOption(NamedTuple):
     name: str
     key: str
     display_name: str
-    filter_func: None
+    filter_func: Callable[[Torrent], bool]
 
 
 class TagType(Enum):
