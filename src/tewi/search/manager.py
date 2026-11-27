@@ -34,13 +34,13 @@ AVAILABLE_PROVIDERS: dict[str, type[BaseSearchProvider]] = {
     "nyaa": NyaaProvider,
     "tpb": TPBProvider,
     "therarbg": TheRarbgProvider,
-    "bitmagnet": BitmagnetProvider,
     "bitsearch": BitsearchProvider,
     "knaben": KnabenProvider,
     "limetorrents": LimeTorrentsProvider,
     "torrentscsv": TorrentsCsvProvider,
     "jackett": JackettProvider,
     "prowlarr": ProwlarrProvider,
+    "bitmagnet": BitmagnetProvider,
 }
 
 # Default provider order (used when no providers are configured)
