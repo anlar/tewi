@@ -13,6 +13,7 @@ from argparse import (
     Namespace,
 )
 from pathlib import Path
+from typing import NamedTuple
 
 from platformdirs import user_config_dir
 
@@ -201,103 +202,111 @@ def _get_bool_option(
     return None
 
 
+class _Option(NamedTuple):
+    """Config file option, loaded into config dict."""
+
+    name: str
+    value_type: type
+    key: str | None = None
+    """Key in config dict, option name if None."""
+
+
+_OPTION_GETTERS = {
+    str: _get_string_option,
+    int: _get_int_option,
+    bool: _get_bool_option,
+    list: _get_list_option,
+}
+
+_CLIENT_OPTIONS = (
+    _Option("type", str, "client_type"),
+    _Option("host", str),
+    _Option("port", str),
+    _Option("path", str),
+    _Option("username", str),
+    _Option("password", str),
+    _Option("ca_cert", str),
+    _Option("tls", bool),
+    _Option("tls_verify", bool),
+)
+
+_UI_OPTIONS = (
+    _Option("view_mode", str),
+    _Option("theme", str),
+    _Option("page_size", int),
+    _Option("refresh_interval", int),
+    _Option("filter", str),
+    _Option("badge_max_count", int),
+    _Option("badge_max_length", int),
+)
+
+_DEBUG_OPTIONS = (
+    _Option("log_level", str),
+    _Option("log_size", int),
+    _Option("test_mode", int),
+)
+
+_SEARCH_OPTIONS = (
+    _Option("jackett_url", str),
+    _Option("jackett_api_key", str),
+    _Option("jackett_multi", bool),
+    _Option("prowlarr_url", str),
+    _Option("prowlarr_api_key", str),
+    _Option("prowlarr_multi", bool),
+    _Option("bitmagnet_url", str),
+    _Option("providers", list, "search_providers"),
+    _Option("hide_zero_seeders", bool, "search_hide_zero_seeders"),
+    _Option("default_mode", str, "search_default_mode"),
+    _Option("default_preset", str, "search_default_preset"),
+    _Option("timeout", int, "search_timeout"),
+)
+
+
+def _load_options(
+    parser: configparser.ConfigParser,
+    section: str,
+    options: tuple[_Option, ...],
+    config: dict,
+) -> None:
+    """Load options of config file section into config dict.
+
+    Empty, missing and invalid options are skipped (with warning for
+    invalid ones), so they don't override defaults.
+
+    Args:
+        parser: ConfigParser instance
+        section: Section name
+        options: Options to load from section
+        config: Dictionary to load values into
+    """
+    if not parser.has_section(section):
+        return
+
+    for option in options:
+        getter = _OPTION_GETTERS[option.value_type]
+        val = getter(parser, section, option.name)
+        # String is empty if it's environment variable set to empty value
+        if val is not None and val != "":
+            config[option.key or option.name] = val
+
+
 def _load_client_section(
     parser: configparser.ConfigParser, config: dict
 ) -> None:
     """Load [client] section options into config dict."""
-    if not parser.has_section("client"):
-        return
-
-    for key, option in [
-        ("client_type", "type"),
-        ("host", "host"),
-        ("port", "port"),
-        ("path", "path"),
-        ("username", "username"),
-        ("password", "password"),
-        ("ca_cert", "ca_cert"),
-    ]:
-        val = _get_string_option(parser, "client", option)
-        if val:
-            config[key] = val
-
-    for option in ("tls", "tls_verify"):
-        val = _get_bool_option(parser, "client", option)
-        if val is not None:
-            config[option] = val
+    _load_options(parser, "client", _CLIENT_OPTIONS, config)
 
 
 def _load_ui_section(parser: configparser.ConfigParser, config: dict) -> None:
     """Load [ui] section options into config dict."""
-    if not parser.has_section("ui"):
-        return
-
-    val = _get_string_option(parser, "ui", "view_mode")
-    if val:
-        config["view_mode"] = val
-    val = _get_string_option(parser, "ui", "theme")
-    if val:
-        config["theme"] = val
-    val = _get_int_option(parser, "ui", "page_size")
-    if val is not None:
-        config["page_size"] = val
-    val = _get_int_option(parser, "ui", "refresh_interval")
-    if val is not None:
-        config["refresh_interval"] = val
-    val = _get_string_option(parser, "ui", "filter")
-    if val:
-        config["filter"] = val
-    val = _get_int_option(parser, "ui", "badge_max_count")
-    if val is not None:
-        config["badge_max_count"] = val
-    val = _get_int_option(parser, "ui", "badge_max_length")
-    if val is not None:
-        config["badge_max_length"] = val
+    _load_options(parser, "ui", _UI_OPTIONS, config)
 
 
 def _load_debug_section(
     parser: configparser.ConfigParser, config: dict
 ) -> None:
     """Load [debug] section options into config dict."""
-    if not parser.has_section("debug"):
-        return
-
-    val = _get_string_option(parser, "debug", "log_level")
-    if val:
-        config["log_level"] = val
-    val = _get_int_option(parser, "debug", "log_size")
-    if val is not None:
-        config["log_size"] = val
-    val = _get_int_option(parser, "debug", "test_mode")
-    if val is not None:
-        config["test_mode"] = val
-
-
-def _load_search_indexers(
-    parser: configparser.ConfigParser, config: dict
-) -> None:
-    """Load indexer-related [search] options into config dict."""
-    val = _get_string_option(parser, "search", "jackett_url")
-    if val:
-        config["jackett_url"] = val
-    val = _get_string_option(parser, "search", "jackett_api_key")
-    if val:
-        config["jackett_api_key"] = val
-    val = _get_bool_option(parser, "search", "jackett_multi")
-    if val is not None:
-        config["jackett_multi"] = val
-    val = _get_string_option(parser, "search", "prowlarr_url")
-    if val:
-        config["prowlarr_url"] = val
-    val = _get_string_option(parser, "search", "prowlarr_api_key")
-    if val:
-        config["prowlarr_api_key"] = val
-    val = _get_bool_option(parser, "search", "prowlarr_multi")
-    if val is not None:
-        config["prowlarr_multi"] = val
-    val = _get_string_option(parser, "search", "bitmagnet_url")
-    if val:
-        config["bitmagnet_url"] = val
+    _load_options(parser, "debug", _DEBUG_OPTIONS, config)
 
 
 def _load_search_presets(
@@ -332,25 +341,7 @@ def _load_search_section(
     parser: configparser.ConfigParser, config: dict
 ) -> None:
     """Load [search] section options into config dict."""
-    if not parser.has_section("search"):
-        return
-
-    _load_search_indexers(parser, config)
-    val = _get_list_option(parser, "search", "providers")
-    if val:
-        config["search_providers"] = val
-    val = _get_bool_option(parser, "search", "hide_zero_seeders")
-    if val is not None:
-        config["search_hide_zero_seeders"] = val
-    val = _get_string_option(parser, "search", "default_mode")
-    if val:
-        config["search_default_mode"] = val
-    val = _get_string_option(parser, "search", "default_preset")
-    if val:
-        config["search_default_preset"] = val
-    val = _get_int_option(parser, "search", "timeout")
-    if val is not None:
-        config["search_timeout"] = val
+    _load_options(parser, "search", _SEARCH_OPTIONS, config)
 
 
 def _load_preset_sections(
