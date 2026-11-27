@@ -12,12 +12,17 @@ from argparse import (
     BooleanOptionalAction,
     Namespace,
 )
+from collections.abc import Iterable
 from pathlib import Path
 from typing import NamedTuple
 
 from platformdirs import user_config_dir
 
-from .search.manager import AVAILABLE_PROVIDERS, resolve_provider_aliases
+from .search.manager import (
+    AVAILABLE_PROVIDERS,
+    DEFAULT_ENABLED_PROVIDERS,
+    resolve_provider_aliases,
+)
 from .search.models import SearchPreset
 from .theme import (
     THEME_SECTION_PREFIX,
@@ -467,10 +472,11 @@ def load_config(profile: str | None = None) -> dict:
     return config
 
 
-def _providers_comment(prefix: str, indent: str) -> str:
+def _providers_comment(ids: Iterable[str], prefix: str, indent: str) -> str:
     """List provider IDs for config template comment.
 
     Args:
+        ids: Provider IDs
         prefix: Start of first comment line, before IDs
         indent: Start of following comment lines
 
@@ -478,7 +484,7 @@ def _providers_comment(prefix: str, indent: str) -> str:
         Comment lines with provider IDs
     """
     return textwrap.fill(
-        ", ".join(AVAILABLE_PROVIDERS),
+        ", ".join(ids),
         width=76,
         initial_indent=prefix,
         subsequent_indent=indent,
@@ -638,7 +644,8 @@ bitmagnet_url =
 # Leave empty to enable default providers
 # Order matters: providers listed first take priority when deduplicating
 # results and appear first in the search dialog
-{providers}
+{available_providers}
+{default_providers}
 providers =
 
 # Hide torrents with zero seeders from search results (default: false)
@@ -690,12 +697,19 @@ log_size =
 
 # vim: ft=dosini
 """
-    config_content = config_content.replace(
-        "{providers}", _providers_comment("# Available providers: ", "#   ")
-    ).replace(
-        "{preset_providers}",
-        _providers_comment("#   - providers: ", "#     "),
-    )
+    provider_lists = {
+        "{available_providers}": _providers_comment(
+            AVAILABLE_PROVIDERS, "# Available providers: ", "#   "
+        ),
+        "{default_providers}": _providers_comment(
+            DEFAULT_ENABLED_PROVIDERS, "# Default providers: ", "#   "
+        ),
+        "{preset_providers}": _providers_comment(
+            AVAILABLE_PROVIDERS, "#   - providers: ", "#     "
+        ),
+    }
+    for placeholder, text in provider_lists.items():
+        config_content = config_content.replace(placeholder, text)
 
     # Existing config is never overwritten, and new one is created
     # readable only by owner from the start
