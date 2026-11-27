@@ -27,36 +27,31 @@ from .providers import (
 
 logger = get_logger()
 
-# Available provider IDs
+# Available provider IDs, in default order
 AVAILABLE_PROVIDERS: dict[str, type[BaseSearchProvider]] = {
-    "tpb": TPBProvider,
-    "torrentscsv": TorrentsCsvProvider,
-    "bitsearch": BitsearchProvider,
-    "knaben": KnabenProvider,
-    "therarbg": TheRarbgProvider,
-    "limetorrents": LimeTorrentsProvider,
     "yts": YTSProvider,
     "nekobt": NekoBtProvider,
     "nyaa": NyaaProvider,
+    "tpb": TPBProvider,
+    "therarbg": TheRarbgProvider,
+    "bitmagnet": BitmagnetProvider,
+    "bitsearch": BitsearchProvider,
+    "knaben": KnabenProvider,
+    "limetorrents": LimeTorrentsProvider,
+    "torrentscsv": TorrentsCsvProvider,
     "jackett": JackettProvider,
     "prowlarr": ProwlarrProvider,
-    "bitmagnet": BitmagnetProvider,
 }
 
 # Default provider order (used when no providers are configured)
-DEFAULT_PROVIDER_ORDER = [
-    "yts",
-    "nekobt",
-    "nyaa",
-    "tpb",
-    "therarbg",
-    "jackett",
-    "prowlarr",
-    "bitmagnet",
-    "bitsearch",
-    "knaben",
-    "limetorrents",
-    "torrentscsv",
+DEFAULT_PROVIDER_ORDER = list(AVAILABLE_PROVIDERS)
+
+# Providers of self-hosted servers, which need URL in config
+SELF_HOSTED_PROVIDERS = ("jackett", "prowlarr", "bitmagnet")
+
+# Providers enabled by default in command line options
+DEFAULT_ENABLED_PROVIDERS = [
+    p for p in DEFAULT_PROVIDER_ORDER if p not in SELF_HOSTED_PROVIDERS
 ]
 
 # Retired provider IDs mapped to the providers replacing them
@@ -252,12 +247,7 @@ class SearchClient:
             # Determine which providers to enable and their order
             if self._enabled_providers is None:
                 # All providers enabled - use default order
-                # Only include providers that exist
-                enabled_ids = [
-                    p
-                    for p in DEFAULT_PROVIDER_ORDER
-                    if p in AVAILABLE_PROVIDERS
-                ]
+                enabled_ids = DEFAULT_PROVIDER_ORDER
             else:
                 # Use configured order
                 enabled_ids = self._enabled_providers

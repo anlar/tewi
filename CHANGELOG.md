@@ -38,7 +38,7 @@ handle multi-line list body as single line.
 - Warn on start if config file is accessible by other users
 - Open search result links the same way as other links, also in browser when running with textual-serve
 - Load search result details in background, so UI doesn't freeze while provider fetches extra details
-- Change default search providers order to `yts`, `nekobt`, `nyaa`, `tpb`, `therarbg`, `bitsearch`, `knaben`, `limetorrents`, `torrentscsv` (specialized providers first)
+- Change default search providers order to `yts`, `nekobt`, `nyaa`, `tpb`, `therarbg`, `bitsearch`, `knaben`, `limetorrents`, `torrentscsv` (specialized providers first), with Jackett and Prowlarr last when all providers are listed
 - Fix web search results and details failing to show when a search provider doesn't report torrent size
 - Fix search provider counts (seeders, leechers, downloads, size, files) sent as text being parsed as markup in search results
 - Fix Jackett, Prowlarr, Bitmagnet, TPB, YTS and Nyaa search result details showing provider text as Markdown, which could add fake details or links with misleading text

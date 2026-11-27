@@ -26,7 +26,13 @@ from .config import (
     merge_config_with_args,
     profile_name,
 )
-from .search.manager import SearchClient, print_available_providers
+from .search.manager import (
+    AVAILABLE_PROVIDERS,
+    DEFAULT_ENABLED_PROVIDERS,
+    PROVIDER_ALIASES,
+    SearchClient,
+    print_available_providers,
+)
 from .theme import ThemeConfigError, build_custom_themes
 from .torrent.factory import (
     ClientCapability,
@@ -1583,32 +1589,8 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
         "--search-providers",
         type=str,
         nargs="*",
-        choices=[
-            "yts",
-            "nekobt",
-            "nyaa",
-            "tpb",
-            "therarbg",
-            "jackett",
-            "prowlarr",
-            "bitmagnet",
-            "bitsearch",
-            "knaben",
-            "limetorrents",
-            "torrentscsv",
-            "torrentz2",
-        ],
-        default=[
-            "yts",
-            "nekobt",
-            "nyaa",
-            "tpb",
-            "therarbg",
-            "bitsearch",
-            "knaben",
-            "limetorrents",
-            "torrentscsv",
-        ],
+        choices=[*AVAILABLE_PROVIDERS, *PROVIDER_ALIASES],
+        default=list(DEFAULT_ENABLED_PROVIDERS),
         action=TrackSetAction,
         help="Space-separated list of enabled search providers. "
         "Order matters: first providers take priority when deduplicating",
