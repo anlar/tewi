@@ -5,6 +5,7 @@ import configparser
 import os
 import re
 import sys
+import textwrap
 from argparse import (
     Action,
     ArgumentTypeError,
@@ -15,7 +16,7 @@ from pathlib import Path
 
 from platformdirs import user_config_dir
 
-from .search.manager import resolve_provider_aliases
+from .search.manager import AVAILABLE_PROVIDERS, resolve_provider_aliases
 from .search.models import SearchPreset
 from .theme import (
     THEME_SECTION_PREFIX,
@@ -475,6 +476,24 @@ def load_config(profile: str | None = None) -> dict:
     return config
 
 
+def _providers_comment(prefix: str, indent: str) -> str:
+    """List provider IDs for config template comment.
+
+    Args:
+        prefix: Start of first comment line, before IDs
+        indent: Start of following comment lines
+
+    Returns:
+        Comment lines with provider IDs
+    """
+    return textwrap.fill(
+        ", ".join(AVAILABLE_PROVIDERS),
+        width=76,
+        initial_indent=prefix,
+        subsequent_indent=indent,
+    )
+
+
 def create_default_config(path: Path) -> None:
     """
     Create a default configuration file with comments.
@@ -628,6 +647,7 @@ bitmagnet_url =
 # Leave empty to enable default providers
 # Order matters: providers listed first take priority when deduplicating
 # results and appear first in the search dialog
+{providers}
 providers =
 
 # Hide torrents with zero seeders from search results (default: false)
@@ -649,8 +669,7 @@ timeout =
 # dialog opens. The value must match a [search.preset.NAME] section name.
 #
 # indexers: comma-separated indexer IDs; omit to select all indexers
-#   - built-in providers: yts, nekobt, nyaa, tpb, therarbg, bitmagnet,
-#     bitsearch, knaben, limetorrents, torrentscsv
+{preset_providers}
 #   - Jackett: jackett (all sub-indexers), jackett:all (single Jackett
 #              indexer, when jackett_multi is disabled), or jackett:NAME
 #              (by indexer name)
@@ -680,6 +699,12 @@ log_size =
 
 # vim: ft=dosini
 """
+    config_content = config_content.replace(
+        "{providers}", _providers_comment("# Available providers: ", "#   ")
+    ).replace(
+        "{preset_providers}",
+        _providers_comment("#   - providers: ", "#     "),
+    )
 
     # Existing config is never overwritten, and new one is created
     # readable only by owner from the start
