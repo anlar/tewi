@@ -9,6 +9,7 @@ import stat
 import pytest
 
 from src.tewi import config
+from src.tewi.app import _setup_argument_parser
 from src.tewi.config import (
     TrackSetBooleanAction,
     _expand_env_vars,
@@ -23,6 +24,7 @@ from src.tewi.config import (
     get_config_path,
     load_config,
     merge_config_with_args,
+    positive_int,
     profile_name,
 )
 from src.tewi.theme import ThemeConfigError
@@ -67,6 +69,57 @@ class TestProfileNames:
     def test_config_path_rejects_unsafe_profile(self, config_dir):
         with pytest.raises(ValueError):
             get_config_path("../../etc/x")
+
+
+class TestPositiveInt:
+    """Test cases for numeric options which must be at least 1.
+
+    Zero page size crashes torrent list, zero log size disables log
+    rotation, and zero refresh interval or search timeout make no sense.
+    """
+
+    def test_accepts_positive_value(self):
+        assert positive_int("25") == 25
+
+    @pytest.mark.parametrize("value", ["0", "-5", "abc", "1.5", ""])
+    def test_rejects_invalid_value(self, value):
+        with pytest.raises(argparse.ArgumentTypeError):
+            positive_int(value)
+
+    @pytest.mark.parametrize(
+        "option",
+        ["--page-size", "--refresh-interval", "--search-timeout", "--log-size"],
+    )
+    def test_command_line_rejects_zero(self, option, capsys):
+        with pytest.raises(SystemExit):
+            _setup_argument_parser("test").parse_args([option, "0"])
+
+        assert "must be at least 1, got 0" in capsys.readouterr().err
+
+    @pytest.mark.parametrize(
+        "section,option,load",
+        [
+            ("ui", "page_size", _load_ui_section),
+            ("ui", "refresh_interval", _load_ui_section),
+            ("search", "timeout", _load_search_section),
+            ("debug", "log_size", _load_debug_section),
+        ],
+    )
+    @pytest.mark.parametrize("value", ["0", "-1"])
+    def test_config_skips_value_below_minimum(
+        self, section, option, load, value, capsys
+    ):
+        parser = configparser.ConfigParser()
+        parser.read_string(f"[{section}]\n{option} = {value}\n")
+        config = {}
+
+        load(parser, config)
+
+        assert config == {}
+        assert (
+            f"Warning: Invalid {option} value in config: "
+            f"must be at least 1, got {value}"
+        ) in capsys.readouterr().err
 
 
 class TestCreateDefaultConfig:

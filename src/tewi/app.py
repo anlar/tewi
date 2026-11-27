@@ -24,6 +24,7 @@ from .config import (
     get_config_path,
     load_config,
     merge_config_with_args,
+    positive_int,
     profile_name,
 )
 from .search.manager import (
@@ -1494,7 +1495,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--page-size",
-        type=int,
+        type=positive_int,
         default=1000,
         action=TrackSetAction,
         help="Number of torrents displayed per page",
@@ -1531,7 +1532,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--refresh-interval",
-        type=int,
+        type=positive_int,
         default=5,
         action=TrackSetAction,
         help="Refresh interval (in seconds) for loading data from daemon",
@@ -1623,7 +1624,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--search-timeout",
-        type=int,
+        type=positive_int,
         default=30,
         metavar="SECONDS",
         action=TrackSetAction,
@@ -1657,7 +1658,7 @@ def _setup_argument_parser(version: str) -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--log-size",
-        type=int,
+        type=positive_int,
         default=10,
         metavar="MB",
         action=TrackSetAction,

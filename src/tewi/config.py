@@ -90,6 +90,21 @@ def profile_name(value: str) -> str:
     return value
 
 
+def positive_int(value: str) -> int:
+    """Validate positive integer passed in command line (argparse type).
+
+    Raises:
+        ArgumentTypeError: If value isn't integer of at least 1
+    """
+    try:
+        number = int(value)
+    except ValueError:
+        raise ArgumentTypeError(f"invalid int value: '{value}'") from None
+    if number < 1:
+        raise ArgumentTypeError(f"must be at least 1, got {number}")
+    return number
+
+
 def get_config_path(profile: str | None = None) -> Path:
     """
     Get the configuration file path.
@@ -215,6 +230,9 @@ class _Option(NamedTuple):
     key: str | None = None
     """Key in config dict, option name if None."""
 
+    min_value: int | None = None
+    """Smallest valid value of int option."""
+
 
 _OPTION_GETTERS = {
     str: _get_string_option,
@@ -238,8 +256,8 @@ _CLIENT_OPTIONS = (
 _UI_OPTIONS = (
     _Option("view_mode", str),
     _Option("theme", str),
-    _Option("page_size", int),
-    _Option("refresh_interval", int),
+    _Option("page_size", int, min_value=1),
+    _Option("refresh_interval", int, min_value=1),
     _Option("filter", str),
     _Option("badge_max_count", int),
     _Option("badge_max_length", int),
@@ -247,7 +265,7 @@ _UI_OPTIONS = (
 
 _DEBUG_OPTIONS = (
     _Option("log_level", str),
-    _Option("log_size", int),
+    _Option("log_size", int, min_value=1),
     _Option("test_mode", int),
 )
 
@@ -263,7 +281,7 @@ _SEARCH_OPTIONS = (
     _Option("hide_zero_seeders", bool, "search_hide_zero_seeders"),
     _Option("default_mode", str, "search_default_mode"),
     _Option("default_preset", str, "search_default_preset"),
-    _Option("timeout", int, "search_timeout"),
+    _Option("timeout", int, "search_timeout", min_value=1),
 )
 
 
@@ -275,8 +293,9 @@ def _load_options(
 ) -> None:
     """Load options of config file section into config dict.
 
-    Empty, missing and invalid options are skipped (with warning for
-    invalid ones), so they don't override defaults.
+    Empty, missing and invalid options (including ints below their
+    minimum) are skipped, with warning for invalid ones, so they don't
+    override defaults.
 
     Args:
         parser: ConfigParser instance
@@ -291,8 +310,16 @@ def _load_options(
         getter = _OPTION_GETTERS[option.value_type]
         val = getter(parser, section, option.name)
         # String is empty if it's environment variable set to empty value
-        if val is not None and val != "":
-            config[option.key or option.name] = val
+        if val is None or val == "":
+            continue
+        if option.min_value is not None and val < option.min_value:
+            print(
+                f"Warning: Invalid {option.name} value in config: "
+                f"must be at least {option.min_value}, got {val}",
+                file=sys.stderr,
+            )
+            continue
+        config[option.key or option.name] = val
 
 
 def _load_client_section(

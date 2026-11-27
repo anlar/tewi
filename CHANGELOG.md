@@ -84,6 +84,7 @@ handle multi-line list body as single line.
 - Fix IMDB links of Jackett and Prowlarr search results for IDs shorter than 7 digits
 - Fix crash when Transmission or qBittorrent fails to add torrent, show error instead
 - Fix total size of torrents missing in status bar while downloads are incomplete (e.g. "5.37 GB" shown instead of "5.37 GB / 10.74 GB")
+- Require positive values for int options: page size, refresh interval, search timeout and log size
 
 ### Removed
 
