@@ -17,6 +17,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from types import SimpleNamespace
 
 import pytest
+from qbittorrentapi import Client as QBittorrentAPIClient
 
 from src.tewi.torrent import factory
 from src.tewi.torrent.clients.deluge import DelugeClient
@@ -401,6 +402,29 @@ class TestClientConnectionSecurity:
             _url=SimpleNamespace(_base_url=base_url),
             _VERIFY_WEBUI_CERTIFICATE=verify,
         )
+        client = bare(QBittorrentClient, _host="nas", client=api)
+
+        assert client.connection_security() is expected
+
+    @pytest.mark.parametrize(
+        "verify,expected",
+        [
+            (True, ConnectionSecurity.TLS),
+            (False, ConnectionSecurity.TLS_UNVERIFIED),
+        ],
+    )
+    def test_qbittorrent_private_attributes_of_library(self, verify, expected):
+        """Library has no public API for detected scheme, so its private
+        attributes are read: test fails if library renames them, instead
+        of connection security falling back to wrong value."""
+        api = QBittorrentAPIClient(
+            host="https://nas",
+            port=8080,
+            FORCE_SCHEME_FROM_HOST=True,
+            VERIFY_WEBUI_CERTIFICATE=verify,
+        )
+        # Built on first request, forced scheme doesn't need network
+        api._url.build_base_url({}, {})
         client = bare(QBittorrentClient, _host="nas", client=api)
 
         assert client.connection_security() is expected
