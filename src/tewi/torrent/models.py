@@ -258,5 +258,3 @@ class TlsOptions:
 
 class ClientError(Exception):
     """Base exception for all client errors."""
-
-    pass

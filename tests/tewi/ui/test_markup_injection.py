@@ -214,7 +214,7 @@ def test_reactive_label_does_not_parse_markup_by_default(payload):
 class WebSearchApp(ClickApp):
     def __init__(self) -> None:
         super().__init__()
-        self.search = SimpleNamespace(get_providers=lambda: [])
+        self.search = SimpleNamespace(get_providers=list)
 
     def compose(self) -> ComposeResult:
         yield TorrentWebSearch(False, "standard")

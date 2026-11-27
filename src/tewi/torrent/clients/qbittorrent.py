@@ -485,7 +485,6 @@ class QBittorrentClient(BaseClient):
         (only individual file priorities and queue positions). This method
         is a no-op for qBittorrent.
         """
-        pass
 
     @log_time
     def set_file_priority(

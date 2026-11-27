@@ -13,6 +13,7 @@ lint.select = [
     "C90", # McCabe complexity (default: 10)
     "S",  # flake8-bandit (security)
     "UP", # pyupgrade (modern syntax)
+    "PIE", # flake8-pie (unnecessary code)
 ]
 
 lint.ignore = [

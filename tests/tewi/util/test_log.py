@@ -311,7 +311,6 @@ class TestLogTimeDecorator:
         @log_time
         def documented_function():
             """This is a docstring."""
-            pass
 
         assert documented_function.__doc__ == "This is a docstring."
 

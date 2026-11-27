@@ -46,7 +46,6 @@ class BaseProviderIntegrationTest(ABC):
         Returns:
             BaseSearchProvider: Provider instance
         """
-        pass
 
     @abstractmethod
     def get_search_query(self) -> str:
@@ -55,7 +54,6 @@ class BaseProviderIntegrationTest(ABC):
         Returns:
             str: Search query
         """
-        pass
 
     @abstractmethod
     def get_valid_categories(self) -> set:
@@ -64,7 +62,6 @@ class BaseProviderIntegrationTest(ABC):
         Returns:
             set: Valid category values (can include None)
         """
-        pass
 
     @abstractmethod
     def requires_trackers(self) -> bool:
@@ -73,7 +70,6 @@ class BaseProviderIntegrationTest(ABC):
         Returns:
             bool: True if magnet links should have &tr= parameters
         """
-        pass
 
     def requires_magnet(self) -> bool:
         """Return whether results should have magnet links.

@@ -565,7 +565,6 @@ class DelugeClient(BaseClient):
 
         Note: Deluge supports labels that acts like categories.
         """
-        pass
 
     # ========================================================================
     # Priority Management
@@ -577,7 +576,6 @@ class DelugeClient(BaseClient):
 
         Note: Deluge doesn't support torrent priorities.
         """
-        pass
 
     @log_time
     def set_file_priority(

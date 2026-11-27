@@ -92,8 +92,6 @@ class RPCFaultError(ClientError):
     by rTorrent, so the outcome of the call is known.
     """
 
-    pass
-
 
 class SCGITransport(xmlrpc.client.Transport):
     """XML-RPC transport over SCGI (rTorrent's native RPC protocol).

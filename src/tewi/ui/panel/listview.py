@@ -938,7 +938,7 @@ class TorrentListViewPanel(ScrollView, can_focus=True):
         if forward:
             # Search from current+1 to end, then from start to current
             range1 = range(current_idx + 1, len(self.r_torrents))
-            range2 = range(0, current_idx + 1)
+            range2 = range(current_idx + 1)
         else:
             # Search from current-1 to start, then from end to current
             range1 = range(current_idx - 1, -1, -1)

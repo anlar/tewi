@@ -70,7 +70,6 @@ class BaseClient(ABC):
             password: Optional authentication password
             tls: Optional TLS settings (plain HTTP is used if not set)
         """
-        pass
 
     @abstractmethod
     def connection_security(self) -> ConnectionSecurity:
@@ -80,7 +79,6 @@ class BaseClient(ABC):
         from TLS settings (e.g. qBittorrent client switches to HTTPS
         automatically, rTorrent uses HTTPS on port 443).
         """
-        pass
 
     @abstractmethod
     def capable(self, capability: ClientCapability) -> bool:
@@ -94,7 +92,6 @@ class BaseClient(ABC):
         Returns:
             True if the capability is supported, False otherwise
         """
-        pass
 
     @abstractmethod
     def meta(self) -> ClientMeta:
@@ -103,7 +100,6 @@ class BaseClient(ABC):
         Returns:
             ClientMeta with name and version fields
         """
-        pass
 
     # ========================================================================
     # Session & Global Settings
@@ -119,7 +115,6 @@ class BaseClient(ABC):
         Returns:
             ClientSession with speeds, settings, and torrent counts
         """
-        pass
 
     @abstractmethod
     def stats(self) -> ClientStats:
@@ -128,7 +123,6 @@ class BaseClient(ABC):
         Returns:
             ClientStats with upload/download bytes, ratios, and active seconds
         """
-        pass
 
     @abstractmethod
     def preferences(self) -> dict[str, str]:
@@ -137,7 +131,6 @@ class BaseClient(ABC):
         Returns:
             Dictionary of preference keys and values
         """
-        pass
 
     @abstractmethod
     def toggle_alt_speed(self) -> bool:
@@ -146,7 +139,6 @@ class BaseClient(ABC):
         Returns:
             True if alt speed is now enabled, False otherwise
         """
-        pass
 
     # ========================================================================
     # Torrent Retrieval
@@ -159,7 +151,6 @@ class BaseClient(ABC):
         Returns:
             List of Torrent objects
         """
-        pass
 
     def torrents_test(self, target_count: int) -> list[Torrent]:
         """Get test torrent list (for performance testing).
@@ -184,7 +175,6 @@ class BaseClient(ABC):
         Returns:
             TorrentDetail with complete torrent information
         """
-        pass
 
     # ========================================================================
     # Torrent Lifecycle Operations
@@ -197,7 +187,6 @@ class BaseClient(ABC):
         Args:
             value: Magnet link or path to .torrent file
         """
-        pass
 
     @abstractmethod
     def start_torrent(self, hashes: str | list[str]) -> None:
@@ -206,12 +195,10 @@ class BaseClient(ABC):
         Args:
             hashes: Single torrent hash or list of hashes
         """
-        pass
 
     @abstractmethod
     def start_all_torrents(self) -> None:
         """Start all torrents in the client."""
-        pass
 
     @abstractmethod
     def stop_torrent(self, hashes: str | list[str]) -> None:
@@ -220,12 +207,10 @@ class BaseClient(ABC):
         Args:
             hashes: Single torrent hash or list of hashes
         """
-        pass
 
     @abstractmethod
     def stop_all_torrents(self) -> None:
         """Stop all torrents in the client."""
-        pass
 
     @abstractmethod
     def remove_torrent(
@@ -239,7 +224,6 @@ class BaseClient(ABC):
             hashes: Single torrent hash or list of hashes
             delete_data: Whether to delete downloaded data
         """
-        pass
 
     @abstractmethod
     def verify_torrent(self, hashes: str | list[str]) -> None:
@@ -248,7 +232,6 @@ class BaseClient(ABC):
         Args:
             hashes: Single torrent hash or list of hashes
         """
-        pass
 
     @abstractmethod
     def reannounce_torrent(self, hashes: str | list[str]) -> None:
@@ -257,7 +240,6 @@ class BaseClient(ABC):
         Args:
             hashes: Single torrent hash or list of hashes
         """
-        pass
 
     # ========================================================================
     # Torrent Organization & Metadata
@@ -272,7 +254,6 @@ class BaseClient(ABC):
             name: New torrent name
             location: New download location path
         """
-        pass
 
     @abstractmethod
     def get_categories(self) -> list[TorrentCategory]:
@@ -281,7 +262,6 @@ class BaseClient(ABC):
         Returns:
             List of TorrentCategory objects with name and save_path
         """
-        pass
 
     @abstractmethod
     def set_category(
@@ -293,7 +273,6 @@ class BaseClient(ABC):
             hashes: Single torrent hash or list of hashes
             category: Category name or None to clear category
         """
-        pass
 
     @abstractmethod
     def update_labels(self, hashes: str | list[str], labels: list[str]) -> None:
@@ -303,7 +282,6 @@ class BaseClient(ABC):
             hashes: Single torrent hash or list of hashes
             labels: List of label strings to apply
         """
-        pass
 
     # ========================================================================
     # Priority Management
@@ -317,7 +295,6 @@ class BaseClient(ABC):
             hashes: Single torrent hash or list of hashes
             priority: Priority level (-1=low, 0=normal, 1=high)
         """
-        pass
 
     @abstractmethod
     def set_file_priority(
@@ -333,4 +310,3 @@ class BaseClient(ABC):
             file_ids: List of file IDs to update
             priority: TorrentFilePriority enum value
         """
-        pass

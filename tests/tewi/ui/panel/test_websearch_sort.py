@@ -33,7 +33,7 @@ def result(title: str, seeders: int | None, size: int) -> SearchResult:
 class WebSearchApp(App):
     def __init__(self, *, hide_zero_seeders: bool = False) -> None:
         super().__init__()
-        self.search = SimpleNamespace(get_providers=lambda: [])
+        self.search = SimpleNamespace(get_providers=list)
         self.hide_zero_seeders = hide_zero_seeders
         self.added: list[str] = []
 
