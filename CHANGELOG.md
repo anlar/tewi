@@ -83,6 +83,7 @@ handle multi-line list body as single line.
 - Hide internal Prowlarr fields (protocol, comments link same as torrent page, zero IDs) in search result details, and don't show empty indexer info
 - Fix IMDB links of Jackett and Prowlarr search results for IDs shorter than 7 digits
 - Fix crash when Transmission or qBittorrent fails to add torrent, show error instead
+- Fix total size of torrents missing in status bar while downloads are incomplete (e.g. "5.37 GB" shown instead of "5.37 GB / 10.74 GB")
 
 ### Removed
 

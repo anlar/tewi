@@ -207,7 +207,8 @@ class StatePanel(Static):
         complete_size = print_size(session["torrents_complete_size"])
         total_size = print_size(session["torrents_total_size"])
 
-        if complete_size < total_size:
+        # Compare bytes: formatted sizes aren't ordered as strings
+        if session["torrents_complete_size"] < session["torrents_total_size"]:
             stats = f"{stats} [dim]|[/] Size: {complete_size} / {total_size}"
         else:
             stats = f"{stats} [dim]|[/] Size: {complete_size}"
