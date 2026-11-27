@@ -267,7 +267,6 @@ class SearchClient:
                 if provider_id == "jackett":
                     # Jackett requires configuration
                     if self._jackett_url and self._jackett_api_key:
-                        provider_class = AVAILABLE_PROVIDERS[provider_id]
                         self._providers.append(
                             JackettProvider(
                                 self._jackett_url,
@@ -279,7 +278,6 @@ class SearchClient:
                 elif provider_id == "prowlarr":
                     # Prowlarr requires configuration
                     if self._prowlarr_url and self._prowlarr_api_key:
-                        provider_class = AVAILABLE_PROVIDERS[provider_id]
                         self._providers.append(
                             ProwlarrProvider(
                                 self._prowlarr_url,
@@ -291,7 +289,6 @@ class SearchClient:
                 elif provider_id == "bitmagnet":
                     # Bitmagnet requires URL configuration
                     if self._bitmagnet_url:
-                        provider_class = AVAILABLE_PROVIDERS[provider_id]
                         self._providers.append(
                             BitmagnetProvider(
                                 self._bitmagnet_url, self._search_timeout
