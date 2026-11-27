@@ -4,10 +4,12 @@
 from types import SimpleNamespace
 
 import pytest
+from transmission_rpc import TransmissionError
 
 from src.tewi.torrent.base import ClientCapability
 from src.tewi.torrent.clients import transmission
 from src.tewi.torrent.clients.transmission import TransmissionClient
+from src.tewi.torrent.models import ClientError
 
 
 @pytest.fixture(scope="module")
@@ -60,6 +62,17 @@ class TestAddTorrentFromUrl:
         tr_client.add_torrent("https://example.com/x.torrent")
 
         assert added == [magnet]
+
+    def test_add_error_is_client_error(self, tr_client, monkeypatch):
+        """Daemon error is reported as ClientError, shown to user."""
+
+        def add_torrent(torrent):
+            raise TransmissionError('Query failed with result "duplicate".')
+
+        tr_client.client = SimpleNamespace(add_torrent=add_torrent)
+
+        with pytest.raises(ClientError, match="duplicate"):
+            tr_client.add_torrent("magnet:?xt=urn:btih:" + "a" * 40)
 
 
 @pytest.mark.integration

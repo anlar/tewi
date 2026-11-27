@@ -82,6 +82,7 @@ handle multi-line list body as single line.
 - Show Prowlarr search error message (e.g. all indexers unavailable) instead of HTTP status only
 - Hide internal Prowlarr fields (protocol, comments link same as torrent page, zero IDs) in search result details, and don't show empty indexer info
 - Fix IMDB links of Jackett and Prowlarr search results for IDs shorter than 7 digits
+- Fix crash when Transmission or qBittorrent fails to add torrent, show error instead
 
 ### Removed
 

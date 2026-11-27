@@ -7,6 +7,7 @@ import os
 from dataclasses import asdict
 from datetime import datetime, timedelta
 
+from qbittorrentapi import APIError
 from qbittorrentapi import Client as QBittorrentAPIClient
 from qbittorrentapi.definitions import Dictionary
 from qbittorrentapi.torrents import TorrentDictionary, Tracker
@@ -316,17 +317,24 @@ class QBittorrentClient(BaseClient):
         """
         if is_torrent_hash(value):
             magnet_link = f"magnet:?xt=urn:btih:{value.strip()}"
-            self.client.torrents.add(urls=magnet_link)
+            self._add(urls=magnet_link)
         elif is_torrent_link(value):
             magnet_link, torrent_data = download_torrent_from_url(value)
             if magnet_link:
-                self.client.torrents.add(urls=magnet_link)
+                self._add(urls=magnet_link)
             else:
-                self.client.torrents.add(torrent_files=torrent_data)
+                self._add(torrent_files=torrent_data)
         else:
             file = os.path.expanduser(value)
             with open(file, "rb") as f:
-                self.client.torrents.add(torrent_files=f)
+                self._add(torrent_files=f)
+
+    def _add(self, **kwargs) -> None:
+        """Add torrent, reporting daemon errors as ClientError."""
+        try:
+            self.client.torrents.add(**kwargs)
+        except APIError as e:
+            raise ClientError(str(e)) from e
 
     @log_time
     def start_torrent(self, hashes: str | list[str]) -> None:

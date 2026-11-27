@@ -11,6 +11,7 @@ from datetime import datetime
 from transmission_rpc import Client as TransmissionRPCClient
 from transmission_rpc import File as TransmissionFile
 from transmission_rpc import Torrent as TransmissionTorrent
+from transmission_rpc import TransmissionError
 from transmission_rpc.torrent import TrackerStats as TransmissionTrackerStats
 
 from ...util.log import log_time
@@ -269,16 +270,23 @@ class TransmissionClient(BaseClient):
         converted to a magnet link before being submitted.
         """
         if is_torrent_hash(value):
-            self.client.add_torrent(f"magnet:?xt=urn:btih:{value.strip()}")
+            self._add(f"magnet:?xt=urn:btih:{value.strip()}")
         elif is_torrent_link(value):
             magnet_link, torrent_data = download_torrent_from_url(value)
             # Bytes are sent as torrent file content
-            self.client.add_torrent(magnet_link or torrent_data)
+            self._add(magnet_link or torrent_data)
         else:
             file = os.path.expanduser(value)
             if not os.path.exists(file):
                 raise ClientError(f"Torrent file not found: {file}")
-            self.client.add_torrent(pathlib.Path(file))
+            self._add(pathlib.Path(file))
+
+    def _add(self, torrent: str | bytes | pathlib.Path) -> None:
+        """Add torrent, reporting daemon errors as ClientError."""
+        try:
+            self.client.add_torrent(torrent)
+        except TransmissionError as e:
+            raise ClientError(str(e)) from e
 
     @log_time
     def start_torrent(self, hashes: str | list[str]) -> None:
