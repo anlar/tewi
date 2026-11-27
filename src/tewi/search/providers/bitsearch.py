@@ -36,6 +36,9 @@ class BitsearchProvider(BaseSearchProvider):
     API is limited to 200 requests per day per IP address.
     """
 
+    # Torrent details are downloaded from API
+    remote_details = True
+
     API_URL = "https://bitsearch.eu/api/v1/search"
     DETAILS_URL = "https://bitsearch.eu/api/v1/torrent"
     SITE_URL = "https://bitsearch.eu"
@@ -351,6 +354,32 @@ class BitsearchProvider(BaseSearchProvider):
         return message
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
+        details = self._fetch_details(result.extra.get("torrent_id"))
+        return self._details_sections(result, details)
+
+    def details_extended_offline(
+        self, result: SearchResult
+    ) -> list[DetailsSection] | None:
+        torrent_id = result.extra.get("torrent_id")
+        if not torrent_id:
+            return self._details_sections(result, None)
+        details = self._details_cache.get(str(torrent_id))
+        if details is None:
+            return None
+        return self._details_sections(result, details)
+
+    def _details_sections(
+        self, result: SearchResult, details: dict[str, Any] | None
+    ) -> list[DetailsSection]:
+        """Build details sections from result and downloaded details.
+
+        Args:
+            result: Search result to format
+            details: Downloaded details, None if they could not be loaded
+
+        Returns:
+            Sections with provider details
+        """
         if not result.extra:
             return []
 
@@ -366,7 +395,6 @@ class BitsearchProvider(BaseSearchProvider):
             verified = "Yes" if result.extra["verified"] else "No"
             info.append(("Verified", verified))
 
-        details = self._fetch_details(result.extra.get("torrent_id"))
         if not details:
             return [DetailsSection("Information", fields=tuple(info))]
 
@@ -389,8 +417,13 @@ class BitsearchProvider(BaseSearchProvider):
         """
         if not torrent_id:
             return None
+        key = str(torrent_id)
+        return self._cached_details(key, lambda: self._download_details(key))
 
-        url = f"{self.DETAILS_URL}/{urllib.parse.quote(str(torrent_id))}"
+    @log_time
+    def _download_details(self, torrent_id: str) -> dict[str, Any] | None:
+        """Download torrent details, see `_fetch_details`."""
+        url = f"{self.DETAILS_URL}/{urllib.parse.quote(torrent_id)}"
 
         try:
             with self.urlopen(url) as response:

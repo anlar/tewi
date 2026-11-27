@@ -4,6 +4,7 @@
 """Unit tests for TheRARBG provider (without TheRARBG)."""
 
 import json
+import urllib.error
 from unittest.mock import patch
 from urllib.parse import parse_qs, urlparse
 
@@ -374,6 +375,35 @@ class TestDetails:
 
         assert details_fields(sections)["Category"] == "TV"
         assert [s.title for s in sections] == ["Information"]
+
+    def test_details_are_cached(self, provider, result, mock_details):
+        first = provider.details_extended(result)
+        second = provider.details_extended(result)
+
+        assert mock_details.call_count == 1
+        assert second == first
+
+    def test_failure_is_not_cached(self, provider, result, mock_details):
+        mock_details.side_effect = urllib.error.URLError("down")
+        provider.details_extended(result)
+        mock_details.side_effect = None
+
+        sections = provider.details_extended(result)
+
+        assert mock_details.call_count == 2
+        assert len(sections) > 1
+
+    def test_offline_details_need_download(
+        self, provider, result, mock_details
+    ):
+        assert provider.details_extended_offline(result) is None
+        assert mock_details.call_count == 0
+
+    def test_offline_details_are_cached(self, provider, result, mock_details):
+        loaded = provider.details_extended(result)
+
+        assert provider.details_extended_offline(result) == loaded
+        assert mock_details.call_count == 1
 
 
 class TestCounts:

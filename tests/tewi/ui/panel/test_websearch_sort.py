@@ -2,6 +2,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import asyncio
+from dataclasses import replace
 from datetime import datetime
 from types import SimpleNamespace
 
@@ -141,3 +142,22 @@ def test_missing_peer_counts_are_shown_as_dash():
             assert table.get_row_at(0)[2] == "-"
 
     asyncio.run(run())
+
+
+def test_merged_result_shows_count_of_other_providers():
+    async def run() -> list[str]:
+        app = WebSearchApp()
+        async with app.run_test(size=(120, 40)) as pilot:
+            panel = app.query_one(TorrentWebSearch)
+            first = result("Alpha", 10, 1)
+            others = [replace(first, provider=p) for p in ("Two", "Three")]
+            panel.r_results = [
+                replace(first, sources=(first, *others)),
+                result("Zulu", 1, 3),
+            ]
+            await pilot.pause()
+
+            table = panel.query_one(DataTable)
+            return [table.get_row_at(i)[0].plain for i in range(2)]
+
+    assert asyncio.run(run()) == ["Test +2", "Test"]

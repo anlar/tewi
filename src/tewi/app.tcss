@@ -719,6 +719,28 @@ TorrentDetailsWidget .details-column {
     padding: 0 1;
 }
 
+TorrentDetailsWidget .details-sections {
+    height: auto;
+}
+
+/* Provider-specific details of one result source */
+TorrentDetailsWidget .details-group {
+    height: auto;
+    margin: 1 0 0 0;
+}
+
+TorrentDetailsWidget .details-group:first-of-type {
+    margin: 0;
+}
+
+TorrentDetailsWidget .details-group-title {
+    text-style: bold;
+    color: $text-accent;
+    height: auto;
+    border-bottom: solid $primary 75%;
+    margin-bottom: 1;
+}
+
 TorrentDetailsWidget .details-section {
     text-style: bold;
     color: $text-primary;
@@ -753,18 +775,20 @@ TorrentDetailsWidget .details-text {
 }
 
 TorrentDetailsWidget .details-link {
-    border: round $primary 75%;
+    border-top: solid $primary 75%;
+    border-title-color: $text-primary;
+    border-title-style: bold;
+    height: auto;
+    padding: 0 1;
+}
+
+TorrentDetailsWidget .details-link-item {
     height: auto;
 }
 
-TorrentDetailsWidget .details-link-left {
+TorrentDetailsWidget .details-link-bullet {
     width: auto;
-    margin: 0 1;
-}
-
-TorrentDetailsWidget .details-link-right {
-    width: 1fr;
-    margin: 0 1;
+    margin-right: 1;
 }
 
 /* TORRENT WEB SEARCH PANEL */

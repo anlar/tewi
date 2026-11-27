@@ -37,6 +37,9 @@ class NekoBtProvider(BaseSearchProvider):
     API documentation: https://wiki.nekobt.to/technical-details/json/
     """
 
+    # Torrent and media details are downloaded from API
+    remote_details = True
+
     API_URL = "https://nekobt.to/api/v1"
     SITE_URL = "https://nekobt.to"
 
@@ -134,6 +137,41 @@ class NekoBtProvider(BaseSearchProvider):
         return torrents
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
+        torrent = self._fetch_json("torrents", result.extra.get("torrent_id"))
+        media = self._fetch_json("media", result.extra.get("media_id"))
+        return self._details_sections(result, torrent, media)
+
+    def details_extended_offline(
+        self, result: SearchResult
+    ) -> list[DetailsSection] | None:
+        details = []
+        for kind, key in (("torrents", "torrent_id"), ("media", "media_id")):
+            item_id = result.extra.get(key)
+            if not item_id:
+                details.append(None)
+                continue
+            cached = self._details_cache.get(f"{kind}/{item_id}")
+            if cached is None:
+                return None
+            details.append(cached)
+        return self._details_sections(result, *details)
+
+    def _details_sections(
+        self,
+        result: SearchResult,
+        torrent: dict[str, Any] | None,
+        media: dict[str, Any] | None,
+    ) -> list[DetailsSection]:
+        """Build details sections from result and downloaded details.
+
+        Args:
+            result: Search result to format
+            torrent: Downloaded torrent details, None if not loaded
+            media: Downloaded media details, None if not loaded
+
+        Returns:
+            Sections with provider details
+        """
         if not result.extra:
             return []
 
@@ -150,9 +188,6 @@ class NekoBtProvider(BaseSearchProvider):
 
         if result.extra.get("batch"):
             info.append(("Batch", "Yes"))
-
-        torrent = self._fetch_json("torrents", result.extra.get("torrent_id"))
-        media = self._fetch_json("media", result.extra.get("media_id"))
 
         sections = [DetailsSection("Information", fields=tuple(info))]
         sections += self._format_links(result, torrent, media)
@@ -178,7 +213,13 @@ class NekoBtProvider(BaseSearchProvider):
         """
         if not item_id:
             return None
+        return self._cached_details(
+            f"{kind}/{item_id}", lambda: self._download_json(kind, item_id)
+        )
 
+    @log_time
+    def _download_json(self, kind: str, item_id: str) -> dict[str, Any] | None:
+        """Download torrent or media details, see `_fetch_json`."""
         url = f"{self.API_URL}/{kind}/{urllib.parse.quote(item_id)}"
 
         try:

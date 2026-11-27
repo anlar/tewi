@@ -9,7 +9,12 @@ from pathlib import Path
 from textual.app import App, ComposeResult
 from textual.widgets import Link
 
-from src.tewi.search.models import DetailsLink, DetailsSection, SearchResult
+from src.tewi.search.models import (
+    DetailsGroup,
+    DetailsLink,
+    DetailsSection,
+    SearchResult,
+)
 from src.tewi.ui.dialog.search.details import TorrentDetailsWidget
 
 # OSC 2 (set window title) and CSI (set color) sequences
@@ -25,22 +30,27 @@ class DetailsApp(App):
     def __init__(
         self,
         common: list[DetailsSection],
-        extended: list[DetailsSection],
+        extended: list[DetailsSection] | list[DetailsGroup],
         title: str = "Title",
-        page_url: str = "https://example.org/",
+        page_urls: tuple[str, ...] = ("https://example.org/",),
     ) -> None:
         super().__init__()
         self.common = common
-        self.extended = extended
+        # Plain sections are shown as group of single provider
+        self.extended = (
+            [DetailsGroup("Provider", None, tuple(extended))]
+            if extended and isinstance(extended[0], DetailsSection)
+            else extended
+        )
         self.details_title = title
-        self.page_url = page_url
+        self.page_urls = list(page_urls)
 
     def compose(self) -> ComposeResult:
         yield TorrentDetailsWidget(
             title=self.details_title,
-            page_url=self.page_url,
+            page_urls=self.page_urls,
             common_sections=self.common,
-            extended_sections=self.extended,
+            extended_groups=self.extended,
         )
 
 
@@ -88,7 +98,7 @@ def test_control_chars_are_removed():
             DetailsSection("Overview", text=f"Plot{OSC} text"),
         ],
         title=result.title,
-        page_url=result.page_url,
+        page_urls=(result.page_url,),
     )
 
     lines, links = render(app)
@@ -163,3 +173,59 @@ def test_empty_sections_are_skipped():
 
     assert "Empty" not in screen
     assert "General" in screen
+
+
+def test_extended_details_are_grouped_by_provider():
+    app = DetailsApp(
+        common=[],
+        extended=[
+            DetailsGroup(
+                "First", None, (DetailsSection("Uploader", text="alice"),)
+            ),
+            DetailsGroup("Empty", None, (DetailsSection("Nothing"),)),
+            DetailsGroup(
+                "Second", "J", (DetailsSection("Uploader", text="bob"),)
+            ),
+        ],
+    )
+
+    lines = render(app)[0]
+
+    def row(text: str) -> int:
+        return next(i for i, line in enumerate(lines) if text in line)
+
+    assert row("First") < row("alice") < row("Second (J)") < row("bob")
+    assert not any("Empty" in line for line in lines)
+
+
+def test_links_of_all_sources_are_shown():
+    app = DetailsApp(
+        common=[],
+        extended=[],
+        page_urls=("https://first.org/1", "https://second.org/2"),
+    )
+
+    lines, links = render(app)
+
+    assert [link.url for link in links] == [
+        "https://first.org/1",
+        "https://second.org/2",
+    ]
+    start = next(i for i, line in enumerate(lines) if "Links" in line)
+    assert "https://first.org/1" in lines[start + 1]
+
+
+def test_provider_title_is_hidden_for_single_source():
+    app = DetailsApp(
+        common=[],
+        extended=[
+            DetailsGroup(
+                "First", None, (DetailsSection("Uploader", text="alice"),)
+            )
+        ],
+    )
+
+    screen = "\n".join(render(app)[0])
+
+    assert "alice" in screen
+    assert "First" not in screen

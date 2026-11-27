@@ -439,3 +439,30 @@ class TestDetails:
 
         urls = [c.args[0] for c in mock_urlopen.call_args_list]
         assert urls == ["https://nekobt.to/api/v1/torrents/1000001"]
+
+    def test_details_are_cached(self, provider, result, mock_urlopen):
+        mock_urlopen.reset_mock()
+        first = provider.details_extended(result)
+        second = provider.details_extended(result)
+
+        assert mock_urlopen.call_count == 2  # torrent and media
+        assert second == first
+
+    def test_offline_details_need_download(self, provider, result):
+        assert provider.details_extended_offline(result) is None
+
+    def test_offline_details_are_cached(self, provider, result, mock_urlopen):
+        loaded = provider.details_extended(result)
+        mock_urlopen.reset_mock()
+
+        assert provider.details_extended_offline(result) == loaded
+        assert mock_urlopen.call_count == 0
+
+    def test_offline_details_need_all_downloads(
+        self, provider, result, mock_urlopen
+    ):
+        # Media request failed, so it's not cached
+        set_responses(mock_urlopen, media_data=b"invalid")
+        provider.details_extended(result)
+
+        assert provider.details_extended_offline(result) is None

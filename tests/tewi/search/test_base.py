@@ -3,11 +3,16 @@
 
 """Unit tests for BaseSearchProvider shared HTTP helpers."""
 
+from dataclasses import replace
 from typing import Any
 from unittest.mock import patch
 
-from src.tewi.search.base import BaseSearchProvider
-from src.tewi.search.models import Category, DetailsSection, SearchResult
+from src.tewi.search.base import BaseSearchProvider, details_common
+from src.tewi.search.models import (
+    Category,
+    DetailsSection,
+    SearchResult,
+)
 from tests.tewi.search.helpers import details_fields
 
 
@@ -160,18 +165,18 @@ class TestDetailsCommon:
         )
 
     def test_size(self):
-        sections = _StubProvider().details_common(self.result(1000))
+        sections = details_common(self.result(1000))
 
         assert details_fields(sections)["Size"] == "1 kB"
 
     def test_unknown_size(self):
-        sections = _StubProvider().details_common(self.result(None))
+        sections = details_common(self.result(None))
 
         assert details_fields(sections)["Size"] == "-"
 
     def test_zero_counts_are_shown(self):
         result = self.result(None, seeders=0, leechers=0, downloads=0)
-        fields = details_fields(_StubProvider().details_common(result))
+        fields = details_fields(details_common(result))
 
         assert fields["Seeders"] == "0"
         assert fields["Leechers"] == "0"
@@ -187,7 +192,7 @@ class TestDetailsCommon:
             provider_id="stub",
             provider_short="S",
         )
-        fields = details_fields(_StubProvider().details_common(result))
+        fields = details_fields(details_common(result))
 
         assert fields == {
             "Provider": "Stub",
@@ -201,3 +206,65 @@ class TestDetailsCommon:
             "Uploaded": "-",
             "Freeleech": "No",
         }
+
+    def test_provider_has_aggregator_tag(self):
+        result = self.result(None, provider_source="J")
+        fields = details_fields(details_common(result))
+
+        assert fields["Provider"] == "Stub (J)"
+
+    def test_providers_of_merged_result_are_listed(self):
+        first = self.result(None)
+        second = replace(first, provider="Other", provider_source="J")
+        merged = replace(first, sources=(first, second))
+
+        fields = details_fields(details_common(merged))
+
+        assert fields["Provider"] == "Stub, Other (J)"
+
+
+class TestCachedDetails:
+    def test_value_is_fetched_once(self):
+        provider = _StubProvider()
+        calls = []
+
+        def fetch():
+            calls.append(1)
+            return {"key": "value"}
+
+        assert provider._cached_details("id", fetch) == {"key": "value"}
+        assert provider._cached_details("id", fetch) == {"key": "value"}
+        assert len(calls) == 1
+
+    def test_failure_is_fetched_again(self):
+        provider = _StubProvider()
+        values = iter([None, "value"])
+
+        assert provider._cached_details("id", lambda: next(values)) is None
+        assert provider._cached_details("id", lambda: next(values)) == "value"
+
+    def test_caches_are_per_provider(self):
+        _StubProvider()._cached_details("id", lambda: "value")
+
+        assert _StubProvider()._cached_details("id", lambda: None) is None
+
+
+class TestDetailsOffline:
+    def test_local_details_are_generated(self):
+        provider = _StubProvider()
+
+        assert (
+            provider.details_extended_offline(TestDetailsCommon.result(None))
+            == []
+        )
+
+    def test_remote_details_have_to_be_loaded(self):
+        class RemoteProvider(_StubProvider):
+            remote_details = True
+
+        provider = RemoteProvider()
+
+        assert (
+            provider.details_extended_offline(TestDetailsCommon.result(None))
+            is None
+        )

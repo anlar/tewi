@@ -5,16 +5,21 @@
 
 import html
 import re
+import threading
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections import OrderedDict
 from datetime import datetime
 from http.client import HTTPResponse
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 from ..util.format import print_size
 from ..util.misc import is_http_url, is_torrent_hash, parse_count
 from .models import Category, DetailsLink, DetailsSection, StandardCategories
+
+K = TypeVar("K")
+V = TypeVar("V")
 
 # User-Agent string to imitate a popular browser
 USER_AGENT = (
@@ -557,3 +562,36 @@ def detect_category_from_name(name: str) -> Category | None:
 
     # No pattern matched
     return None
+
+
+class LruCache(Generic[K, V]):
+    """Cache of limited size, least recently used values are dropped.
+
+    Thread-safe, as search result details are loaded in parallel workers.
+    """
+
+    def __init__(self, maxsize: int) -> None:
+        """Initialize empty cache.
+
+        Args:
+            maxsize: Maximum number of cached values
+        """
+        self._maxsize = maxsize
+        self._data: OrderedDict[K, V] = OrderedDict()
+        self._lock = threading.Lock()
+
+    def get(self, key: K) -> V | None:
+        """Return cached value of key, or None if it isn't cached."""
+        with self._lock:
+            value = self._data.get(key)
+            if value is not None:
+                self._data.move_to_end(key)
+            return value
+
+    def put(self, key: K, value: V) -> None:
+        """Cache value of key, dropping least recently used if full."""
+        with self._lock:
+            self._data[key] = value
+            self._data.move_to_end(key)
+            while len(self._data) > self._maxsize:
+                self._data.popitem(last=False)

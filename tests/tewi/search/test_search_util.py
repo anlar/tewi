@@ -18,6 +18,7 @@ from src.tewi.search.util import (
     MAX_DESCRIPTION_CHARS,
     MAX_DESCRIPTION_LINES,
     MAX_DETAILS_FILES,
+    LruCache,
     build_magnet_link,
     details_value,
     detect_category_from_name,
@@ -655,3 +656,18 @@ class TestProviderMagnetLink:
         assert provider_magnet_link(magnet, HASH, "Name") == (
             build_magnet_link(HASH, "Name")
         )
+
+
+class TestLruCache:
+    def test_missing_key_is_none(self):
+        assert LruCache[str, int](2).get("a") is None
+
+    def test_least_recently_used_is_dropped(self):
+        cache = LruCache[str, int](2)
+        cache.put("a", 1)
+        cache.put("b", 2)
+        cache.get("a")
+
+        cache.put("c", 3)
+
+        assert (cache.get("a"), cache.get("b"), cache.get("c")) == (1, None, 3)

@@ -132,6 +132,35 @@ class TestDetails:
         assert details_fields(sections)["Category"] == "Softwares"
         assert [s.title for s in sections] == ["Information"]
 
+    def test_details_are_cached(self, provider, result, mock_urlopen):
+        first = provider.details_extended(result)
+        second = provider.details_extended(result)
+
+        assert mock_urlopen.call_count == 1
+        assert second == first
+
+    def test_failure_is_not_cached(self, provider, result, mock_urlopen):
+        mock_urlopen.side_effect = urllib.error.URLError("down")
+        provider.details_extended(result)
+        mock_urlopen.side_effect = None
+
+        sections = provider.details_extended(result)
+
+        assert mock_urlopen.call_count == 2
+        assert len(sections) > 1
+
+    def test_offline_details_need_download(
+        self, provider, result, mock_urlopen
+    ):
+        assert provider.details_extended_offline(result) is None
+        assert mock_urlopen.call_count == 0
+
+    def test_offline_details_are_cached(self, provider, result, mock_urlopen):
+        loaded = provider.details_extended(result)
+
+        assert provider.details_extended_offline(result) == loaded
+        assert mock_urlopen.call_count == 1
+
 
 class TestParseTorrent:
     def test_result(self, result):

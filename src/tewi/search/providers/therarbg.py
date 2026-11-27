@@ -48,6 +48,9 @@ class TheRarbgProvider(BaseSearchProvider):
     are requested), so they are searched for each category separately.
     """
 
+    # Torrent details are downloaded from site
+    remote_details = True
+
     SITE_URL = "https://therarbg.com"
     SEARCH_URL = "https://therarbg.com/get-posts/"
     RSS_URL = "https://therarbg.com/api/rss/search/"
@@ -210,6 +213,32 @@ class TheRarbgProvider(BaseSearchProvider):
         return [r for i in items if (r := self._parse_rss_item(i))]
 
     def details_extended(self, result: SearchResult) -> list[DetailsSection]:
+        details = self._fetch_details(result.extra.get("torrent_id"))
+        return self._details_sections(result, details)
+
+    def details_extended_offline(
+        self, result: SearchResult
+    ) -> list[DetailsSection] | None:
+        torrent_id = result.extra.get("torrent_id")
+        if not torrent_id:
+            return self._details_sections(result, None)
+        details = self._details_cache.get(str(torrent_id))
+        if details is None:
+            return None
+        return self._details_sections(result, details)
+
+    def _details_sections(
+        self, result: SearchResult, details: dict[str, Any] | None
+    ) -> list[DetailsSection]:
+        """Build details sections from result and downloaded details.
+
+        Args:
+            result: Search result to format
+            details: Downloaded details, None if they could not be loaded
+
+        Returns:
+            Sections with provider details
+        """
         if not result.extra:
             return []
 
@@ -224,7 +253,6 @@ class TheRarbgProvider(BaseSearchProvider):
         if "tags" in result.extra:
             info.append(("Tags", result.extra["tags"]))
 
-        details = self._fetch_details(result.extra.get("torrent_id"))
         if not details:
             return [DetailsSection("Information", fields=tuple(info))]
 
@@ -249,9 +277,14 @@ class TheRarbgProvider(BaseSearchProvider):
         """
         if not torrent_id:
             return None
+        key = str(torrent_id)
+        return self._cached_details(key, lambda: self._download_details(key))
 
+    @log_time
+    def _download_details(self, torrent_id: str) -> dict[str, Any] | None:
+        """Download torrent details, see `_fetch_details`."""
         # Details page accepts any slug
-        tid = urllib.parse.quote(str(torrent_id))
+        tid = urllib.parse.quote(torrent_id)
         url = f"{self.SITE_URL}/post-detail/{tid}/x/?format=json"
 
         try:

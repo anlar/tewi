@@ -13,7 +13,11 @@ from src.tewi.search.manager import (
     merge_results,
     resolve_provider_aliases,
 )
-from src.tewi.search.models import DetailsSection, SearchResult
+from src.tewi.search.models import (
+    DetailsSection,
+    SearchResult,
+    StandardCategories,
+)
 
 VALID_HASH = "a" * 40
 
@@ -79,6 +83,16 @@ class TestMergeResults:
     def test_single_result_is_unchanged(self):
         r = result("one", VALID_HASH, seeders=5)
         assert merge_results([r]) is r
+        assert r.sources == ()
+        assert r.all_sources == (r,)
+
+    def test_sources_are_kept(self):
+        results = [result("a", VALID_HASH), result("b", VALID_HASH)]
+
+        merged = merge_results(results)
+
+        assert merged.sources == tuple(results)
+        assert merged.all_sources == tuple(results)
 
     def test_counts_are_max(self):
         merged = merge_results(
@@ -155,6 +169,39 @@ class TestMergeResults:
         assert merged.size == 100
         assert merged.page_url == "https://first"
         assert merged.extra == {"key": "first"}
+
+    def test_categories_are_combined(self):
+        hd, uhd, tv = (
+            StandardCategories.MOVIES_HD,
+            StandardCategories.MOVIES_UHD,
+            StandardCategories.TV,
+        )
+        merged = merge_results(
+            [
+                result("a", VALID_HASH, categories=(hd,)),
+                result("b", VALID_HASH, categories=(uhd, hd)),
+                result("c", VALID_HASH, categories=(tv,)),
+            ]
+        )
+
+        assert merged.categories == (hd, uhd, tv)
+
+    def test_category_filter_matches_any_source(self):
+        client = SearchClient(None, None, False, None, None, False, None, 30)
+        client._providers = [
+            FakeProvider(
+                [
+                    result("a", VALID_HASH),
+                    result(
+                        "b", VALID_HASH, categories=(StandardCategories.TV_HD,)
+                    ),
+                ]
+            )
+        ]
+
+        found, _ = client.search("query", None, [StandardCategories.TV])
+
+        assert [r.title for r in found] == ["a"]
 
     def test_search_merges_duplicates(self):
         found = search(

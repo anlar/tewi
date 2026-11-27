@@ -209,6 +209,27 @@ class DetailsSection(RemoteData):
     # Paragraph, for long text (e.g. description)
     text: str | None = None
 
+    @property
+    def empty(self) -> bool:
+        """Whether section has nothing to show."""
+        return not (self.fields or self.items or self.text)
+
+
+@dataclass(frozen=True)
+class DetailsGroup(RemoteData):
+    """Provider-specific details of one source of search result."""
+
+    # Provider name
+    title: str
+    # Plain text short tag of aggregator (e.g. "J"), shown after title
+    source: str | None = None
+    sections: tuple[DetailsSection, ...] = ()
+
+    @property
+    def empty(self) -> bool:
+        """Whether group has nothing to show."""
+        return all(section.empty for section in self.sections)
+
 
 @dataclass(frozen=True)
 class SearchPreset:
@@ -251,3 +272,12 @@ class SearchResult(RemoteData):
 
     # Provider-specific metadata
     extra: dict[str, object] = field(default_factory=dict)
+
+    # Results of several providers merged into this one, in provider
+    # order; empty if result isn't merged
+    sources: tuple[SearchResult, ...] = ()
+
+    @property
+    def all_sources(self) -> tuple[SearchResult, ...]:
+        """Results this one is made of: merged sources or result itself."""
+        return self.sources or (self,)

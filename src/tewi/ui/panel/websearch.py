@@ -12,13 +12,11 @@ from textual.binding import Binding, BindingType
 from textual.containers import Vertical
 from textual.reactive import reactive
 from textual.widgets import DataTable, Static
-from textual.worker import get_current_worker
 
-from ...search.base import BaseSearchProvider
-from ...search.models import DetailsSection, SearchResult
+from ...search.models import SearchResult
 from ...search.sorting import get_search_sort_option, sort_search_results
 from ...util.format import print_size, print_time
-from ...util.log import get_logger, log_time
+from ...util.log import log_time
 from ..dialog.search.details import TorrentDetailsDialog
 from ..dialog.search.sort import SearchSortDialog
 from ..messages import (
@@ -28,8 +26,6 @@ from ..messages import (
 )
 from ..util import plain_text, source_text, subtitle_keys, theme_markup_color
 from ..widget.common import ReactiveLabel
-
-logger = get_logger()
 
 
 class TorrentWebSearch(Static):
@@ -205,11 +201,7 @@ class TorrentWebSearch(Static):
 
             if self._view_compact:
                 table.add_row(
-                    source_text(
-                        r.provider_short or r.provider,
-                        r.provider_source,
-                        short=True,
-                    ),
+                    self.source_cell(r),
                     up_date,
                     r.seeders if r.seeders is not None else "-",
                     print_size(r.size, ndigits=0)
@@ -221,7 +213,7 @@ class TorrentWebSearch(Static):
                 )
             else:
                 table.add_row(
-                    source_text(r.provider, r.provider_source),
+                    self.source_cell(r),
                     up_date,
                     r.seeders if r.seeders is not None else "-",
                     r.leechers if r.leechers is not None else "-",
@@ -245,6 +237,22 @@ class TorrentWebSearch(Static):
             min(prev_cursor_row, len(self._display_results) - 1),
         )
         table.move_cursor(row=selected_row)
+
+    def source_cell(self, result: SearchResult) -> Text:
+        """Build Source column value: first provider of result, with
+        dimmed count of other providers for merged results (e.g. "TPB +2").
+        """
+        if self._view_compact:
+            text = source_text(
+                result.provider_short or result.provider,
+                result.provider_source,
+                short=True,
+            )
+        else:
+            text = source_text(result.provider, result.provider_source)
+        if len(result.sources) > 1:
+            text.append(f" +{len(result.sources) - 1}", style="dim")
+        return text
 
     @log_time
     def watch_r_results(self, results: list[SearchResult]) -> None:
@@ -304,76 +312,7 @@ class TorrentWebSearch(Static):
             self.post_message(Notification("No torrent selected", "warning"))
             return
 
-        # Find the provider instance using provider_id
-        provider = None
-        for p in self.providers:
-            if p.id == result.provider_id:
-                provider = p
-                break
-
-        if not provider:
-            self.post_message(
-                Notification(
-                    f"Provider with ID '{result.provider_id}' not found",
-                    "error",
-                )
-            )
-            return
-
-        self.load_details(provider, result)
-
-    @work(exclusive=True, thread=True, group="websearch-details")
-    @log_time
-    def load_details(
-        self, provider: BaseSearchProvider, result: SearchResult
-    ) -> None:
-        """Generate torrent details, which could load extra data from provider.
-
-        Args:
-            provider: Provider which returned the result
-            result: Search result to show details for
-        """
-        try:
-            common_sections = provider.details_common(result)
-            extended_sections = provider.details_extended(result)
-        except Exception as e:
-            logger.warning(f"Failed to load search result details: {e}")
-            self.post_message(
-                Notification(f"Failed to load details: {e}", "error")
-            )
-            return
-
-        if get_current_worker().is_cancelled:
-            return
-        self.app.call_from_thread(
-            self.show_details, result, common_sections, extended_sections
-        )
-
-    @log_time
-    def show_details(
-        self,
-        result: SearchResult,
-        common_sections: list[DetailsSection],
-        extended_sections: list[DetailsSection],
-    ) -> None:
-        """Show the details dialog.
-
-        Args:
-            result: Search result to show details for
-            common_sections: Common details (left column)
-            extended_sections: Provider-specific details (right column)
-        """
-        self.app.push_screen(
-            TorrentDetailsDialog(
-                result.title,
-                result.page_url,
-                common_sections,
-                extended_sections,
-                result.page_url,
-                result.magnet_link,
-                result.torrent_link,
-            )
-        )
+        self.app.push_screen(TorrentDetailsDialog(result, self.providers))
 
     @log_time
     def action_add_torrent(self) -> None:

@@ -80,7 +80,9 @@ def merge_results(results: list[SearchResult]) -> SearchResult:
     report different peer stats, so the largest seeders, leechers and
     downloads counts are taken. Some providers report index date as
     upload date, so the earliest date is taken. Files count is taken
-    from the first provider reporting it.
+    from the first provider reporting it. Categories of all providers
+    are combined, so filtering by any of them keeps the result. Original
+    results are kept in `sources`.
 
     Args:
         results: Results of the same torrent in provider order
@@ -97,6 +99,8 @@ def merge_results(results: list[SearchResult]) -> SearchResult:
         return max((v for v in values if v is not None), default=None)
 
     dates = [r.upload_date for r in results if r.upload_date]
+    # First result's categories go first, as the first one is shown
+    categories = dict.fromkeys(c for r in results for c in r.categories)
     files_count = next(
         (r.files_count for r in results if r.files_count is not None), None
     )
@@ -106,8 +110,10 @@ def merge_results(results: list[SearchResult]) -> SearchResult:
         seeders=max_count("seeders"),
         leechers=max_count("leechers"),
         downloads=max_count("downloads"),
+        categories=tuple(categories),
         files_count=files_count,
         upload_date=min(dates, default=None),
+        sources=tuple(results),
     )
 
 

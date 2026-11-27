@@ -39,6 +39,9 @@ class BitmagnetProvider(BaseSearchProvider):
     """
 
     # Max number of results
+    # Content metadata and files are downloaded from GraphQL API
+    remote_details = True
+
     RESULTS_LIMIT = 100
 
     # GraphQL query for search, facets filter results by content type
@@ -293,12 +296,37 @@ class BitmagnetProvider(BaseSearchProvider):
         Returns:
             Sections with Bitmagnet details
         """
+        return self._details_sections(
+            result, self._fetch_details(result.info_hash)
+        )
+
+    def details_extended_offline(
+        self, result: SearchResult
+    ) -> list[DetailsSection] | None:
+        if not result.info_hash:
+            return self._details_sections(result, None)
+        details = self._details_cache.get(result.info_hash)
+        if details is None:
+            return None
+        return self._details_sections(result, details)
+
+    def _details_sections(
+        self, result: SearchResult, details: dict[str, Any] | None
+    ) -> list[DetailsSection]:
+        """Build details sections from result and downloaded details.
+
+        Args:
+            result: Search result to format
+            details: Downloaded details, None if they could not be loaded
+
+        Returns:
+            Sections with provider details
+        """
         if not result.extra:
             return []
 
         fields = dict(result.extra)
         files: list[DetailsSection] = []
-        details = self._fetch_details(result.info_hash)
         if details:
             fields.update(self._parse_content_details(details.get("content")))
             # Files query total count is limited by requested number of files
@@ -440,7 +468,13 @@ class BitmagnetProvider(BaseSearchProvider):
         """
         if not info_hash:
             return None
+        return self._cached_details(
+            info_hash, lambda: self._download_details(info_hash)
+        )
 
+    @log_time
+    def _download_details(self, info_hash: str) -> dict[str, Any] | None:
+        """Download content metadata and files, see `_fetch_details`."""
         try:
             data = self._graphql(
                 self.DETAILS_QUERY,

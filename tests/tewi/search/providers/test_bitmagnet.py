@@ -284,6 +284,24 @@ class TestDetails:
             "...and 1 more",
         )
 
+    def test_details_are_cached(self, provider, result, mock_post):
+        mock_post.reset_mock()
+        first = provider.details_extended(result)
+        second = provider.details_extended(result)
+
+        assert mock_post.call_count == 1
+        assert second == first
+
+    def test_offline_details_need_download(self, provider, result):
+        assert provider.details_extended_offline(result) is None
+
+    def test_offline_details_are_cached(self, provider, result, mock_post):
+        loaded = provider.details_extended(result)
+        mock_post.reset_mock()
+
+        assert provider.details_extended_offline(result) == loaded
+        assert mock_post.call_count == 0
+
     def test_failure_keeps_basic_details(self, provider, result, mock_post):
         set_response(mock_post, {"errors": [{"message": "failed"}]})
 
