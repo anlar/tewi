@@ -705,7 +705,9 @@ class QBittorrentClient(BaseClient):
             address=peer.ip,
             client_name=peer.client,
             progress=peer.progress,
-            is_encrypted=peer.connection.startswith("uTP") or "E" in peer.flags,
+            # "E" is encrypted traffic, while "e" is only encrypted
+            # handshake, with plain data after it
+            is_encrypted="E" in peer.flags,
             rate_to_client=peer.dl_speed,
             rate_to_peer=peer.up_speed,
             flag_str=peer.flags,
